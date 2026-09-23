@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — Nely’s Salon | Salon Management System</title>
+  <meta name="description"
+    content="Comprehensive salon management dashboard for Nely's Salon: live appointments, daily revenue, customer records, staff schedules, and quick actions.">
+
+  <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Font Awesome 6 (Free Icons - Zero Emoji Rule) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
+  <link rel="stylesheet" href="../assets/css/output.css">
+</head>
+
+<body
+  class="min-h-screen bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
+
+  <!-- ================= MOBILE TOP NAVIGATION BAR (< lg) ================= -->
+  <header
+    class="lg:hidden sticky top-0 z-40 bg-[#541A1A] text-[#F1E2D1] border-b border-[#810B38]/40 px-4 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <button 
+        type="button" 
+        id="mobileMenuBtn" 
+        onclick="toggleMobileSidebar()" 
+        aria-label="Open navigation menu"
+        class="w-10 h-10 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors focus:outline-none focus:ring-2 focus:ring-[#DCC3AA]">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2.5">
+        <img 
+          src="../assets/images/logo.jfif" 
+          alt="Nely's Salon Logo"
+          class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover">
+        <div>
+          <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
+            Nely’s Salon
+          </span>
+          <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
+            Admin Panel
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Top Right Icons -->
+    <div class="flex items-center gap-2">
+      <button 
+        type="button"
+        onclick="openNotificationsModal()"
+        aria-label="View notifications"
+        class="relative w-9 h-9 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors">
+        <i class="fa-solid fa-bell text-sm"></i>
+        <span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#DCC3AA] animate-pulse"></span>
+      </button>
+
+      <div class="w-9 h-9 rounded-xl bg-[#810B38] text-white border border-[#DCC3AA]/50 flex items-center justify-center font-bold text-xs">
+        AD
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MOBILE SIDEBAR BACKDROP & DRAWER ================= -->
+  <div 
+    id="mobileSidebarBackdrop" 
+    onclick="toggleMobileSidebar(false)"
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden">
+  </div>
+
+                <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+  <aside 
+    id="sidebar"
+    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
+
+    <!-- Sidebar Header (Branding) -->
+    <div class="p-6 border-b border-[#810B38]/40">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <img 
+            src="../assets/images/logo.jfif" 
+            alt="Nely's Salon Logo"
+            class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
+          <div>
+            <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
+              Nely’s Salon
+            </h1>
+            <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
+              Admin Panel
+            </p>
+          </div>
+        </div>
+
+        <!-- Mobile Close Button -->
+        <button 
+          type="button" 
+          onclick="toggleMobileSidebar(false)"
+          class="lg:hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
+          aria-label="Close menu">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Salon Motto -->
+      <div class="pt-3 border-t border-white/10 flex items-center gap-2">
+        <i class="fa-solid fa-sparkles text-[#DCC3AA] text-xs"></i>
+        <span class="font-serif italic text-xs text-[#DCC3AA] tracking-wide">
+          “Your Beauty is Our Duty”
+        </span>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation Menu (10 Items) -->
+    <nav class="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
+      <!-- Dashboard (Active) -->
+      <a href="dashboard.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
+        <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA]"></i>
+        <span>Dashboard</span>
+        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-[#DCC3AA]"></span>
+      </a>
+
+      <!-- Appointments -->
+      <a href="appointments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Appointments</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">12</span>
+      </a>
+
+      <!-- Customers -->
+      <a href="customers.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Customers</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">248</span>
+      </a>
+
+      <!-- Services -->
+      <a href="services.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Services</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">13</span>
+      </a>
+
+      <!-- Staff -->
+      <a href="staff.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Staff</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">5</span>
+      </a>
+
+      <!-- Payments -->
+      <a href="payments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-credit-card w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Payments</span>
+      </a>
+
+      <!-- Reports -->
+      <a href="reports.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-chart-line w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Reports</span>
+      </a>
+
+      <!-- Notifications -->
+      <a href="notifications.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Notifications</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">6</span>
+      </a>
+
+      <!-- Messages -->
+      <a href="messages.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Messages</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">2</span>
+      </a>
+
+      <!-- Settings -->
+      <a href="settings.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-gear w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer / Logout -->
+    <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
+      <button 
+        type="button" 
+        onclick="openLogoutModal()" 
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+        <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
+        <span>Log Out</span>
+      </button>
+
+      <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
+        15 Years of Beauty Heritage · Lagro, QC
+      </p>
+    </div>
+
+  </aside>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8 max-w-7xl mx-auto w-full">
+
+    <!-- ================= 2. TOP HEADER ================= -->
+    <section class="bg-gradient-to-r from-[#FAF6F0] via-white to-[#FDFBF7] p-6 sm:p-8 rounded-3xl border border-[#DCC3AA]/70 shadow-sm relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+      
+      <!-- Left: Greeting -->
+      <div class="space-y-1.5 relative z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810B38]/10 text-[#810B38] text-xs font-bold uppercase tracking-wider">
+          <i class="fa-solid fa-house text-[#810B38]"></i>
+          <span>Salon Overview</span>
+        </div>
+
+        <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#541A1A] leading-tight">
+          Good morning, Admin!
+        </h2>
+
+        <p class="text-sm sm:text-base text-[#735e5e] max-w-xl font-normal leading-relaxed">
+          Here's what's happening at Nely's Salon today.
+        </p>
+      </div>
+
+    </section>
+
+    <!-- ================= 3. SUMMARY CARDS ================= -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      
+      <!-- Card 1: Today's Appointments -->
+      <article class="bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between">
+          <div class="w-12 h-12 rounded-2xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl border border-[#DCC3AA] group-hover:scale-105 transition-transform">
+            <i class="fa-solid fa-calendar-check"></i>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+            On Schedule
+          </span>
+        </div>
+        <div class="mt-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e] block">Today's Appointments</span>
+          <h3 class="font-serif text-3xl sm:text-4xl font-extrabold text-[#541A1A] mt-1">12</h3>
+          <p class="text-xs text-[#735e5e] mt-1.5 flex items-center gap-1.5">
+            <i class="fa-regular fa-clock text-[#810B38]"></i>
+            <span>4 Morning · 8 Afternoon</span>
+          </p>
+        </div>
+      </article>
+
+      <!-- Card 2: Total Customers -->
+      <article class="bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between">
+          <div class="w-12 h-12 rounded-2xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl border border-[#DCC3AA] group-hover:scale-105 transition-transform">
+            <i class="fa-solid fa-users"></i>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50">
+            +14 This Month
+          </span>
+        </div>
+        <div class="mt-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e] block">Total Customers</span>
+          <h3 class="font-serif text-3xl sm:text-4xl font-extrabold text-[#541A1A] mt-1">248</h3>
+          <p class="text-xs text-[#735e5e] mt-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-heart text-[#810B38]"></i>
+            <span>Registered salon patrons club</span>
+          </p>
+        </div>
+      </article>
+
+      <!-- Card 3: Today's Revenue -->
+      <article class="bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center text-xl border border-emerald-200 group-hover:scale-105 transition-transform">
+            <i class="fa-solid fa-peso-sign"></i>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+            +18% Today
+          </span>
+        </div>
+        <div class="mt-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e] block">Today's Revenue</span>
+          <h3 class="font-serif text-3xl sm:text-4xl font-extrabold text-[#810B38] mt-1">₱8,450</h3>
+          <p class="text-xs text-[#735e5e] mt-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-wallet text-emerald-700"></i>
+            <span>₱5,200 GCash · ₱3,250 Cash</span>
+          </p>
+        </div>
+      </article>
+
+      <!-- Card 4: Pending Appointments -->
+      <article class="bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between">
+          <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center text-xl border border-amber-200 group-hover:scale-105 transition-transform">
+            <i class="fa-solid fa-hourglass-half"></i>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-amber-900 bg-amber-100 px-2.5 py-1 rounded-full border border-amber-300 animate-pulse">
+            Action Needed
+          </span>
+        </div>
+        <div class="mt-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e] block">Pending Appointments</span>
+          <h3 class="font-serif text-3xl sm:text-4xl font-extrabold text-amber-700 mt-1">5</h3>
+          <p class="text-xs text-[#735e5e] mt-1.5 flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-exclamation text-amber-600"></i>
+            <span>Awaiting salon confirmation</span>
+          </p>
+        </div>
+      </article>
+
+    </section>
+
+    <!-- ================= 2-COLUMN MAIN CONTENT GRID ================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      
+      <!-- LEFT COLUMN: SCHEDULE & REVENUE (lg:col-span-8 space-y-8) -->
+      <div class="lg:col-span-8 space-y-8">
+        
+        <!-- ================= 4. TODAY'S APPOINTMENTS TABLE ================= -->
+        <section class="bg-white p-6 sm:p-8 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-6">
+          
+          <!-- Section Header -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#F1E2D1] pb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm border border-[#DCC3AA]">
+                  <i class="fa-solid fa-calendar-day"></i>
+                </div>
+                <h3 class="font-serif text-2xl font-bold text-[#541A1A]">Today's Appointments</h3>
+              </div>
+              <p class="text-xs text-[#735e5e] mt-1">Daily schedule timeline for September 23, 2026</p>
+            </div>
+
+            <a 
+              href="appointments.html" 
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto">
+              <span>View All Appointments</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
+
+          <!-- Schedule Table Container -->
+          <div class="overflow-x-auto rounded-2xl border border-[#E8D9CA]">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-[#FAF6F0] border-b border-[#E8D9CA] text-[#541A1A] uppercase tracking-wider text-[11px] font-bold">
+                  <th class="py-3.5 px-4">Time</th>
+                  <th class="py-3.5 px-4">Customer</th>
+                  <th class="py-3.5 px-4">Service</th>
+                  <th class="py-3.5 px-4">Staff</th>
+                  <th class="py-3.5 px-4">Status</th>
+                  <th class="py-3.5 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#F1E2D1]">
+                
+                <!-- Row 1: 9:00 AM -->
+                <tr class="hover:bg-[#FAF6F0]/40 transition-colors">
+                  <td class="py-3.5 px-4 font-bold text-[#810B38] whitespace-nowrap">
+                    <i class="fa-regular fa-clock mr-1 text-[#810B38]"></i>
+                    9:00 AM
+                  </td>
+                  <td class="py-3.5 px-4 font-bold text-[#541A1A] whitespace-nowrap">
+                    Maria Santos
+                  </td>
+                  <td class="py-3.5 px-4 text-[#2b1d1d]">
+                    <span class="font-medium">Haircut</span>
+                    <span class="block text-[10px] text-[#735e5e]">Trim & Styling</span>
+                  </td>
+                  <td class="py-3.5 px-4 font-semibold text-[#541A1A]">
+                    Nely
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      Confirmed
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right">
+                    <a href="appointments.html" class="text-xs font-bold text-[#810B38] hover:text-[#541A1A] hover:underline">
+                      Manage
+                    </a>
+                  </td>
+                </tr>
+
+                <!-- Row 2: 10:30 AM -->
+                <tr class="hover:bg-[#FAF6F0]/40 transition-colors">
+                  <td class="py-3.5 px-4 font-bold text-[#810B38] whitespace-nowrap">
+                    <i class="fa-regular fa-clock mr-1 text-[#810B38]"></i>
+                    10:30 AM
+                  </td>
+                  <td class="py-3.5 px-4 font-bold text-[#541A1A] whitespace-nowrap">
+                    Angela Cruz
+                  </td>
+                  <td class="py-3.5 px-4 text-[#2b1d1d]">
+                    <span class="font-medium">Hair Color</span>
+                    <span class="block text-[10px] text-[#735e5e]">Full Dye Refresh</span>
+                  </td>
+                  <td class="py-3.5 px-4 font-semibold text-[#541A1A]">
+                    Ana
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                      <i class="fa-solid fa-check text-[10px]"></i>
+                      Completed
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right">
+                    <a href="appointments.html" class="text-xs font-bold text-[#810B38] hover:text-[#541A1A] hover:underline">
+                      Manage
+                    </a>
+                  </td>
+                </tr>
+
+                <!-- Row 3: 1:00 PM -->
+                <tr class="hover:bg-[#FAF6F0]/40 transition-colors">
+                  <td class="py-3.5 px-4 font-bold text-[#810B38] whitespace-nowrap">
+                    <i class="fa-regular fa-clock mr-1 text-[#810B38]"></i>
+                    1:00 PM
+                  </td>
+                  <td class="py-3.5 px-4 font-bold text-[#541A1A] whitespace-nowrap">
+                    Jamie Reyes
+                  </td>
+                  <td class="py-3.5 px-4 text-[#2b1d1d]">
+                    <span class="font-medium">Manicure</span>
+                    <span class="block text-[10px] text-[#735e5e]">Classic Nail Polish</span>
+                  </td>
+                  <td class="py-3.5 px-4 font-semibold text-[#541A1A]">
+                    Nely
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                      <i class="fa-solid fa-hourglass-half text-[10px]"></i>
+                      Pending
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right">
+                    <a href="appointments.html" class="text-xs font-bold text-[#810B38] hover:text-[#541A1A] hover:underline">
+                      Manage
+                    </a>
+                  </td>
+                </tr>
+
+                <!-- Row 4: 3:00 PM -->
+                <tr class="hover:bg-[#FAF6F0]/40 transition-colors">
+                  <td class="py-3.5 px-4 font-bold text-[#810B38] whitespace-nowrap">
+                    <i class="fa-regular fa-clock mr-1 text-[#810B38]"></i>
+                    3:00 PM
+                  </td>
+                  <td class="py-3.5 px-4 font-bold text-[#541A1A] whitespace-nowrap">
+                    Carla Dela Cruz
+                  </td>
+                  <td class="py-3.5 px-4 text-[#2b1d1d]">
+                    <span class="font-medium">Hair Treatment</span>
+                    <span class="block text-[10px] text-[#735e5e]">Brazilian Blowout</span>
+                  </td>
+                  <td class="py-3.5 px-4 font-semibold text-[#541A1A]">
+                    Ana
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                      Confirmed
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right">
+                    <a href="appointments.html" class="text-xs font-bold text-[#810B38] hover:text-[#541A1A] hover:underline">
+                      Manage
+                    </a>
+                  </td>
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+
+        </section>
+
+        <!-- ================= 7. REVENUE OVERVIEW GRAPH ================= -->
+        <section class="bg-white p-6 sm:p-8 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-6">
+          
+          <!-- Section Header + Timeframe Dropdown -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#F1E2D1] pb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-800 flex items-center justify-center text-sm border border-emerald-200">
+                  <i class="fa-solid fa-chart-simple"></i>
+                </div>
+                <h3 class="font-serif text-2xl font-bold text-[#541A1A]">Revenue Overview</h3>
+              </div>
+              <p id="revenueChartSublabel" class="text-xs text-[#735e5e] mt-1">This Week's Daily Revenue</p>
+            </div>
+
+            <div class="flex items-center gap-3">
+              <!-- Total Revenue Pill -->
+              <div class="text-right">
+                <span class="text-[10px] uppercase font-bold text-[#735e5e] block">Total</span>
+                <span id="revenueTotalDisplay" class="font-serif text-xl sm:text-2xl font-extrabold text-[#810B38]">₱47,850</span>
+              </div>
+
+              <!-- Timeframe Dropdown (This Week ▼) -->
+              <div class="relative">
+                <button 
+                  type="button" 
+                  onclick="toggleRevenueDropdown()"
+                  class="px-4 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors">
+                  <span id="revenuePeriodBtnText">This Week</span>
+                  <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                </button>
+
+                <!-- Dropdown items: Today | This Week | This Month | This Year -->
+                <div 
+                  id="revenueDropdownMenu" 
+                  class="hidden absolute right-0 mt-2 w-36 rounded-2xl bg-white border border-[#DCC3AA] shadow-xl py-2 z-30 animate-in fade-in duration-150">
+                  <button 
+                    type="button" 
+                    onclick="switchRevenuePeriod('today')" 
+                    class="w-full text-left px-4 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0]">
+                    Today
+                  </button>
+                  <button 
+                    type="button" 
+                    onclick="switchRevenuePeriod('week')" 
+                    class="w-full text-left px-4 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0]">
+                    This Week
+                  </button>
+                  <button 
+                    type="button" 
+                    onclick="switchRevenuePeriod('month')" 
+                    class="w-full text-left px-4 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0]">
+                    This Month
+                  </button>
+                  <button 
+                    type="button" 
+                    onclick="switchRevenuePeriod('year')" 
+                    class="w-full text-left px-4 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0]">
+                    This Year
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Bar Chart Container -->
+          <div class="pt-4">
+            <div id="revenueChartBars" class="h-56 sm:h-64 flex items-end justify-between gap-3 sm:gap-6 border-b border-[#E8D9CA] pb-3">
+              <!-- Rendered via JavaScript -->
+            </div>
+            
+            <div class="flex items-center justify-between pt-3 text-[11px] text-[#735e5e]">
+              <span class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-md bg-[#810B38]"></span>
+                <span>Gross Service Receipts</span>
+              </span>
+              <span>Updated real-time from booking receipts</span>
+            </div>
+          </div>
+
+        </section>
+
+        <!-- ================= 8. RECENT CUSTOMERS TABLE ================= -->
+        <section class="bg-white p-6 sm:p-8 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-6">
+          
+          <!-- Section Header -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#F1E2D1] pb-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm border border-[#DCC3AA]">
+                  <i class="fa-solid fa-user-group"></i>
+                </div>
+                <h3 class="font-serif text-2xl font-bold text-[#541A1A]">Recent Customers</h3>
+              </div>
+              <p class="text-xs text-[#735e5e] mt-1">Recently registered or active salon clients</p>
+            </div>
+
+            <a 
+              href="customers.html" 
+              class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto">
+              <span>View All Customers</span>
+              <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
+          </div>
+
+          <!-- Customers Table -->
+          <div class="overflow-x-auto rounded-2xl border border-[#E8D9CA]">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-[#FAF6F0] border-b border-[#E8D9CA] text-[#541A1A] uppercase tracking-wider text-[11px] font-bold">
+                  <th class="py-3.5 px-4">Customer</th>
+                  <th class="py-3.5 px-4">Service</th>
+                  <th class="py-3.5 px-4">Date</th>
+                  <th class="py-3.5 px-4">Status</th>
+                  <th class="py-3.5 px-4 text-right">Profile</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-[#F1E2D1]">
+                
+                <!-- Customer 1: Maria Santos -->
+                <tr class="hover:bg-[#FAF6F0]/40 transition-colors">
+                  <td class="py-3.5 px-4 font-bold text-[#541A1A]">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-7 h-7 rounded-full bg-[#810B38] text-white flex items-center justify-center text-[10px] font-bold">
+                        MS
+                      </div>
+                      <span>Maria Santos</span>
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4 text-[#2b1d1d] font-medium">Haircut</td>
+                  <td class="py-3.5 px-4 text-[#735e5e]">Sept 23</td>
+                  <td class="py-3.5 px-4">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                      Completed
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right">
+                    <a href="customers.html" class="text-xs font-bold text-[#810B38] hover:text-[#541A1A] hover:underline">
+                      View
+                    </a>
+                  </td>
+                </tr>
+
+                <!-- Customer 2: Jamie Reyes -->
+                <tr class="hover:bg-[#FAF6F0]/40 transition-colors">
+                  <td class="py-3.5 px-4 font-bold text-[#541A1A]">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-7 h-7 rounded-full bg-[#541A1A] text-white flex items-center justify-center text-[10px] font-bold">
+                        JR
+                      </div>
+                      <span>Jamie Reyes</span>
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4 text-[#2b1d1d] font-medium">Manicure</td>
+                  <td class="py-3.5 px-4 text-[#735e5e]">Sept 23</td>
+                  <td class="py-3.5 px-4">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                      Pending
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right">
+                    <a href="customers.html" class="text-xs font-bold text-[#810B38] hover:text-[#541A1A] hover:underline">
+                      View
+                    </a>
+                  </td>
+                </tr>
+
+                <!-- Customer 3: Carla Dela Cruz -->
+                <tr class="hover:bg-[#FAF6F0]/40 transition-colors">
+                  <td class="py-3.5 px-4 font-bold text-[#541A1A]">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-7 h-7 rounded-full bg-[#DCC3AA] text-[#541A1A] flex items-center justify-center text-[10px] font-extrabold">
+                        CD
+                      </div>
+                      <span>Carla Dela Cruz</span>
+                    </div>
+                  </td>
+                  <td class="py-3.5 px-4 text-[#2b1d1d] font-medium">Hair Color</td>
+                  <td class="py-3.5 px-4 text-[#735e5e]">Sept 22</td>
+                  <td class="py-3.5 px-4">
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">
+                      Completed
+                    </span>
+                  </td>
+                  <td class="py-3.5 px-4 text-right">
+                    <a href="customers.html" class="text-xs font-bold text-[#810B38] hover:text-[#541A1A] hover:underline">
+                      View
+                    </a>
+                  </td>
+                </tr>
+
+              </tbody>
+            </table>
+          </div>
+
+        </section>
+
+      </div>
+
+      <!-- RIGHT COLUMN: QUICK ACTIONS, STATUS & POPULAR SERVICES (lg:col-span-4 space-y-8) -->
+      <div class="lg:col-span-4 space-y-8">
+        
+        <!-- ================= 9. QUICK ACTIONS ================= -->
+        <section class="bg-gradient-to-br from-white to-[#FAF6F0] p-6 sm:p-7 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-4">
+          <div class="flex items-center gap-2 border-b border-[#F1E2D1] pb-3">
+            <div class="w-8 h-8 rounded-xl bg-[#810B38] text-white flex items-center justify-center text-sm">
+              <i class="fa-solid fa-bolt"></i>
+            </div>
+            <div>
+              <h3 class="font-serif text-xl font-bold text-[#541A1A]">Quick Actions</h3>
+              <p class="text-[11px] text-[#735e5e]">Frequently used administrative tools</p>
+            </div>
+          </div>
+
+          <div class="space-y-2.5 pt-1">
+            
+            <!-- Add Appointment -->
+            <button 
+              type="button" 
+              onclick="openAddAppointmentModal()"
+              class="w-full px-4 py-3 rounded-2xl bg-white hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA] hover:border-[#810B38] text-xs font-bold uppercase tracking-wider transition-all shadow-sm flex items-center justify-between group">
+              <span class="flex items-center gap-2.5">
+                <i class="fa-solid fa-calendar-plus text-[#810B38] group-hover:text-white text-sm"></i>
+                <span>Add Appointment</span>
+              </span>
+              <i class="fa-solid fa-chevron-right text-[10px] text-[#735e5e] group-hover:text-white group-hover:translate-x-1 transition-all"></i>
+            </button>
+
+            <!-- Add Customer -->
+            <button 
+              type="button" 
+              onclick="openAddCustomerModal()"
+              class="w-full px-4 py-3 rounded-2xl bg-white hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA] hover:border-[#810B38] text-xs font-bold uppercase tracking-wider transition-all shadow-sm flex items-center justify-between group">
+              <span class="flex items-center gap-2.5">
+                <i class="fa-solid fa-user-plus text-[#810B38] group-hover:text-white text-sm"></i>
+                <span>Add Customer</span>
+              </span>
+              <i class="fa-solid fa-chevron-right text-[10px] text-[#735e5e] group-hover:text-white group-hover:translate-x-1 transition-all"></i>
+            </button>
+
+            <!-- Add Service -->
+            <button 
+              type="button" 
+              onclick="openAddServiceModal()"
+              class="w-full px-4 py-3 rounded-2xl bg-white hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA] hover:border-[#810B38] text-xs font-bold uppercase tracking-wider transition-all shadow-sm flex items-center justify-between group">
+              <span class="flex items-center gap-2.5">
+                <i class="fa-solid fa-wand-magic-sparkles text-[#810B38] group-hover:text-white text-sm"></i>
+                <span>Add Service</span>
+              </span>
+              <i class="fa-solid fa-chevron-right text-[10px] text-[#735e5e] group-hover:text-white group-hover:translate-x-1 transition-all"></i>
+            </button>
+
+            <!-- Add Staff -->
+            <button 
+              type="button" 
+              onclick="openAddStaffModal()"
+              class="w-full px-4 py-3 rounded-2xl bg-white hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA] hover:border-[#810B38] text-xs font-bold uppercase tracking-wider transition-all shadow-sm flex items-center justify-between group">
+              <span class="flex items-center gap-2.5">
+                <i class="fa-solid fa-id-badge text-[#810B38] group-hover:text-white text-sm"></i>
+                <span>Add Staff</span>
+              </span>
+              <i class="fa-solid fa-chevron-right text-[10px] text-[#735e5e] group-hover:text-white group-hover:translate-x-1 transition-all"></i>
+            </button>
+
+            <!-- View Reports -->
+            <a 
+              href="reports.html"
+              class="w-full px-4 py-3 rounded-2xl bg-[#541A1A] hover:bg-[#810B38] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md flex items-center justify-between group mt-2">
+              <span class="flex items-center gap-2.5">
+                <i class="fa-solid fa-chart-pie text-[#DCC3AA] text-sm"></i>
+                <span>View Reports</span>
+              </span>
+              <i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition-all"></i>
+            </a>
+
+          </div>
+        </section>
+
+        <!-- ================= 5. APPOINTMENT STATUS ================= -->
+        <section class="bg-white p-6 sm:p-7 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-5">
+          <div class="border-b border-[#F1E2D1] pb-3">
+            <h3 class="font-serif text-xl font-bold text-[#541A1A]">Appointment Status</h3>
+            <p class="text-[11px] text-[#735e5e] mt-0.5">Real-time status breakdown for 22 total records</p>
+          </div>
+
+          <!-- Multi-segment Progress Bar -->
+          <div class="space-y-1.5">
+            <div class="h-3 w-full rounded-full bg-[#FAF6F0] overflow-hidden flex border border-[#E8D9CA]">
+              <div style="width: 32%;" class="bg-emerald-500" title="Confirmed: 7"></div>
+              <div style="width: 23%;" class="bg-amber-500" title="Pending: 5"></div>
+              <div style="width: 36%;" class="bg-blue-500" title="Completed: 8"></div>
+              <div style="width: 9%;" class="bg-rose-500" title="Cancelled: 2"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-[#735e5e]">
+              <span>7 Confirmed (32%)</span>
+              <span>8 Completed (36%)</span>
+            </div>
+          </div>
+
+          <!-- Status Chips List -->
+          <div class="space-y-2.5 text-xs">
+            
+            <!-- Confirmed: 7 -->
+            <div class="p-3 rounded-2xl bg-emerald-50/60 border border-emerald-200 flex items-center justify-between">
+              <span class="flex items-center gap-2 font-bold text-emerald-900">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                <span>Confirmed</span>
+              </span>
+              <span class="font-serif text-lg font-extrabold text-emerald-800">7</span>
+            </div>
+
+            <!-- Pending: 5 -->
+            <div class="p-3 rounded-2xl bg-amber-50/60 border border-amber-200 flex items-center justify-between">
+              <span class="flex items-center gap-2 font-bold text-amber-900">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                <span>Pending</span>
+              </span>
+              <span class="font-serif text-lg font-extrabold text-amber-800">5</span>
+            </div>
+
+            <!-- Completed: 8 -->
+            <div class="p-3 rounded-2xl bg-blue-50/60 border border-blue-200 flex items-center justify-between">
+              <span class="flex items-center gap-2 font-bold text-blue-900">
+                <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                <span>Completed</span>
+              </span>
+              <span class="font-serif text-lg font-extrabold text-blue-800">8</span>
+            </div>
+
+            <!-- Cancelled: 2 -->
+            <div class="p-3 rounded-2xl bg-rose-50/60 border border-rose-200 flex items-center justify-between">
+              <span class="flex items-center gap-2 font-bold text-rose-900">
+                <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+                <span>Cancelled</span>
+              </span>
+              <span class="font-serif text-lg font-extrabold text-rose-800">2</span>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- ================= 6. POPULAR SERVICES ================= -->
+        <section class="bg-white p-6 sm:p-7 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-4">
+          <div class="border-b border-[#F1E2D1] pb-3">
+            <h3 class="font-serif text-xl font-bold text-[#541A1A]">Popular Services</h3>
+            <p class="text-[11px] text-[#735e5e] mt-0.5">Top-performing salon treatments this month</p>
+          </div>
+
+          <div class="space-y-3">
+            
+            <!-- 1. Haircut — 42 bookings -->
+            <div class="p-3 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-[#541A1A] flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-md bg-[#810B38] text-white flex items-center justify-center text-[10px]">1</span>
+                  <i class="fa-solid fa-scissors text-[#810B38]"></i>
+                  <span>Haircut</span>
+                </span>
+                <span class="font-extrabold text-[#810B38]">42 bookings</span>
+              </div>
+              <div class="h-2 w-full rounded-full bg-white overflow-hidden">
+                <div style="width: 100%;" class="h-full bg-[#810B38] rounded-full"></div>
+              </div>
+            </div>
+
+            <!-- 2. Hair Color — 31 bookings -->
+            <div class="p-3 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-[#541A1A] flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-md bg-[#541A1A] text-white flex items-center justify-center text-[10px]">2</span>
+                  <i class="fa-solid fa-palette text-[#810B38]"></i>
+                  <span>Hair Color</span>
+                </span>
+                <span class="font-extrabold text-[#810B38]">31 bookings</span>
+              </div>
+              <div class="h-2 w-full rounded-full bg-white overflow-hidden">
+                <div style="width: 74%;" class="h-full bg-[#810B38] rounded-full"></div>
+              </div>
+            </div>
+
+            <!-- 3. Hair Treatment — 26 bookings -->
+            <div class="p-3 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-[#541A1A] flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-md bg-[#541A1A] text-white flex items-center justify-center text-[10px]">3</span>
+                  <i class="fa-solid fa-spa text-[#810B38]"></i>
+                  <span>Hair Treatment</span>
+                </span>
+                <span class="font-extrabold text-[#810B38]">26 bookings</span>
+              </div>
+              <div class="h-2 w-full rounded-full bg-white overflow-hidden">
+                <div style="width: 62%;" class="h-full bg-[#810B38] rounded-full"></div>
+              </div>
+            </div>
+
+            <!-- 4. Manicure — 21 bookings -->
+            <div class="p-3 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-[#541A1A] flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-md bg-[#DCC3AA] text-[#541A1A] flex items-center justify-center text-[10px] font-extrabold">4</span>
+                  <i class="fa-solid fa-hand-sparkles text-[#810B38]"></i>
+                  <span>Manicure</span>
+                </span>
+                <span class="font-extrabold text-[#810B38]">21 bookings</span>
+              </div>
+              <div class="h-2 w-full rounded-full bg-white overflow-hidden">
+                <div style="width: 50%;" class="h-full bg-[#810B38] rounded-full"></div>
+              </div>
+            </div>
+
+            <!-- 5. Pedicure — 18 bookings -->
+            <div class="p-3 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] space-y-1.5">
+              <div class="flex items-center justify-between text-xs">
+                <span class="font-bold text-[#541A1A] flex items-center gap-2">
+                  <span class="w-5 h-5 rounded-md bg-[#DCC3AA] text-[#541A1A] flex items-center justify-center text-[10px] font-extrabold">5</span>
+                  <i class="fa-solid fa-socks text-[#810B38]"></i>
+                  <span>Pedicure</span>
+                </span>
+                <span class="font-extrabold text-[#810B38]">18 bookings</span>
+              </div>
+              <div class="h-2 w-full rounded-full bg-white overflow-hidden">
+                <div style="width: 43%;" class="h-full bg-[#810B38] rounded-full"></div>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ================= MODAL: QUICK ADD APPOINTMENT ================= -->
+  <dialog id="addAppointmentModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d] max-w-lg w-full overscroll-contain">
+    <form onsubmit="handleCreateAppointment(event)" class="p-6 sm:p-7 space-y-4">
+      <div class="flex items-center justify-between border-b border-[#F1E2D1] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm border border-[#DCC3AA]">
+            <i class="fa-solid fa-calendar-plus"></i>
+          </div>
+          <div>
+            <h4 class="font-serif text-xl font-bold text-[#541A1A]">Create New Appointment</h4>
+            <span class="text-[11px] text-[#735e5e] block">Schedule client treatment with assigned staff</span>
+          </div>
+        </div>
+        <button type="button" onclick="closeAddAppointmentModal()" class="w-7 h-7 rounded-full bg-[#FAF6F0] text-[#735e5e] hover:text-[#541A1A] flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-left">
+        <div>
+          <label for="quickApptCustomer" class="block font-bold text-[#541A1A] mb-1">Customer Name *</label>
+          <input type="text" id="quickApptCustomer" required placeholder="e.g. Maria Santos"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs focus:outline-none focus:border-[#810B38] focus:bg-white">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="quickApptService" class="block font-bold text-[#541A1A] mb-1">Service *</label>
+            <select id="quickApptService" required class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs focus:outline-none focus:border-[#810B38]">
+              <option value="Haircut">Haircut (₱149)</option>
+              <option value="Hair Color">Hair Color (₱699)</option>
+              <option value="Brazilian Blowout">Brazilian Treatment (₱1,999)</option>
+              <option value="Manicure">Manicure (₱149)</option>
+              <option value="Pedicure">Pedicure (₱149)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="quickApptStaff" class="block font-bold text-[#541A1A] mb-1">Assign Staff *</label>
+            <select id="quickApptStaff" required class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs focus:outline-none focus:border-[#810B38]">
+              <option value="Nely">Nely (Lead Stylist)</option>
+              <option value="Ana">Ana (Senior Colorist)</option>
+              <option value="Elena">Elena (Spa Specialist)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="quickApptDate" class="block font-bold text-[#541A1A] mb-1">Date *</label>
+            <input type="date" id="quickApptDate" required class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs focus:outline-none focus:border-[#810B38]">
+          </div>
+
+          <div>
+            <label for="quickApptTime" class="block font-bold text-[#541A1A] mb-1">Time Slot *</label>
+            <select id="quickApptTime" required class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs focus:outline-none focus:border-[#810B38]">
+              <option value="09:00 AM">09:00 AM</option>
+              <option value="10:30 AM">10:30 AM</option>
+              <option value="01:00 PM">01:00 PM</option>
+              <option value="03:00 PM">03:00 PM</option>
+              <option value="05:00 PM">05:00 PM</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 pt-2">
+        <button type="button" onclick="closeAddAppointmentModal()" class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
+          Cancel
+        </button>
+        <button type="submit" class="flex-1 py-2.5 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold transition-colors shadow-md">
+          Save Appointment
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ================= MODAL: QUICK ADD CUSTOMER ================= -->
+  <dialog id="addCustomerModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d] max-w-md w-full overscroll-contain">
+    <form onsubmit="handleCreateCustomer(event)" class="p-6 sm:p-7 space-y-4">
+      <div class="flex items-center justify-between border-b border-[#F1E2D1] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm border border-[#DCC3AA]">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <h4 class="font-serif text-xl font-bold text-[#541A1A]">Add New Customer</h4>
+        </div>
+        <button type="button" onclick="closeAddCustomerModal()" class="w-7 h-7 rounded-full bg-[#FAF6F0] text-[#735e5e] hover:text-[#541A1A] flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-left">
+        <div>
+          <label for="quickCustName" class="block font-bold text-[#541A1A] mb-1">Full Name *</label>
+          <input type="text" id="quickCustName" required placeholder="e.g. Maria Santos" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+        </div>
+        <div>
+          <label for="quickCustPhone" class="block font-bold text-[#541A1A] mb-1">Mobile Number *</label>
+          <input type="tel" id="quickCustPhone" required placeholder="09XX XXX XXXX" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+        </div>
+        <div>
+          <label for="quickCustAddress" class="block font-bold text-[#541A1A] mb-1">Address / Lagro Area</label>
+          <input type="text" id="quickCustAddress" placeholder="e.g. Ascension Rd, Lagro, QC" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 pt-2">
+        <button type="button" onclick="closeAddCustomerModal()" class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
+          Cancel
+        </button>
+        <button type="submit" class="flex-1 py-2.5 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold transition-colors shadow-md">
+          Save Customer
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ================= MODAL: QUICK ADD SERVICE ================= -->
+  <dialog id="addServiceModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d] max-w-md w-full overscroll-contain">
+    <form onsubmit="handleCreateService(event)" class="p-6 sm:p-7 space-y-4">
+      <div class="flex items-center justify-between border-b border-[#F1E2D1] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm border border-[#DCC3AA]">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <h4 class="font-serif text-xl font-bold text-[#541A1A]">Add Salon Service</h4>
+        </div>
+        <button type="button" onclick="closeAddServiceModal()" class="w-7 h-7 rounded-full bg-[#FAF6F0] text-[#735e5e] hover:text-[#541A1A] flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-left">
+        <div>
+          <label for="quickServiceName" class="block font-bold text-[#541A1A] mb-1">Service Title *</label>
+          <input type="text" id="quickServiceName" required placeholder="e.g. Keratine Treatment" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+        </div>
+        <div>
+          <label for="quickServiceCategory" class="block font-bold text-[#541A1A] mb-1">Category *</label>
+          <select id="quickServiceCategory" required class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+            <option value="Hair">Hair Services</option>
+            <option value="Nails">Nails</option>
+            <option value="Foot Care">Foot Care</option>
+          </select>
+        </div>
+        <div>
+          <label for="quickServicePrice" class="block font-bold text-[#541A1A] mb-1">Price (₱) *</label>
+          <input type="number" id="quickServicePrice" required placeholder="e.g. 499" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 pt-2">
+        <button type="button" onclick="closeAddServiceModal()" class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
+          Cancel
+        </button>
+        <button type="submit" class="flex-1 py-2.5 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold transition-colors shadow-md">
+          Save Service
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ================= MODAL: QUICK ADD STAFF ================= -->
+  <dialog id="addStaffModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d] max-w-md w-full overscroll-contain">
+    <form onsubmit="handleCreateStaff(event)" class="p-6 sm:p-7 space-y-4">
+      <div class="flex items-center justify-between border-b border-[#F1E2D1] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm border border-[#DCC3AA]">
+            <i class="fa-solid fa-id-badge"></i>
+          </div>
+          <h4 class="font-serif text-xl font-bold text-[#541A1A]">Add Salon Staff</h4>
+        </div>
+        <button type="button" onclick="closeAddStaffModal()" class="w-7 h-7 rounded-full bg-[#FAF6F0] text-[#735e5e] hover:text-[#541A1A] flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-left">
+        <div>
+          <label for="quickStaffName" class="block font-bold text-[#541A1A] mb-1">Staff Full Name *</label>
+          <input type="text" id="quickStaffName" required placeholder="e.g. Elena Ramos" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+        </div>
+        <div>
+          <label for="quickStaffRole" class="block font-bold text-[#541A1A] mb-1">Specialty / Role *</label>
+          <select id="quickStaffRole" required class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+            <option value="Lead Stylist">Lead Stylist</option>
+            <option value="Senior Colorist">Senior Colorist</option>
+            <option value="Spa Specialist">Spa Specialist</option>
+            <option value="Nail Technician">Nail Technician</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 pt-2">
+        <button type="button" onclick="closeAddStaffModal()" class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
+          Cancel
+        </button>
+        <button type="submit" class="flex-1 py-2.5 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold transition-colors shadow-md">
+          Save Staff
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ================= MODAL: ADMIN NOTIFICATIONS ================= -->
+  <dialog id="adminNotificationsModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d] max-w-md w-full overscroll-contain">
+    <div class="p-6 sm:p-7 space-y-4">
+      <div class="flex items-center justify-between border-b border-[#F1E2D1] pb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-bell text-[#810B38]"></i>
+          <h4 class="font-serif text-xl font-bold text-[#541A1A]">Admin Notifications</h4>
+        </div>
+        <button type="button" onclick="closeNotificationsModal()" class="w-7 h-7 rounded-full bg-[#FAF6F0] text-[#735e5e] hover:text-[#541A1A] flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 max-h-80 overflow-y-auto">
+        <div class="p-3.5 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA] flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg bg-[#810B38] text-white flex items-center justify-center text-xs shrink-0">
+            <i class="fa-solid fa-calendar-plus"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex justify-between">
+              <span class="text-xs font-bold text-[#541A1A]">New Booking Request</span>
+              <span class="text-[10px] text-[#735e5e]">5m ago</span>
+            </div>
+            <p class="text-xs text-[#2b1d1d] mt-1">
+              Jamie Reyes requested Manicure for 1:00 PM today.
+            </p>
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-white border border-[#E8D9CA] flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-xs shrink-0">
+            <i class="fa-solid fa-credit-card"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex justify-between">
+              <span class="text-xs font-bold text-[#541A1A]">GCash Payment Received</span>
+              <span class="text-[10px] text-[#735e5e]">45m ago</span>
+            </div>
+            <p class="text-xs text-[#2b1d1d] mt-1">
+              ₱1,999 received for Brazilian Treatment (Maria Santos).
+            </p>
+          </div>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-white border border-[#E8D9CA] flex items-start gap-3">
+          <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center text-xs shrink-0">
+            <i class="fa-solid fa-box"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <div class="flex justify-between">
+              <span class="text-xs font-bold text-[#541A1A]">Inventory Alert</span>
+              <span class="text-[10px] text-[#735e5e]">2h ago</span>
+            </div>
+            <p class="text-xs text-[#2b1d1d] mt-1">
+              Brazilian Keratin formula is down to 3 bottles.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button type="button" onclick="closeNotificationsModal()"
+          class="w-full py-2.5 rounded-xl bg-[#541A1A] text-white text-xs font-bold hover:bg-[#810B38] transition-colors">
+          Close Notifications
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ================= MODAL: LOGOUT CONFIRMATION ================= -->
+  <dialog id="logoutModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d] max-w-sm w-full overscroll-contain">
+    <div class="p-6 sm:p-7 space-y-5 text-center">
+      <div class="w-12 h-12 rounded-2xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl border border-[#DCC3AA] mx-auto">
+        <i class="fa-solid fa-door-open"></i>
+      </div>
+
+      <div class="space-y-1">
+        <h4 class="font-serif text-2xl font-bold text-[#541A1A]">Log out of Admin?</h4>
+        <p class="text-xs text-[#735e5e]">You will need your staff credentials to sign back into Nely's Salon Management.</p>
+      </div>
+
+      <div class="flex items-center gap-3 pt-2">
+        <button 
+          type="button" 
+          onclick="closeLogoutModal()" 
+          class="flex-1 py-3 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="confirmLogout()" 
+          class="flex-1 py-3 rounded-xl bg-[#541A1A] hover:bg-[#810B38] text-white text-xs font-bold transition-colors shadow-md">
+          Logout
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ================= TOAST CONTAINER ================= -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- Page JavaScript -->
+  <script src="../assets/js/pages/admin/dashboard.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications — Nely’s Salon | Admin Management</title>
+  <meta name="description"
+    content="Stay updated with appointments, customer activity, payments, and salon system alerts at Nely's Salon.">
+
+  <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Font Awesome 6 (Free Icons - Zero Emoji Rule) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
+  <link rel="stylesheet" href="../assets/css/output.css">
+</head>
+
+<body
+  class="min-h-screen bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
+
+  <!-- ================= MOBILE TOP NAVIGATION BAR (< lg) ================= -->
+  <header
+    class="lg:hidden sticky top-0 z-40 bg-[#541A1A] text-[#F1E2D1] border-b border-[#810B38]/40 px-4 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <button 
+        type="button" 
+        id="mobileMenuBtn" 
+        onclick="toggleMobileSidebar()" 
+        aria-label="Open navigation menu"
+        class="w-10 h-10 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors focus:outline-none focus:ring-2 focus:ring-[#DCC3AA]">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2.5">
+        <img 
+          src="../assets/images/logo.jfif" 
+          alt="Nely's Salon Logo"
+          class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover">
+        <div>
+          <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
+            Nely’s Salon
+          </span>
+          <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
+            Admin Panel
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Action Buttons -->
+    <div class="flex items-center gap-2">
+      <button 
+        type="button"
+        onclick="markAllAsRead()"
+        aria-label="Mark all as read"
+        class="px-2.5 py-1.5 rounded-xl bg-[#810B38] text-white text-[11px] font-semibold flex items-center gap-1.5 hover:bg-[#62082b] transition-colors shadow-sm">
+        <i class="fa-solid fa-check text-xs"></i>
+        <span class="hidden sm:inline">Mark All</span>
+      </button>
+      <div class="w-9 h-9 rounded-xl bg-[#541A1A] text-[#DCC3AA] border border-[#DCC3AA]/50 flex items-center justify-center font-bold text-xs">
+        AD
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MOBILE SIDEBAR BACKDROP & DRAWER ================= -->
+  <div 
+    id="mobileSidebarBackdrop" 
+    onclick="toggleMobileSidebar(false)"
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden">
+  </div>
+
+                <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+  <aside 
+    id="sidebar"
+    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
+
+    <!-- Sidebar Header (Branding) -->
+    <div class="p-6 border-b border-[#810B38]/40">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <img 
+            src="../assets/images/logo.jfif" 
+            alt="Nely's Salon Logo"
+            class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
+          <div>
+            <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
+              Nely’s Salon
+            </h1>
+            <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
+              Admin Panel
+            </p>
+          </div>
+        </div>
+
+        <!-- Mobile Close Button -->
+        <button 
+          type="button" 
+          onclick="toggleMobileSidebar(false)"
+          class="lg:hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
+          aria-label="Close menu">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Salon Motto -->
+      <div class="pt-3 border-t border-white/10 flex items-center gap-2">
+        <i class="fa-solid fa-sparkles text-[#DCC3AA] text-xs"></i>
+        <span class="font-serif italic text-xs text-[#DCC3AA] tracking-wide">
+          “Your Beauty is Our Duty”
+        </span>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation Menu (10 Items) -->
+    <nav class="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
+      <!-- Dashboard -->
+      <a href="dashboard.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <!-- Appointments -->
+      <a href="appointments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Appointments</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">12</span>
+      </a>
+
+      <!-- Customers -->
+      <a href="customers.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Customers</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">248</span>
+      </a>
+
+      <!-- Services -->
+      <a href="services.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Services</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">13</span>
+      </a>
+
+      <!-- Staff -->
+      <a href="staff.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Staff</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">5</span>
+      </a>
+
+      <!-- Payments -->
+      <a href="payments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-credit-card w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Payments</span>
+      </a>
+
+      <!-- Reports -->
+      <a href="reports.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-chart-line w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Reports</span>
+      </a>
+
+      <!-- Notifications (Active) -->
+      <a href="notifications.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
+        <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA]"></i>
+        <span>Notifications</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">6</span>
+      </a>
+
+      <!-- Messages -->
+      <a href="messages.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Messages</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">2</span>
+      </a>
+
+      <!-- Settings -->
+      <a href="settings.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-gear w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer / Logout -->
+    <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
+      <button 
+        type="button" 
+        onclick="openLogoutModal()" 
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+        <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
+        <span>Log Out</span>
+      </button>
+
+      <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
+        15 Years of Beauty Heritage · Lagro, QC
+      </p>
+    </div>
+
+  </aside>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8 max-w-7xl mx-auto w-full">
+
+    <!-- ================= 1. PAGE HEADER ================= -->
+    <section class="bg-gradient-to-r from-[#FAF6F0] via-white to-[#FDFBF7] p-6 sm:p-8 rounded-3xl border border-[#DCC3AA]/70 shadow-sm relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+      
+      <!-- Left: Title & Description -->
+      <div class="space-y-1.5 relative z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810B38]/10 text-[#810B38] text-xs font-bold uppercase tracking-wider">
+          <i class="fa-solid fa-bell text-[#810B38]"></i>
+          <span>Activity Center & Alerts</span>
+        </div>
+
+        <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#541A1A] leading-tight">
+          Notifications
+        </h2>
+
+        <p class="text-sm sm:text-base text-[#735e5e] max-w-xl font-normal leading-relaxed">
+          Stay updated with appointments, customer activity, payments, and salon system alerts.
+        </p>
+      </div>
+
+      <!-- Right: Action Buttons -->
+      <div class="flex flex-wrap items-center gap-3 shrink-0 relative z-20">
+        <button 
+          type="button" 
+          onclick="markAllAsRead()"
+          class="px-5 py-3 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md shadow-[#810B38]/20 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2.5">
+          <i class="fa-solid fa-check text-xs"></i>
+          <span>Mark All as Read</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ================= 2. NOTIFICATION SUMMARY CARDS ================= -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" aria-labelledby="notif-summary-heading">
+      <h2 id="notif-summary-heading" class="sr-only">Notifications Summary Statistics</h2>
+      
+      <!-- Card 1: Total Notifications -->
+      <article class="bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Total Notifications</span>
+          <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/40 flex items-center justify-center text-[#810B38] group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-bell text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statTotalNotifs" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">24</h3>
+          <span class="text-xs font-bold text-stone-400">Total logs</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-list-check text-[#810B38] text-[10px]"></i>
+          <span>All recorded logs & events</span>
+        </p>
+      </article>
+
+      <!-- Card 2: Unread -->
+      <article class="bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Unread</span>
+          <div class="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-circle-dot text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statUnreadNotifs" class="font-serif text-3xl sm:text-4xl font-bold text-blue-700">6</h3>
+          <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-envelope-open-text text-blue-600 text-[10px]"></i>
+          <span class="text-blue-600 font-semibold">Requires admin attention</span>
+        </p>
+      </article>
+
+      <!-- Card 3: Appointment Updates -->
+      <article class="bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Appointment Updates</span>
+          <div class="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-calendar-day text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statApptNotifs" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">12</h3>
+          <span class="text-xs font-bold text-stone-400">Schedule</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-regular fa-calendar-check text-stone-400 text-[10px]"></i>
+          <span>Bookings, reschedules & cancels</span>
+        </p>
+      </article>
+
+      <!-- Card 4: Payment Updates -->
+      <article class="bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Payment Updates</span>
+          <div class="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-money-bill-wave text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statPaymentNotifs" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">6</h3>
+          <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Billing</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-peso-sign text-emerald-600 text-[10px]"></i>
+          <span class="text-emerald-700 font-semibold">Cash & GCash logs</span>
+        </p>
+      </article>
+
+    </section>
+
+      <!-- ================= 4. NOTIFICATION FILTERS & TIMELINE ================= -->
+      <section class="bg-white rounded-3xl border border-[#DCC3AA]/60 p-6 lg:p-8 shadow-xs space-y-6">
+        
+        <!-- Filter Header & Fixed Tabs -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[#FAF6F0]">
+          
+          <div>
+            <h2 class="font-serif text-lg font-bold text-[#541A1A]">Activity Feed</h2>
+            <p class="text-xs text-stone-400" id="notificationsResultCount">Showing 24 notifications</p>
+          </div>
+
+          <!-- Fixed Tabs: All, Appointments, Payments, Customers, System -->
+          <div class="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0" id="notifFilterTabs">
+            <button 
+              type="button" 
+              id="tab-notif-all"
+              onclick="setNotificationFilter('all')"
+              class="px-4 py-2 rounded-xl text-xs font-bold bg-[#810B38] text-white shadow-sm transition-colors duration-150 shrink-0">
+              All
+            </button>
+            <button 
+              type="button" 
+              id="tab-notif-appointments"
+              onclick="setNotificationFilter('appointments')"
+              class="px-4 py-2 rounded-xl text-xs font-semibold bg-[#FAF6F0] hover:bg-[#DCC3AA]/40 text-stone-700 transition-colors duration-150 shrink-0">
+              Appointments
+            </button>
+            <button 
+              type="button" 
+              id="tab-notif-payments"
+              onclick="setNotificationFilter('payments')"
+              class="px-4 py-2 rounded-xl text-xs font-semibold bg-[#FAF6F0] hover:bg-[#DCC3AA]/40 text-stone-700 transition-colors duration-150 shrink-0">
+              Payments
+            </button>
+            <button 
+              type="button" 
+              id="tab-notif-customers"
+              onclick="setNotificationFilter('customers')"
+              class="px-4 py-2 rounded-xl text-xs font-semibold bg-[#FAF6F0] hover:bg-[#DCC3AA]/40 text-stone-700 transition-colors duration-150 shrink-0">
+              Customers
+            </button>
+            <button 
+              type="button" 
+              id="tab-notif-system"
+              onclick="setNotificationFilter('system')"
+              class="px-4 py-2 rounded-xl text-xs font-semibold bg-[#FAF6F0] hover:bg-[#DCC3AA]/40 text-stone-700 transition-colors duration-150 shrink-0">
+              System
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Notification List Container -->
+        <div id="notificationsListContainer" class="space-y-3">
+          <!-- Populated dynamically via notifications.js -->
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="notificationsEmptyState" class="hidden text-center py-16 px-4 bg-[#FAF6F0]/40 rounded-2xl border border-dashed border-[#DCC3AA]">
+          <div class="w-16 h-16 rounded-full bg-white border border-[#DCC3AA] text-stone-400 flex items-center justify-center mx-auto mb-4 text-2xl shadow-xs">
+            <i class="fa-solid fa-bell-slash"></i>
+          </div>
+          <h3 class="font-serif text-lg font-bold text-[#541A1A]">No Notifications Found</h3>
+          <p class="text-xs text-stone-500 max-w-sm mx-auto mt-1 leading-relaxed">
+            There are no notifications in this category. New customer bookings, status updates, or payment alerts will appear here in real time.
+          </p>
+          <button 
+            type="button" 
+            onclick="setNotificationFilter('all')" 
+            class="mt-4 px-4 py-2 bg-[#810B38] text-white rounded-xl text-xs font-semibold hover:bg-[#62082b] transition-colors">
+            View All Notifications
+          </button>
+        </div>
+
+      </section>
+
+      <!-- ================= 6. NOTIFICATION SETTINGS / PREFERENCES ================= -->
+      <section class="bg-white rounded-3xl border border-[#DCC3AA]/60 p-6 lg:p-8 shadow-xs">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#FAF6F0]">
+          <div>
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm border border-[#DCC3AA]/50">
+                <i class="fa-solid fa-sliders"></i>
+              </div>
+              <h2 class="font-serif text-xl font-bold text-[#541A1A]">Notification Preferences</h2>
+            </div>
+            <p class="text-xs text-stone-500 mt-1">
+              The salon administrator can turn notifications on/off based on operational preference.
+            </p>
+          </div>
+
+          <button 
+            type="button" 
+            onclick="saveNotificationPreferences(event)"
+            class="px-5 py-2.5 rounded-xl bg-[#541A1A] hover:bg-[#810B38] text-white font-semibold text-xs transition-colors flex items-center gap-2 self-start sm:self-center shadow-sm">
+            <i class="fa-solid fa-floppy-disk text-xs"></i>
+            <span>Save Preferences</span>
+          </button>
+        </div>
+
+        <form onsubmit="saveNotificationPreferences(event)" class="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          
+          <!-- Appointment Notifications Group -->
+          <div class="bg-[#FAF6F0]/60 rounded-2xl p-5 border border-[#DCC3AA]/40 space-y-4">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-calendar-check text-[#810B38] text-sm"></i>
+              <h3 class="font-serif font-bold text-sm text-[#541A1A]">Appointment Notifications</h3>
+            </div>
+
+            <div class="space-y-3 pt-2">
+              <label class="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  id="prefNewBooking" 
+                  class="w-4 h-4 text-[#810B38] rounded border-stone-300 focus:ring-[#810B38] focus:ring-offset-0 transition-colors accent-[#810B38]">
+                <span class="text-xs text-stone-700 font-medium group-hover:text-[#810B38] transition-colors">
+                  New booking
+                </span>
+              </label>
+
+              <label class="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  id="prefApptConfirmation" 
+                  class="w-4 h-4 text-[#810B38] rounded border-stone-300 focus:ring-[#810B38] focus:ring-offset-0 transition-colors accent-[#810B38]">
+                <span class="text-xs text-stone-700 font-medium group-hover:text-[#810B38] transition-colors">
+                  Appointment confirmation
+                </span>
+              </label>
+
+              <label class="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  id="prefApptCancellation" 
+                  class="w-4 h-4 text-[#810B38] rounded border-stone-300 focus:ring-[#810B38] focus:ring-offset-0 transition-colors accent-[#810B38]">
+                <span class="text-xs text-stone-700 font-medium group-hover:text-[#810B38] transition-colors">
+                  Appointment cancellation
+                </span>
+              </label>
+
+              <label class="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  id="prefApptRescheduling" 
+                  class="w-4 h-4 text-[#810B38] rounded border-stone-300 focus:ring-[#810B38] focus:ring-offset-0 transition-colors accent-[#810B38]">
+                <span class="text-xs text-stone-700 font-medium group-hover:text-[#810B38] transition-colors">
+                  Appointment rescheduling
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Payment Notifications Group -->
+          <div class="bg-[#FAF6F0]/60 rounded-2xl p-5 border border-[#DCC3AA]/40 space-y-4">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-credit-card text-emerald-700 text-sm"></i>
+              <h3 class="font-serif font-bold text-sm text-[#541A1A]">Payment Notifications</h3>
+            </div>
+
+            <div class="space-y-3 pt-2">
+              <label class="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  id="prefPaymentReceived" 
+                  class="w-4 h-4 text-[#810B38] rounded border-stone-300 focus:ring-[#810B38] focus:ring-offset-0 transition-colors accent-[#810B38]">
+                <span class="text-xs text-stone-700 font-medium group-hover:text-[#810B38] transition-colors">
+                  Payment received
+                </span>
+              </label>
+
+              <label class="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  id="prefPendingPayment" 
+                  class="w-4 h-4 text-[#810B38] rounded border-stone-300 focus:ring-[#810B38] focus:ring-offset-0 transition-colors accent-[#810B38]">
+                <span class="text-xs text-stone-700 font-medium group-hover:text-[#810B38] transition-colors">
+                  Pending payment
+                </span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Customer Notifications Group -->
+          <div class="bg-[#FAF6F0]/60 rounded-2xl p-5 border border-[#DCC3AA]/40 space-y-4">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-users text-indigo-700 text-sm"></i>
+              <h3 class="font-serif font-bold text-sm text-[#541A1A]">Customer Notifications</h3>
+            </div>
+
+            <div class="space-y-3 pt-2">
+              <label class="flex items-center gap-3 cursor-pointer group">
+                <input 
+                  type="checkbox" 
+                  id="prefNewCustomer" 
+                  class="w-4 h-4 text-[#810B38] rounded border-stone-300 focus:ring-[#810B38] focus:ring-offset-0 transition-colors accent-[#810B38]">
+                <span class="text-xs text-stone-700 font-medium group-hover:text-[#810B38] transition-colors">
+                  New customer registration
+                </span>
+              </label>
+            </div>
+          </div>
+
+        </form>
+
+      </section>
+
+  </main>
+
+  <!-- ================= 5. NOTIFICATION DETAILS MODAL ================= -->
+  <div 
+    id="notificationDetailsModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-md w-full shadow-2xl p-6 lg:p-8 space-y-6">
+      
+      <div class="flex items-start justify-between">
+        <div>
+          <span 
+            id="modalNotifCategory"
+            class="text-[10px] font-bold tracking-widest text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-md border border-[#DCC3AA]/60 uppercase">
+            NOTIFICATION
+          </span>
+          <h3 id="modalNotifTitle" class="font-serif text-lg font-bold text-[#541A1A] mt-2">
+            Notification Details
+          </h3>
+        </div>
+
+        <button 
+          type="button" 
+          onclick="closeNotificationModal()"
+          class="w-8 h-8 rounded-xl bg-stone-100 hover:bg-[#810B38] hover:text-white text-stone-500 transition-colors flex items-center justify-center text-xs">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="bg-[#FAF6F0] rounded-2xl p-4 border border-[#DCC3AA]/50 space-y-2">
+        <p id="modalNotifDetails" class="text-xs text-stone-700 leading-relaxed font-medium">
+          Details
+        </p>
+        <div class="pt-2 border-t border-[#DCC3AA]/30 flex items-center gap-2 text-[11px] text-stone-400 font-mono">
+          <i class="fa-regular fa-clock"></i>
+          <span id="modalNotifDate">Time</span>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button 
+          type="button" 
+          onclick="closeNotificationModal()"
+          class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors">
+          Close
+        </button>
+
+        <a 
+          id="modalNotifActionBtn"
+          href="#"
+          class="px-5 py-2 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-semibold transition-colors flex items-center gap-2 shadow-sm">
+          <i class="fa-solid fa-arrow-up-right-from-square"></i>
+          <span>View Related Page</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= LOGOUT CONFIRMATION MODAL ================= -->
+  <div 
+    id="logoutModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-sm w-full shadow-2xl p-6 text-center space-y-4">
+      <div class="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto text-xl shadow-xs">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </div>
+      <div>
+        <h3 class="font-serif text-lg font-bold text-[#541A1A]">Confirm Logout</h3>
+        <p class="text-xs text-stone-500 mt-1">Are you sure you want to end your administrative session?</p>
+      </div>
+      <div class="flex items-center justify-center gap-3 pt-2">
+        <button 
+          type="button" 
+          onclick="closeLogoutModal()"
+          class="w-full py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="handleConfirmLogout()"
+          class="w-full py-2.5 rounded-xl bg-[#810B38] hover:bg-rose-900 text-white text-xs font-semibold transition-colors shadow-sm">
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="adminToastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- Admin Notifications Controller Script -->
+  <script src="../assets/js/pages/admin/notifications.js"></script>
+</body>
+
+</html>

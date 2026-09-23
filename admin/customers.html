@@ -1,0 +1,1140 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Customers — Nely’s Salon | Admin Management</title>
+  <meta name="description"
+    content="Manage customer information, booking history, statistics, and salon profiles at Nely's Salon.">
+
+  <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Font Awesome 6 (Free Icons - Zero Emoji Rule) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
+  <link rel="stylesheet" href="../assets/css/output.css">
+</head>
+
+<body
+  class="min-h-screen bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
+
+  <!-- ================= MOBILE TOP NAVIGATION BAR (< lg) ================= -->
+  <header
+    class="lg:hidden sticky top-0 z-40 bg-[#541A1A] text-[#F1E2D1] border-b border-[#810B38]/40 px-4 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <button 
+        type="button" 
+        id="mobileMenuBtn" 
+        onclick="toggleMobileSidebar()" 
+        aria-label="Open navigation menu"
+        class="w-10 h-10 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors focus:outline-none focus:ring-2 focus:ring-[#DCC3AA]">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2.5">
+        <img 
+          src="../assets/images/logo.jfif" 
+          alt="Nely's Salon Logo"
+          class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover">
+        <div>
+          <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
+            Nely’s Salon
+          </span>
+          <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
+            Admin Panel
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Action Buttons -->
+    <div class="flex items-center gap-2">
+      <button 
+        type="button"
+        onclick="openAddCustomerModal()"
+        aria-label="Add customer"
+        class="w-9 h-9 rounded-xl bg-[#810B38] text-white flex items-center justify-center hover:bg-[#62082b] transition-colors shadow-sm">
+        <i class="fa-solid fa-user-plus text-xs"></i>
+      </button>
+      <div class="w-9 h-9 rounded-xl bg-[#541A1A] text-[#DCC3AA] border border-[#DCC3AA]/50 flex items-center justify-center font-bold text-xs">
+        AD
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MOBILE SIDEBAR BACKDROP & DRAWER ================= -->
+  <div 
+    id="mobileSidebarBackdrop" 
+    onclick="toggleMobileSidebar(false)"
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden">
+  </div>
+
+                <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+  <aside 
+    id="sidebar"
+    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
+
+    <!-- Sidebar Header (Branding) -->
+    <div class="p-6 border-b border-[#810B38]/40">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <img 
+            src="../assets/images/logo.jfif" 
+            alt="Nely's Salon Logo"
+            class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
+          <div>
+            <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
+              Nely’s Salon
+            </h1>
+            <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
+              Admin Panel
+            </p>
+          </div>
+        </div>
+
+        <!-- Mobile Close Button -->
+        <button 
+          type="button" 
+          onclick="toggleMobileSidebar(false)"
+          class="lg:hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
+          aria-label="Close menu">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Salon Motto -->
+      <div class="pt-3 border-t border-white/10 flex items-center gap-2">
+        <i class="fa-solid fa-sparkles text-[#DCC3AA] text-xs"></i>
+        <span class="font-serif italic text-xs text-[#DCC3AA] tracking-wide">
+          “Your Beauty is Our Duty”
+        </span>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation Menu (10 Items) -->
+    <nav class="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
+      <!-- Dashboard -->
+      <a href="dashboard.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <!-- Appointments -->
+      <a href="appointments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Appointments</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">12</span>
+      </a>
+
+      <!-- Customers (Active) -->
+      <a href="customers.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
+        <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA]"></i>
+        <span>Customers</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">248</span>
+      </a>
+
+      <!-- Services -->
+      <a href="services.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Services</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">13</span>
+      </a>
+
+      <!-- Staff -->
+      <a href="staff.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Staff</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">5</span>
+      </a>
+
+      <!-- Payments -->
+      <a href="payments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-credit-card w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Payments</span>
+      </a>
+
+      <!-- Reports -->
+      <a href="reports.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-chart-line w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Reports</span>
+      </a>
+
+      <!-- Notifications -->
+      <a href="notifications.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Notifications</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">6</span>
+      </a>
+
+      <!-- Messages -->
+      <a href="messages.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Messages</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">2</span>
+      </a>
+
+      <!-- Settings -->
+      <a href="settings.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-gear w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer / Logout -->
+    <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
+      <button 
+        type="button" 
+        onclick="openLogoutModal()" 
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+        <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
+        <span>Log Out</span>
+      </button>
+
+      <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
+        15 Years of Beauty Heritage · Lagro, QC
+      </p>
+    </div>
+
+  </aside>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8 max-w-7xl mx-auto w-full">
+
+    <!-- ================= 1. PAGE HEADER ================= -->
+    <section class="bg-gradient-to-r from-[#FAF6F0] via-white to-[#FDFBF7] p-6 sm:p-8 rounded-3xl border border-[#DCC3AA]/70 shadow-sm relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+      
+      <!-- Left: Title & Description -->
+      <div class="space-y-1.5 relative z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810B38]/10 text-[#810B38] text-xs font-bold uppercase tracking-wider">
+          <i class="fa-solid fa-users text-[#810B38]"></i>
+          <span>Client Records & Directory</span>
+        </div>
+
+        <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#541A1A] leading-tight">
+          Customers
+        </h2>
+
+        <p class="text-sm sm:text-base text-[#735e5e] max-w-xl font-normal leading-relaxed">
+          Manage customer information, appointments, and salon history.
+        </p>
+      </div>
+
+      <!-- Right: Action Buttons -->
+      <div class="flex flex-wrap items-center gap-3 shrink-0 relative z-20">
+        <button 
+          type="button" 
+          onclick="openAddCustomerModal()"
+          class="px-5 py-3 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md shadow-[#810B38]/20 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2.5">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>Add Customer</span>
+        </button>
+
+        <button 
+          type="button" 
+          onclick="document.getElementById('customerSearchInput').focus()"
+          class="px-4 py-3 rounded-xl bg-white hover:bg-[#FAF6F0] text-[#541A1A] border border-[#DCC3AA] text-xs sm:text-sm font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2">
+          <i class="fa-solid fa-magnifying-glass text-xs text-[#810B38]"></i>
+          <span>Search</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ================= 2. CUSTOMER SUMMARY CARDS (4 Cards) ================= -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" aria-labelledby="summary-cards-heading">
+      <h2 id="summary-cards-heading" class="sr-only">Customer Summary Statistics</h2>
+      
+      <!-- Card 1: Total Customers -->
+      <article onclick="filterBySummaryCard('all')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Total Customers</span>
+          <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/40 flex items-center justify-center text-[#810B38] group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-users text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statTotalCustomers" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">248</h3>
+          <span class="text-xs font-bold text-stone-400">All registered</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-check text-emerald-500 text-[10px]"></i>
+          <span>Active client profiles</span>
+        </p>
+      </article>
+
+      <!-- Card 2: New This Month -->
+      <article onclick="filterBySummaryCard('new_month')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">New This Month</span>
+          <div class="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-sparkles text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statNewThisMonth" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">18</h3>
+          <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">+7.8%</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-user-plus text-emerald-600 text-[10px]"></i>
+          <span>Recent registrations</span>
+        </p>
+      </article>
+
+      <!-- Card 3: Upcoming Bookings -->
+      <article onclick="filterBySummaryCard('upcoming')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">With Upcoming</span>
+          <div class="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-calendar-check text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statUpcoming" class="font-serif text-3xl sm:text-4xl font-bold text-blue-700">32</h3>
+          <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">Scheduled</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-regular fa-clock text-blue-500 text-[10px]"></i>
+          <span>Confirmed appointments</span>
+        </p>
+      </article>
+
+      <!-- Card 4: Returning Customers -->
+      <article onclick="filterBySummaryCard('returning')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Returning Patrons</span>
+          <div class="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-star text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statReturning" class="font-serif text-3xl sm:text-4xl font-bold text-amber-700">86</h3>
+          <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">34.6%</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-heart text-amber-500 text-[10px]"></i>
+          <span>Repeat salon clients</span>
+        </p>
+      </article>
+
+    </section>
+
+    <!-- ================= 3. SEARCH & FILTERS BAR ================= -->
+    <section aria-labelledby="filters-heading" class="bg-white p-5 sm:p-6 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-4">
+        <h2 id="filters-heading" class="sr-only">Search and Filter Customers</h2>
+
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          
+          <!-- Search Input -->
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+              <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </div>
+            <input 
+              type="text" 
+              id="customerSearchInput"
+              placeholder="Search customer name, contact, email, notes..." 
+              class="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38] focus:bg-white transition-all">
+          </div>
+
+          <!-- Filter Dropdowns & Sort -->
+          <div class="flex items-center flex-wrap gap-2.5">
+            
+            <!-- Status Filter -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="statusFilter" class="text-stone-500 font-medium">Status:</label>
+              <select 
+                id="statusFilter" 
+                class="bg-transparent text-stone-800 font-semibold focus:outline-none cursor-pointer">
+                <option value="all">All</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+            <!-- Gender Filter -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="genderFilter" class="text-stone-500 font-medium">Gender:</label>
+              <select 
+                id="genderFilter" 
+                class="bg-transparent text-stone-800 font-semibold focus:outline-none cursor-pointer">
+                <option value="all">All</option>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <!-- Date Joined Filter -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="dateFilter" class="text-stone-500 font-medium">Joined:</label>
+              <select 
+                id="dateFilter" 
+                class="bg-transparent text-stone-800 font-semibold focus:outline-none cursor-pointer">
+                <option value="all">All Time</option>
+                <option value="this_month">This Month</option>
+                <option value="last_3_months">Last 3 Months</option>
+                <option value="this_year">This Year</option>
+              </select>
+            </div>
+
+            <!-- Sort By Dropdown -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="sortSelect" class="text-stone-500 font-medium">Sort by:</label>
+              <select 
+                id="sortSelect" 
+                class="bg-transparent text-[#810B38] font-bold focus:outline-none cursor-pointer">
+                <option value="newest">Newest</option>
+                <option value="oldest">Oldest</option>
+                <option value="name_asc">Name A–Z</option>
+                <option value="most_appointments">Most Appointments</option>
+              </select>
+            </div>
+
+            <!-- Reset Filter Button -->
+            <button 
+              type="button" 
+              onclick="resetFilters()"
+              title="Reset all filters"
+              class="px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+              <i class="fa-solid fa-arrow-rotate-left text-[11px]"></i>
+              <span>Reset</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Result count tag -->
+        <div class="flex items-center justify-between text-xs text-stone-500 mt-3 pt-3 border-t border-stone-100">
+          <span id="customersResultCount">Showing 8 registered patrons</span>
+          <span class="text-[11px] text-stone-400">Click customer row or ⋮ menu to view full profile & salon history</span>
+        </div>
+      </section>
+
+      <!-- ================= 4. CUSTOMER TABLE ================= -->
+      <section aria-labelledby="customers-table-heading" class="bg-white rounded-2xl border border-[#DCC3AA]/60 shadow-xs overflow-hidden">
+        <h2 id="customers-table-heading" class="sr-only">Customers Directory Table</h2>
+
+        <div id="customersTableContainer" class="overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[700px]">
+            <thead>
+              <tr class="bg-[#FAF6F0] border-b border-[#DCC3AA]/60 text-stone-600 text-[11px] uppercase tracking-wider font-bold">
+                <th scope="col" class="px-5 py-3.5">Customer</th>
+                <th scope="col" class="px-5 py-3.5">Contact</th>
+                <th scope="col" class="px-5 py-3.5">Appointments</th>
+                <th scope="col" class="px-5 py-3.5">Last Visit</th>
+                <th scope="col" class="px-5 py-3.5">Status</th>
+                <th scope="col" class="px-5 py-3.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="customersTableBody" class="divide-y divide-stone-100">
+              <!-- Dynamically populated by customers.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="customersEmptyState" class="hidden p-12 text-center">
+          <div class="w-16 h-16 rounded-full bg-[#FAF6F0] border border-[#DCC3AA] text-[#810B38] flex items-center justify-center mx-auto mb-4 text-2xl">
+            <i class="fa-solid fa-user-slash"></i>
+          </div>
+          <h3 class="font-serif text-lg font-bold text-[#541A1A]">No Customers Found</h3>
+          <p class="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
+            No customer accounts match your search or filter criteria. Try adjusting the query or reset your filters.
+          </p>
+          <button 
+            type="button" 
+            onclick="resetFilters()"
+            class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#810B38] text-white text-xs font-semibold hover:bg-[#62082b] transition-colors">
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+            <span>Reset Filters</span>
+          </button>
+        </div>
+
+      </section>
+
+  </main>
+
+  <!-- ================= 5. CUSTOMER PROFILE MODAL ================= -->
+  <div 
+    id="customerProfileModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-3xl w-full overflow-hidden my-8 animate-fadeIn">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-[#541A1A] to-[#810B38] text-[#F1E2D1] p-6 flex items-start justify-between">
+        <div class="flex items-center gap-4">
+          <div 
+            id="profileModalAvatar" 
+            class="w-14 h-14 rounded-2xl bg-white/10 border-2 border-[#DCC3AA] text-[#F1E2D1] flex items-center justify-center font-serif text-xl font-bold shadow-md">
+            MS
+          </div>
+          <div>
+            <div class="flex items-center gap-2.5">
+              <h3 id="profileModalCustomerName" class="font-serif text-2xl font-bold text-white tracking-wide">
+                Maria Santos
+              </h3>
+              <div id="profileModalStatusBadge">
+                <!-- Status Badge -->
+              </div>
+            </div>
+            <div class="flex items-center gap-4 text-xs text-[#DCC3AA] mt-1.5 flex-wrap">
+              <span class="flex items-center gap-1.5">
+                <i class="fa-solid fa-phone text-[10px]"></i>
+                <span id="profileModalPhone">0917 888 9999</span>
+              </span>
+              <span class="flex items-center gap-1.5">
+                <i class="fa-solid fa-envelope text-[10px]"></i>
+                <a id="profileModalEmail" href="mailto:maria@email.com" class="hover:underline font-mono">maria@email.com</a>
+              </span>
+              <span class="flex items-center gap-1.5">
+                <i class="fa-solid fa-location-dot text-[10px]"></i>
+                <span id="profileModalAddress">Quezon City</span>
+              </span>
+              <span class="flex items-center gap-1.5 text-stone-300">
+                <i class="fa-regular fa-calendar text-[10px]"></i>
+                <span id="profileModalSince">Customer since: January 2026</span>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button 
+          type="button" 
+          onclick="closeCustomerProfileModal()"
+          class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
+          aria-label="Close modal">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        
+        <!-- Customer Statistics -->
+        <section aria-labelledby="modal-stats-heading">
+          <h4 id="modal-stats-heading" class="text-xs font-bold uppercase tracking-wider text-stone-500 mb-3 flex items-center gap-1.5">
+            <i class="fa-solid fa-chart-simple text-[#810B38]"></i>
+            <span>Customer Statistics</span>
+          </h4>
+          <div class="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            
+            <div class="p-3 bg-[#FAF6F0] rounded-xl border border-[#DCC3AA]/50 text-center">
+              <span class="text-[10px] text-stone-500 font-bold uppercase block">Total</span>
+              <span id="profileModalStatTotal" class="font-serif text-xl font-bold text-[#541A1A]">12</span>
+              <span class="text-[10px] text-stone-400 block mt-0.5">Appointments</span>
+            </div>
+
+            <div class="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/60 text-center">
+              <span class="text-[10px] text-emerald-700 font-bold uppercase block">Completed</span>
+              <span id="profileModalStatCompleted" class="font-serif text-xl font-bold text-emerald-800">10</span>
+              <span class="text-[10px] text-emerald-600 block mt-0.5">Sessions</span>
+            </div>
+
+            <div class="p-3 bg-rose-50/60 rounded-xl border border-rose-200/60 text-center">
+              <span class="text-[10px] text-rose-700 font-bold uppercase block">Cancelled</span>
+              <span id="profileModalStatCancelled" class="font-serif text-xl font-bold text-rose-800">1</span>
+              <span class="text-[10px] text-rose-600 block mt-0.5">Visits</span>
+            </div>
+
+            <div class="p-3 bg-amber-50/60 rounded-xl border border-amber-200/60 text-center">
+              <span class="text-[10px] text-amber-700 font-bold uppercase block">Pending</span>
+              <span id="profileModalStatPending" class="font-serif text-xl font-bold text-amber-800">1</span>
+              <span class="text-[10px] text-amber-600 block mt-0.5">Upcoming</span>
+            </div>
+
+            <div class="p-3 bg-[#FAF6F0] rounded-xl border border-[#DCC3AA]/50 text-center col-span-2 sm:col-span-1">
+              <span class="text-[10px] text-[#810B38] font-bold uppercase block">Total Spent</span>
+              <span id="profileModalStatSpent" class="font-serif text-xl font-bold text-[#810B38]">₱4,850</span>
+              <span class="text-[10px] text-stone-400 block mt-0.5">Revenue</span>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- Appointment History Section -->
+        <section id="profileModalHistorySection" aria-labelledby="modal-history-heading">
+          <div class="flex items-center justify-between mb-3">
+            <h4 id="modal-history-heading" class="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+              <i class="fa-solid fa-calendar-days text-[#810B38]"></i>
+              <span>Appointment History</span>
+            </h4>
+            <span class="text-[11px] text-stone-400 font-medium">Chronological record</span>
+          </div>
+
+          <div class="border border-[#DCC3AA]/60 rounded-xl overflow-hidden shadow-xs">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-[#FAF6F0] border-b border-[#DCC3AA]/60 text-stone-600 text-[10px] uppercase tracking-wider font-bold">
+                  <th scope="col" class="px-4 py-2.5">Date</th>
+                  <th scope="col" class="px-4 py-2.5">Service</th>
+                  <th scope="col" class="px-4 py-2.5">Staff</th>
+                  <th scope="col" class="px-4 py-2.5">Amount</th>
+                  <th scope="col" class="px-4 py-2.5">Status</th>
+                </tr>
+              </thead>
+              <tbody id="profileHistoryTableBody" class="divide-y divide-stone-100">
+                <!-- Injected by JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Customer Internal Notes -->
+        <section aria-labelledby="modal-notes-heading">
+          <div class="flex items-center justify-between mb-3">
+            <h4 id="modal-notes-heading" class="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+              <i class="fa-solid fa-note-sticky text-[#810B38]"></i>
+              <span>Internal Salon Notes</span>
+            </h4>
+            <button 
+              type="button" 
+              id="toggleAddNoteBtn"
+              onclick="toggleAddNoteInput(true)"
+              class="text-xs font-bold text-[#810B38] hover:text-[#541A1A] flex items-center gap-1">
+              <i class="fa-solid fa-plus text-[10px]"></i>
+              <span>Add Note</span>
+            </button>
+          </div>
+
+          <!-- Add Note Inline Form -->
+          <div id="addNoteInlineForm" class="hidden mb-4 p-3 bg-stone-50 rounded-xl border border-[#DCC3AA]/60 space-y-2">
+            <textarea 
+              id="newNoteInputText" 
+              rows="2" 
+              placeholder="e.g. Prefers afternoon appointments. Regular hair color customer..." 
+              class="w-full p-2.5 text-xs bg-white border border-[#DCC3AA]/80 rounded-lg text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-1 focus:ring-[#810B38]"></textarea>
+            <div class="flex justify-end gap-2">
+              <button 
+                type="button" 
+                onclick="toggleAddNoteInput(false)"
+                class="px-3 py-1.5 rounded-lg border border-stone-300 text-stone-600 text-xs font-medium hover:bg-stone-100">
+                Cancel
+              </button>
+              <button 
+                type="button" 
+                onclick="saveCustomerNote()"
+                class="px-3 py-1.5 rounded-lg bg-[#810B38] text-white text-xs font-semibold hover:bg-[#62082b]">
+                Save Note
+              </button>
+            </div>
+          </div>
+
+          <!-- Notes Container -->
+          <div id="profileNotesList" class="space-y-2">
+            <!-- Injected by JS -->
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-stone-50 border-t border-stone-200 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <button 
+            type="button"
+            onclick="openEditCustomerModal(activeCustomer ? activeCustomer.id : '')"
+            class="px-4 py-2 rounded-xl bg-white border border-[#DCC3AA] text-[#541A1A] hover:bg-[#FAF6F0] font-semibold text-xs transition-colors flex items-center gap-1.5">
+            <i class="fa-solid fa-pen-to-square text-[#810B38]"></i>
+            <span>Edit Customer</span>
+          </button>
+          <button 
+            type="button"
+            onclick="openBookForCustomerModal(activeCustomer ? activeCustomer.id : '')"
+            class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors flex items-center gap-1.5">
+            <i class="fa-solid fa-calendar-plus"></i>
+            <span>Book Appointment</span>
+          </button>
+        </div>
+
+        <button 
+          type="button" 
+          onclick="closeCustomerProfileModal()"
+          class="px-5 py-2 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold text-xs transition-colors">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= 6. ADD CUSTOMER MODAL ================= -->
+  <div 
+    id="addCustomerModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-lg w-full overflow-hidden my-8 animate-fadeIn">
+      
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-[#541A1A] to-[#810B38] text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm text-[#DCC3AA]">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <div>
+            <h3 class="font-serif text-lg font-bold tracking-wide">Add New Customer</h3>
+            <p class="text-[11px] text-[#DCC3AA]">Register a new client account at Nely’s Salon</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="closeAddCustomerModal()"
+          class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="addCustomerForm" onsubmit="handleSaveCustomer(event)" class="p-6 space-y-4">
+        
+        <!-- Personal Information Section -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500 pb-1 border-b border-stone-100 flex items-center gap-1.5">
+            <i class="fa-solid fa-id-card text-[#810B38]"></i>
+            <span>Personal Information</span>
+          </h4>
+
+          <div>
+            <label for="addCustName" class="block text-xs font-bold text-stone-700 mb-1">
+              Full Name <span class="text-rose-500">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="addCustName" 
+              required
+              placeholder="Enter customer name (e.g. Maria Santos)" 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="addCustPhone" class="block text-xs font-bold text-stone-700 mb-1">
+                Phone Number <span class="text-rose-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="addCustPhone" 
+                required
+                placeholder="09XX XXX XXXX" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            </div>
+
+            <div>
+              <label for="addCustEmail" class="block text-xs font-bold text-stone-700 mb-1">
+                Email Address
+              </label>
+              <input 
+                type="email" 
+                id="addCustEmail" 
+                placeholder="Enter email (e.g. client@email.com)" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="addCustDob" class="block text-xs font-bold text-stone-700 mb-1">
+                Date of Birth
+              </label>
+              <input 
+                type="date" 
+                id="addCustDob" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            </div>
+
+            <div>
+              <label for="addCustGender" class="block text-xs font-bold text-stone-700 mb-1">
+                Gender
+              </label>
+              <select 
+                id="addCustGender" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label for="addCustAddress" class="block text-xs font-bold text-stone-700 mb-1">
+              Address
+            </label>
+            <input 
+              type="text" 
+              id="addCustAddress" 
+              placeholder="Enter address (e.g. Lagro, Quezon City)" 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+          </div>
+        </div>
+
+        <!-- Additional Information Section -->
+        <div class="space-y-3 pt-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500 pb-1 border-b border-stone-100 flex items-center gap-1.5">
+            <i class="fa-solid fa-clipboard-list text-[#810B38]"></i>
+            <span>Additional Information</span>
+          </h4>
+
+          <div>
+            <label for="addCustNotes" class="block text-xs font-bold text-stone-700 mb-1">
+              Notes
+            </label>
+            <textarea 
+              id="addCustNotes" 
+              rows="3" 
+              placeholder="Add customer notes... (e.g. hair preferences, allergies, scheduling requests)" 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38]"></textarea>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">
+          <button 
+            type="button" 
+            onclick="closeAddCustomerModal()"
+            class="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="px-6 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#63082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
+            Save Customer
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= 7. EDIT CUSTOMER MODAL ================= -->
+  <div 
+    id="editCustomerModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-lg w-full overflow-hidden my-8 animate-fadeIn">
+      
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-[#541A1A] to-[#810B38] text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm text-[#DCC3AA]">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </div>
+          <div>
+            <h3 class="font-serif text-lg font-bold tracking-wide">Edit Customer Record</h3>
+            <p class="text-[11px] text-[#DCC3AA]">Update client contact details and profile status</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="closeEditCustomerModal()"
+          class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form onsubmit="handleSaveEditCustomer(event)" class="p-6 space-y-4">
+        <input type="hidden" id="editCustId">
+
+        <div class="space-y-3">
+          <div>
+            <label for="editCustName" class="block text-xs font-bold text-stone-700 mb-1">
+              Full Name <span class="text-rose-500">*</span>
+            </label>
+            <input 
+              type="text" 
+              id="editCustName" 
+              required
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="editCustPhone" class="block text-xs font-bold text-stone-700 mb-1">
+                Phone Number <span class="text-rose-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="editCustPhone" 
+                required
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            </div>
+
+            <div>
+              <label for="editCustEmail" class="block text-xs font-bold text-stone-700 mb-1">
+                Email Address
+              </label>
+              <input 
+                type="email" 
+                id="editCustEmail" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="editCustDob" class="block text-xs font-bold text-stone-700 mb-1">
+                Date of Birth
+              </label>
+              <input 
+                type="date" 
+                id="editCustDob" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            </div>
+
+            <div>
+              <label for="editCustGender" class="block text-xs font-bold text-stone-700 mb-1">
+                Gender
+              </label>
+              <select 
+                id="editCustGender" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label for="editCustAddress" class="block text-xs font-bold text-stone-700 mb-1">
+              Address
+            </label>
+            <input 
+              type="text" 
+              id="editCustAddress" 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+          </div>
+
+          <div>
+            <label for="editCustStatus" class="block text-xs font-bold text-stone-700 mb-1">
+              Account Status
+            </label>
+            <select 
+              id="editCustStatus" 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+              <option value="Active">Active</option>
+              <option value="Inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">
+          <button 
+            type="button" 
+            onclick="closeEditCustomerModal()"
+            class="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="px-6 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#63082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
+            Save Changes
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= 8. BOOK APPOINTMENT FOR CUSTOMER MODAL ================= -->
+  <div 
+    id="bookForCustomerModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-md w-full overflow-hidden my-8 animate-fadeIn">
+      
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-[#541A1A] to-[#810B38] text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm text-[#DCC3AA]">
+            <i class="fa-solid fa-calendar-plus"></i>
+          </div>
+          <div>
+            <h3 class="font-serif text-lg font-bold tracking-wide">Book Appointment</h3>
+            <p class="text-[11px] text-[#DCC3AA]">Schedule a salon slot for this customer</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="closeBookForCustomerModal()"
+          class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Customer Banner -->
+      <div class="p-4 bg-[#FAF6F0] border-b border-[#DCC3AA]/50 flex items-center justify-between text-xs">
+        <div>
+          <span class="text-stone-400 block text-[10px] uppercase font-bold">Booking For</span>
+          <span id="bookForCustomerName" class="font-serif font-bold text-sm text-[#541A1A]">Maria Santos</span>
+        </div>
+        <div class="text-right">
+          <span class="text-stone-400 block text-[10px] uppercase font-bold">Contact</span>
+          <span id="bookForCustomerPhone" class="font-mono text-stone-700 font-semibold">0917 888 9999</span>
+        </div>
+      </div>
+
+      <!-- Form -->
+      <form onsubmit="handleConfirmBookForCustomer(event)" class="p-6 space-y-4">
+        
+        <div>
+          <label for="bookForService" class="block text-xs font-bold text-stone-700 mb-1">
+            Service
+          </label>
+          <select 
+            id="bookForService" 
+            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            <option value="Haircut">Haircut (₱250)</option>
+            <option value="Hair Color">Hair Color (₱850)</option>
+            <option value="Hair Treatment">Hair Treatment (₱600)</option>
+            <option value="Manicure">Manicure (₱300)</option>
+            <option value="Pedicure">Pedicure (₱350)</option>
+            <option value="Foot Spa">Foot Spa (₱450)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="bookForStaff" class="block text-xs font-bold text-stone-700 mb-1">
+            Staff Stylist
+          </label>
+          <select 
+            id="bookForStaff" 
+            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            <option value="Nely">Nely (Master Stylist)</option>
+            <option value="Ana">Ana (Color & Treatment)</option>
+            <option value="Elena">Elena (Nails & Foot Spa)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="bookForDate" class="block text-xs font-bold text-stone-700 mb-1">
+              Date
+            </label>
+            <input 
+              type="date" 
+              id="bookForDate" 
+              required
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+          </div>
+
+          <div>
+            <label for="bookForTime" class="block text-xs font-bold text-stone-700 mb-1">
+              Time
+            </label>
+            <select 
+              id="bookForTime" 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+              <option value="9:00 AM">9:00 AM</option>
+              <option value="10:30 AM">10:30 AM</option>
+              <option value="1:00 PM">1:00 PM</option>
+              <option value="2:30 PM">2:30 PM</option>
+              <option value="4:00 PM">4:00 PM</option>
+              <option value="5:30 PM">5:30 PM</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">
+          <button 
+            type="button" 
+            onclick="closeBookForCustomerModal()"
+            class="px-4 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-md transition-all">
+            Confirm Booking
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= 9. DELETE CUSTOMER MODAL ================= -->
+  <div 
+    id="deleteCustomerModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-rose-200 shadow-2xl max-w-sm w-full p-6 text-center animate-fadeIn">
+      <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto mb-4 text-xl">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <h3 class="font-serif text-lg font-bold text-stone-800">Delete Customer Record?</h3>
+      <p class="text-xs text-stone-500 mt-1.5 leading-relaxed">
+        Are you sure you want to permanently remove <strong id="deleteCustomerNameTarget" class="text-stone-800">this customer</strong> from the salon database? This action cannot be reversed.
+      </p>
+
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button 
+          type="button" 
+          onclick="closeDeleteCustomerModal()"
+          class="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="handleConfirmDeleteCustomer()"
+          class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-md shadow-rose-600/20 transition-all">
+          Delete Customer
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 10. LOGOUT MODAL ================= -->
+  <div 
+    id="logoutModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-sm w-full p-6 text-center animate-fadeIn">
+      <div class="w-14 h-14 rounded-2xl bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA] flex items-center justify-center mx-auto mb-4 text-xl">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </div>
+      <h3 class="font-serif text-lg font-bold text-[#541A1A]">Sign Out of Admin?</h3>
+      <p class="text-xs text-stone-500 mt-1 leading-relaxed">
+        Are you sure you want to log out of your administrative session at Nely’s Salon?
+      </p>
+
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button 
+          type="button" 
+          onclick="closeLogoutModal()"
+          class="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="handleConfirmLogout()"
+          class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Customers Page JavaScript Controller -->
+  <script src="../assets/js/pages/admin/customers.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Services — Nely’s Salon | Admin Management</title>
+  <meta name="description"
+    content="Manage salon services, pricing, treatment duration, and service catalog availability at Nely's Salon.">
+
+  <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Font Awesome 6 (Free Icons - Zero Emoji Rule) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
+  <link rel="stylesheet" href="../assets/css/output.css">
+</head>
+
+<body
+  class="min-h-screen bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
+
+  <!-- ================= MOBILE TOP NAVIGATION BAR (< lg) ================= -->
+  <header
+    class="lg:hidden sticky top-0 z-40 bg-[#541A1A] text-[#F1E2D1] border-b border-[#810B38]/40 px-4 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <button 
+        type="button" 
+        id="mobileMenuBtn" 
+        onclick="toggleMobileSidebar()" 
+        aria-label="Open navigation menu"
+        class="w-10 h-10 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors focus:outline-none focus:ring-2 focus:ring-[#DCC3AA]">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2.5">
+        <img 
+          src="../assets/images/logo.jfif" 
+          alt="Nely's Salon Logo"
+          class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover">
+        <div>
+          <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
+            Nely’s Salon
+          </span>
+          <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
+            Admin Panel
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Action Buttons -->
+    <div class="flex items-center gap-2">
+      <button 
+        type="button"
+        onclick="openAddServiceModal()"
+        aria-label="Add service"
+        class="w-9 h-9 rounded-xl bg-[#810B38] text-white flex items-center justify-center hover:bg-[#62082b] transition-colors shadow-sm">
+        <i class="fa-solid fa-plus text-xs"></i>
+      </button>
+      <div class="w-9 h-9 rounded-xl bg-[#541A1A] text-[#DCC3AA] border border-[#DCC3AA]/50 flex items-center justify-center font-bold text-xs">
+        AD
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MOBILE SIDEBAR BACKDROP & DRAWER ================= -->
+  <div 
+    id="mobileSidebarBackdrop" 
+    onclick="toggleMobileSidebar(false)"
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden">
+  </div>
+
+                <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+  <aside 
+    id="sidebar"
+    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
+
+    <!-- Sidebar Header (Branding) -->
+    <div class="p-6 border-b border-[#810B38]/40">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <img 
+            src="../assets/images/logo.jfif" 
+            alt="Nely's Salon Logo"
+            class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
+          <div>
+            <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
+              Nely’s Salon
+            </h1>
+            <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
+              Admin Panel
+            </p>
+          </div>
+        </div>
+
+        <!-- Mobile Close Button -->
+        <button 
+          type="button" 
+          onclick="toggleMobileSidebar(false)"
+          class="lg:hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
+          aria-label="Close menu">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Salon Motto -->
+      <div class="pt-3 border-t border-white/10 flex items-center gap-2">
+        <i class="fa-solid fa-sparkles text-[#DCC3AA] text-xs"></i>
+        <span class="font-serif italic text-xs text-[#DCC3AA] tracking-wide">
+          “Your Beauty is Our Duty”
+        </span>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation Menu (10 Items) -->
+    <nav class="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
+      <!-- Dashboard -->
+      <a href="dashboard.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <!-- Appointments -->
+      <a href="appointments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Appointments</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">12</span>
+      </a>
+
+      <!-- Customers -->
+      <a href="customers.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Customers</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">248</span>
+      </a>
+
+      <!-- Services (Active) -->
+      <a href="services.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
+        <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA]"></i>
+        <span>Services</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">13</span>
+      </a>
+
+      <!-- Staff -->
+      <a href="staff.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Staff</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">5</span>
+      </a>
+
+      <!-- Payments -->
+      <a href="payments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-credit-card w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Payments</span>
+      </a>
+
+      <!-- Reports -->
+      <a href="reports.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-chart-line w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Reports</span>
+      </a>
+
+      <!-- Notifications -->
+      <a href="notifications.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Notifications</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">6</span>
+      </a>
+
+      <!-- Messages -->
+      <a href="messages.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Messages</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">2</span>
+      </a>
+
+      <!-- Settings -->
+      <a href="settings.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-gear w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer / Logout -->
+    <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
+      <button 
+        type="button" 
+        onclick="openLogoutModal()" 
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+        <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
+        <span>Log Out</span>
+      </button>
+
+      <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
+        15 Years of Beauty Heritage · Lagro, QC
+      </p>
+    </div>
+
+  </aside>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8 max-w-7xl mx-auto w-full">
+
+    <!-- ================= 1. PAGE HEADER ================= -->
+    <section class="bg-gradient-to-r from-[#FAF6F0] via-white to-[#FDFBF7] p-6 sm:p-8 rounded-3xl border border-[#DCC3AA]/70 shadow-sm relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+      
+      <!-- Left: Title & Description -->
+      <div class="space-y-1.5 relative z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810B38]/10 text-[#810B38] text-xs font-bold uppercase tracking-wider">
+          <i class="fa-solid fa-scissors text-[#810B38]"></i>
+          <span>Treatment Catalog & Menu</span>
+        </div>
+
+        <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#541A1A] leading-tight">
+          Services
+        </h2>
+
+        <p class="text-sm sm:text-base text-[#735e5e] max-w-xl font-normal leading-relaxed">
+          Manage salon services, prices, duration, and availability.
+        </p>
+      </div>
+
+      <!-- Right: Action Buttons -->
+      <div class="flex flex-wrap items-center gap-3 shrink-0 relative z-20">
+        <button 
+          type="button" 
+          onclick="openAddServiceModal()"
+          class="px-5 py-3 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md shadow-[#810B38]/20 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2.5">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>Add Service</span>
+        </button>
+
+        <button 
+          type="button" 
+          onclick="document.getElementById('serviceSearchInput').focus()"
+          class="px-4 py-3 rounded-xl bg-white hover:bg-[#FAF6F0] text-[#541A1A] border border-[#DCC3AA] text-xs sm:text-sm font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2">
+          <i class="fa-solid fa-magnifying-glass text-xs text-[#810B38]"></i>
+          <span>Search</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ================= SERVICE SUMMARY CARDS ================= -->
+    <section class="grid grid-cols-1 sm:grid-cols-3 gap-5" aria-labelledby="service-summary-heading">
+      <h2 id="service-summary-heading" class="sr-only">Service Summary Statistics</h2>
+      
+      <!-- Card 1: Total Services -->
+      <article onclick="filterBySummaryCard('all')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Total Services</span>
+          <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/40 flex items-center justify-center text-[#810B38] group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-scissors text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statTotalServices" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">13</h3>
+          <span class="text-xs font-bold text-stone-400">All treatments</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-sparkles text-[#810B38] text-[10px]"></i>
+          <span>Full salon repertoire</span>
+        </p>
+      </article>
+
+      <!-- Card 2: Active Services -->
+      <article onclick="filterBySummaryCard('active')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Active Services</span>
+          <div class="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-circle-check text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statActiveServices" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">13</h3>
+          <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Available</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-calendar-check text-emerald-600 text-[10px]"></i>
+          <span>Bookable by customers</span>
+        </p>
+      </article>
+
+      <!-- Card 3: Inactive Services -->
+      <article onclick="filterBySummaryCard('inactive')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Inactive Services</span>
+          <div class="w-10 h-10 rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-500 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-circle-xmark text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statInactiveServices" class="font-serif text-3xl sm:text-4xl font-bold text-stone-500">0</h3>
+          <span class="text-xs font-bold text-stone-400">Suspended</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-regular fa-pause-circle text-stone-400 text-[10px]"></i>
+          <span>Temporarily unavailable</span>
+        </p>
+      </article>
+
+    </section>
+
+    <!-- ================= SEARCH & FILTERS BAR ================= -->
+    <section aria-labelledby="filters-heading" class="bg-white p-5 sm:p-6 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-4">
+        <h2 id="filters-heading" class="sr-only">Search and Filter Services</h2>
+
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          
+          <!-- Search Input -->
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+              <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </div>
+            <input 
+              type="text" 
+              id="serviceSearchInput"
+              placeholder="Search service name, description..." 
+              class="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38] focus:bg-white transition-all">
+          </div>
+
+          <!-- Filter Dropdowns & Sort -->
+          <div class="flex items-center flex-wrap gap-2.5">
+            
+            <!-- Category Filter -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="categoryFilter" class="text-stone-500 font-medium">Category:</label>
+              <select 
+                id="categoryFilter" 
+                class="bg-transparent text-stone-800 font-semibold focus:outline-none cursor-pointer">
+                <option value="all">All Categories</option>
+                <option value="hair">Hair Care</option>
+                <option value="nails">Nails</option>
+                <option value="foot-care">Foot Care</option>
+              </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="statusFilter" class="text-stone-500 font-medium">Status:</label>
+              <select 
+                id="statusFilter" 
+                class="bg-transparent text-stone-800 font-semibold focus:outline-none cursor-pointer">
+                <option value="all">All</option>
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+            <!-- Sort Select -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="sortSelect" class="text-stone-500 font-medium">Sort by:</label>
+              <select 
+                id="sortSelect" 
+                class="bg-transparent text-[#810B38] font-bold focus:outline-none cursor-pointer">
+                <option value="default">Default Order</option>
+                <option value="price_asc">Price: Low to High</option>
+                <option value="price_desc">Price: High to Low</option>
+                <option value="name_asc">Name A–Z</option>
+                <option value="duration">Duration</option>
+              </select>
+            </div>
+
+            <!-- Reset Filter Button -->
+            <button 
+              type="button" 
+              onclick="resetFilters()"
+              title="Reset all filters"
+              class="px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+              <i class="fa-solid fa-arrow-rotate-left text-[11px]"></i>
+              <span>Reset</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Result count tag & pricing note -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-stone-500 mt-3 pt-3 border-t border-stone-100">
+          <span id="servicesResultCount">Showing 13 services</span>
+          <span class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1.5">
+            <i class="fa-solid fa-circle-info text-amber-600"></i>
+            Note: Rebonding has no price set yet; price will be configured upon consultation.
+          </span>
+        </div>
+      </section>
+
+      <!-- ================= SERVICE CARDS GRID ================= -->
+      <section aria-labelledby="service-cards-heading">
+        <h2 id="service-cards-heading" class="sr-only">Actual Services and Prices</h2>
+
+        <!-- Cards Grid Container -->
+        <div id="serviceCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <!-- Dynamically populated by services.js -->
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="servicesEmptyState" class="hidden p-12 text-center bg-white rounded-3xl border border-[#DCC3AA]/60">
+          <div class="w-16 h-16 rounded-full bg-[#FAF6F0] border border-[#DCC3AA] text-[#810B38] flex items-center justify-center mx-auto mb-4 text-2xl">
+            <i class="fa-solid fa-scissors"></i>
+          </div>
+          <h3 class="font-serif text-lg font-bold text-[#541A1A]">No Services Found</h3>
+          <p class="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
+            No salon service matches your filter or search query. Try clearing filters or add a new service.
+          </p>
+          <button 
+            type="button" 
+            onclick="resetFilters()"
+            class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#810B38] text-white text-xs font-semibold hover:bg-[#62082b] transition-colors">
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+            <span>Reset Filters</span>
+          </button>
+        </div>
+
+      </section>
+
+  </main>
+
+  <!-- ================= ADD / EDIT SERVICE MODAL ================= -->
+  <div 
+    id="serviceModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto overscroll-contain">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-lg w-full overflow-hidden my-auto max-h-[90vh] max-h-[90dvh] flex flex-col animate-fadeIn">
+      
+      <!-- Header -->
+      <div class="shrink-0 bg-gradient-to-r from-[#541A1A] to-[#810B38] text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm text-[#DCC3AA]">
+            <i class="fa-solid fa-scissors"></i>
+          </div>
+          <div>
+            <h3 id="serviceModalTitle" class="font-serif text-lg font-bold tracking-wide">Add New Service</h3>
+            <p id="serviceModalSubtitle" class="text-[11px] text-[#DCC3AA]">Register a new beauty service in the salon catalog</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="closeServiceModal()"
+          class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="serviceForm" onsubmit="handleSaveService(event)" class="p-6 space-y-4 overflow-y-auto overscroll-contain flex-1">
+        
+        <!-- Service Name -->
+        <div>
+          <label for="serviceName" class="block text-xs font-bold text-stone-700 mb-1">
+            Service Name <span class="text-rose-500">*</span>
+          </label>
+          <input 
+            type="text" 
+            id="serviceName" 
+            required
+            placeholder="Enter service name (e.g. Rebonding, Brazilian)" 
+            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Category -->
+          <div>
+            <label for="serviceCategory" class="block text-xs font-bold text-stone-700 mb-1">
+              Category <span class="text-rose-500">*</span>
+            </label>
+            <select 
+              id="serviceCategory" 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+              <option value="hair">Hair Care</option>
+              <option value="nails">Nails</option>
+              <option value="foot-care">Foot Care</option>
+            </select>
+          </div>
+
+          <!-- Duration -->
+          <div>
+            <label for="serviceDuration" class="block text-xs font-bold text-stone-700 mb-1">
+              Duration (minutes)
+            </label>
+            <input 
+              type="number" 
+              id="serviceDuration" 
+              min="15" 
+              step="5" 
+              value="60"
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+          </div>
+        </div>
+
+        <!-- Price & Price Not Set Checkbox -->
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <label for="servicePrice" class="block text-xs font-bold text-stone-700">
+              Price (PHP ₱)
+            </label>
+            <label class="flex items-center gap-1.5 text-[11px] text-amber-800 font-semibold cursor-pointer">
+              <input 
+                type="checkbox" 
+                id="servicePriceNotSet" 
+                class="rounded border-amber-300 text-[#810B38] focus:ring-[#810B38]">
+              <span>Price not set yet</span>
+            </label>
+          </div>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-500 font-bold text-xs">
+              ₱
+            </span>
+            <input 
+              type="number" 
+              id="servicePrice" 
+              step="1" 
+              min="0"
+              placeholder="Enter price (e.g. 499)" 
+              class="w-full pl-8 pr-4 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38] disabled:bg-stone-100 disabled:text-stone-400 disabled:cursor-not-allowed">
+          </div>
+          <p class="text-[10px] text-stone-400 mt-1">
+            Check "Price not set yet" for services priced by hair length or custom consultation (such as Rebonding).
+          </p>
+        </div>
+
+        <!-- Description -->
+        <div>
+          <label for="serviceDescription" class="block text-xs font-bold text-stone-700 mb-1">
+            Description
+          </label>
+          <textarea 
+            id="serviceDescription" 
+            rows="2" 
+            placeholder="Brief description of the service and treatment benefits..." 
+            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38]"></textarea>
+        </div>
+
+        <!-- Status -->
+        <div>
+          <label for="serviceStatus" class="block text-xs font-bold text-stone-700 mb-1">
+            Status
+          </label>
+          <select 
+            id="serviceStatus" 
+            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            <option value="Active">Active (Available for booking)</option>
+            <option value="Inactive">Inactive (Unavailable)</option>
+          </select>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">
+          <button 
+            type="button" 
+            onclick="closeServiceModal()"
+            class="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="px-6 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#63082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
+            Save Service
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= DELETE SERVICE MODAL ================= -->
+  <div 
+    id="deleteServiceModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overscroll-contain">
+    <div class="bg-white rounded-3xl border border-rose-200 shadow-2xl max-w-sm w-full p-6 text-center my-auto animate-fadeIn">
+      <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto mb-4 text-xl">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <h3 class="font-serif text-lg font-bold text-stone-800">Delete Service?</h3>
+      <p class="text-xs text-stone-500 mt-1.5 leading-relaxed">
+        Are you sure you want to remove <strong id="deleteServiceNameTarget" class="text-stone-800">this service</strong> from the salon catalog?
+      </p>
+
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button 
+          type="button" 
+          onclick="closeDeleteServiceModal()"
+          class="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="handleConfirmDeleteService()"
+          class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-md shadow-rose-600/20 transition-all">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= LOGOUT MODAL ================= -->
+  <div 
+    id="logoutModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overscroll-contain">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-sm w-full p-6 text-center my-auto animate-fadeIn">
+      <div class="w-14 h-14 rounded-2xl bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA] flex items-center justify-center mx-auto mb-4 text-xl">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </div>
+      <h3 class="font-serif text-lg font-bold text-[#541A1A]">Sign Out of Admin?</h3>
+      <p class="text-xs text-stone-500 mt-1 leading-relaxed">
+        Are you sure you want to log out of your administrative session at Nely’s Salon?
+      </p>
+
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button 
+          type="button" 
+          onclick="closeLogoutModal()"
+          class="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="handleConfirmLogout()"
+          class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Services Page JavaScript Controller -->
+  <script src="../assets/js/pages/admin/services.js"></script>
+
+</body>
+</html>

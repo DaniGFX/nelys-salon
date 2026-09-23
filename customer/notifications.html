@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notifications — Nely’s Salon | "Your Beauty Is Our Duty"</title>
+  <meta name="description" content="Stay updated with your appointments, payments, and salon updates at Nely's Salon Lagro.">
+
+  <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6 (Free Icons - Zero Emoji Rule) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Compiled Tailwind CSS -->
+  <link rel="stylesheet" href="../assets/css/output.css">
+</head>
+<body class="min-h-full bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
+
+  <!-- ================= MOBILE TOP NAVIGATION BAR (< lg) ================= -->
+  <header class="lg:hidden sticky top-0 z-40 bg-[#541A1A] text-[#F1E2D1] border-b border-[#810B38]/40 px-4 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <button 
+        type="button" 
+        id="mobileMenuBtn" 
+        onclick="toggleMobileSidebar()" 
+        aria-label="Open navigation menu"
+        class="w-10 h-10 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors focus:outline-none focus:ring-2 focus:ring-[#DCC3AA]">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2.5">
+        <img 
+          src="../assets/images/logo.jfif" 
+          alt="Nely's Salon Logo" 
+          class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover"
+        >
+        <div>
+          <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
+            Nely’s Salon
+          </span>
+          <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
+            Lagro, QC
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Top Right Icons -->
+    <div class="flex items-center gap-2">
+      <a 
+        href="notifications.html" 
+        aria-label="Notifications"
+        class="relative w-9 h-9 rounded-xl bg-[#810B38] text-white flex items-center justify-center transition-colors">
+        <i class="fa-solid fa-bell text-sm"></i>
+        <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#DCC3AA]"></span>
+      </a>
+
+      <a 
+        href="profile.html" 
+        class="w-9 h-9 rounded-xl bg-[#6e1335] text-white border border-[#DCC3AA]/50 flex items-center justify-center font-bold text-xs uppercase hover:bg-[#810B38] transition-colors"
+        title="My Profile">
+        <i class="fa-solid fa-user text-xs"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- ================= MOBILE SIDEBAR BACKDROP & DRAWER ================= -->
+  <div 
+    id="mobileSidebarBackdrop" 
+    onclick="toggleMobileSidebar(false)" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden">
+  </div>
+
+  <!-- ================= DESKTOP & MOBILE SIDEBAR ================= -->
+    <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+  <aside 
+    id="sidebar"
+    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
+
+    <!-- Sidebar Header (Branding) -->
+    <div class="p-6 border-b border-[#810B38]/40">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <img 
+            src="../assets/images/logo.jfif" 
+            alt="Nely's Salon Logo"
+            class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
+          <div>
+            <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
+              Nely’s Salon
+            </h1>
+            <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
+              Customer Panel
+            </p>
+          </div>
+        </div>
+
+        <!-- Mobile Close Button -->
+        <button 
+          type="button" 
+          onclick="toggleMobileSidebar(false)"
+          class="lg:hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
+          aria-label="Close menu">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Salon Motto -->
+      <div class="pt-3 border-t border-white/10 flex items-center gap-2">
+        <i class="fa-solid fa-sparkles text-[#DCC3AA] text-xs"></i>
+        <span class="font-serif italic text-xs text-[#DCC3AA] tracking-wide">
+          “Your Beauty is Our Duty”
+        </span>
+      </div>
+    </div>
+
+    <!-- Customer Profile Quick Pill -->
+    <div class="px-5 py-4 mx-4 my-3 rounded-2xl bg-[#6e1335]/40 border border-[#810B38]/50 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
+        MS
+      </div>
+      <div class="min-w-0 flex-1">
+        <span class="block text-sm font-semibold text-[#F1E2D1] truncate">Maria Santos</span>
+        <span class="inline-flex items-center gap-1.5 text-[11px] text-[#DCC3AA]">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          Verified Client
+        </span>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation Menu (7 Items) -->
+    <nav class="flex-1 px-4 py-2 space-y-1.5 overflow-y-auto">
+      <!-- Dashboard -->
+      <a href="dashboard.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <!-- Book Appointment -->
+      <a href="booking.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-plus w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Book Appointment</span>
+      </a>
+
+      <!-- My Appointments -->
+      <a href="appointments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>My Appointments</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+      </a>
+
+      <!-- Services & Prices -->
+      <a href="services.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Services & Prices</span>
+      </a>
+
+      <!-- Messages -->
+      <a href="messages.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Messages</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+      </a>
+
+      <!-- Notifications (Active) -->
+      <a href="notifications.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
+        <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA]"></i>
+        <span>Notifications</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">3</span>
+      </a>
+
+      <!-- My Profile -->
+      <a href="profile.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-user w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>My Profile</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer / Logout -->
+    <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
+      <a 
+        href="../login.html"
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+        <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
+        <span>Log Out</span>
+      </a>
+
+      <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
+        15 Years of Beauty Heritage · Lagro, QC
+      </p>
+    </div>
+
+  </aside>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8 max-w-7xl mx-auto w-full">
+
+    <!-- ================= 1. PAGE HEADER ================= -->
+    <section class="bg-gradient-to-r from-[#FAF6F0] via-white to-[#FDFBF7] p-6 sm:p-8 rounded-3xl border border-[#DCC3AA]/60 shadow-sm relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+      
+      <div class="space-y-1.5 relative z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810B38]/10 text-[#810B38] text-xs font-bold uppercase tracking-wider">
+          <i class="fa-solid fa-bell text-[#810B38]"></i>
+          <span id="headerUnreadBadge">3 Unread</span>
+        </div>
+
+        <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#541A1A] leading-tight">
+          Notifications
+        </h2>
+
+        <p class="text-sm sm:text-base text-[#735e5e] max-w-xl font-normal leading-relaxed">
+          Stay updated with your appointments, payments, and salon updates.
+        </p>
+      </div>
+
+      <!-- Action: Mark all as read -->
+      <div class="flex items-center gap-3 shrink-0 relative z-10">
+        <button 
+          type="button" 
+          onclick="markAllAsRead()"
+          class="inline-flex items-center gap-2.5 px-5 py-3 rounded-xl bg-white border border-[#DCC3AA] hover:border-[#810B38] text-[#541A1A] hover:text-[#810B38] text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md transition-all">
+          <i class="fa-solid fa-check-double text-[#810B38]"></i>
+          <span>Mark all as read</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ================= 2. NOTIFICATION CATEGORIES ================= -->
+    <section class="space-y-6">
+      
+      <!-- Category Tabs Bar -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-[#DCC3AA]/40">
+        
+        <!-- Tab 1: All (Default Active) -->
+        <button 
+          id="tabBtn-all"
+          type="button" 
+          onclick="switchCategory('all')"
+          class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#810B38] bg-[#810B38] text-white shadow-sm focus:outline-none">
+          <span>All</span>
+          <span id="count-all" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA] bg-[#DCC3AA] text-[#541A1A] min-w-[20px] text-center inline-block">6</span>
+        </button>
+
+        <!-- Tab 2: Appointments -->
+        <button 
+          id="tabBtn-appointments"
+          type="button" 
+          onclick="switchCategory('appointments')"
+          class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
+          <span>Appointments</span>
+          <span id="count-appointments" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">3</span>
+        </button>
+
+        <!-- Tab 3: Payments -->
+        <button 
+          id="tabBtn-payments"
+          type="button" 
+          onclick="switchCategory('payments')"
+          class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
+          <span>Payments</span>
+          <span id="count-payments" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">2</span>
+        </button>
+
+        <!-- Tab 4: Updates -->
+        <button 
+          id="tabBtn-updates"
+          type="button" 
+          onclick="switchCategory('updates')"
+          class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
+          <span>Updates</span>
+          <span id="count-updates" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">1</span>
+        </button>
+
+      </div>
+
+      <!-- ================= 3, 4, 5. NOTIFICATION CARDS CONTAINER ================= -->
+      <div id="notificationsContainer" class="space-y-3.5">
+        
+        <!-- Pre-rendered initial notifications for instant display and searchability -->
+        <!-- Card 1: Appointment Reminder (Unread) -->
+        <article 
+          onclick="handleNotificationClick('NOTIF-001')"
+          class="bg-[#FFFDF9] border-[#810B38]/30 shadow-sm hover:border-[#810B38] rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
+          <div class="w-11 h-11 rounded-2xl bg-[#810B38] text-white flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
+            <i class="fa-solid fa-bell"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <div class="flex items-center gap-2 min-w-0">
+                <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
+                  Appointment Reminder
+                </h3>
+                <span class="w-2.5 h-2.5 rounded-full bg-[#810B38] shrink-0 animate-pulse shadow-sm" title="Unread notification"></span>
+              </div>
+              <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">Today, 9:00 AM</span>
+            </div>
+            <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
+              Your Brazilian Treatment appointment is tomorrow at 10:00 AM.
+            </p>
+            <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
+              <span>View details</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 2: Payment Verified (Unread) -->
+        <article 
+          onclick="handleNotificationClick('NOTIF-002')"
+          class="bg-[#FFFDF9] border-[#810B38]/30 shadow-sm hover:border-[#810B38] rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
+            <i class="fa-solid fa-circle-check"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <div class="flex items-center gap-2 min-w-0">
+                <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
+                  Payment Verified
+                </h3>
+                <span class="w-2.5 h-2.5 rounded-full bg-[#810B38] shrink-0 animate-pulse shadow-sm" title="Unread notification"></span>
+              </div>
+              <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">Today, 8:45 AM</span>
+            </div>
+            <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
+              Your GCash payment of ₱1,999 for Brazilian Treatment has been verified.
+            </p>
+            <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
+              <span>View details</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 3: Payment Verification (Unread) -->
+        <article 
+          onclick="handleNotificationClick('NOTIF-003')"
+          class="bg-[#FFFDF9] border-[#810B38]/30 shadow-sm hover:border-[#810B38] rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
+          <div class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
+            <i class="fa-solid fa-clock"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <div class="flex items-center gap-2 min-w-0">
+                <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
+                  Payment Verification
+                </h3>
+                <span class="w-2.5 h-2.5 rounded-full bg-[#810B38] shrink-0 animate-pulse shadow-sm" title="Unread notification"></span>
+              </div>
+              <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">Yesterday, 4:15 PM</span>
+            </div>
+            <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
+              Your uploaded payment receipt is currently being reviewed by our salon cashier.
+            </p>
+            <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
+              <span>View details</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 4: Booking Confirmed (Read) -->
+        <article 
+          onclick="handleNotificationClick('NOTIF-004')"
+          class="bg-white border-[#E8D9CA] hover:border-[#DCC3AA] opacity-90 rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
+            <i class="fa-solid fa-calendar-check"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
+                Booking Confirmed
+              </h3>
+              <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">Yesterday, 3:30 PM</span>
+            </div>
+            <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
+              Your appointment for September 25, 2026 at 10:00 AM has been confirmed.
+            </p>
+            <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
+              <span>View details</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 5: Appointment Cancelled (Read) -->
+        <article 
+          onclick="handleNotificationClick('NOTIF-005')"
+          class="bg-white border-[#E8D9CA] hover:border-[#DCC3AA] opacity-90 rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
+          <div class="w-11 h-11 rounded-2xl bg-rose-50 text-rose-700 border border-rose-200 flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
+            <i class="fa-solid fa-circle-xmark"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
+                Appointment Cancelled
+              </h3>
+              <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">September 20, 2026</span>
+            </div>
+            <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
+              Your appointment on September 28 has been cancelled as requested.
+            </p>
+            <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
+              <span>View details</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 6: Salon Anniversary Treat (Read) -->
+        <article 
+          onclick="handleNotificationClick('NOTIF-006')"
+          class="bg-white border-[#E8D9CA] hover:border-[#DCC3AA] opacity-90 rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
+          <div class="w-11 h-11 rounded-2xl bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA] flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
+            <i class="fa-solid fa-gift"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
+                15-Year Anniversary Treat
+              </h3>
+              <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">3 days ago</span>
+            </div>
+            <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
+              Celebrate 15 Years of Beauty Heritage at Nely's Salon! Enjoy a complimentary deep hair consultation and 10% off any premium hair care package this month.
+            </p>
+            <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
+              <span>View promo code</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </div>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- EMPTY NOTIFICATIONS STATE (Hidden when notifications exist) -->
+      <div 
+        id="emptyNotificationsState" 
+        class="hidden bg-white p-8 sm:p-12 rounded-3xl border-2 border-dashed border-[#DCC3AA] text-center space-y-4 shadow-sm">
+        <div class="w-16 h-16 rounded-full bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-2xl mx-auto border border-[#DCC3AA]">
+          <i class="fa-solid fa-bell-slash"></i>
+        </div>
+        <div class="space-y-1">
+          <h4 class="font-serif text-2xl font-bold text-[#541A1A]">No notifications found</h4>
+          <p class="text-xs sm:text-sm text-[#735e5e] max-w-md mx-auto">
+            You are all caught up! There are no messages or reminders in this category.
+          </p>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= 6. CONTEXTUAL MODAL 1: APPOINTMENT NOTIFICATION ================= -->
+  <dialog id="appointmentNotifModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d]">
+    <div class="p-6 sm:p-7 space-y-5">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-[#F1E2D1] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm border border-[#DCC3AA]">
+            <i class="fa-solid fa-calendar-check"></i>
+          </div>
+          <div>
+            <h4 id="apptNotifTitle" class="font-serif text-xl font-bold text-[#541A1A]">Appointment Reminder</h4>
+            <span class="text-[11px] text-[#735e5e]">Notification Details</span>
+          </div>
+        </div>
+
+        <button 
+          type="button" 
+          onclick="closeAppointmentModal()" 
+          class="w-7 h-7 rounded-full bg-[#FAF6F0] text-[#735e5e] hover:text-[#541A1A] flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <!-- Information Breakdown Table -->
+      <div class="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] text-xs space-y-2.5 text-left">
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Booking Reference:</span>
+          <span id="apptNotifBookingId" class="font-mono font-bold text-[#810B38]">NS-20260925-0814</span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Service:</span>
+          <strong id="apptNotifService" class="text-[#541A1A] font-bold">Brazilian Treatment</strong>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Scheduled Date & Time:</span>
+          <span id="apptNotifDateTime" class="font-semibold text-[#2b1d1d]">September 25, 2026 at 10:00 AM</span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Location:</span>
+          <span id="apptNotifLocation" class="text-[#541A1A]">Nely's Salon Atelier (Lagro, QC)</span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Booking Status:</span>
+          <span id="apptNotifStatus" class="font-bold text-emerald-700">Confirmed</span>
+        </div>
+
+        <div id="apptNotifReasonRow" class="hidden flex justify-between items-start pt-1 border-t border-[#DCC3AA]/40 text-rose-800">
+          <span class="text-rose-700 font-semibold shrink-0">Reason:</span>
+          <span id="apptNotifReason" class="text-right pl-4 font-medium"></span>
+        </div>
+
+        <div class="flex justify-between items-center pt-2 border-t border-[#DCC3AA]/50 font-bold">
+          <span class="text-[#541A1A]">Total Amount:</span>
+          <span id="apptNotifAmount" class="font-serif text-lg text-[#810B38]">₱1,999</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons Row -->
+      <div class="flex items-center gap-3 pt-1">
+        <button 
+          type="button" 
+          onclick="closeAppointmentModal()" 
+          class="flex-1 py-3 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
+          Close
+        </button>
+        <a 
+          href="appointments.html" 
+          class="flex-1 py-3 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold text-center transition-colors shadow-md flex items-center justify-center gap-2">
+          <i class="fa-solid fa-calendar-days text-xs"></i>
+          <span>Go to Appointments</span>
+        </a>
+      </div>
+
+    </div>
+  </dialog>
+
+  <!-- ================= 6. CONTEXTUAL MODAL 2: PAYMENT NOTIFICATION ================= -->
+  <dialog id="paymentNotifModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d]">
+    <div class="p-6 sm:p-7 space-y-5">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-[#F1E2D1] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm border border-emerald-200">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+          <div>
+            <h4 id="payNotifTitle" class="font-serif text-xl font-bold text-[#541A1A]">Payment Verified</h4>
+            <span class="text-[11px] text-[#735e5e]">Transaction Receipt Summary</span>
+          </div>
+        </div>
+
+        <button 
+          type="button" 
+          onclick="closePaymentModal()" 
+          class="w-7 h-7 rounded-full bg-[#FAF6F0] text-[#735e5e] hover:text-[#541A1A] flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <!-- Information Breakdown Table -->
+      <div class="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] text-xs space-y-2.5 text-left">
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Payment ID:</span>
+          <span id="payNotifPaymentId" class="font-mono font-bold text-[#810B38]">PAY-20260925-0814</span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Related Service:</span>
+          <strong id="payNotifService" class="text-[#541A1A] font-bold">Brazilian Treatment</strong>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Payment Method:</span>
+          <span id="payNotifMethod" class="font-semibold text-[#541A1A]">GCash</span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">GCash Ref Number:</span>
+          <span id="payNotifRef" class="font-mono text-[#2b1d1d]">GC-92817401</span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Payment Status:</span>
+          <span id="payNotifStatus" class="font-bold text-emerald-700">Verified & Settled</span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Date Logged:</span>
+          <span id="payNotifDate" class="text-[#735e5e]">Sept 24, 2026 at 8:45 AM</span>
+        </div>
+
+        <div class="flex justify-between items-center pt-2 border-t border-[#DCC3AA]/50 font-bold">
+          <span class="text-[#541A1A]">Amount Paid:</span>
+          <span id="payNotifAmount" class="font-serif text-lg text-[#810B38]">₱1,999</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons Row -->
+      <div class="flex items-center gap-3 pt-1">
+        <button 
+          type="button" 
+          onclick="closePaymentModal()" 
+          class="flex-1 py-3 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
+          Close
+        </button>
+        <a 
+          href="appointments.html" 
+          class="flex-1 py-3 rounded-xl bg-[#541A1A] hover:bg-[#401212] text-white text-xs font-bold text-center transition-colors shadow-md flex items-center justify-center gap-2">
+          <i class="fa-solid fa-eye text-xs"></i>
+          <span>View Appointment</span>
+        </a>
+      </div>
+
+    </div>
+  </dialog>
+
+  <!-- ================= 6. CONTEXTUAL MODAL 3: SALON UPDATE / ANNOUNCEMENT ================= -->
+  <dialog id="announcementNotifModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d]">
+    <div class="p-6 sm:p-7 space-y-5">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-[#F1E2D1] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm border border-[#DCC3AA]">
+            <i class="fa-solid fa-bullhorn"></i>
+          </div>
+          <div>
+            <h4 class="font-serif text-xl font-bold text-[#541A1A]">Salon Announcement</h4>
+            <span class="text-[11px] text-[#735e5e]">Special Treat for Loyal Clients</span>
+          </div>
+        </div>
+
+        <button 
+          type="button" 
+          onclick="closeAnnouncementModal()" 
+          class="w-7 h-7 rounded-full bg-[#FAF6F0] text-[#735e5e] hover:text-[#541A1A] flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-left">
+        <h3 id="annNotifTitle" class="font-serif text-xl font-bold text-[#541A1A]">
+          15-Year Anniversary Celebration Treat
+        </h3>
+        
+        <p id="annNotifDetails" class="text-xs text-[#2b1d1d] leading-relaxed">
+          Thank you for trusting Nely's Salon for 15 wonderful years in Lagro, QC. As our token of gratitude, present code 'NELYS15' at the counter or during online booking to redeem 10% discount on any hair treatment.
+        </p>
+
+        <!-- Promo Code Box -->
+        <div class="p-4 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA] flex items-center justify-between gap-3">
+          <div>
+            <span class="text-[10px] uppercase tracking-wider text-[#735e5e] font-bold block">Promo Code</span>
+            <span id="annNotifPromoCode" class="font-mono text-base font-extrabold text-[#810B38]">NELYS15</span>
+          </div>
+          <button 
+            type="button" 
+            onclick="copyPromoCode(document.getElementById('annNotifPromoCode').textContent)"
+            class="px-3.5 py-1.5 rounded-xl bg-white border border-[#DCC3AA] hover:bg-[#F1E2D1] text-xs font-bold text-[#541A1A] transition-colors flex items-center gap-1.5 shadow-sm">
+            <i class="fa-regular fa-copy"></i>
+            <span>Copy Code</span>
+          </button>
+        </div>
+
+        <p class="text-[11px] text-[#735e5e]">
+          Valid until: <strong id="annNotifValidUntil" class="text-[#541A1A]">October 31, 2026</strong>
+        </p>
+      </div>
+
+      <!-- Action Buttons Row -->
+      <div class="flex items-center gap-3 pt-1">
+        <button 
+          type="button" 
+          onclick="closeAnnouncementModal()" 
+          class="flex-1 py-3 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
+          Close
+        </button>
+        <a 
+          href="booking.html" 
+          class="flex-1 py-3 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold text-center transition-colors shadow-md flex items-center justify-center gap-2">
+          <i class="fa-solid fa-calendar-plus text-xs"></i>
+          <span>Book with Promo</span>
+        </a>
+      </div>
+
+    </div>
+  </dialog>
+
+  <!-- ================= PROFILE MODAL ================= -->
+  <dialog id="profileModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d]">
+    <div class="p-6 sm:p-7 space-y-4">
+      <div class="flex items-center justify-between border-b border-[#F1E2D1] pb-3">
+        <h4 class="font-serif text-xl font-bold text-[#541A1A]">My Client Profile</h4>
+        <button 
+          type="button" 
+          onclick="document.getElementById('profileModal').close()" 
+          class="w-7 h-7 rounded-full bg-[#FAF6F0] text-[#735e5e] hover:text-[#541A1A] flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-[#541A1A] mb-1">Full Name</label>
+          <input 
+            type="text" 
+            value="Maria Santos" 
+            readonly
+            class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+        </div>
+
+        <div>
+          <label class="block font-bold text-[#541A1A] mb-1">Mobile Number</label>
+          <input 
+            type="tel" 
+            value="0917 888 9999" 
+            readonly
+            class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+        </div>
+
+        <div>
+          <label class="block font-bold text-[#541A1A] mb-1">Default Address</label>
+          <input 
+            type="text" 
+            value="BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City" 
+            readonly
+            class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button 
+          type="button" 
+          onclick="document.getElementById('profileModal').close()" 
+          class="w-full py-2.5 rounded-xl bg-[#810B38] text-white text-xs font-bold hover:bg-[#62082b] transition-colors">
+          Done
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ================= TOAST CONTAINER ================= -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- Page JavaScript -->
+  <script src="../assets/js/pages/customer/notifications.js"></script>
+</body>
+</html>

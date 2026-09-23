@@ -1,0 +1,1063 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payments — Nely’s Salon | Admin Management</title>
+  <meta name="description"
+    content="Monitor customer payments, track paid, partial, and unpaid appointments, view receipts, and review salon revenue at Nely's Salon.">
+
+  <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Font Awesome 6 (Free Icons - Zero Emoji Rule) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
+  <link rel="stylesheet" href="../assets/css/output.css">
+</head>
+
+<body
+  class="min-h-screen bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
+
+  <!-- ================= MOBILE TOP NAVIGATION BAR (< lg) ================= -->
+  <header
+    class="lg:hidden sticky top-0 z-40 bg-[#541A1A] text-[#F1E2D1] border-b border-[#810B38]/40 px-4 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <button 
+        type="button" 
+        id="mobileMenuBtn" 
+        onclick="toggleMobileSidebar()" 
+        aria-label="Open navigation menu"
+        class="w-10 h-10 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors focus:outline-none focus:ring-2 focus:ring-[#DCC3AA]">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2.5">
+        <img 
+          src="../assets/images/logo.jfif" 
+          alt="Nely's Salon Logo"
+          class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover">
+        <div>
+          <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
+            Nely’s Salon
+          </span>
+          <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
+            Admin Panel
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Action Buttons -->
+    <div class="flex items-center gap-2">
+      <button 
+        type="button"
+        onclick="openRecordPaymentModal()"
+        aria-label="Record payment"
+        class="w-9 h-9 rounded-xl bg-[#810B38] text-white flex items-center justify-center hover:bg-[#62082b] transition-colors shadow-sm">
+        <i class="fa-solid fa-plus text-xs"></i>
+      </button>
+      <div class="w-9 h-9 rounded-xl bg-[#541A1A] text-[#DCC3AA] border border-[#DCC3AA]/50 flex items-center justify-center font-bold text-xs">
+        AD
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MOBILE SIDEBAR BACKDROP & DRAWER ================= -->
+  <div 
+    id="mobileSidebarBackdrop" 
+    onclick="toggleMobileSidebar(false)"
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden">
+  </div>
+
+                <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+  <aside 
+    id="sidebar"
+    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
+
+    <!-- Sidebar Header (Branding) -->
+    <div class="p-6 border-b border-[#810B38]/40">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <img 
+            src="../assets/images/logo.jfif" 
+            alt="Nely's Salon Logo"
+            class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
+          <div>
+            <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
+              Nely’s Salon
+            </h1>
+            <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
+              Admin Panel
+            </p>
+          </div>
+        </div>
+
+        <!-- Mobile Close Button -->
+        <button 
+          type="button" 
+          onclick="toggleMobileSidebar(false)"
+          class="lg:hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
+          aria-label="Close menu">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Salon Motto -->
+      <div class="pt-3 border-t border-white/10 flex items-center gap-2">
+        <i class="fa-solid fa-sparkles text-[#DCC3AA] text-xs"></i>
+        <span class="font-serif italic text-xs text-[#DCC3AA] tracking-wide">
+          “Your Beauty is Our Duty”
+        </span>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation Menu (10 Items) -->
+    <nav class="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
+      <!-- Dashboard -->
+      <a href="dashboard.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <!-- Appointments -->
+      <a href="appointments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Appointments</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">12</span>
+      </a>
+
+      <!-- Customers -->
+      <a href="customers.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Customers</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">248</span>
+      </a>
+
+      <!-- Services -->
+      <a href="services.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Services</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">13</span>
+      </a>
+
+      <!-- Staff -->
+      <a href="staff.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Staff</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">5</span>
+      </a>
+
+      <!-- Payments (Active) -->
+      <a href="payments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
+        <i class="fa-solid fa-credit-card w-5 text-center text-[#DCC3AA]"></i>
+        <span>Payments</span>
+        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-[#DCC3AA]"></span>
+      </a>
+
+      <!-- Reports -->
+      <a href="reports.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-chart-line w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Reports</span>
+      </a>
+
+      <!-- Notifications -->
+      <a href="notifications.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Notifications</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">6</span>
+      </a>
+
+      <!-- Messages -->
+      <a href="messages.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Messages</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">2</span>
+      </a>
+
+      <!-- Settings -->
+      <a href="settings.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-gear w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer / Logout -->
+    <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
+      <button 
+        type="button" 
+        onclick="openLogoutModal()" 
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+        <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
+        <span>Log Out</span>
+      </button>
+
+      <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
+        15 Years of Beauty Heritage · Lagro, QC
+      </p>
+    </div>
+
+  </aside>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8 max-w-7xl mx-auto w-full">
+
+    <!-- ================= 1. PAGE HEADER ================= -->
+    <section class="bg-gradient-to-r from-[#FAF6F0] via-white to-[#FDFBF7] p-6 sm:p-8 rounded-3xl border border-[#DCC3AA]/70 shadow-sm relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+      
+      <!-- Left: Title & Description -->
+      <div class="space-y-1.5 relative z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810B38]/10 text-[#810B38] text-xs font-bold uppercase tracking-wider">
+          <i class="fa-solid fa-credit-card text-[#810B38]"></i>
+          <span>Billing & Transactions</span>
+        </div>
+
+        <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#541A1A] leading-tight">
+          Payments
+        </h2>
+
+        <p class="text-sm sm:text-base text-[#735e5e] max-w-xl font-normal leading-relaxed">
+          Manage salon payments and transaction records.
+        </p>
+      </div>
+
+      <!-- Right: Action Buttons -->
+      <div class="flex flex-wrap items-center gap-3 shrink-0 relative z-20">
+        <button 
+          type="button" 
+          onclick="openRecordPaymentModal()"
+          class="px-5 py-3 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md shadow-[#810B38]/20 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2.5">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>Record Payment</span>
+        </button>
+
+        <button 
+          type="button" 
+          onclick="document.getElementById('paymentSearchInput').focus()"
+          class="px-4 py-3 rounded-xl bg-white hover:bg-[#FAF6F0] text-[#541A1A] border border-[#DCC3AA] text-xs sm:text-sm font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2">
+          <i class="fa-solid fa-magnifying-glass text-xs text-[#810B38]"></i>
+          <span>Search</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ================= 2. PAYMENT SUMMARY CARDS ================= -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" aria-labelledby="payment-summary-heading">
+      <h2 id="payment-summary-heading" class="sr-only">Payment Summary Statistics</h2>
+      
+      <!-- Card 1: Today's Revenue -->
+      <article onclick="filterBySummaryCard('today')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Today's Revenue</span>
+          <div class="w-10 h-10 rounded-2xl bg-rose-50 border border-rose-200 flex items-center justify-center text-[#810B38] group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-coins text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statTodayRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#810B38]">₱8,450</h3>
+          <span class="text-xs font-bold text-stone-400">12 visits</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-money-bill-wave text-emerald-600 text-[10px]"></i>
+          <span>Cash & GCash collected</span>
+        </p>
+      </article>
+
+      <!-- Card 2: This Month -->
+      <article onclick="filterBySummaryCard('all')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">This Month</span>
+          <div class="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-chart-line text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statMonthRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">₱52,680</h3>
+          <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">+14.2%</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-arrow-trend-up text-emerald-600 text-[10px]"></i>
+          <span>September gross billing</span>
+        </p>
+      </article>
+
+      <!-- Card 3: Paid -->
+      <article onclick="filterBySummaryCard('paid')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Paid</span>
+          <div class="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-circle-check text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statPaidRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">₱7,250</h3>
+          <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Settled</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-check text-emerald-600 text-[10px]"></i>
+          <span>Fully settled today</span>
+        </p>
+      </article>
+
+      <!-- Card 4: Pending -->
+      <article onclick="filterBySummaryCard('pending')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Pending</span>
+          <div class="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-clock text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statPendingRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-amber-700">₱1,200</h3>
+          <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Balance</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-regular fa-clock text-amber-500 text-[10px]"></i>
+          <span>Partial & unpaid appointments</span>
+        </p>
+      </article>
+
+    </section>
+
+      <!-- ================= 3. SEARCH & FILTERS BAR ================= -->
+      <section aria-labelledby="filters-heading" class="bg-white p-5 rounded-2xl border border-[#DCC3AA]/60 shadow-xs">
+        <h2 id="filters-heading" class="sr-only">Search and Filter Transactions</h2>
+
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          
+          <!-- Search Input -->
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+              <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </div>
+            <input 
+              type="text" 
+              id="paymentSearchInput"
+              placeholder="Search transaction ID, customer, service, notes..." 
+              class="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38] focus:bg-white transition-all">
+          </div>
+
+          <!-- Filter Dropdowns -->
+          <div class="flex items-center flex-wrap gap-2.5">
+            
+            <!-- Date Filter -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="dateFilter" class="text-stone-500 font-medium">Date:</label>
+              <select 
+                id="dateFilter" 
+                class="bg-transparent text-stone-800 font-semibold focus:outline-none cursor-pointer">
+                <option value="all">All Dates</option>
+                <option value="today">Today (Sept 23)</option>
+                <option value="yesterday">Yesterday (Sept 22)</option>
+              </select>
+            </div>
+
+            <!-- Payment Status Filter -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="statusFilter" class="text-stone-500 font-medium">Status:</label>
+              <select 
+                id="statusFilter" 
+                class="bg-transparent text-stone-800 font-semibold focus:outline-none cursor-pointer">
+                <option value="all">All Statuses</option>
+                <option value="Paid">Paid</option>
+                <option value="Partial">Partial</option>
+                <option value="Unpaid">Unpaid</option>
+                <option value="Refunded">Refunded</option>
+              </select>
+            </div>
+
+            <!-- Payment Method Filter -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="methodFilter" class="text-stone-500 font-medium">Method:</label>
+              <select 
+                id="methodFilter" 
+                class="bg-transparent text-stone-800 font-semibold focus:outline-none cursor-pointer">
+                <option value="all">All Methods</option>
+                <option value="Cash">Cash</option>
+                <option value="GCash">GCash</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+
+            <!-- Reset Filter Button -->
+            <button 
+              type="button" 
+              onclick="resetFilters()"
+              title="Reset all filters"
+              class="px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+              <i class="fa-solid fa-arrow-rotate-left text-[11px]"></i>
+              <span>Reset</span>
+            </button>
+          </div>
+
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-stone-500 mt-3 pt-3 border-t border-stone-100">
+          <span id="paymentsResultCount">Showing 8 transactions</span>
+          <span class="text-[11px] text-stone-400">Click transaction or ⋮ to view payment details & official receipt</span>
+        </div>
+      </section>
+
+      <!-- ================= 4. PAYMENT TRANSACTIONS TABLE ================= -->
+      <section aria-labelledby="payments-table-heading" class="bg-white rounded-2xl border border-[#DCC3AA]/60 shadow-xs overflow-hidden">
+        <h2 id="payments-table-heading" class="sr-only">Payment Transactions Table</h2>
+
+        <div id="paymentsTableContainer" class="overflow-x-auto">
+          <table class="w-full text-left border-collapse min-w-[700px]">
+            <thead>
+              <tr class="bg-[#FAF6F0] border-b border-[#DCC3AA]/60 text-stone-600 text-[11px] uppercase tracking-wider font-bold">
+                <th scope="col" class="px-5 py-3.5">Date</th>
+                <th scope="col" class="px-5 py-3.5">Customer</th>
+                <th scope="col" class="px-5 py-3.5">Service</th>
+                <th scope="col" class="px-5 py-3.5">Amount</th>
+                <th scope="col" class="px-5 py-3.5">Method</th>
+                <th scope="col" class="px-5 py-3.5">Status</th>
+                <th scope="col" class="px-5 py-3.5 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="paymentsTableBody" class="divide-y divide-stone-100">
+              <!-- Dynamically populated by payments.js -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="paymentsEmptyState" class="hidden p-12 text-center">
+          <div class="w-16 h-16 rounded-full bg-[#FAF6F0] border border-[#DCC3AA] text-[#810B38] flex items-center justify-center mx-auto mb-4 text-2xl">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+          <h3 class="font-serif text-lg font-bold text-[#541A1A]">No Transactions Found</h3>
+          <p class="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
+            No payment transaction matches your current filter criteria.
+          </p>
+          <button 
+            type="button" 
+            onclick="resetFilters()"
+            class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#810B38] text-white text-xs font-semibold hover:bg-[#62082b] transition-colors">
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+            <span>Reset Filters</span>
+          </button>
+        </div>
+
+      </section>
+
+      <!-- ================= 5. REVENUE OVERVIEW SECTION ================= -->
+      <section aria-labelledby="revenue-overview-heading" class="bg-white p-6 lg:p-8 rounded-3xl border border-[#DCC3AA]/70 shadow-xs">
+        
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-stone-100">
+          <div>
+            <div class="flex items-center gap-2.5">
+              <h2 id="revenue-overview-heading" class="font-serif text-xl font-bold text-[#541A1A]">
+                Revenue Overview
+              </h2>
+              <span class="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full">
+                Income Flow
+              </span>
+            </div>
+            <p class="text-xs text-stone-500 mt-1">
+              Daily revenue breakdown gives the salon owner a quick view of income performance.
+            </p>
+          </div>
+
+          <!-- Timeframe Selector -->
+          <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-1.5 text-xs">
+              <label for="revenueTimeframeSelect" class="text-stone-500 font-medium">Timeframe:</label>
+              <select 
+                id="revenueTimeframeSelect" 
+                onchange="changeRevenueTimeframe(this.value)"
+                class="bg-transparent text-[#810B38] font-bold focus:outline-none cursor-pointer">
+                <option value="week" selected>This Week</option>
+                <option value="today">Today</option>
+                <option value="month">This Month</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Revenue Stats Banner -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 my-6">
+          <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/50">
+            <span class="text-[10px] text-stone-500 font-bold uppercase block">Weekly Total</span>
+            <span id="revenueOverviewTotal" class="font-serif text-2xl font-bold text-[#541A1A]">₱43,250</span>
+          </div>
+
+          <div class="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/60">
+            <span class="text-[10px] text-emerald-700 font-bold uppercase block">Highest Day</span>
+            <span class="font-serif text-2xl font-bold text-emerald-800">Fri (₱8,450)</span>
+          </div>
+
+          <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/50">
+            <span class="text-[10px] text-stone-500 font-bold uppercase block">Daily Average</span>
+            <span class="font-serif text-2xl font-bold text-[#810B38]">₱6,178</span>
+          </div>
+
+          <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/50">
+            <span class="text-[10px] text-stone-500 font-bold uppercase block">Top Method</span>
+            <span class="font-serif text-2xl font-bold text-stone-800">GCash (58%)</span>
+          </div>
+        </div>
+
+        <!-- Interactive Bar Chart (Prompt Data: Mon: 4,200, Tue: 5,100, Wed: 6,800, Thu: 5,600, Fri: 8,450, Sat: 7,200, Sun: 5,900) -->
+        <div class="pt-4">
+          <div id="revenueChartContainer" class="flex items-end justify-between gap-3 h-48 pt-6 px-2 sm:px-6">
+            <!-- Dynamically populated by payments.js -->
+          </div>
+        </div>
+
+      </section>
+
+  </main>
+
+  <!-- ================= 6. PAYMENT DETAILS MODAL ================= -->
+  <div 
+    id="paymentDetailsModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-lg w-full overflow-hidden my-8 animate-fadeIn">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-[#541A1A] to-[#810B38] text-[#F1E2D1] p-5 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm text-[#DCC3AA]">
+            <i class="fa-solid fa-receipt"></i>
+          </div>
+          <div>
+            <h3 id="detailsPaymentId" class="font-serif text-lg font-bold tracking-wide">Payment Details</h3>
+            <p class="text-[11px] text-[#DCC3AA]">Transaction verification & booking record</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="closePaymentDetailsModal()"
+          class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-4 text-xs">
+        
+        <!-- Customer & Amount Banner -->
+        <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/60 flex items-center justify-between">
+          <div>
+            <span class="text-stone-400 block text-[10px] uppercase font-bold">Customer</span>
+            <span id="detailsCustomerName" class="font-serif font-bold text-base text-[#541A1A]">Maria Santos</span>
+          </div>
+          <div class="text-right">
+            <span class="text-stone-400 block text-[10px] uppercase font-bold">Amount</span>
+            <span id="detailsAmount" class="font-serif font-bold text-xl text-[#810B38]">₱250</span>
+          </div>
+        </div>
+
+        <!-- Appointment Info -->
+        <div class="p-3.5 bg-stone-50 rounded-xl border border-stone-200/70 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-stone-500 font-medium">Appointment:</span>
+            <span id="detailsAppointmentSchedule" class="font-semibold text-stone-800">September 23, 2026 — 9:00 AM</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-stone-500 font-medium">Service:</span>
+            <span id="detailsServiceName" class="font-semibold text-[#810B38]">Haircut</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-stone-500 font-medium">Payment Method:</span>
+            <span id="detailsPaymentMethod" class="font-semibold text-stone-800">Cash</span>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-stone-500 font-medium">Payment Status:</span>
+            <div id="detailsStatusBadge">
+              <!-- Status Badge -->
+            </div>
+          </div>
+          <div class="flex items-center justify-between">
+            <span class="text-stone-500 font-medium">Transaction Date:</span>
+            <span id="detailsTransactionDate" class="font-mono text-stone-700">September 23, 2026 — 9:42 AM</span>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <span class="block text-[11px] font-bold text-stone-600 mb-1">Notes:</span>
+          <p id="detailsNotes" class="p-3 bg-white border border-[#DCC3AA]/50 rounded-xl text-stone-700 text-xs italic">
+            Walk-in cash settlement completed after styling.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-stone-50 border-t border-stone-200 px-6 py-4 flex items-center justify-between">
+        <button 
+          type="button" 
+          onclick="openReceiptModal(activePayment ? activePayment.id : '')"
+          class="px-4 py-2 rounded-xl bg-[#810B38] text-white hover:bg-[#63082b] font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-md shadow-[#810B38]/20">
+          <i class="fa-solid fa-receipt"></i>
+          <span>View Receipt</span>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button 
+            type="button" 
+            onclick="openEditPaymentModal(activePayment ? activePayment.id : '')"
+            class="px-4 py-2 rounded-xl bg-white border border-[#DCC3AA] text-[#541A1A] hover:bg-[#FAF6F0] font-semibold text-xs transition-colors">
+            Edit Payment
+          </button>
+          <button 
+            type="button" 
+            onclick="closePaymentDetailsModal()"
+            class="px-4 py-2 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold text-xs transition-colors">
+            Close
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= 7. OFFICIAL RECEIPT MODAL ================= -->
+  <div 
+    id="receiptModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-sm w-full overflow-hidden my-8 animate-fadeIn">
+      
+      <!-- Receipt Header -->
+      <div class="p-6 bg-[#FAF6F0] border-b border-[#DCC3AA]/60 text-center relative">
+        <button 
+          type="button" 
+          onclick="closeReceiptModal()"
+          class="absolute top-4 right-4 w-7 h-7 rounded-lg bg-stone-200 hover:bg-stone-300 text-stone-600 flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+
+        <img 
+          src="../assets/images/logo.jfif" 
+          alt="Nely's Salon Logo" 
+          class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] mx-auto mb-2 object-cover">
+        
+        <h3 class="font-serif text-xl font-bold text-[#541A1A] tracking-wider uppercase">
+          NELY'S SALON
+        </h3>
+        <p class="text-[11px] font-bold text-[#810B38] tracking-widest uppercase mt-0.5">
+          Official Payment Receipt
+        </p>
+        <p class="text-[10px] text-stone-400 font-mono mt-1">
+          Lagro, Quezon City · Tel: (02) 8123-4567
+        </p>
+      </div>
+
+      <!-- Receipt Content Slip -->
+      <div class="p-6 space-y-4 font-mono text-xs text-stone-800">
+        
+        <div class="border-b border-dashed border-stone-300 pb-3 space-y-1">
+          <div class="flex justify-between">
+            <span class="text-stone-500">Customer:</span>
+            <span id="receiptCustomer" class="font-bold text-stone-900">Maria Santos</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-stone-500">Service:</span>
+            <span id="receiptService" class="font-bold text-[#810B38]">Haircut</span>
+          </div>
+        </div>
+
+        <div class="border-b border-dashed border-stone-300 pb-3 space-y-1.5">
+          <div class="flex justify-between text-sm">
+            <span class="font-bold">Amount:</span>
+            <span id="receiptAmount" class="font-bold text-base text-[#541A1A]">₱250</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-stone-500">Payment Method:</span>
+            <span id="receiptMethod" class="font-bold">Cash</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-stone-500">Status:</span>
+            <span id="receiptStatus" class="font-bold text-emerald-700">PAID</span>
+          </div>
+        </div>
+
+        <div class="space-y-1 text-[11px] text-stone-500">
+          <div class="flex justify-between">
+            <span>Date:</span>
+            <span id="receiptDate">September 23, 2026</span>
+          </div>
+          <div class="flex justify-between">
+            <span>Transaction:</span>
+            <span id="receiptTransaction" class="font-bold text-stone-800">PAY-0001</span>
+          </div>
+        </div>
+
+        <!-- Receipt Greeting Note -->
+        <div class="pt-4 border-t border-dashed border-stone-300 text-center">
+          <p class="font-serif italic text-xs text-[#810B38] font-bold">
+            Thank you for visiting Nely’s Salon!
+          </p>
+          <p class="text-[10px] text-stone-400 mt-0.5">
+            Please retain this digital slip for your records.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="p-4 bg-stone-50 border-t border-stone-200 flex items-center justify-between gap-2">
+        <button 
+          type="button" 
+          onclick="printReceipt()"
+          class="flex-1 py-2 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] font-semibold text-xs flex items-center justify-center gap-1.5 shadow-md">
+          <i class="fa-solid fa-print"></i>
+          <span>Print Receipt</span>
+        </button>
+
+        <button 
+          type="button" 
+          onclick="closeReceiptModal()"
+          class="py-2 px-4 rounded-xl border border-stone-300 text-stone-600 hover:bg-stone-100 font-semibold text-xs">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= 8. RECORD PAYMENT MODAL ================= -->
+  <div 
+    id="recordPaymentModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-md w-full overflow-hidden my-8 animate-fadeIn">
+      
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-[#541A1A] to-[#810B38] text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm text-[#DCC3AA]">
+            <i class="fa-solid fa-money-bill-wave"></i>
+          </div>
+          <div>
+            <h3 class="font-serif text-lg font-bold tracking-wide">Record Payment</h3>
+            <p class="text-[11px] text-[#DCC3AA]">Register salon booking settlement</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="closeRecordPaymentModal()"
+          class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="recordPaymentForm" onsubmit="handleSaveRecordPayment(event)" class="p-6 space-y-4">
+        
+        <!-- Select Customer -->
+        <div>
+          <label for="recordCustomerSelect" class="block text-xs font-bold text-stone-700 mb-1">
+            Customer <span class="text-rose-500">*</span>
+          </label>
+          <select 
+            id="recordCustomerSelect" 
+            required
+            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            <option value="Maria Santos">Maria Santos (0917 888 9999)</option>
+            <option value="Angela Cruz">Angela Cruz (0928 777 6666)</option>
+            <option value="Jamie Reyes">Jamie Reyes (0919 555 4433)</option>
+            <option value="Carla Dela Cruz">Carla Dela Cruz (0995 222 1100)</option>
+            <option value="Sophia Reyes">Sophia Reyes (0917 444 3322)</option>
+            <option value="Joshua Garcia">Joshua Garcia (0933 666 8899)</option>
+          </select>
+        </div>
+
+        <!-- Select Appointment / Service -->
+        <div>
+          <label for="recordServiceSelect" class="block text-xs font-bold text-stone-700 mb-1">
+            Appointment Service <span class="text-rose-500">*</span>
+          </label>
+          <select 
+            id="recordServiceSelect" 
+            required
+            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            <option value="Haircut">Sept 23, 9:00 AM — Haircut (₱250)</option>
+            <option value="Brazilian">Sept 23, 10:30 AM — Brazilian (₱1,999)</option>
+            <option value="Hair Dye">Sept 23, 1:00 PM — Hair Dye (₱699)</option>
+            <option value="Manicure">Sept 23, 2:30 PM — Manicure (₱149)</option>
+            <option value="Pedicure">Sept 23, 4:00 PM — Pedicure (₱149)</option>
+            <option value="Footspa">Sept 23, 5:00 PM — Footspa (₱199)</option>
+          </select>
+        </div>
+
+        <!-- Amount -->
+        <div>
+          <label for="recordAmount" class="block text-xs font-bold text-stone-700 mb-1">
+            Amount (₱) <span class="text-rose-500">*</span>
+          </label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-500 font-bold text-xs">
+              ₱
+            </span>
+            <input 
+              type="number" 
+              id="recordAmount" 
+              step="1"
+              min="0"
+              value="250"
+              required
+              class="w-full pl-8 pr-4 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <!-- Payment Method -->
+          <div>
+            <label for="recordMethod" class="block text-xs font-bold text-stone-700 mb-1">
+              Payment Method
+            </label>
+            <select 
+              id="recordMethod" 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+              <option value="Cash" selected>Cash</option>
+              <option value="GCash">GCash</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Payment Status -->
+          <div>
+            <label for="recordStatus" class="block text-xs font-bold text-stone-700 mb-1">
+              Payment Status
+            </label>
+            <select 
+              id="recordStatus" 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+              <option value="Paid" selected>Paid</option>
+              <option value="Partial">Partial</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div>
+          <label for="recordNotes" class="block text-xs font-bold text-stone-700 mb-1">
+            Notes
+          </label>
+          <textarea 
+            id="recordNotes" 
+            rows="2" 
+            placeholder="Optional payment notes (reference number, cash counter notes)..." 
+            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38]"></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">
+          <button 
+            type="button" 
+            onclick="closeRecordPaymentModal()"
+            class="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="px-6 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#63082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
+            Record Payment
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= 9. EDIT PAYMENT MODAL ================= -->
+  <div 
+    id="editPaymentModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-md w-full overflow-hidden my-8 animate-fadeIn">
+      
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-[#541A1A] to-[#810B38] text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm text-[#DCC3AA]">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </div>
+          <div>
+            <h3 class="font-serif text-lg font-bold tracking-wide">Edit Payment</h3>
+            <p class="text-[11px] text-[#DCC3AA]">Update amount, payment method, or status</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="closeEditPaymentModal()"
+          class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form onsubmit="handleSaveEditPayment(event)" class="p-6 space-y-4">
+        <input type="hidden" id="editPaymentId">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-stone-700 mb-1">Customer</label>
+            <input 
+              type="text" 
+              id="editCustomerName" 
+              disabled
+              class="w-full px-3.5 py-2.5 bg-stone-100 border border-stone-300 rounded-xl text-xs text-stone-600 cursor-not-allowed">
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-stone-700 mb-1">Service</label>
+            <input 
+              type="text" 
+              id="editService" 
+              disabled
+              class="w-full px-3.5 py-2.5 bg-stone-100 border border-stone-300 rounded-xl text-xs text-stone-600 cursor-not-allowed">
+          </div>
+        </div>
+
+        <div>
+          <label for="editAmount" class="block text-xs font-bold text-stone-700 mb-1">Amount (₱)</label>
+          <input 
+            type="number" 
+            id="editAmount" 
+            required
+            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="editMethod" class="block text-xs font-bold text-stone-700 mb-1">Payment Method</label>
+            <select 
+              id="editMethod" 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+              <option value="Cash">Cash</option>
+              <option value="GCash">GCash</option>
+              <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="editStatus" class="block text-xs font-bold text-stone-700 mb-1">Status</label>
+            <select 
+              id="editStatus" 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+              <option value="Paid">Paid</option>
+              <option value="Partial">Partial</option>
+              <option value="Unpaid">Unpaid</option>
+              <option value="Refunded">Refunded</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="editNotes" class="block text-xs font-bold text-stone-700 mb-1">Notes</label>
+          <textarea 
+            id="editNotes" 
+            rows="2" 
+            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]"></textarea>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">
+          <button 
+            type="button" 
+            onclick="closeEditPaymentModal()"
+            class="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="px-6 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#63082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
+            Save Changes
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= 10. REFUND MODAL ================= -->
+  <div 
+    id="refundModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-rose-200 shadow-2xl max-w-sm w-full p-6 text-center animate-fadeIn">
+      <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto mb-4 text-xl">
+        <i class="fa-solid fa-arrow-rotate-left"></i>
+      </div>
+      <h3 class="font-serif text-lg font-bold text-stone-800">Process Refund?</h3>
+      <p class="text-xs text-stone-500 mt-1.5 leading-relaxed">
+        Are you sure you want to mark payment for <strong id="refundCustomerTarget" class="text-stone-800">Customer</strong> of <strong id="refundAmountTarget" class="text-rose-700">₱0</strong> as <strong>REFUNDED</strong>?
+      </p>
+
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button 
+          type="button" 
+          onclick="closeRefundModal()"
+          class="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="handleConfirmRefund()"
+          class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-md shadow-rose-600/20 transition-all">
+          Confirm Refund
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 11. LOGOUT MODAL ================= -->
+  <div 
+    id="logoutModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-sm w-full p-6 text-center animate-fadeIn">
+      <div class="w-14 h-14 rounded-2xl bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA] flex items-center justify-center mx-auto mb-4 text-xl">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </div>
+      <h3 class="font-serif text-lg font-bold text-[#541A1A]">Sign Out of Admin?</h3>
+      <p class="text-xs text-stone-500 mt-1 leading-relaxed">
+        Are you sure you want to log out of your administrative session at Nely’s Salon?
+      </p>
+
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button 
+          type="button" 
+          onclick="closeLogoutModal()"
+          class="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="handleConfirmLogout()"
+          class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payments Page JavaScript Controller -->
+  <script src="../assets/js/pages/admin/payments.js"></script>
+
+</body>
+</html>

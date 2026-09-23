@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-wine: #810B38;
+  --color-brand-maroon: #541A1A;
+  --color-brand-cream: #F1E2D1;
+  --color-brand-sand: #DCC3AA;
+  --color-brand-sand-light: #f7ede2;
+  --color-brand-wine-dark: #62082b;
+  --color-brand-wine-light: #9e1449;
+
+  --font-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+/* Custom aesthetics matching high-fashion salon mockup */
+:root {
+  --wine: #810B38;
+  --cream: #F1E2D1;
+  --sand: #DCC3AA;
+  --maroon: #541A1A;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-family: var(--font-sans);
+  color: #2b1d1d;
+  background-color: #FDFBF7;
+  scrollbar-gutter: stable;
+  overflow-y: scroll;
+}
+
+/* Glassmorphism and UI utilities */
+.glass-nav {
+  background: rgba(253, 251, 247, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.serif-heading {
+  font-family: var(--font-serif);
+}
+
+/* ================= MODAL & DIALOG STEADY SCROLL-LOCK SYSTEM ================= */
+/* Contain modal scrolling internally so background never moves or bleeds */
+body.modal-open {
+  overscroll-behavior: contain !important;
+}
+
+/* Modal overlays (div-based) - steady positioning and internal scroll containment */
+.fixed.inset-0.z-50 {
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+}
+
+/* Smooth modal dialog centering, steady constraint, and internal scroll containment */
+dialog {
+  margin: auto !important;
+  position: fixed !important;
+  inset: 0 !important;
+  max-height: 90vh !important;
+  max-height: 90dvh !important;
+  width: 92% !important;
+  max-width: 520px;
+  box-sizing: border-box !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+dialog:not([open]) {
+  opacity: 0;
+  transform: scale(0.96) translateY(8px);
+  pointer-events: none;
+}
+
+dialog[open] {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+dialog::backdrop {
+  background: rgba(43, 13, 20, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: opacity 0.3s ease;
+  overscroll-behavior: none !important;
+}
+
+/* ================= INVISIBLE SCROLLBAR SYSTEM ================= */
+/* Preserves full scrolling capabilities across the page while making scrollbars completely invisible */
+html,
+body,
+* {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}
+
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  background: transparent !important;
+}

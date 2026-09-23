@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Staff — Nely’s Salon | Admin Management</title>
+  <meta name="description"
+    content="Manage salon staff, service assignments, schedules, and daily availability at Nely's Salon.">
+
+  <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Font Awesome 6 (Free Icons - Zero Emoji Rule) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
+  <link rel="stylesheet" href="../assets/css/output.css">
+</head>
+
+<body
+  class="min-h-screen bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
+
+  <!-- ================= MOBILE TOP NAVIGATION BAR (< lg) ================= -->
+  <header
+    class="lg:hidden sticky top-0 z-40 bg-[#541A1A] text-[#F1E2D1] border-b border-[#810B38]/40 px-4 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <button 
+        type="button" 
+        id="mobileMenuBtn" 
+        onclick="toggleMobileSidebar()" 
+        aria-label="Open navigation menu"
+        class="w-10 h-10 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors focus:outline-none focus:ring-2 focus:ring-[#DCC3AA]">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2.5">
+        <img 
+          src="../assets/images/logo.jfif" 
+          alt="Nely's Salon Logo"
+          class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover">
+        <div>
+          <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
+            Nely’s Salon
+          </span>
+          <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
+            Admin Panel
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Action Buttons -->
+    <div class="flex items-center gap-2">
+      <button 
+        type="button"
+        onclick="openAddStaffModal()"
+        aria-label="Add staff"
+        class="w-9 h-9 rounded-xl bg-[#810B38] text-white flex items-center justify-center hover:bg-[#62082b] transition-colors shadow-sm">
+        <i class="fa-solid fa-user-plus text-xs"></i>
+      </button>
+      <div class="w-9 h-9 rounded-xl bg-[#541A1A] text-[#DCC3AA] border border-[#DCC3AA]/50 flex items-center justify-center font-bold text-xs">
+        AD
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MOBILE SIDEBAR BACKDROP & DRAWER ================= -->
+  <div 
+    id="mobileSidebarBackdrop" 
+    onclick="toggleMobileSidebar(false)"
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden">
+  </div>
+
+                <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+  <aside 
+    id="sidebar"
+    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
+
+    <!-- Sidebar Header (Branding) -->
+    <div class="p-6 border-b border-[#810B38]/40">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <img 
+            src="../assets/images/logo.jfif" 
+            alt="Nely's Salon Logo"
+            class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
+          <div>
+            <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
+              Nely’s Salon
+            </h1>
+            <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
+              Admin Panel
+            </p>
+          </div>
+        </div>
+
+        <!-- Mobile Close Button -->
+        <button 
+          type="button" 
+          onclick="toggleMobileSidebar(false)"
+          class="lg:hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
+          aria-label="Close menu">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Salon Motto -->
+      <div class="pt-3 border-t border-white/10 flex items-center gap-2">
+        <i class="fa-solid fa-sparkles text-[#DCC3AA] text-xs"></i>
+        <span class="font-serif italic text-xs text-[#DCC3AA] tracking-wide">
+          “Your Beauty is Our Duty”
+        </span>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation Menu (10 Items) -->
+    <nav class="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
+      <!-- Dashboard -->
+      <a href="dashboard.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <!-- Appointments -->
+      <a href="appointments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Appointments</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">12</span>
+      </a>
+
+      <!-- Customers -->
+      <a href="customers.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Customers</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">248</span>
+      </a>
+
+      <!-- Services -->
+      <a href="services.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Services</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">13</span>
+      </a>
+
+      <!-- Staff (Active) -->
+      <a href="staff.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
+        <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA]"></i>
+        <span>Staff</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">5</span>
+      </a>
+
+      <!-- Payments -->
+      <a href="payments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-credit-card w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Payments</span>
+      </a>
+
+      <!-- Reports -->
+      <a href="reports.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-chart-line w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Reports</span>
+      </a>
+
+      <!-- Notifications -->
+      <a href="notifications.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Notifications</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">6</span>
+      </a>
+
+      <!-- Messages -->
+      <a href="messages.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Messages</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">2</span>
+      </a>
+
+      <!-- Settings -->
+      <a href="settings.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-gear w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Settings</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer / Logout -->
+    <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
+      <button 
+        type="button" 
+        onclick="openLogoutModal()" 
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+        <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
+        <span>Log Out</span>
+      </button>
+
+      <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
+        15 Years of Beauty Heritage · Lagro, QC
+      </p>
+    </div>
+
+  </aside>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8 max-w-7xl mx-auto w-full">
+
+    <!-- ================= 1. PAGE HEADER ================= -->
+    <section class="bg-gradient-to-r from-[#FAF6F0] via-white to-[#FDFBF7] p-6 sm:p-8 rounded-3xl border border-[#DCC3AA]/70 shadow-sm relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+      
+      <!-- Left: Title & Description -->
+      <div class="space-y-1.5 relative z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810B38]/10 text-[#810B38] text-xs font-bold uppercase tracking-wider">
+          <i class="fa-solid fa-user-tie text-[#810B38]"></i>
+          <span>Salon Stylists & Staff</span>
+        </div>
+
+        <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#541A1A] leading-tight">
+          Staff
+        </h2>
+
+        <p class="text-sm sm:text-base text-[#735e5e] max-w-xl font-normal leading-relaxed">
+          Manage salon staff, assignments, schedules, and availability.
+        </p>
+      </div>
+
+      <!-- Right: Action Buttons -->
+      <div class="flex flex-wrap items-center gap-3 shrink-0 relative z-20">
+        <button 
+          type="button" 
+          onclick="openAddStaffModal()"
+          class="px-5 py-3 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md shadow-[#810B38]/20 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2.5">
+          <i class="fa-solid fa-plus text-xs"></i>
+          <span>Add Staff</span>
+        </button>
+
+        <button 
+          type="button" 
+          onclick="document.getElementById('staffSearchInput').focus()"
+          class="px-4 py-3 rounded-xl bg-white hover:bg-[#FAF6F0] text-[#541A1A] border border-[#DCC3AA] text-xs sm:text-sm font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center gap-2">
+          <i class="fa-solid fa-magnifying-glass text-xs text-[#810B38]"></i>
+          <span>Search</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- ================= 2. STAFF SUMMARY CARDS (4 Cards) ================= -->
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5" aria-labelledby="staff-summary-heading">
+      <h2 id="staff-summary-heading" class="sr-only">Staff Summary Statistics</h2>
+      
+      <!-- Card 1: Total Staff -->
+      <article onclick="filterBySummaryCard('all')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Total Staff</span>
+          <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/40 flex items-center justify-center text-[#810B38] group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-user-tie text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statTotalStaff" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">5</h3>
+          <span class="text-xs font-bold text-stone-400">Team members</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-users text-[#810B38] text-[10px]"></i>
+          <span>Salon stylists & specialists</span>
+        </p>
+      </article>
+
+      <!-- Card 2: Active Staff -->
+      <article onclick="filterBySummaryCard('active')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Active Staff</span>
+          <div class="w-10 h-10 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-700 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-circle-check text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statActiveStaff" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">5</h3>
+          <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">On duty</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-calendar-check text-emerald-600 text-[10px]"></i>
+          <span>On regular salon roster</span>
+        </p>
+      </article>
+
+      <!-- Card 3: On Leave -->
+      <article onclick="filterBySummaryCard('on_leave')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">On Leave</span>
+          <div class="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-calendar-minus text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statOnLeaveStaff" class="font-serif text-3xl sm:text-4xl font-bold text-amber-700">0</h3>
+          <span class="text-xs font-bold text-stone-400">Off-duty</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-regular fa-clock text-amber-500 text-[10px]"></i>
+          <span>Approved scheduled leave</span>
+        </p>
+      </article>
+
+      <!-- Card 4: Inactive -->
+      <article onclick="filterBySummaryCard('inactive')" class="cursor-pointer bg-white p-6 rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all relative overflow-hidden group">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e]">Inactive</span>
+          <div class="w-10 h-10 rounded-2xl bg-stone-100 border border-stone-200 flex items-center justify-center text-stone-500 group-hover:scale-110 transition-transform">
+            <i class="fa-solid fa-circle-xmark text-base"></i>
+          </div>
+        </div>
+        <div class="flex items-baseline justify-between">
+          <h3 id="statInactiveStaff" class="font-serif text-3xl sm:text-4xl font-bold text-stone-500">0</h3>
+          <span class="text-xs font-bold text-stone-400">Archived</span>
+        </div>
+        <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-regular fa-pause-circle text-stone-400 text-[10px]"></i>
+          <span>Archived personnel profiles</span>
+        </p>
+      </article>
+
+    </section>
+
+      <!-- ================= 3. TODAY'S STAFF AVAILABILITY WIDGET ================= -->
+      <section aria-labelledby="today-availability-heading" class="bg-gradient-to-br from-[#FAF6F0] to-white p-6 rounded-3xl border border-[#DCC3AA] shadow-xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <div>
+            <h2 id="today-availability-heading" class="font-serif text-lg font-bold text-[#541A1A] flex items-center gap-2">
+              <i class="fa-solid fa-calendar-day text-[#810B38]"></i>
+              <span>Today’s Staff Availability</span>
+            </h2>
+            <p class="text-xs text-stone-500">Live roster for appointment booking, station allocation, and shift monitoring.</p>
+          </div>
+          <span class="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full self-start sm:self-auto inline-flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            Salon Open Today
+          </span>
+        </div>
+
+        <!-- Today Staff Row -->
+        <div id="todayStaffContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <!-- Injected dynamically by staff.js -->
+        </div>
+      </section>
+
+      <!-- ================= 4. SEARCH & FILTERS BAR ================= -->
+      <section aria-labelledby="filters-heading" class="bg-white p-5 rounded-2xl border border-[#DCC3AA]/60 shadow-xs">
+        <h2 id="filters-heading" class="sr-only">Search and Filter Staff</h2>
+
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+          
+          <!-- Search Input -->
+          <div class="relative flex-1">
+            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+              <i class="fa-solid fa-magnifying-glass text-xs"></i>
+            </div>
+            <input 
+              type="text" 
+              id="staffSearchInput"
+              placeholder="Search staff name, position, specializations..." 
+              class="w-full pl-10 pr-4 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38] focus:bg-white transition-all">
+          </div>
+
+          <!-- Filter Dropdowns -->
+          <div class="flex items-center flex-wrap gap-2.5">
+            
+            <!-- Status Filter -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="statusFilter" class="text-stone-500 font-medium">Status:</label>
+              <select 
+                id="statusFilter" 
+                class="bg-transparent text-stone-800 font-semibold focus:outline-none cursor-pointer">
+                <option value="all">All</option>
+                <option value="Active">Active</option>
+                <option value="On Leave">On Leave</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+            <!-- Service Filter -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="serviceFilter" class="text-stone-500 font-medium">Service:</label>
+              <select 
+                id="serviceFilter" 
+                class="bg-transparent text-stone-800 font-semibold focus:outline-none cursor-pointer">
+                <option value="all">All Services</option>
+                <option value="Rebonding">Rebonding</option>
+                <option value="Brazilian">Brazilian</option>
+                <option value="Hair Dye">Hair Dye</option>
+                <option value="Keratine Treatment">Keratine Treatment</option>
+                <option value="Cold Wave">Cold Wave</option>
+                <option value="Manicure">Manicure</option>
+                <option value="Pedicure">Pedicure</option>
+                <option value="Gel Manicure">Gel Manicure</option>
+                <option value="Footspa">Footspa</option>
+                <option value="Trim">Trim</option>
+              </select>
+            </div>
+
+            <!-- Availability Filter -->
+            <div class="flex items-center gap-1.5 bg-[#FAF6F0] border border-[#DCC3AA]/70 rounded-xl px-3 py-2 text-xs">
+              <label for="availabilityFilter" class="text-stone-500 font-medium">Availability:</label>
+              <select 
+                id="availabilityFilter" 
+                class="bg-transparent text-stone-800 font-semibold focus:outline-none cursor-pointer">
+                <option value="all">All</option>
+                <option value="Available">Available</option>
+                <option value="On Break">On Break</option>
+                <option value="In Service">In Service</option>
+                <option value="Day Off">Day Off</option>
+              </select>
+            </div>
+
+            <!-- Reset Filter Button -->
+            <button 
+              type="button" 
+              onclick="resetFilters()"
+              title="Reset all filters"
+              class="px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-600 text-xs font-semibold flex items-center gap-1.5 transition-colors">
+              <i class="fa-solid fa-arrow-rotate-left text-[11px]"></i>
+              <span>Reset</span>
+            </button>
+          </div>
+
+        </div>
+
+        <div class="flex items-center justify-between text-xs text-stone-500 mt-3 pt-3 border-t border-stone-100">
+          <span id="staffResultCount">Showing 5 staff members</span>
+          <span class="text-[11px] text-stone-400">Click staff card to view assigned services and working schedule</span>
+        </div>
+      </section>
+
+      <!-- ================= 5. STAFF LIST (STAFF CARDS) ================= -->
+      <section aria-labelledby="staff-list-heading">
+        <h2 id="staff-list-heading" class="sr-only">Staff Members Directory</h2>
+
+        <div id="staffCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Dynamically populated by staff.js -->
+        </div>
+
+        <!-- Empty State Container -->
+        <div id="staffEmptyState" class="hidden p-12 text-center bg-white rounded-3xl border border-[#DCC3AA]/60">
+          <div class="w-16 h-16 rounded-full bg-[#FAF6F0] border border-[#DCC3AA] text-[#810B38] flex items-center justify-center mx-auto mb-4 text-2xl">
+            <i class="fa-solid fa-user-xmark"></i>
+          </div>
+          <h3 class="font-serif text-lg font-bold text-[#541A1A]">No Staff Found</h3>
+          <p class="text-xs text-stone-500 mt-1 max-w-sm mx-auto">
+            No team member matches your search or filter criteria. Try adjusting the query or reset your filters.
+          </p>
+          <button 
+            type="button" 
+            onclick="resetFilters()"
+            class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#810B38] text-white text-xs font-semibold hover:bg-[#62082b] transition-colors">
+            <i class="fa-solid fa-arrow-rotate-left"></i>
+            <span>Reset Filters</span>
+          </button>
+        </div>
+
+      </section>
+
+  </main>
+
+  <!-- ================= 6. STAFF PROFILE MODAL ================= -->
+  <div 
+    id="staffProfileModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-2xl w-full overflow-hidden my-8 animate-fadeIn">
+      
+      <!-- Modal Header -->
+      <div class="bg-gradient-to-r from-[#541A1A] to-[#810B38] text-[#F1E2D1] p-6 flex items-start justify-between">
+        <div class="flex items-center gap-4">
+          <div 
+            id="staffProfileAvatar" 
+            class="w-14 h-14 rounded-2xl bg-white/10 border-2 border-[#DCC3AA] text-[#F1E2D1] flex items-center justify-center font-serif text-2xl font-bold shadow-md">
+            N
+          </div>
+          <div>
+            <div class="flex items-center gap-2.5">
+              <h3 id="staffProfileName" class="font-serif text-2xl font-bold text-white tracking-wide">
+                Nely
+              </h3>
+              <div id="staffProfileStatusBadge">
+                <!-- Status Badge -->
+              </div>
+            </div>
+            <p id="staffProfilePosition" class="text-xs text-[#DCC3AA] font-medium mt-0.5">
+              Salon Staff / Master Stylist
+            </p>
+          </div>
+        </div>
+
+        <button 
+          type="button" 
+          onclick="closeStaffProfileModal()"
+          class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
+          aria-label="Close modal">
+          <i class="fa-solid fa-xmark text-base"></i>
+        </button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        
+        <!-- Contact & Employment Information Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          
+          <!-- Contact Information -->
+          <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/50 space-y-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2 flex items-center gap-1.5">
+              <i class="fa-solid fa-address-book text-[#810B38]"></i>
+              <span>Contact Information</span>
+            </h4>
+            
+            <div class="text-xs text-stone-700 flex items-center gap-2">
+              <i class="fa-solid fa-phone text-[#810B38] w-4 text-center"></i>
+              <span id="staffProfilePhone" class="font-mono font-semibold">0917 111 2233</span>
+            </div>
+
+            <div class="text-xs text-stone-700 flex items-center gap-2">
+              <i class="fa-solid fa-envelope text-[#810B38] w-4 text-center"></i>
+              <a id="staffProfileEmail" href="mailto:nely@nelyssalon.ph" class="hover:underline font-mono">nely@nelyssalon.ph</a>
+            </div>
+
+            <div class="text-xs text-stone-700 flex items-center gap-2">
+              <i class="fa-solid fa-location-dot text-[#810B38] w-4 text-center"></i>
+              <span id="staffProfileAddress">Lagro, Quezon City</span>
+            </div>
+          </div>
+
+          <!-- Employment Information -->
+          <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/50 space-y-2">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2 flex items-center gap-1.5">
+              <i class="fa-solid fa-briefcase text-[#810B38]"></i>
+              <span>Employment Information</span>
+            </h4>
+            
+            <div class="text-xs text-stone-700 flex items-center justify-between">
+              <span class="text-stone-500">Position:</span>
+              <span class="font-semibold text-[#541A1A]">Salon Staff</span>
+            </div>
+
+            <div class="text-xs text-stone-700 flex items-center justify-between">
+              <span class="text-stone-500">Date Joined:</span>
+              <span id="staffProfileJoined" class="font-semibold text-stone-800">January 2026</span>
+            </div>
+
+            <div class="text-xs text-stone-700 flex items-center justify-between">
+              <span class="text-stone-500">Live Availability:</span>
+              <span id="staffProfileAvailBadge" class="font-semibold text-emerald-700">Available</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Services Assigned Section -->
+        <section aria-labelledby="modal-services-heading">
+          <div class="flex items-center justify-between mb-2.5">
+            <h4 id="modal-services-heading" class="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+              <i class="fa-solid fa-scissors text-[#810B38]"></i>
+              <span>Services Assigned</span>
+            </h4>
+            <span class="text-[11px] text-stone-400">Salon pricing reference</span>
+          </div>
+
+          <div class="border border-[#DCC3AA]/60 rounded-2xl overflow-hidden shadow-2xs">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-[#FAF6F0] border-b border-[#DCC3AA]/60 text-stone-600 text-[10px] uppercase tracking-wider font-bold">
+                  <th scope="col" class="px-4 py-2.5">Service</th>
+                  <th scope="col" class="px-4 py-2.5">Price</th>
+                </tr>
+              </thead>
+              <tbody id="staffProfileServicesBody" class="divide-y divide-stone-100">
+                <!-- Dynamically injected -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Schedule Section -->
+        <section aria-labelledby="modal-schedule-heading">
+          <div class="flex items-center justify-between mb-2.5">
+            <h4 id="modal-schedule-heading" class="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center gap-1.5">
+              <i class="fa-regular fa-clock text-[#810B38]"></i>
+              <span>Working Schedule</span>
+            </h4>
+            <span class="text-[11px] text-stone-400">Weekly shift pattern</span>
+          </div>
+
+          <div class="border border-[#DCC3AA]/60 rounded-2xl overflow-hidden shadow-2xs">
+            <table class="w-full text-left border-collapse">
+              <thead>
+                <tr class="bg-[#FAF6F0] border-b border-[#DCC3AA]/60 text-stone-600 text-[10px] uppercase tracking-wider font-bold">
+                  <th scope="col" class="px-4 py-2.5">Day</th>
+                  <th scope="col" class="px-4 py-2.5">Schedule</th>
+                </tr>
+              </thead>
+              <tbody id="staffProfileScheduleBody" class="divide-y divide-stone-100">
+                <!-- Dynamically injected -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="bg-stone-50 border-t border-stone-200 px-6 py-4 flex items-center justify-between">
+        <button 
+          type="button" 
+          onclick="openEditStaffModal(activeStaff ? activeStaff.id : '')"
+          class="px-4 py-2 rounded-xl bg-white border border-[#DCC3AA] text-[#541A1A] hover:bg-[#FAF6F0] font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-2xs">
+          <i class="fa-solid fa-pen-to-square text-[#810B38]"></i>
+          <span>Edit Staff</span>
+        </button>
+
+        <button 
+          type="button" 
+          onclick="closeStaffProfileModal()"
+          class="px-5 py-2 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 font-semibold text-xs transition-colors">
+          Close
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= 7. ADD / EDIT STAFF MODAL ================= -->
+  <div 
+    id="staffModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-lg w-full overflow-hidden my-8 animate-fadeIn">
+      
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-[#541A1A] to-[#810B38] text-white p-5 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm text-[#DCC3AA]">
+            <i class="fa-solid fa-user-tie"></i>
+          </div>
+          <div>
+            <h3 id="staffModalTitle" class="font-serif text-lg font-bold tracking-wide">Add New Staff</h3>
+            <p id="staffModalSubtitle" class="text-[11px] text-[#DCC3AA]">Register a new team member and assign services & schedule</p>
+          </div>
+        </div>
+        <button 
+          type="button" 
+          onclick="closeStaffModal()"
+          class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <form id="staffForm" onsubmit="handleSaveStaff(event)" class="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+        
+        <!-- Personal Information Section -->
+        <div class="space-y-3">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500 pb-1 border-b border-stone-100 flex items-center gap-1.5">
+            <i class="fa-solid fa-id-card text-[#810B38]"></i>
+            <span>Personal Information</span>
+          </h4>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="staffName" class="block text-xs font-bold text-stone-700 mb-1">
+                Display Name <span class="text-rose-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="staffName" 
+                required
+                placeholder="e.g. Nely" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            </div>
+
+            <div>
+              <label for="staffFullName" class="block text-xs font-bold text-stone-700 mb-1">
+                Full Legal Name
+              </label>
+              <input 
+                type="text" 
+                id="staffFullName" 
+                placeholder="e.g. Nely Santos-Reyes" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="staffPhone" class="block text-xs font-bold text-stone-700 mb-1">
+                Phone Number <span class="text-rose-500">*</span>
+              </label>
+              <input 
+                type="text" 
+                id="staffPhone" 
+                required
+                placeholder="09XX XXX XXXX" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            </div>
+
+            <div>
+              <label for="staffEmail" class="block text-xs font-bold text-stone-700 mb-1">
+                Email Address
+              </label>
+              <input 
+                type="email" 
+                id="staffEmail" 
+                placeholder="staff@nelyssalon.ph" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+            </div>
+          </div>
+
+          <div>
+            <label for="staffAddress" class="block text-xs font-bold text-stone-700 mb-1">
+              Address
+            </label>
+            <input 
+              type="text" 
+              id="staffAddress" 
+              placeholder="e.g. Lagro, Quezon City" 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+          </div>
+        </div>
+
+        <!-- Work Information Section -->
+        <div class="space-y-3 pt-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500 pb-1 border-b border-stone-100 flex items-center gap-1.5">
+            <i class="fa-solid fa-briefcase text-[#810B38]"></i>
+            <span>Work Information</span>
+          </h4>
+
+          <div>
+            <label for="staffPosition" class="block text-xs font-bold text-stone-700 mb-1">
+              Position
+            </label>
+            <input 
+              type="text" 
+              id="staffPosition" 
+              placeholder="e.g. Salon Staff, Master Stylist, Senior Nail Artist" 
+              value="Salon Staff"
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label for="staffStatus" class="block text-xs font-bold text-stone-700 mb-1">
+                Employment Status
+              </label>
+              <select 
+                id="staffStatus" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+                <option value="Active">Active</option>
+                <option value="On Leave">On Leave</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="staffAvailability" class="block text-xs font-bold text-stone-700 mb-1">
+                Default Availability
+              </label>
+              <select 
+                id="staffAvailability" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+                <option value="Available">Available</option>
+                <option value="On Break">On Break</option>
+                <option value="In Service">In Service</option>
+                <option value="Day Off">Day Off</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Assigned Services Selection -->
+          <div>
+            <label class="block text-xs font-bold text-stone-700 mb-1.5">
+              Assigned Services / Specializations
+            </label>
+            <div id="staffServiceCheckboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-40 overflow-y-auto p-2 border border-[#DCC3AA]/50 rounded-xl bg-stone-50">
+              <!-- Checkboxes dynamically rendered -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Schedule Section -->
+        <div class="space-y-3 pt-2">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-stone-500 pb-1 border-b border-stone-100 flex items-center gap-1.5">
+            <i class="fa-regular fa-clock text-[#810B38]"></i>
+            <span>Shift Schedule</span>
+          </h4>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label for="staffStartTime" class="block text-xs font-bold text-stone-700 mb-1">
+                Start Time
+              </label>
+              <select 
+                id="staffStartTime" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+                <option value="9:00 AM" selected>9:00 AM</option>
+                <option value="10:00 AM">10:00 AM</option>
+                <option value="11:00 AM">11:00 AM</option>
+                <option value="1:00 PM">1:00 PM</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="staffEndTime" class="block text-xs font-bold text-stone-700 mb-1">
+                End Time
+              </label>
+              <select 
+                id="staffEndTime" 
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
+                <option value="5:00 PM">5:00 PM</option>
+                <option value="6:00 PM" selected>6:00 PM</option>
+                <option value="7:00 PM">7:00 PM</option>
+                <option value="8:00 PM">8:00 PM</option>
+              </select>
+            </div>
+          </div>
+          <p class="text-[11px] text-stone-400">
+            Default working days set to Monday–Saturday with Sunday as Day Off (can be customized per staff).
+          </p>
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">
+          <button 
+            type="button" 
+            onclick="closeStaffModal()"
+            class="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="px-6 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#63082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
+            Save Staff
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= DELETE STAFF MODAL ================= -->
+  <div 
+    id="deleteStaffModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-rose-200 shadow-2xl max-w-sm w-full p-6 text-center animate-fadeIn">
+      <div class="w-14 h-14 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center mx-auto mb-4 text-xl">
+        <i class="fa-solid fa-user-xmark"></i>
+      </div>
+      <h3 class="font-serif text-lg font-bold text-stone-800">Remove Staff Member?</h3>
+      <p class="text-xs text-stone-500 mt-1.5 leading-relaxed">
+        Are you sure you want to remove <strong id="deleteStaffNameTarget" class="text-stone-800">this staff member</strong> from the active roster?
+      </p>
+
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button 
+          type="button" 
+          onclick="closeDeleteStaffModal()"
+          class="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="handleConfirmDeleteStaff()"
+          class="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs shadow-md shadow-rose-600/20 transition-all">
+          Remove Staff
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= LOGOUT MODAL ================= -->
+  <div 
+    id="logoutModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-sm w-full p-6 text-center animate-fadeIn">
+      <div class="w-14 h-14 rounded-2xl bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA] flex items-center justify-center mx-auto mb-4 text-xl">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </div>
+      <h3 class="font-serif text-lg font-bold text-[#541A1A]">Sign Out of Admin?</h3>
+      <p class="text-xs text-stone-500 mt-1 leading-relaxed">
+        Are you sure you want to log out of your administrative session at Nely’s Salon?
+      </p>
+
+      <div class="flex items-center justify-center gap-3 mt-6">
+        <button 
+          type="button" 
+          onclick="closeLogoutModal()"
+          class="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="handleConfirmLogout()"
+          class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Staff Page JavaScript Controller -->
+  <script src="../assets/js/pages/admin/staff.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages — Nely’s Salon | Customer Panel</title>
+  <meta name="description"
+    content="Chat with Nely's Salon for questions, appointments, and other concerns.">
+
+  <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Font Awesome 6 (Free Icons - Zero Emoji Rule) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
+  <link rel="stylesheet" href="../assets/css/output.css">
+</head>
+
+<body
+  class="min-h-screen bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
+
+  <!-- ================= MOBILE TOP NAVIGATION BAR (< lg) ================= -->
+  <header
+    class="lg:hidden sticky top-0 z-40 bg-[#541A1A] text-[#F1E2D1] border-b border-[#810B38]/40 px-4 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <button 
+        type="button" 
+        id="mobileMenuBtn" 
+        onclick="toggleMobileSidebar()" 
+        aria-label="Open navigation menu"
+        class="w-10 h-10 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors focus:outline-none focus:ring-2 focus:ring-[#DCC3AA]">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2.5">
+        <img 
+          src="../assets/images/logo.jfif" 
+          alt="Nely's Salon Logo"
+          class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover">
+        <div>
+          <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
+            Nely’s Salon
+          </span>
+          <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
+            Customer Panel
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Action Buttons -->
+    <div class="flex items-center gap-2">
+      <a 
+        href="notifications.html" 
+        class="relative w-10 h-10 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors"
+        aria-label="View notifications">
+        <i class="fa-solid fa-bell text-sm"></i>
+        <span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400"></span>
+      </a>
+
+      <a 
+        href="profile.html"
+        class="w-9 h-9 rounded-xl bg-[#810B38] text-white border border-[#DCC3AA]/50 flex items-center justify-center font-bold text-xs uppercase"
+        title="My Profile">
+        <i class="fa-solid fa-user text-xs"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- Mobile Sidebar Backdrop Overlay -->
+  <div 
+    id="mobileSidebarBackdrop" 
+    onclick="toggleMobileSidebar(false)"
+    class="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs hidden transition-opacity lg:hidden"
+    aria-hidden="true"></div>
+
+    <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+  <aside 
+    id="sidebar"
+    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
+
+    <!-- Sidebar Header (Branding) -->
+    <div class="p-6 border-b border-[#810B38]/40">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <img 
+            src="../assets/images/logo.jfif" 
+            alt="Nely's Salon Logo"
+            class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
+          <div>
+            <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
+              Nely’s Salon
+            </h1>
+            <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
+              Customer Panel
+            </p>
+          </div>
+        </div>
+
+        <!-- Mobile Close Button -->
+        <button 
+          type="button" 
+          onclick="toggleMobileSidebar(false)"
+          class="lg:hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
+          aria-label="Close menu">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Salon Motto -->
+      <div class="pt-3 border-t border-white/10 flex items-center gap-2">
+        <i class="fa-solid fa-sparkles text-[#DCC3AA] text-xs"></i>
+        <span class="font-serif italic text-xs text-[#DCC3AA] tracking-wide">
+          “Your Beauty is Our Duty”
+        </span>
+      </div>
+    </div>
+
+    <!-- Customer Profile Quick Pill -->
+    <div class="px-5 py-4 mx-4 my-3 rounded-2xl bg-[#6e1335]/40 border border-[#810B38]/50 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
+        MS
+      </div>
+      <div class="min-w-0 flex-1">
+        <span class="block text-sm font-semibold text-[#F1E2D1] truncate">Maria Santos</span>
+        <span class="inline-flex items-center gap-1.5 text-[11px] text-[#DCC3AA]">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          Verified Client
+        </span>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation Menu (7 Items) -->
+    <nav class="flex-1 px-4 py-2 space-y-1.5 overflow-y-auto">
+      <!-- Dashboard -->
+      <a href="dashboard.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <!-- Book Appointment -->
+      <a href="booking.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-plus w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Book Appointment</span>
+      </a>
+
+      <!-- My Appointments -->
+      <a href="appointments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>My Appointments</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+      </a>
+
+      <!-- Services & Prices -->
+      <a href="services.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Services & Prices</span>
+      </a>
+
+      <!-- Messages (Active) -->
+      <a href="messages.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
+        <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA]"></i>
+        <span>Messages</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+      </a>
+
+      <!-- Notifications -->
+      <a href="notifications.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Notifications</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">3</span>
+      </a>
+
+      <!-- My Profile -->
+      <a href="profile.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-user w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>My Profile</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer / Logout -->
+    <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
+      <a 
+        href="../login.html"
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+        <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
+        <span>Log Out</span>
+      </a>
+
+      <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
+        15 Years of Beauty Heritage · Lagro, QC
+      </p>
+    </div>
+
+  </aside>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 min-w-0 p-2 sm:p-4 lg:p-8 xl:p-10 max-w-7xl mx-auto w-full flex flex-col justify-start lg:justify-center">
+
+    <!-- ================= CHAT INTERFACE CONTAINER ================= -->
+    <section class="bg-white rounded-2xl sm:rounded-3xl border border-[#DCC3AA] shadow-sm overflow-hidden flex flex-col lg:grid lg:grid-cols-12 h-[calc(100dvh-4.25rem)] lg:h-[calc(100vh-5rem)] lg:min-h-[580px]">
+
+      <!-- ================= LEFT: SALON CHANNEL / CONVERSATION SELECTOR ================= -->
+      <div id="conversationsColumn" class="w-full lg:col-span-4 xl:col-span-3 border-r border-[#DCC3AA]/50 flex flex-col bg-white h-full min-h-0">
+        
+        <!-- Search bar -->
+        <div class="p-3 sm:p-4 border-b border-[#DCC3AA]/40 space-y-2.5 sm:space-y-3 bg-[#FAF6F0]/50 shrink-0">
+          <div class="flex items-center justify-between">
+            <h3 class="font-serif text-base sm:text-lg font-bold text-[#541A1A] flex items-center gap-2">
+              <i class="fa-solid fa-comments text-[#810B38] text-sm"></i>
+              <span>Salon Inquiries</span>
+            </h3>
+            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#810B38] text-white">
+              1 New
+            </span>
+          </div>
+
+          <div class="relative">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[#735e5e]/60 text-xs"></i>
+            <input 
+              type="text" 
+              id="searchChatInput"
+              placeholder="Search messages..."
+              class="w-full pl-8 pr-3 py-2 rounded-xl bg-white border border-[#DCC3AA]/70 text-xs text-[#2b1d1d] placeholder-[#735e5e]/60 focus:outline-none focus:ring-2 focus:ring-[#810B38] focus:border-transparent transition-all">
+          </div>
+        </div>
+
+        <!-- Conversation Item: Nely's Salon -->
+        <div class="flex-1 p-3 space-y-2 overflow-y-auto">
+          <div 
+            onclick="openMobileChat()" 
+            class="p-3.5 rounded-2xl bg-[#FAF6F0] border-2 border-[#810B38] cursor-pointer transition-all flex items-start gap-3 relative shadow-xs">
+            <div class="relative shrink-0">
+              <div class="w-11 h-11 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-sm flex items-center justify-center border border-[#DCC3AA] shadow-xs">
+                NS
+              </div>
+              <span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>
+            </div>
+
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-1 mb-1">
+                <h4 class="text-xs sm:text-sm font-bold text-[#541A1A] truncate flex items-center gap-1.5">
+                  <span>Nely's Salon</span>
+                  <i class="fa-solid fa-circle-check text-emerald-600 text-[10px]" title="Verified Official Salon"></i>
+                </h4>
+                <span class="text-[10px] font-bold text-[#810B38] shrink-0">10:32 AM</span>
+              </div>
+
+              <p class="text-xs text-[#541A1A] font-semibold truncate">
+                Hello! Your appointment has been confirmed.
+              </p>
+            </div>
+
+            <span class="shrink-0 self-center w-2.5 h-2.5 rounded-full bg-[#810B38] shadow-xs" title="Unread Message"></span>
+          </div>
+
+          <!-- Salon Info Badge Pill -->
+          <div class="p-3.5 rounded-2xl bg-[#FAF6F0]/60 border border-[#DCC3AA]/40 text-xs space-y-2 mt-4">
+            <div class="font-serif font-bold text-[#541A1A] text-xs uppercase tracking-wider">
+              Atelier Direct Line
+            </div>
+            <div class="space-y-1.5 text-[11px] text-[#735e5e]">
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-phone text-[#810B38] w-3.5 text-center"></i>
+                <a href="tel:09171234567" class="font-bold text-[#541A1A] hover:underline">0917 123 4567</a>
+              </div>
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-clock text-[#810B38] w-3.5 text-center"></i>
+                <span>Mon - Sat: 9:00 AM - 6:00 PM</span>
+              </div>
+              <div class="flex items-center gap-2">
+                <i class="fa-solid fa-location-dot text-[#810B38] w-3.5 text-center"></i>
+                <span>Lagro, Quezon City</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ================= RIGHT/CENTER: CHAT STREAM & INPUT ================= -->
+      <div id="chatColumn" class="hidden lg:flex w-full lg:col-span-8 xl:col-span-9 flex-col bg-[#FDFBF7]/40 h-full min-h-0">
+
+        <!-- Active Chat Header -->
+        <div class="px-3 sm:px-5 py-3 bg-white border-b border-[#DCC3AA]/40 flex items-center justify-between shadow-2xs shrink-0 gap-2">
+          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+            <!-- Mobile Back Button to return to Conversation List -->
+            <button 
+              type="button" 
+              onclick="backToConversationList()" 
+              class="lg:hidden w-8 h-8 rounded-lg bg-stone-50 hover:bg-[#FAF6F0] border border-[#DCC3AA]/60 flex items-center justify-center text-[#541A1A] transition-colors shrink-0"
+              title="Back to conversations">
+              <i class="fa-solid fa-arrow-left text-xs"></i>
+            </button>
+
+            <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xs sm:text-sm flex items-center justify-center border border-[#DCC3AA] shadow-xs shrink-0">
+              NS
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1.5 sm:gap-2">
+                <h4 class="font-bold text-xs sm:text-sm text-[#541A1A] truncate">Nely’s Salon</h4>
+                <div class="flex items-center gap-1 text-[10px] sm:text-[11px] shrink-0">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span class="text-emerald-700 font-semibold">Online</span>
+                </div>
+              </div>
+              <p class="text-[10px] sm:text-[11px] text-[#735e5e] truncate">Official Salon Concierge · Customer Support</p>
+            </div>
+          </div>
+
+          <!-- Header Quick Actions -->
+          <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
+            <a 
+              href="tel:09171234567" 
+              title="Call Salon"
+              class="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-stone-50 hover:bg-[#FAF6F0] border border-[#DCC3AA]/60 flex items-center justify-center transition-colors text-[#541A1A]">
+              <i class="fa-solid fa-phone text-xs text-[#810B38]"></i>
+            </a>
+
+            <!-- Toggle Salon Info on Tablet/Mobile -->
+            <button 
+              type="button" 
+              onclick="toggleSalonInfoDrawer(true)"
+              class="lg:hidden w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-stone-50 hover:bg-[#FAF6F0] border border-[#DCC3AA]/60 flex items-center justify-center transition-colors text-[#541A1A]"
+              title="View Salon Information">
+              <i class="fa-solid fa-circle-info text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- ================= ACTIVE CHAT CONTAINER ================= -->
+        <div id="activeChatView" class="flex-1 flex flex-col min-h-0">
+
+          <!-- Scrollable Message Stream -->
+          <div id="customerChatStream" class="flex-1 overflow-y-auto p-4 sm:p-6 space-y-1">
+            <!-- Rendered by messages.js -->
+          </div>
+
+          <!-- Quick Message Topics ("What would you like help with?") -->
+          <div class="px-4 py-2 border-t border-[#DCC3AA]/40 bg-white/95 backdrop-blur-xs shrink-0">
+            <div class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] mb-1.5 flex items-center gap-1.5">
+              <i class="fa-solid fa-hand-holding-heart text-[#810B38]"></i>
+              <span>What would you like help with?</span>
+            </div>
+            
+            <div class="flex items-center gap-2 overflow-x-auto pb-1">
+              <button 
+                type="button" 
+                onclick="applyQuickTopic('appointment')"
+                class="px-2.5 py-1.5 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA]/60 text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-calendar-days text-[#810B38] group-hover:text-white text-[11px]"></i>
+                <span>Appointment</span>
+              </button>
+
+              <button 
+                type="button" 
+                onclick="applyQuickTopic('services')"
+                class="px-2.5 py-1.5 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA]/60 text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-scissors text-[#810B38] group-hover:text-white text-[11px]"></i>
+                <span>Services</span>
+              </button>
+
+              <button 
+                type="button" 
+                onclick="applyQuickTopic('pricing')"
+                class="px-2.5 py-1.5 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA]/60 text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-tag text-[#810B38] group-hover:text-white text-[11px]"></i>
+                <span>Pricing</span>
+              </button>
+
+              <button 
+                type="button" 
+                onclick="applyQuickTopic('availability')"
+                class="px-2.5 py-1.5 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA]/60 text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-clock text-[#810B38] group-hover:text-white text-[11px]"></i>
+                <span>Availability</span>
+              </button>
+
+              <button 
+                type="button" 
+                onclick="applyQuickTopic('info')"
+                class="px-2.5 py-1.5 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA]/60 text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5">
+                <i class="fa-solid fa-location-dot text-[#810B38] group-hover:text-white text-[11px]"></i>
+                <span>Salon Info</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Attachment Preview Pill -->
+          <div id="customerAttachmentPreview" class="hidden px-4 py-2 bg-[#FAF6F0] border-t border-[#DCC3AA]/40 flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2 text-[#810B38] font-medium truncate">
+              <i class="fa-solid fa-paperclip"></i>
+              <span id="customerAttachmentFileName" class="truncate font-mono">sample-image.jpg</span>
+            </div>
+            <button 
+              type="button" 
+              onclick="clearCustomerAttachment()" 
+              class="text-[#735e5e] hover:text-rose-600 p-1">
+              <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
+          </div>
+
+          <!-- Message Form Input Area -->
+          <div class="p-2.5 sm:p-4 bg-white border-t border-[#DCC3AA]/40 shrink-0">
+            <form id="customerMessageForm" class="flex items-end gap-2">
+              <!-- Hidden File Input -->
+              <input type="file" id="customerFileInput" class="hidden" accept="image/*,.pdf,.doc,.docx">
+
+              <!-- Attachment Trigger 📎 -->
+              <button 
+                type="button" 
+                onclick="triggerCustomerFileInput()"
+                title="Attach image or file"
+                class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#FAF6F0] hover:bg-[#DCC3AA]/40 text-[#735e5e] hover:text-[#541A1A] border border-[#DCC3AA]/60 flex items-center justify-center transition-colors shrink-0">
+                <i class="fa-solid fa-paperclip text-xs sm:text-sm"></i>
+              </button>
+
+              <!-- Text Input -->
+              <div class="flex-1 relative min-w-0">
+                <textarea 
+                  id="customerMessageInput" 
+                  rows="1" 
+                  placeholder="Type a message..."
+                  class="w-full px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-[#FDFBF7] border border-[#DCC3AA]/70 text-xs sm:text-sm text-[#2b1d1d] placeholder-[#735e5e]/60 focus:outline-none focus:ring-2 focus:ring-[#810B38] focus:border-transparent transition-all resize-none max-h-28"></textarea>
+              </div>
+
+              <!-- Send Button ➤ -->
+              <button 
+                type="submit" 
+                title="Send Message"
+                class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white flex items-center justify-center transition-all shadow-md shadow-[#810B38]/20 hover:shadow-lg shrink-0">
+                <i class="fa-solid fa-paper-plane text-xs sm:text-sm"></i>
+              </button>
+            </form>
+          </div>
+
+        </div>
+
+        <!-- ================= EMPTY STATE VIEW (Hidden by default) ================= -->
+        <div id="emptyStateView" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center bg-white space-y-4">
+          <div class="w-16 h-16 rounded-full bg-[#FAF6F0] border-2 border-[#DCC3AA] text-[#810B38] flex items-center justify-center text-2xl shadow-sm">
+            <i class="fa-solid fa-comments"></i>
+          </div>
+
+          <div class="max-w-sm space-y-1.5">
+            <h3 class="font-serif text-2xl font-bold text-[#541A1A]">No messages yet</h3>
+            <p class="text-xs sm:text-sm text-[#735e5e] leading-relaxed">
+              Have a question about an appointment or one of our salon services?
+            </p>
+          </div>
+
+          <button 
+            type="button" 
+            onclick="startNewConversation()"
+            class="px-6 py-3 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md shadow-[#810B38]/20 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2">
+            <i class="fa-solid fa-comment-dots"></i>
+            <span>Start a Conversation</span>
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ================= MOBILE SALON INFO DRAWER ================= -->
+  <div 
+    id="salonInfoMobileDrawer" 
+    onclick="toggleSalonInfoDrawer(false)"
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity">
+    <div 
+      onclick="event.stopPropagation()"
+      class="bg-white w-full sm:max-w-md max-h-[88vh] sm:rounded-3xl rounded-t-3xl border border-[#DCC3AA] shadow-2xl flex flex-col overflow-hidden animate-slide-up">
+      
+      <!-- Drawer Header -->
+      <div class="px-5 py-4 border-b border-[#DCC3AA]/40 flex items-center justify-between bg-[#FAF6F0]/80 shrink-0">
+        <h3 class="font-serif text-base font-bold text-[#541A1A] flex items-center gap-2">
+          <i class="fa-solid fa-store text-[#810B38]"></i>
+          <span>Salon Information</span>
+        </h3>
+        <button 
+          type="button" 
+          onclick="toggleSalonInfoDrawer(false)"
+          class="w-8 h-8 rounded-full bg-white hover:bg-stone-100 border border-[#DCC3AA]/60 flex items-center justify-center text-stone-600 transition-colors">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Drawer Body -->
+      <div class="p-5 overflow-y-auto space-y-4">
+        <!-- Salon Identity Card -->
+        <div class="text-center space-y-2">
+          <div class="w-16 h-16 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xl flex items-center justify-center mx-auto border-2 border-[#DCC3AA] shadow-md">
+            NS
+          </div>
+          <div>
+            <h4 class="font-serif text-lg font-bold text-[#541A1A]">Nely’s Salon</h4>
+            <div class="inline-flex items-center gap-1.5 text-xs text-[#735e5e] font-medium">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Verified Official Salon · Open Today
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Details -->
+        <div class="space-y-2.5 bg-[#FAF6F0] p-4 rounded-2xl border border-[#DCC3AA]/50 text-xs">
+          <div class="flex items-center gap-3 text-[#735e5e]">
+            <i class="fa-solid fa-phone text-[#810B38] w-4 text-center"></i>
+            <a href="tel:09171234567" class="font-bold text-[#541A1A] hover:underline">0917 123 4567</a>
+          </div>
+          <div class="flex items-center gap-3 text-[#735e5e]">
+            <i class="fa-solid fa-clock text-[#810B38] w-4 text-center"></i>
+            <span>Monday - Saturday: 9:00 AM - 6:00 PM</span>
+          </div>
+          <div class="flex items-center gap-3 text-[#735e5e]">
+            <i class="fa-solid fa-location-dot text-[#810B38] w-4 text-center"></i>
+            <span class="text-[#2b1d1d]">Lagro, Quezon City</span>
+          </div>
+        </div>
+
+        <!-- Quick Action: Book Appointment -->
+        <a 
+          href="booking.html"
+          class="w-full py-3 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider transition-all shadow-md shadow-[#810B38]/20 flex items-center justify-center gap-2">
+          <i class="fa-solid fa-calendar-plus text-xs"></i>
+          <span>Book an Appointment</span>
+        </a>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ================= DELETE MESSAGE MODAL ================= -->
+  <div 
+    id="deleteMessageModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-sm w-full shadow-2xl p-6 text-center space-y-4">
+      <div class="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto text-xl shadow-xs">
+        <i class="fa-solid fa-trash-can"></i>
+      </div>
+      <div>
+        <h3 class="font-serif text-lg font-bold text-[#541A1A]">Delete Message?</h3>
+        <p class="text-xs text-stone-500 mt-1">
+          Are you sure you want to remove this message from your chat history?
+        </p>
+      </div>
+      <div class="flex items-center justify-center gap-3 pt-2">
+        <button 
+          type="button" 
+          onclick="closeDeleteMessageModal()"
+          class="w-full py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="confirmDeleteMessage()"
+          class="w-full py-2.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white text-xs font-semibold transition-colors shadow-sm">
+          Delete
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="customerToastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- Scripts -->
+  <script>
+    // Mobile Sidebar Toggle
+    function toggleMobileSidebar(show) {
+      const sidebar = document.getElementById('sidebar');
+      const backdrop = document.getElementById('mobileSidebarBackdrop');
+      if (!sidebar) return;
+
+      const shouldOpen = show !== undefined ? show : sidebar.classList.contains('-translate-x-full');
+      if (shouldOpen) {
+        sidebar.classList.remove('-translate-x-full');
+        if (backdrop) backdrop.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden', 'lg:overflow-auto');
+      } else {
+        sidebar.classList.add('-translate-x-full');
+        if (backdrop) backdrop.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden', 'lg:overflow-auto');
+      }
+    }
+  </script>
+  <script src="../assets/js/pages/customer/messages.js"></script>
+</body>
+
+</html>

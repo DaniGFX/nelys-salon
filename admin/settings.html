@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — Nely’s Salon | Admin Management</title>
+  <meta name="description"
+    content="Manage your salon information, business hours, appointments, notifications, and account preferences at Nely's Salon.">
+
+  <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet">
+
+  <!-- Font Awesome 6 (Free Icons - Zero Emoji Rule) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
+  <link rel="stylesheet" href="../assets/css/output.css">
+</head>
+
+<body
+  class="min-h-screen bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
+
+  <!-- ================= MOBILE TOP NAVIGATION BAR (< lg) ================= -->
+  <header
+    class="lg:hidden sticky top-0 z-40 bg-[#541A1A] text-[#F1E2D1] border-b border-[#810B38]/40 px-4 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <button 
+        type="button" 
+        id="mobileMenuBtn" 
+        onclick="toggleMobileSidebar()" 
+        aria-label="Open navigation menu"
+        class="w-10 h-10 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors focus:outline-none focus:ring-2 focus:ring-[#DCC3AA]">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2.5">
+        <img 
+          src="../assets/images/logo.jfif" 
+          alt="Nely's Salon Logo"
+          class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover">
+        <div>
+          <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
+            Nely’s Salon
+          </span>
+          <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
+            Admin Panel
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Action Buttons -->
+    <div class="flex items-center gap-2">
+      <div id="systemStatusBadge" class="hidden sm:block">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          Operational
+        </span>
+      </div>
+      <div class="w-9 h-9 rounded-xl bg-[#541A1A] text-[#DCC3AA] border border-[#DCC3AA]/50 flex items-center justify-center font-bold text-xs">
+        AD
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MOBILE SIDEBAR BACKDROP & DRAWER ================= -->
+  <div 
+    id="mobileSidebarBackdrop" 
+    onclick="toggleMobileSidebar(false)"
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden">
+  </div>
+
+                <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+  <aside 
+    id="sidebar"
+    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
+
+    <!-- Sidebar Header (Branding) -->
+    <div class="p-6 border-b border-[#810B38]/40">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <img 
+            src="../assets/images/logo.jfif" 
+            alt="Nely's Salon Logo"
+            class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
+          <div>
+            <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
+              Nely’s Salon
+            </h1>
+            <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
+              Admin Panel
+            </p>
+          </div>
+        </div>
+
+        <!-- Mobile Close Button -->
+        <button 
+          type="button" 
+          onclick="toggleMobileSidebar(false)"
+          class="lg:hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
+          aria-label="Close menu">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Salon Motto -->
+      <div class="pt-3 border-t border-white/10 flex items-center gap-2">
+        <i class="fa-solid fa-sparkles text-[#DCC3AA] text-xs"></i>
+        <span class="font-serif italic text-xs text-[#DCC3AA] tracking-wide">
+          “Your Beauty is Our Duty”
+        </span>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation Menu (10 Items) -->
+    <nav class="flex-1 px-4 py-4 space-y-1.5 overflow-y-auto">
+      <!-- Dashboard -->
+      <a href="dashboard.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <!-- Appointments -->
+      <a href="appointments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Appointments</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">12</span>
+      </a>
+
+      <!-- Customers -->
+      <a href="customers.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Customers</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">248</span>
+      </a>
+
+      <!-- Services -->
+      <a href="services.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Services</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">13</span>
+      </a>
+
+      <!-- Staff -->
+      <a href="staff.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Staff</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">5</span>
+      </a>
+
+      <!-- Payments -->
+      <a href="payments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-credit-card w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Payments</span>
+      </a>
+
+      <!-- Reports -->
+      <a href="reports.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-chart-line w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Reports</span>
+      </a>
+
+      <!-- Notifications -->
+      <a href="notifications.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Notifications</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">6</span>
+      </a>
+
+      <!-- Messages -->
+      <a href="messages.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Messages</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">2</span>
+      </a>
+
+      <!-- Settings (Active) -->
+      <a href="settings.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
+        <i class="fa-solid fa-gear w-5 text-center text-[#DCC3AA]"></i>
+        <span>Settings</span>
+        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-[#DCC3AA]"></span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer / Logout -->
+    <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
+      <button 
+        type="button" 
+        onclick="openLogoutModal()" 
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+        <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
+        <span>Log Out</span>
+      </button>
+
+      <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
+        15 Years of Beauty Heritage · Lagro, QC
+      </p>
+    </div>
+
+  </aside>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8 max-w-7xl mx-auto w-full">
+
+    <!-- ================= 1. PAGE HEADER ================= -->
+    <section class="bg-gradient-to-r from-[#FAF6F0] via-white to-[#FDFBF7] p-6 sm:p-8 rounded-3xl border border-[#DCC3AA]/70 shadow-sm relative flex flex-col md:flex-row md:items-center justify-between gap-6">
+      
+      <!-- Left: Title & Description -->
+      <div class="space-y-1.5 relative z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810B38]/10 text-[#810B38] text-xs font-bold uppercase tracking-wider">
+          <i class="fa-solid fa-gear text-[#810B38]"></i>
+          <span>Administration & Controls</span>
+        </div>
+
+        <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#541A1A] leading-tight">
+          Settings
+        </h2>
+
+        <p class="text-sm sm:text-base text-[#735e5e] max-w-xl font-normal leading-relaxed">
+          Manage your salon information, business hours, appointments, notifications, and account preferences.
+        </p>
+      </div>
+
+      <!-- Right: System Status & Clock Display -->
+      <div class="flex flex-wrap items-center gap-3 shrink-0 relative z-20">
+        <div id="systemStatusBadge">
+          <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 shadow-xs">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            System Operational
+          </span>
+        </div>
+
+        <div class="hidden sm:flex items-center gap-2 px-3.5 py-2 rounded-xl bg-white border border-[#DCC3AA] text-xs font-mono text-[#541A1A] shadow-sm">
+          <i class="fa-regular fa-clock text-[#810B38]"></i>
+          <span id="topClockDisplay">Sept 23, 2026</span>
+        </div>
+      </div>
+
+    </section>
+
+      <!-- ================= SYSTEM DEACTIVATION BANNER (If Deactivated) ================= -->
+      <div id="deactivatedBanner" class="hidden bg-rose-50 border border-rose-300 rounded-3xl p-5 shadow-xs">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-2xl bg-rose-600 text-white flex items-center justify-center shrink-0">
+              <i class="fa-solid fa-triangle-exclamation text-base"></i>
+            </div>
+            <div>
+              <h3 class="font-serif font-bold text-sm text-rose-900">Salon Booking System is Currently Deactivated</h3>
+              <p class="text-xs text-rose-700 mt-0.5">Online appointments and client booking are temporarily paused for maintenance.</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onclick="handleReactivateSystem()"
+            class="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold transition-colors shrink-0 shadow-xs">
+            Reactivate Now
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Section Navigation Anchor Pills -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 border-b border-[#FAF6F0] text-xs">
+        <a href="#salonInfoSection" class="px-3.5 py-1.5 rounded-xl bg-white border border-[#DCC3AA]/70 text-stone-700 hover:bg-[#FAF6F0] font-medium shrink-0 transition-colors">
+          <i class="fa-solid fa-store text-[#810B38] mr-1.5"></i>Salon Info
+        </a>
+        <a href="#businessHoursSection" class="px-3.5 py-1.5 rounded-xl bg-white border border-[#DCC3AA]/70 text-stone-700 hover:bg-[#FAF6F0] font-medium shrink-0 transition-colors">
+          <i class="fa-solid fa-clock text-[#810B38] mr-1.5"></i>Business Hours
+        </a>
+        <a href="#appointmentSettingsSection" class="px-3.5 py-1.5 rounded-xl bg-white border border-[#DCC3AA]/70 text-stone-700 hover:bg-[#FAF6F0] font-medium shrink-0 transition-colors">
+          <i class="fa-solid fa-calendar-days text-[#810B38] mr-1.5"></i>Appointments
+        </a>
+        <a href="#paymentSettingsSection" class="px-3.5 py-1.5 rounded-xl bg-white border border-[#DCC3AA]/70 text-stone-700 hover:bg-[#FAF6F0] font-medium shrink-0 transition-colors">
+          <i class="fa-solid fa-credit-card text-[#810B38] mr-1.5"></i>Payments
+        </a>
+        <a href="#notificationSettingsSection" class="px-3.5 py-1.5 rounded-xl bg-white border border-[#DCC3AA]/70 text-stone-700 hover:bg-[#FAF6F0] font-medium shrink-0 transition-colors">
+          <i class="fa-solid fa-bell text-[#810B38] mr-1.5"></i>Notifications
+        </a>
+        <a href="#accountSettingsSection" class="px-3.5 py-1.5 rounded-xl bg-white border border-[#DCC3AA]/70 text-stone-700 hover:bg-[#FAF6F0] font-medium shrink-0 transition-colors">
+          <i class="fa-solid fa-shield-halved text-[#810B38] mr-1.5"></i>Account & Security
+        </a>
+        <a href="#systemPreferencesSection" class="px-3.5 py-1.5 rounded-xl bg-white border border-[#DCC3AA]/70 text-stone-700 hover:bg-[#FAF6F0] font-medium shrink-0 transition-colors">
+          <i class="fa-solid fa-sliders text-[#810B38] mr-1.5"></i>System
+        </a>
+        <a href="#dangerZoneSection" class="px-3.5 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 font-semibold shrink-0 transition-colors">
+          <i class="fa-solid fa-triangle-exclamation text-rose-600 mr-1.5"></i>Danger Zone
+        </a>
+      </div>
+
+      <!-- ================= 2. SALON INFORMATION ================= -->
+      <section id="salonInfoSection" class="bg-white rounded-3xl border border-[#DCC3AA]/60 p-6 lg:p-8 shadow-xs space-y-6">
+        <div class="flex items-center justify-between pb-4 border-b border-[#FAF6F0]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/50 text-[#810B38] flex items-center justify-center text-base shadow-xs">
+              <i class="fa-solid fa-store"></i>
+            </div>
+            <div>
+              <h2 class="font-serif text-xl font-bold text-[#541A1A]">Salon Information</h2>
+              <p class="text-xs text-stone-500">Official salon business details displayed to patrons and booking invoices.</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onclick="handleSaveSalonInfo(event)"
+            class="hidden sm:inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs transition-colors shadow-xs">
+            <i class="fa-solid fa-floppy-disk text-xs"></i>
+            <span>Save Changes</span>
+          </button>
+        </div>
+
+        <form onsubmit="handleSaveSalonInfo(event)" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Salon Name -->
+            <div>
+              <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Salon Name</label>
+              <input 
+                type="text" 
+                id="settingSalonName" 
+                value="Nely's Salon"
+                class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#810B38] bg-white font-medium" 
+                required>
+            </div>
+
+            <!-- Contact Number -->
+            <div>
+              <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Contact Number</label>
+              <input 
+                type="text" 
+                id="settingSalonPhone" 
+                value="0917 888 9999"
+                class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#810B38] bg-white font-medium" 
+                required>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Business Address -->
+            <div>
+              <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Business Address</label>
+              <input 
+                type="text" 
+                id="settingSalonAddress" 
+                value="BLK 42 Lot 12, Sacred Heart Village, Greater Lagro, Novaliches, Quezon City, Metro Manila"
+                class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#810B38] bg-white font-medium" 
+                required>
+            </div>
+
+            <!-- Email Address -->
+            <div>
+              <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Email Address</label>
+              <input 
+                type="email" 
+                id="settingSalonEmail" 
+                value="nelyssalon@email.com"
+                class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#810B38] bg-white font-medium" 
+                required>
+            </div>
+          </div>
+
+          <!-- Salon Description -->
+          <div>
+            <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Salon Description</label>
+            <textarea 
+              id="settingSalonDesc" 
+              rows="3"
+              class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#810B38] bg-white font-medium leading-relaxed">15 years of providing quality salon services to our customers.</textarea>
+          </div>
+
+          <div class="pt-2 flex justify-end">
+            <button 
+              type="submit" 
+              class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs transition-colors shadow-xs flex items-center justify-center gap-2">
+              <i class="fa-solid fa-floppy-disk text-xs"></i>
+              <span>Save Changes</span>
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- ================= 3. BUSINESS HOURS ================= -->
+      <section id="businessHoursSection" class="bg-white rounded-3xl border border-[#DCC3AA]/60 p-6 lg:p-8 shadow-xs space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#FAF6F0]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/50 text-[#810B38] flex items-center justify-center text-base shadow-xs">
+              <i class="fa-solid fa-clock"></i>
+            </div>
+            <div>
+              <h2 class="font-serif text-xl font-bold text-[#541A1A]">Business Hours</h2>
+              <p class="text-xs text-stone-500">Configure when the salon accepts appointments across the week.</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onclick="handleSaveBusinessHours(event)"
+            class="px-5 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs transition-colors shadow-xs flex items-center gap-2 self-start sm:self-center">
+            <i class="fa-solid fa-floppy-disk text-xs"></i>
+            <span>Save Business Hours</span>
+          </button>
+        </div>
+
+        <!-- Business Hours Table -->
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-[#FAF6F0] bg-[#FAF6F0]/60 text-[11px] font-bold text-stone-500 uppercase tracking-wider">
+                <th class="py-3 px-4 rounded-l-xl">Day</th>
+                <th class="py-3 px-4">Status</th>
+                <th class="py-3 px-4">Opening</th>
+                <th class="py-3 px-4 rounded-r-xl">Closing</th>
+              </tr>
+            </thead>
+            <tbody id="businessHoursTbody" class="divide-y divide-stone-100">
+              <!-- Populated dynamically via settings.js -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ================= 4. APPOINTMENT SETTINGS ================= -->
+      <section id="appointmentSettingsSection" class="bg-white rounded-3xl border border-[#DCC3AA]/60 p-6 lg:p-8 shadow-xs space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#FAF6F0]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/50 text-[#810B38] flex items-center justify-center text-base shadow-xs">
+              <i class="fa-solid fa-calendar-days"></i>
+            </div>
+            <div>
+              <h2 class="font-serif text-xl font-bold text-[#541A1A]">Appointment Settings</h2>
+              <p class="text-xs text-stone-500">Slot durations, booking limits, auto-confirmation rules, and cancellation policies.</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onclick="handleSaveAppointmentSettings(event)"
+            class="px-5 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs transition-colors shadow-xs flex items-center gap-2 self-start sm:self-center">
+            <i class="fa-solid fa-floppy-disk text-xs"></i>
+            <span>Save Appointment Settings</span>
+          </button>
+        </div>
+
+        <form onsubmit="handleSaveAppointmentSettings(event)" class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+            <!-- Appointment Duration -->
+            <div>
+              <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Appointment Duration</label>
+              <select 
+                id="settingApptDuration" 
+                class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#810B38] bg-white font-medium">
+                <option value="15">15 minutes</option>
+                <option value="30" selected>30 minutes</option>
+                <option value="45">45 minutes</option>
+                <option value="60">60 minutes (1 hr)</option>
+                <option value="90">90 minutes (1.5 hrs)</option>
+                <option value="120">120 minutes (2 hrs)</option>
+              </select>
+            </div>
+
+            <!-- Advance Booking Days -->
+            <div>
+              <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Advance Booking Limit</label>
+              <div class="relative">
+                <input 
+                  type="number" 
+                  id="settingAdvanceBooking" 
+                  value="30" 
+                  min="1" 
+                  max="90"
+                  class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#810B38] bg-white font-medium pr-12">
+                <span class="absolute right-3.5 top-2.5 text-xs text-stone-400 font-mono">days</span>
+              </div>
+              <p class="text-[11px] text-stone-400 mt-1">Allow customers to book up to 30 days ahead</p>
+            </div>
+
+            <!-- Minimum Booking Notice -->
+            <div>
+              <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Minimum Booking Notice</label>
+              <div class="relative">
+                <input 
+                  type="number" 
+                  id="settingMinNotice" 
+                  value="2" 
+                  min="1" 
+                  max="24"
+                  class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#810B38] bg-white font-medium pr-14">
+                <span class="absolute right-3.5 top-2.5 text-xs text-stone-400 font-mono">hours</span>
+              </div>
+              <p class="text-[11px] text-stone-400 mt-1">Cut-off prior to appointment time</p>
+            </div>
+
+            <!-- Max Appointments per Time Slot -->
+            <div>
+              <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Max Per Time Slot</label>
+              <input 
+                type="number" 
+                id="settingMaxPerSlot" 
+                value="3" 
+                min="1" 
+                max="10"
+                class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 focus:outline-none focus:ring-1 focus:ring-[#810B38] bg-white font-medium">
+              <p class="text-[11px] text-stone-400 mt-1">Simultaneous chair capacity</p>
+            </div>
+          </div>
+
+          <!-- Policies & Toggle Switches -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-stone-100">
+            <!-- Auto-confirm appointments -->
+            <div class="flex items-center justify-between p-4 rounded-2xl bg-[#FAF6F0]/60 border border-[#DCC3AA]/40">
+              <div>
+                <h4 class="font-serif font-bold text-sm text-[#541A1A]">Auto-confirm appointments</h4>
+                <p class="text-xs text-stone-500 mt-0.5">Automatically mark new customer bookings as Confirmed</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="settingAutoConfirm" class="sr-only peer">
+                <div class="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#810B38]"></div>
+              </label>
+            </div>
+
+            <!-- Allow appointment cancellation -->
+            <div class="flex items-center justify-between p-4 rounded-2xl bg-[#FAF6F0]/60 border border-[#DCC3AA]/40">
+              <div>
+                <h4 class="font-serif font-bold text-sm text-[#541A1A]">Allow appointment cancellation</h4>
+                <p class="text-xs text-stone-500 mt-0.5">Permit customers to cancel bookings from their portal</p>
+              </div>
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="settingAllowCancel" class="sr-only peer" checked>
+                <div class="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#810B38]"></div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Cancellation Notice Window -->
+          <div class="p-4 rounded-2xl bg-[#FAF6F0]/40 border border-[#DCC3AA]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h4 class="font-serif font-bold text-sm text-[#541A1A]">Cancellation Notice</h4>
+              <p class="text-xs text-stone-500 mt-0.5">Minimum hours before appointment that patrons are allowed to cancel</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <input 
+                type="number" 
+                id="settingCancelNotice" 
+                value="2" 
+                min="1" 
+                max="48"
+                class="w-20 px-3 py-1.5 rounded-xl border border-[#DCC3AA] text-xs text-center font-mono font-bold text-stone-800 bg-white">
+              <span class="text-xs text-stone-600 font-medium">hours before appointment</span>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <!-- ================= 5. PAYMENT SETTINGS ================= -->
+      <section id="paymentSettingsSection" class="bg-white rounded-3xl border border-[#DCC3AA]/60 p-6 lg:p-8 shadow-xs space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#FAF6F0]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/50 text-[#810B38] flex items-center justify-center text-base shadow-xs">
+              <i class="fa-solid fa-credit-card"></i>
+            </div>
+            <div>
+              <h2 class="font-serif text-xl font-bold text-[#541A1A]">Payment Settings</h2>
+              <p class="text-xs text-stone-500">Available payment methods. Enable only what Nely's Salon actually accepts.</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onclick="handleSavePaymentSettings(event)"
+            class="px-5 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs transition-colors shadow-xs flex items-center gap-2 self-start sm:self-center">
+            <i class="fa-solid fa-floppy-disk text-xs"></i>
+            <span>Save Payment Settings</span>
+          </button>
+        </div>
+
+        <form onsubmit="handleSavePaymentSettings(event)" class="space-y-6">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            
+            <!-- Cash -->
+            <label class="p-4 rounded-2xl border border-[#DCC3AA]/60 bg-[#FAF6F0]/40 flex items-center justify-between cursor-pointer hover:border-[#810B38] transition-colors group">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-sm border border-emerald-200">
+                  <i class="fa-solid fa-money-bill-wave"></i>
+                </div>
+                <div>
+                  <h4 class="font-serif font-bold text-sm text-[#541A1A] group-hover:text-[#810B38]">Cash</h4>
+                  <p class="text-[11px] text-stone-500">In-salon counter payment</p>
+                </div>
+              </div>
+              <input type="checkbox" id="settingPayCash" class="w-4 h-4 text-[#810B38] accent-[#810B38] rounded" checked>
+            </label>
+
+            <!-- GCash -->
+            <label class="p-4 rounded-2xl border border-[#DCC3AA]/60 bg-[#FAF6F0]/40 flex items-center justify-between cursor-pointer hover:border-[#810B38] transition-colors group">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-sm border border-blue-200">
+                  <i class="fa-solid fa-mobile-screen-button"></i>
+                </div>
+                <div>
+                  <h4 class="font-serif font-bold text-sm text-[#541A1A] group-hover:text-[#810B38]">GCash</h4>
+                  <p class="text-[11px] text-stone-500">E-wallet QR or Mobile</p>
+                </div>
+              </div>
+              <input type="checkbox" id="settingPayGcash" class="w-4 h-4 text-[#810B38] accent-[#810B38] rounded" checked>
+            </label>
+
+            <!-- Bank Transfer -->
+            <label class="p-4 rounded-2xl border border-[#DCC3AA]/60 bg-[#FAF6F0]/40 flex items-center justify-between cursor-pointer hover:border-[#810B38] transition-colors group">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-stone-100 text-stone-600 flex items-center justify-center text-sm border border-stone-200">
+                  <i class="fa-solid fa-building-columns"></i>
+                </div>
+                <div>
+                  <h4 class="font-serif font-bold text-sm text-[#541A1A] group-hover:text-[#810B38]">Bank Transfer</h4>
+                  <p class="text-[11px] text-stone-500">Online bank settlement</p>
+                </div>
+              </div>
+              <input type="checkbox" id="settingPayBank" class="w-4 h-4 text-[#810B38] accent-[#810B38] rounded">
+            </label>
+
+            <!-- Other -->
+            <label class="p-4 rounded-2xl border border-[#DCC3AA]/60 bg-[#FAF6F0]/40 flex items-center justify-between cursor-pointer hover:border-[#810B38] transition-colors group">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-stone-100 text-stone-600 flex items-center justify-center text-sm border border-stone-200">
+                  <i class="fa-solid fa-wallet"></i>
+                </div>
+                <div>
+                  <h4 class="font-serif font-bold text-sm text-[#541A1A] group-hover:text-[#810B38]">Other</h4>
+                  <p class="text-[11px] text-stone-500">Custom payment slips</p>
+                </div>
+              </div>
+              <input type="checkbox" id="settingPayOther" class="w-4 h-4 text-[#810B38] accent-[#810B38] rounded">
+            </label>
+
+          </div>
+
+          <!-- GCash Recipient Details -->
+          <div class="p-5 rounded-2xl bg-[#FAF6F0]/60 border border-[#DCC3AA]/50 space-y-4">
+            <h4 class="font-serif font-bold text-sm text-[#541A1A]">Official GCash Payment Details</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1.5">GCash Mobile Number</label>
+                <input 
+                  type="text" 
+                  id="settingGcashNumber" 
+                  value="0917 888 9999"
+                  class="w-full px-4 py-2 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 bg-white font-mono">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-stone-600 mb-1.5">Account Registered Name</label>
+                <input 
+                  type="text" 
+                  id="settingGcashName" 
+                  value="Nely D."
+                  class="w-full px-4 py-2 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 bg-white font-medium">
+              </div>
+            </div>
+          </div>
+        </form>
+      </section>
+
+      <!-- ================= 6. NOTIFICATION PREFERENCES ================= -->
+      <section id="notificationSettingsSection" class="bg-white rounded-3xl border border-[#DCC3AA]/60 p-6 lg:p-8 shadow-xs space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#FAF6F0]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/50 text-[#810B38] flex items-center justify-center text-base shadow-xs">
+              <i class="fa-solid fa-bell"></i>
+            </div>
+            <div>
+              <h2 class="font-serif text-xl font-bold text-[#541A1A]">Notification Preferences</h2>
+              <p class="text-xs text-stone-500">Configure real-time system alerts for administrative staff.</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onclick="handleSaveNotificationPreferences(event)"
+            class="px-5 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs transition-colors shadow-xs flex items-center gap-2 self-start sm:self-center">
+            <i class="fa-solid fa-floppy-disk text-xs"></i>
+            <span>Save Preferences</span>
+          </button>
+        </div>
+
+        <form onsubmit="handleSaveNotificationPreferences(event)" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          
+          <!-- New Appointment -->
+          <div class="p-4 rounded-2xl bg-[#FAF6F0]/60 border border-[#DCC3AA]/40 flex items-center justify-between">
+            <div>
+              <h4 class="font-serif font-bold text-sm text-[#541A1A]">New Appointment</h4>
+              <p class="text-[11px] text-stone-500 mt-0.5">Booking created by patron</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="prefNewAppt" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#810B38]"></div>
+            </label>
+          </div>
+
+          <!-- Appointment Cancellation -->
+          <div class="p-4 rounded-2xl bg-[#FAF6F0]/60 border border-[#DCC3AA]/40 flex items-center justify-between">
+            <div>
+              <h4 class="font-serif font-bold text-sm text-[#541A1A]">Appointment Cancellation</h4>
+              <p class="text-[11px] text-stone-500 mt-0.5">Customer cancels booking</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="prefApptCancel" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#810B38]"></div>
+            </label>
+          </div>
+
+          <!-- Appointment Reschedule -->
+          <div class="p-4 rounded-2xl bg-[#FAF6F0]/60 border border-[#DCC3AA]/40 flex items-center justify-between">
+            <div>
+              <h4 class="font-serif font-bold text-sm text-[#541A1A]">Appointment Reschedule</h4>
+              <p class="text-[11px] text-stone-500 mt-0.5">Schedule date/time shifted</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="prefApptResched" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#810B38]"></div>
+            </label>
+          </div>
+
+          <!-- Payment Received -->
+          <div class="p-4 rounded-2xl bg-[#FAF6F0]/60 border border-[#DCC3AA]/40 flex items-center justify-between">
+            <div>
+              <h4 class="font-serif font-bold text-sm text-[#541A1A]">Payment Received</h4>
+              <p class="text-[11px] text-stone-500 mt-0.5">Cash / GCash recorded</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="prefPayReceived" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#810B38]"></div>
+            </label>
+          </div>
+
+          <!-- New Customer -->
+          <div class="p-4 rounded-2xl bg-[#FAF6F0]/60 border border-[#DCC3AA]/40 flex items-center justify-between">
+            <div>
+              <h4 class="font-serif font-bold text-sm text-[#541A1A]">New Customer</h4>
+              <p class="text-[11px] text-stone-500 mt-0.5">New account registration</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="prefNewCustomer" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#810B38]"></div>
+            </label>
+          </div>
+
+          <!-- System Updates -->
+          <div class="p-4 rounded-2xl bg-[#FAF6F0]/60 border border-[#DCC3AA]/40 flex items-center justify-between">
+            <div>
+              <h4 class="font-serif font-bold text-sm text-[#541A1A]">System Updates</h4>
+              <p class="text-[11px] text-stone-500 mt-0.5">Maintenance & system logs</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="prefSystemUpdates" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-stone-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-stone-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#810B38]"></div>
+            </label>
+          </div>
+
+        </form>
+      </section>
+
+      <!-- ================= 7. ACCOUNT & SECURITY ================= -->
+      <section id="accountSettingsSection" class="bg-white rounded-3xl border border-[#DCC3AA]/60 p-6 lg:p-8 shadow-xs space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#FAF6F0]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/50 text-[#810B38] flex items-center justify-center text-base shadow-xs">
+              <i class="fa-solid fa-shield-halved"></i>
+            </div>
+            <div>
+              <h2 class="font-serif text-xl font-bold text-[#541A1A]">Account & Security</h2>
+              <p class="text-xs text-stone-500">Administrator profile credentials and authentication password.</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onclick="handleSaveAccountSettings(event)"
+            class="px-5 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs transition-colors shadow-xs flex items-center gap-2 self-start sm:self-center">
+            <i class="fa-solid fa-floppy-disk text-xs"></i>
+            <span>Save Profile</span>
+          </button>
+        </div>
+
+        <div class="space-y-6">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <!-- Admin Name -->
+            <div>
+              <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Admin Name</label>
+              <input 
+                type="text" 
+                id="settingAccountName" 
+                value="Admin"
+                class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 bg-white font-medium">
+            </div>
+
+            <!-- Email -->
+            <div>
+              <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Admin Email</label>
+              <input 
+                type="email" 
+                id="settingAccountEmail" 
+                value="admin@nelyssalon.com"
+                class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 bg-white font-medium">
+            </div>
+          </div>
+
+          <!-- Password Row -->
+          <div class="p-5 rounded-2xl bg-[#FAF6F0]/60 border border-[#DCC3AA]/40 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h4 class="font-serif font-bold text-sm text-[#541A1A]">Change Password</h4>
+              <p class="text-xs text-stone-500 mt-0.5">Current password is active and secured</p>
+              <div class="font-mono text-xs tracking-widest text-stone-400 mt-2">••••••••••••</div>
+            </div>
+            <button 
+              type="button" 
+              onclick="openChangePasswordModal()"
+              class="px-5 py-2.5 rounded-xl bg-white border border-[#DCC3AA] text-[#541A1A] hover:bg-[#FAF6F0] font-semibold text-xs transition-colors flex items-center gap-2 shadow-2xs self-start sm:self-center">
+              <i class="fa-solid fa-key text-xs text-[#810B38]"></i>
+              <span>Change Password</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 8. SYSTEM PREFERENCES ================= -->
+      <section id="systemPreferencesSection" class="bg-white rounded-3xl border border-[#DCC3AA]/60 p-6 lg:p-8 shadow-xs space-y-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#FAF6F0]">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/50 text-[#810B38] flex items-center justify-center text-base shadow-xs">
+              <i class="fa-solid fa-sliders"></i>
+            </div>
+            <div>
+              <h2 class="font-serif text-xl font-bold text-[#541A1A]">System Preferences</h2>
+              <p class="text-xs text-stone-500">Localization, currency standards, and timezone parameters.</p>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onclick="handleSaveSystemPreferences(event)"
+            class="px-5 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs transition-colors shadow-xs flex items-center gap-2 self-start sm:self-center">
+            <i class="fa-solid fa-floppy-disk text-xs"></i>
+            <span>Save Preferences</span>
+          </button>
+        </div>
+
+        <form onsubmit="handleSaveSystemPreferences(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          <!-- Language -->
+          <div>
+            <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Language</label>
+            <select 
+              id="settingSysLanguage" 
+              class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 bg-white font-medium">
+              <option value="English" selected>English</option>
+              <option value="Filipino">Filipino (Tagalog)</option>
+            </select>
+          </div>
+
+          <!-- Currency -->
+          <div>
+            <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Currency</label>
+            <input 
+              type="text" 
+              id="settingSysCurrency" 
+              value="PHP (₱)" 
+              readonly
+              class="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-xs font-mono text-stone-600 cursor-not-allowed">
+          </div>
+
+          <!-- Timezone -->
+          <div>
+            <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Timezone</label>
+            <input 
+              type="text" 
+              id="settingSysTimezone" 
+              value="Asia/Manila (GMT+8)" 
+              readonly
+              class="w-full px-4 py-2.5 rounded-xl border border-stone-200 bg-stone-50 text-xs font-mono text-stone-600 cursor-not-allowed">
+          </div>
+
+          <!-- Date Format -->
+          <div>
+            <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Date Format</label>
+            <select 
+              id="settingSysDateFormat" 
+              class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 bg-white font-medium font-mono">
+              <option value="MM/DD/YYYY" selected>MM/DD/YYYY</option>
+              <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+              <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+            </select>
+          </div>
+        </form>
+      </section>
+
+      <!-- ================= 9. DANGER ZONE ================= -->
+      <section id="dangerZoneSection" class="bg-rose-50/50 rounded-3xl border border-rose-300 p-6 lg:p-8 shadow-xs space-y-6">
+        <div class="flex items-center gap-3 pb-4 border-b border-rose-200">
+          <div class="w-10 h-10 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-base border border-rose-300">
+            <i class="fa-solid fa-triangle-exclamation"></i>
+          </div>
+          <div>
+            <h2 class="font-serif text-xl font-bold text-rose-950">Danger Zone</h2>
+            <p class="text-xs text-rose-800">Irreversible actions and system wide maintenance controls.</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          
+          <!-- Deactivate System Action Card -->
+          <div class="bg-white rounded-2xl p-5 border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h4 class="font-serif font-bold text-sm text-stone-900">Deactivate Salon System</h4>
+              <p class="text-xs text-stone-500 mt-1 max-w-xl">
+                Temporarily disable customer bookings and system access. Can be re-enabled at any time by the admin.
+              </p>
+            </div>
+            <button 
+              type="button" 
+              onclick="openDeactivateModal()"
+              class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-xs transition-colors shrink-0 shadow-xs flex items-center gap-2">
+              <i class="fa-solid fa-power-off text-xs"></i>
+              <span>Deactivate Salon System</span>
+            </button>
+          </div>
+
+          <!-- Delete Admin Account Action Card -->
+          <div class="bg-white rounded-2xl p-5 border border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h4 class="font-serif font-bold text-sm text-rose-950">Delete Account</h4>
+              <p class="text-xs text-stone-500 mt-1 max-w-xl">
+                Permanently delete the admin account and associated system data. This action is irreversible.
+              </p>
+            </div>
+            <button 
+              type="button" 
+              onclick="openDeleteAccountModal()"
+              class="px-5 py-2.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs transition-colors shrink-0 shadow-xs flex items-center gap-2">
+              <i class="fa-solid fa-trash-can text-xs"></i>
+              <span>Delete Account</span>
+            </button>
+          </div>
+
+        </div>
+      </section>
+
+  </main>
+
+  <!-- ================= CHANGE PASSWORD MODAL ================= -->
+  <div 
+    id="changePasswordModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-md w-full shadow-2xl p-6 lg:p-8 space-y-6">
+      
+      <div class="flex items-start justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm border border-[#DCC3AA]/50">
+            <i class="fa-solid fa-key"></i>
+          </div>
+          <div>
+            <h3 class="font-serif text-lg font-bold text-[#541A1A]">Update Password</h3>
+            <p class="text-xs text-stone-500">Ensure your account has a strong password.</p>
+          </div>
+        </div>
+
+        <button 
+          type="button" 
+          onclick="closeChangePasswordModal()"
+          class="w-8 h-8 rounded-xl bg-stone-100 hover:bg-[#810B38] hover:text-white text-stone-500 transition-colors flex items-center justify-center text-xs">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleUpdatePassword(event)" class="space-y-4">
+        <!-- Current Password -->
+        <div>
+          <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5">Current Password</label>
+          <div class="relative">
+            <input 
+              type="password" 
+              id="modalCurrentPassword" 
+              placeholder="Enter current password"
+              class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 pr-10 focus:outline-none focus:ring-1 focus:ring-[#810B38] bg-white font-mono"
+              required>
+            <button 
+              type="button" 
+              onclick="togglePasswordVisibility('modalCurrentPassword', 'iconToggleCurrent')"
+              class="absolute right-3 top-2.5 text-stone-400 hover:text-stone-600 text-xs">
+              <i id="iconToggleCurrent" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- New Password -->
+        <div>
+          <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5">New Password</label>
+          <div class="relative">
+            <input 
+              type="password" 
+              id="modalNewPassword" 
+              placeholder="Enter new password"
+              minlength="6"
+              class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 pr-10 focus:outline-none focus:ring-1 focus:ring-[#810B38] bg-white font-mono"
+              required>
+            <button 
+              type="button" 
+              onclick="togglePasswordVisibility('modalNewPassword', 'iconToggleNew')"
+              class="absolute right-3 top-2.5 text-stone-400 hover:text-stone-600 text-xs">
+              <i id="iconToggleNew" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+          <p class="text-[11px] text-stone-400 mt-1">Must be at least 6 characters</p>
+        </div>
+
+        <!-- Confirm Password -->
+        <div>
+          <label class="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-1.5">Confirm Password</label>
+          <div class="relative">
+            <input 
+              type="password" 
+              id="modalConfirmPassword" 
+              placeholder="Confirm new password"
+              minlength="6"
+              class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] text-xs text-stone-800 pr-10 focus:outline-none focus:ring-1 focus:ring-[#810B38] bg-white font-mono"
+              required>
+            <button 
+              type="button" 
+              onclick="togglePasswordVisibility('modalConfirmPassword', 'iconToggleConfirm')"
+              class="absolute right-3 top-2.5 text-stone-400 hover:text-stone-600 text-xs">
+              <i id="iconToggleConfirm" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-stone-100">
+          <button 
+            type="button" 
+            onclick="closeChangePasswordModal()"
+            class="px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors">
+            Cancel
+          </button>
+          <button 
+            type="submit" 
+            class="px-5 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-semibold transition-colors shadow-sm">
+            Update Password
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- ================= DEACTIVATE SYSTEM CONFIRMATION MODAL ================= -->
+  <div 
+    id="deactivateSystemModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-amber-300 max-w-sm w-full shadow-2xl p-6 text-center space-y-4">
+      <div class="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto text-xl shadow-xs">
+        <i class="fa-solid fa-power-off"></i>
+      </div>
+      <div>
+        <h3 class="font-serif text-lg font-bold text-stone-900">Deactivate Salon System?</h3>
+        <p class="text-xs text-stone-500 mt-1 leading-relaxed">
+          This will temporarily pause client booking and show a maintenance message to patrons. Type <strong>DEACTIVATE</strong> below to confirm.
+        </p>
+      </div>
+
+      <input 
+        type="text" 
+        id="deactivateConfirmInput" 
+        placeholder="Type DEACTIVATE" 
+        class="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs text-center font-mono uppercase font-bold focus:outline-none focus:ring-1 focus:ring-amber-500">
+
+      <div class="flex items-center justify-center gap-3 pt-2">
+        <button 
+          type="button" 
+          onclick="closeDeactivateModal()"
+          class="w-full py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="handleConfirmDeactivate()"
+          class="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold transition-colors shadow-sm">
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= DELETE ACCOUNT CONFIRMATION MODAL ================= -->
+  <div 
+    id="deleteAccountModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-rose-300 max-w-sm w-full shadow-2xl p-6 text-center space-y-4">
+      <div class="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto text-xl shadow-xs">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h3 class="font-serif text-lg font-bold text-rose-950">Delete Admin Account?</h3>
+        <p class="text-xs text-rose-700 mt-1 leading-relaxed">
+          This action will permanently wipe salon administrative records. Type <strong>DELETE</strong> below to confirm.
+        </p>
+      </div>
+
+      <input 
+        type="text" 
+        id="deleteConfirmInput" 
+        placeholder="Type DELETE" 
+        class="w-full px-3 py-2 rounded-xl border border-rose-300 text-xs text-center font-mono uppercase font-bold text-rose-800 focus:outline-none focus:ring-1 focus:ring-rose-500">
+
+      <div class="flex items-center justify-center gap-3 pt-2">
+        <button 
+          type="button" 
+          onclick="closeDeleteAccountModal()"
+          class="w-full py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="handleConfirmDeleteAccount()"
+          class="w-full py-2.5 rounded-xl bg-rose-700 hover:bg-rose-800 text-white text-xs font-semibold transition-colors shadow-sm">
+          Delete Permanently
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= LOGOUT CONFIRMATION MODAL ================= -->
+  <div 
+    id="logoutModal" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-sm w-full shadow-2xl p-6 text-center space-y-4">
+      <div class="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto text-xl shadow-xs">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+      </div>
+      <div>
+        <h3 class="font-serif text-lg font-bold text-[#541A1A]">Confirm Logout</h3>
+        <p class="text-xs text-stone-500 mt-1">Are you sure you want to end your administrative session?</p>
+      </div>
+      <div class="flex items-center justify-center gap-3 pt-2">
+        <button 
+          type="button" 
+          onclick="closeLogoutModal()"
+          class="w-full py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors">
+          Cancel
+        </button>
+        <button 
+          type="button" 
+          onclick="handleConfirmLogout()"
+          class="w-full py-2.5 rounded-xl bg-[#810B38] hover:bg-rose-900 text-white text-xs font-semibold transition-colors shadow-sm">
+          Logout
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="adminToastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- Admin Settings Controller Script -->
+  <script src="../assets/js/pages/admin/settings.js"></script>
+</body>
+
+</html>

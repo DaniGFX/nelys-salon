@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login & Sign Up — Nely’s Salon | "Your Beauty Is Our Duty"</title>
+  <meta name="description" content="Sign in or create an account with Nely's Salon to manage your appointments, view service history, and enjoy exclusive 15-year rewards.">
+
+  <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6 (Free Icons) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Compiled Tailwind CSS -->
+  <link rel="stylesheet" href="assets/css/output.css">
+</head>
+<body class="h-full bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col justify-between">
+
+  <!-- Main Split Container -->
+  <main class="flex-1 min-h-screen grid grid-cols-1 lg:grid-cols-12">
+    
+    <!-- ================= LEFT SIDE — BRANDING (WEBSITE / DESKTOP VIEW ONLY) ================= -->
+    <div class="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-[#541A1A] via-[#6e1335] to-[#810B38] text-white lg:p-12 xl:p-14 flex-col justify-between relative overflow-hidden">
+      
+      <!-- Subtle Decorative Background Pattern -->
+      <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#DCC3AA_1px,transparent_1px)] [background-size:20px_20px]"></div>
+      
+      <!-- Top Branding Bar -->
+      <div class="relative z-10">
+        <a href="index.html" class="inline-flex items-center gap-2 text-xs font-semibold text-[#DCC3AA] hover:text-white transition-colors mb-10 group">
+          <i class="fa-solid fa-arrow-left text-[11px] group-hover:-translate-x-1 transition-transform"></i>
+          <span>Back to Home</span>
+        </a>
+
+        <!-- Logo & Salon Name -->
+        <div class="flex items-center gap-4 mb-6">
+          <img 
+            src="assets/images/logo.jfif" 
+            alt="Nely's Salon Logo" 
+            class="w-16 h-16 rounded-full border-2 border-[#DCC3AA] object-cover shadow-xl shrink-0"
+          >
+          <div>
+            <span class="font-serif text-2xl xl:text-3xl font-bold tracking-widest text-[#F1E2D1] uppercase block">
+              NELY’S SALON
+            </span>
+            <span class="text-xs tracking-[0.25em] uppercase text-[#DCC3AA] font-semibold block">
+              Lagro, Quezon City
+            </span>
+          </div>
+        </div>
+
+        <!-- Salon Motto -->
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-[#DCC3AA]/40 backdrop-blur-sm mb-6">
+          <i class="fa-solid fa-sparkles text-[#DCC3AA] text-xs"></i>
+          <span class="font-serif italic text-sm text-[#F1E2D1] tracking-wide">
+            “YOUR BEAUTY IS OUR DUTY”
+          </span>
+        </div>
+
+        <!-- Short Welcoming Message -->
+        <div class="space-y-3">
+          <h1 class="font-serif text-3xl xl:text-4xl text-[#F1E2D1] font-normal leading-snug">
+            Welcome to Your Beauty Sanctuary
+          </h1>
+          <p class="text-sm text-[#DCC3AA]/90 leading-relaxed font-light">
+            Sign in to manage your appointments, review service history, or register to experience 15 years of trusted salon care in Lagro, QC.
+          </p>
+        </div>
+      </div>
+
+      <!-- Left Bottom Features (Desktop Only) -->
+      <div class="relative z-10 mt-8 pt-5 border-t border-[#DCC3AA]/30 text-xs text-[#DCC3AA]/90 space-y-3 bg-white/5 p-5 rounded-2xl border border-[#DCC3AA]/20 backdrop-blur-xs">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0">
+            <i class="fa-solid fa-award text-xs"></i>
+          </div>
+          <span>15 Years of Beauty & Care in Lagro, Quezon City</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0">
+            <i class="fa-solid fa-house-laptop text-xs"></i>
+          </div>
+          <span>Seamless In-Salon & Home Service Booking</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0">
+            <i class="fa-solid fa-bell text-xs"></i>
+          </div>
+          <span>Automated SMS & Email Appointment Reminders</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= RIGHT SIDE — FORM ================= -->
+    <div class="col-span-12 lg:col-span-7 bg-[#FDFBF7] px-4 py-6 sm:px-8 sm:py-8 lg:px-12 lg:py-10 flex flex-col justify-between items-center relative min-h-screen">
+      
+      <!-- Top Mobile Header (Adjusted to the Top) -->
+      <div class="w-full max-w-md flex justify-between items-center pb-4 mb-2 lg:hidden border-b border-[#E8D9CA]/60">
+        <a href="index.html" class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#810B38] hover:text-[#541A1A] transition-colors py-1">
+          <i class="fa-solid fa-arrow-left text-[11px]"></i>
+          <span>Back to Home</span>
+        </a>
+        <span class="font-serif text-sm sm:text-base font-bold text-[#541A1A] tracking-wider uppercase">NELY'S SALON</span>
+      </div>
+
+      <!-- Form Container: Normal clean form on mobile, elegant card on desktop -->
+      <div class="w-full max-w-md sm:max-w-lg lg:max-w-xl my-auto py-4">
+        <div class="w-full bg-transparent sm:bg-white sm:rounded-3xl p-0 sm:p-9 lg:p-11 sm:shadow-2xl sm:border sm:border-[#E8D9CA] relative">
+          
+          <!-- ================= FORM 1: LOGIN ================= -->
+          <form id="formLogin" onsubmit="handleLoginSubmit(event)" class="space-y-4">
+          
+          <div class="text-left mb-6">
+            <span class="inline-block text-[10px] font-bold uppercase tracking-widest text-[#810B38] bg-[#810B38]/10 px-3 py-1 rounded-full mb-2.5">Client Portal</span>
+            <h2 class="font-serif text-2xl sm:text-3xl font-bold text-[#541A1A] mb-1">
+              Welcome Back
+            </h2>
+            <p class="text-xs text-[#735e5e]">
+              Enter your credentials to access your appointments and beauty records.
+            </p>
+          </div>
+
+          <!-- Email or Mobile -->
+          <div class="text-left">
+            <label for="loginIdentifier" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1.5">
+              Mobile Number or Email
+            </label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
+                <i class="fa-regular fa-envelope text-xs"></i>
+              </span>
+              <input 
+                type="text" 
+                id="loginIdentifier" 
+                required 
+                placeholder="0917 123 4567 or email@domain.com"
+                class="w-full pl-10 pr-4 py-3 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
+              >
+            </div>
+          </div>
+
+          <!-- Password -->
+          <div class="text-left">
+            <label for="loginPassword" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1.5">
+              Password
+            </label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
+                <i class="fa-solid fa-lock text-xs"></i>
+              </span>
+              <input 
+                type="password" 
+                id="loginPassword" 
+                required 
+                placeholder="••••••••"
+                class="w-full pl-10 pr-10 py-3 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
+              >
+              <button 
+                type="button" 
+                onclick="togglePasswordVisibility('loginPassword', this)" 
+                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#735e5e] hover:text-[#810B38]"
+                aria-label="Toggle password visibility">
+                <i class="fa-regular fa-eye text-xs"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Remember This Device & Forgot Password Row -->
+          <div class="flex items-center justify-between text-xs pt-1">
+            <label class="flex items-center gap-2 cursor-pointer select-none text-[#735e5e] hover:text-[#541A1A]">
+              <input type="checkbox" checked class="accent-[#810B38] rounded">
+              <span>Remember this device</span>
+            </label>
+            <a href="#" onclick="showToast('Password reset link sent to your registered contact.', 'info'); return false;" class="text-[11px] font-semibold text-[#810B38] hover:underline hover:text-[#541A1A] transition-colors">
+              Forgot password?
+            </a>
+          </div>
+
+          <!-- Burgundy Primary Button -->
+          <button 
+            type="submit" 
+            class="w-full py-3.5 rounded-full bg-[#810B38] text-white text-xs font-bold tracking-wider uppercase hover:bg-[#62082b] transition-all shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 mt-2">
+            <i class="fa-solid fa-right-to-bracket text-xs"></i>
+            <span>LOG IN TO ACCOUNT</span>
+          </button>
+
+          <!-- Divider -->
+          <div class="relative flex py-2 items-center">
+            <div class="flex-grow border-t border-[#E8D9CA]"></div>
+            <span class="flex-shrink mx-3 text-[11px] text-[#735e5e] uppercase tracking-wider font-semibold">Or</span>
+            <div class="flex-grow border-t border-[#E8D9CA]"></div>
+          </div>
+
+          <!-- Guest Booking Shortcut -->
+          <a 
+            href="index.html#online-booking" 
+            class="w-full py-2.5 rounded-full bg-[#FAF6F0] text-[#541A1A] border border-[#DCC3AA] hover:border-[#810B38] text-xs font-bold tracking-wider uppercase transition-colors flex items-center justify-center gap-2">
+            <i class="fa-regular fa-calendar-plus text-xs text-[#810B38]"></i>
+            <span>Continue as Guest to Book</span>
+          </a>
+
+          <!-- Link to Sign Up -->
+          <p class="text-xs text-center text-[#735e5e] pt-1">
+            Don't have an account yet?
+            <a 
+              href="signup.html" 
+              class="text-[#810B38] font-bold underline hover:text-[#541A1A] ml-1">
+              Create an account
+            </a>
+          </p>
+
+        </form>
+
+        </div>
+      </div>
+
+      <!-- Footer Info (Adjusted to the Bottom) -->
+      <div class="w-full max-w-md sm:max-w-lg lg:max-w-xl pt-4 mt-auto text-center text-[11px] text-[#735e5e] border-t border-[#E8D9CA]/40 lg:border-t-0">
+        <span>Nely’s Salon · 15 Years of Beauty Heritage · Blk 42 Lot 59 Ascension Rd, Lagro, QC</span>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- JavaScript for Password Toggling and Form Submission -->
+  <script>
+
+    function togglePasswordVisibility(inputId, btn) {
+      const input = document.getElementById(inputId);
+      const icon = btn.querySelector('i');
+      if (!input) return;
+
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      if (!container) return;
+
+      const toast = document.createElement('div');
+      const bgStyle = type === 'success' 
+        ? 'bg-[#541A1A] text-[#F1E2D1] border border-[#810B38]' 
+        : type === 'error'
+        ? 'bg-[#810B38] text-white border border-[#DCC3AA]'
+        : 'bg-[#541A1A] text-white border border-[#810B38]';
+
+      toast.className = `pointer-events-auto px-5 py-3.5 rounded-xl shadow-xl text-xs sm:text-sm font-medium flex items-center justify-between gap-3 transition-all duration-300 transform translate-y-2 opacity-0 ${bgStyle}`;
+      toast.innerHTML = `
+        <div class="flex items-center gap-2">
+          <i class="${type === 'success' ? 'fa-solid fa-circle-check text-[#DCC3AA]' : type === 'error' ? 'fa-solid fa-circle-exclamation text-[#F1E2D1]' : 'fa-solid fa-circle-info text-[#DCC3AA]'} text-xs"></i>
+          <span>${message}</span>
+        </div>
+        <button type="button" class="text-white/70 hover:text-white ml-2" onclick="this.parentElement.remove()">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      `;
+
+      container.appendChild(toast);
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 4500);
+    }
+
+    function handleLoginSubmit(e) {
+      e.preventDefault();
+      const identifier = document.getElementById('loginIdentifier').value.trim();
+      
+      showToast(`Welcome back, ${identifier}! Directing to appointment dashboard...`, 'success');
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1500);
+    }
+
+    // Redirect if visited with #signup
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.location.hash === '#signup') {
+        window.location.href = 'signup.html';
+      }
+    });
+  </script>
+</body>
+</html>

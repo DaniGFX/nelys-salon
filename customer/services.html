@@ -1,0 +1,1020 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our Services — Nely’s Salon | "Your Beauty Is Our Duty"</title>
+  <meta name="description" content="Discover beauty and self-care services designed to make you look and feel your best. Browse prices and book directly at Nely's Salon Lagro.">
+
+  <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Font Awesome 6 (Free Icons - Zero Emoji Rule) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+  <!-- Compiled Tailwind CSS -->
+  <link rel="stylesheet" href="../assets/css/output.css">
+</head>
+<body class="min-h-full bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
+
+  <!-- ================= MOBILE TOP NAVIGATION BAR (< lg) ================= -->
+  <header class="lg:hidden sticky top-0 z-40 bg-[#541A1A] text-[#F1E2D1] border-b border-[#810B38]/40 px-4 py-3 flex items-center justify-between shadow-md">
+    <div class="flex items-center gap-3">
+      <button 
+        type="button" 
+        id="mobileMenuBtn" 
+        onclick="toggleMobileSidebar()" 
+        aria-label="Open navigation menu"
+        class="w-10 h-10 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors focus:outline-none focus:ring-2 focus:ring-[#DCC3AA]">
+        <i class="fa-solid fa-bars text-lg"></i>
+      </button>
+
+      <div class="flex items-center gap-2.5">
+        <img 
+          src="../assets/images/logo.jfif" 
+          alt="Nely's Salon Logo" 
+          class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover"
+        >
+        <div>
+          <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
+            Nely’s Salon
+          </span>
+          <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
+            Lagro, QC
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Top Right Icons -->
+    <div class="flex items-center gap-2">
+      <a 
+        href="notifications.html" 
+        aria-label="Notifications"
+        class="relative w-9 h-9 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors">
+        <i class="fa-solid fa-bell text-sm"></i>
+        <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#DCC3AA]"></span>
+      </a>
+
+      <a 
+        href="profile.html" 
+        class="w-9 h-9 rounded-xl bg-[#810B38] text-white border border-[#DCC3AA]/50 flex items-center justify-center font-bold text-xs uppercase hover:bg-[#6e1335] transition-colors"
+        title="My Profile">
+        <i class="fa-solid fa-user text-xs"></i>
+      </a>
+    </div>
+  </header>
+
+  <!-- ================= MOBILE SIDEBAR BACKDROP & DRAWER ================= -->
+  <div 
+    id="mobileSidebarBackdrop" 
+    onclick="toggleMobileSidebar(false)" 
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden">
+  </div>
+
+  <!-- ================= DESKTOP & MOBILE SIDEBAR ================= -->
+    <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+  <aside 
+    id="sidebar"
+    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
+
+    <!-- Sidebar Header (Branding) -->
+    <div class="p-6 border-b border-[#810B38]/40">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <img 
+            src="../assets/images/logo.jfif" 
+            alt="Nely's Salon Logo"
+            class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
+          <div>
+            <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
+              Nely’s Salon
+            </h1>
+            <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
+              Customer Panel
+            </p>
+          </div>
+        </div>
+
+        <!-- Mobile Close Button -->
+        <button 
+          type="button" 
+          onclick="toggleMobileSidebar(false)"
+          class="lg:hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
+          aria-label="Close menu">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Salon Motto -->
+      <div class="pt-3 border-t border-white/10 flex items-center gap-2">
+        <i class="fa-solid fa-sparkles text-[#DCC3AA] text-xs"></i>
+        <span class="font-serif italic text-xs text-[#DCC3AA] tracking-wide">
+          “Your Beauty is Our Duty”
+        </span>
+      </div>
+    </div>
+
+    <!-- Customer Profile Quick Pill -->
+    <div class="px-5 py-4 mx-4 my-3 rounded-2xl bg-[#6e1335]/40 border border-[#810B38]/50 flex items-center gap-3">
+      <div class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
+        MS
+      </div>
+      <div class="min-w-0 flex-1">
+        <span class="block text-sm font-semibold text-[#F1E2D1] truncate">Maria Santos</span>
+        <span class="inline-flex items-center gap-1.5 text-[11px] text-[#DCC3AA]">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          Verified Client
+        </span>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation Menu (7 Items) -->
+    <nav class="flex-1 px-4 py-2 space-y-1.5 overflow-y-auto">
+      <!-- Dashboard -->
+      <a href="dashboard.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Dashboard</span>
+      </a>
+
+      <!-- Book Appointment -->
+      <a href="booking.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-plus w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Book Appointment</span>
+      </a>
+
+      <!-- My Appointments -->
+      <a href="appointments.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>My Appointments</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+      </a>
+
+      <!-- Services & Prices (Active) -->
+      <a href="services.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
+        <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA]"></i>
+        <span>Services & Prices</span>
+        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-[#DCC3AA]"></span>
+      </a>
+
+      <!-- Messages -->
+      <a href="messages.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Messages</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+      </a>
+
+      <!-- Notifications -->
+      <a href="notifications.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>Notifications</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">3</span>
+      </a>
+
+      <!-- My Profile -->
+      <a href="profile.html"
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
+        <i class="fa-solid fa-user w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <span>My Profile</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar Footer / Logout -->
+    <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
+      <a 
+        href="../login.html"
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+        <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
+        <span>Log Out</span>
+      </a>
+
+      <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
+        15 Years of Beauty Heritage · Lagro, QC
+      </p>
+    </div>
+
+  </aside>
+
+  <!-- ================= MAIN CONTENT AREA ================= -->
+  <main class="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 xl:p-10 space-y-8 max-w-7xl mx-auto w-full">
+
+    <!-- ================= 1. PAGE HEADER & SEARCH FIELD ================= -->
+    <section class="bg-gradient-to-r from-[#FAF6F0] via-white to-[#FDFBF7] p-6 sm:p-8 rounded-3xl border border-[#DCC3AA]/60 shadow-sm relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-6">
+      
+      <div class="space-y-1.5 relative z-10">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810B38]/10 text-[#810B38] text-xs font-bold uppercase tracking-wider">
+          <i class="fa-solid fa-sparkles text-[#810B38]"></i>
+          <span>Treatment Catalog</span>
+        </div>
+
+        <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#541A1A] leading-tight">
+          Our Services
+        </h2>
+
+        <p class="text-sm sm:text-base text-[#735e5e] max-w-xl font-normal leading-relaxed">
+          Discover beauty and self-care services designed to make you look and feel your best.
+        </p>
+      </div>
+
+      <!-- Real-Time Search Field -->
+      <div class="w-full md:w-80 relative z-10 shrink-0">
+        <label for="searchInput" class="sr-only">Search services</label>
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-[#735e5e] text-sm pointer-events-none"></i>
+          <input 
+            type="text" 
+            id="searchInput" 
+            placeholder="Search services..." 
+            oninput="handleSearch(this.value)"
+            class="w-full pl-11 pr-4 py-3 rounded-2xl border border-[#DCC3AA] bg-white text-xs sm:text-sm text-[#2b1d1d] placeholder-[#735e5e] focus:outline-none focus:border-[#810B38] focus:ring-2 focus:ring-[#810B38]/20 shadow-sm transition-all">
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 2. SERVICE CATEGORY TABS ================= -->
+    <section class="space-y-6">
+      
+      <!-- Filter Buttons Bar -->
+      <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none border-b border-[#DCC3AA]/40">
+        
+        <!-- Tab 1: All -->
+        <button 
+          id="tabBtn-all"
+          type="button" 
+          onclick="filterCategory('all')"
+          class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#810B38] bg-[#810B38] text-white shadow-sm focus:outline-none">
+          <span>All</span>
+          <span id="count-all" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA] bg-[#DCC3AA] text-[#541A1A] min-w-[20px] text-center inline-block">13</span>
+        </button>
+
+        <!-- Tab 2: Hair -->
+        <button 
+          id="tabBtn-hair"
+          type="button" 
+          onclick="filterCategory('hair')"
+          class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
+          <span>Hair</span>
+          <span id="count-hair" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">8</span>
+        </button>
+
+        <!-- Tab 3: Nails -->
+        <button 
+          id="tabBtn-nails"
+          type="button" 
+          onclick="filterCategory('nails')"
+          class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
+          <span>Nails</span>
+          <span id="count-nails" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">3</span>
+        </button>
+
+        <!-- Tab 4: Foot Care -->
+        <button 
+          id="tabBtn-foot-care"
+          type="button" 
+          onclick="filterCategory('foot-care')"
+          class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
+          <span>Foot Care</span>
+          <span id="count-foot-care" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">2</span>
+        </button>
+
+      </div>
+
+      <!-- ================= 3 & 4. SERVICES GRID CONTAINER ================= -->
+      <div id="servicesGridContainer" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        
+        <!-- Pre-rendered Cards for instant fast display and hydration -->
+        <!-- Brazilian -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                Signature Care
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Hair Services</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('brazilian')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Brazilian
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱1,999</span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Professional Brazilian hair treatment for smoother, more manageable hair.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('brazilian')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=brazilian"
+              class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Book Now</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+        <!-- Hair Dye -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-paintbrush"></i>
+                Popular Color
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Hair Services</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('hair-dye')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Hair Dye
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱699</span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Refresh your look with your preferred hair color.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('hair-dye')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=hair-dye"
+              class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Book Now</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+        <!-- Power Dose -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-bolt"></i>
+                Intensive Shot
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Hair Services</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('power-dose')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Power Dose
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱499</span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Intensive instant nourishment shot for damaged, dry, or color-treated hair.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('power-dose')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=power-dose"
+              class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Book Now</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+        <!-- Cold Wave -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-wind"></i>
+                Classic Perm
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Hair Services</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('cold-wave')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Cold Wave
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱699</span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Classic salon perming technique creating long-lasting, bouncy curls and body.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('cold-wave')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=cold-wave"
+              class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Book Now</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+        <!-- Bonacure -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-shield-heart"></i>
+                Peptide Therapy
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Hair Services</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('bonacure')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Bonacure
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱499</span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Advanced restorative peptide hair therapy for structural hair rebuilding.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('bonacure')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=bonacure"
+              class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Book Now</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+        <!-- Keratine Treatment -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-feather-pointed"></i>
+                Frizz Defense
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Hair Services</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('keratine-treatment')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Keratine Treatment
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱499</span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Deep keratin infusion for frizz elimination, shine, and silky smoothness.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('keratine-treatment')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=keratine-treatment"
+              class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Book Now</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+        <!-- Trim -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-scissors"></i>
+                Everyday Essential
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Hair Services</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('trim')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Trim
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱149</span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Precision haircut and split-end cleanup for tidy, healthy styling.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('trim')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=trim"
+              class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Book Now</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+        <!-- Rebonding -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-star"></i>
+                Thermal Straightening
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Hair Services</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('rebonding')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Rebonding
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="text-xs font-bold text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-lg border border-[#DCC3AA]/50">
+                Price to be confirmed
+              </span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Permanent hair straightening for sleek, mirror-shine straight locks.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('rebonding')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=rebonding"
+              class="flex-1 py-2.5 rounded-xl bg-[#541A1A] hover:bg-[#810B38] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Inquire</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+        <!-- Footspa -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-spa"></i>
+                Relaxation
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Foot Care</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('footspa')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Footspa
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱199</span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Relaxing foot bath, exfoliating dead skin scrub, and revitalizing massage.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('footspa')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=footspa"
+              class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Book Now</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+        <!-- Manicure -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-hand-sparkles"></i>
+                Nail Care
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Nails</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('manicure')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Manicure
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱149</span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Professional nail shaping, cuticle cleanup, and nourishing polish.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('manicure')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=manicure"
+              class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Book Now</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+        <!-- Pedicure -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-gem"></i>
+                Nail Care
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Nails & Foot Care</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('pedicure')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Pedicure
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱149</span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Complete toe nail care, cuticle treatment, and polish coating.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('pedicure')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=pedicure"
+              class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Book Now</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+        <!-- Gel Manicure -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-spray-can-sparkles"></i>
+                Long Lasting
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Nails</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('gel-manicure')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Gel Manicure
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱499</span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Long-lasting UV-cured gel polish with high-gloss durability.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('gel-manicure')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=gel-manicure"
+              class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Book Now</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+        <!-- Gel Pedicure -->
+        <article class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 p-6 flex flex-col justify-between group">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-full border border-[#DCC3AA]/50 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-check"></i>
+                Long Lasting
+              </span>
+              <span class="text-[11px] font-medium text-[#735e5e]">Foot Care & Nails</span>
+            </div>
+
+            <h3 
+              onclick="openServiceModal('gel-pedicure')"
+              class="font-serif text-2xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors cursor-pointer">
+              Gel Pedicure
+            </h3>
+
+            <div class="mt-2 flex items-baseline gap-2">
+              <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱499</span>
+            </div>
+
+            <p class="text-xs text-[#735e5e] mt-2.5 leading-relaxed line-clamp-2">
+              Durable, chip-resistant UV gel coating and foot nail beautification.
+            </p>
+          </div>
+
+          <div class="mt-5 pt-4 border-t border-[#F1E2D1] flex items-center gap-2.5">
+            <button 
+              type="button" 
+              onclick="openServiceModal('gel-pedicure')"
+              class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors">
+              Details
+            </button>
+            <a 
+              href="booking.html?service=gel-pedicure"
+              class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider text-center transition-colors shadow-sm flex items-center justify-center gap-1.5">
+              <span>Book Now</span>
+              <i class="fa-solid fa-arrow-right text-[10px]"></i>
+            </a>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- EMPTY STATE CONTAINER (Hidden when services exist) -->
+      <div 
+        id="emptyServicesState" 
+        class="hidden bg-white p-8 sm:p-12 rounded-3xl border-2 border-dashed border-[#DCC3AA] text-center space-y-4 shadow-sm">
+        <div class="w-16 h-16 rounded-full bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-2xl mx-auto border border-[#DCC3AA]">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </div>
+        <div class="space-y-1">
+          <h4 class="font-serif text-2xl font-bold text-[#541A1A]">No services found</h4>
+          <p class="text-xs sm:text-sm text-[#735e5e] max-w-md mx-auto">
+            We couldn't find any services matching your search or category filter. Try searching with a different term.
+          </p>
+        </div>
+        <div>
+          <button 
+            type="button" 
+            onclick="clearSearch(); filterCategory('all');" 
+            class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#810B38] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#62082b] transition-all shadow-md">
+            <i class="fa-solid fa-rotate-left text-xs"></i>
+            <span>Reset Search & Filters</span>
+          </button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- Heritage Guarantee Banner -->
+    <section class="p-6 sm:p-8 rounded-3xl bg-gradient-to-r from-[#FAF6F0] to-[#FDFBF7] border border-[#DCC3AA]/80 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-[#810B38] text-white flex items-center justify-center text-xl shrink-0 shadow-sm">
+          <i class="fa-solid fa-award"></i>
+        </div>
+        <div>
+          <h4 class="font-serif text-lg font-bold text-[#541A1A]">15 Years of Beauty Excellence in Lagro, QC</h4>
+          <p class="text-xs text-[#735e5e] mt-0.5">All treatments are administered by seasoned stylists using salon-certified formulas.</p>
+        </div>
+      </div>
+      <a 
+        href="booking.html" 
+        class="px-6 py-3 rounded-xl bg-[#541A1A] hover:bg-[#810B38] text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-md shrink-0 flex items-center gap-2">
+        <i class="fa-solid fa-calendar-plus text-xs"></i>
+        <span>Book Any Service</span>
+      </a>
+    </section>
+
+  </main>
+
+  <!-- ================= 5. SERVICE DETAILS MODAL ================= -->
+  <dialog id="serviceDetailsModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d]">
+    <div class="p-6 sm:p-7 space-y-5">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-[#F1E2D1] pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm border border-[#DCC3AA]">
+            <i class="fa-solid fa-sparkles"></i>
+          </div>
+          <div>
+            <h4 id="modalServiceName" class="font-serif text-xl font-bold text-[#541A1A]">Brazilian</h4>
+            <span id="modalServiceCategory" class="text-[11px] text-[#735e5e] block">Hair Services</span>
+          </div>
+        </div>
+
+        <button 
+          type="button" 
+          onclick="closeServiceModal()" 
+          class="w-7 h-7 rounded-full bg-[#FAF6F0] text-[#735e5e] hover:text-[#541A1A] flex items-center justify-center transition-colors">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <!-- Description -->
+      <div class="text-left space-y-1">
+        <span class="text-[11px] uppercase tracking-wider text-[#735e5e] font-bold block">Description</span>
+        <p id="modalServiceDescription" class="text-xs text-[#2b1d1d] leading-relaxed">
+          Professional Brazilian hair treatment for smoother, more manageable hair.
+        </p>
+      </div>
+
+      <!-- Information Breakdown Table -->
+      <div class="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] text-xs space-y-2.5 text-left">
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Price:</span>
+          <strong id="modalServicePrice" class="font-serif text-lg text-[#810B38]">₱1,999</strong>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Available For:</span>
+          <span id="modalServiceAvailable" class="font-semibold text-[#541A1A]">Salon / Home Service</span>
+        </div>
+
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Estimated Duration:</span>
+          <span id="modalServiceDuration" class="italic text-[#735e5e]">To be configured by admin</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons Row -->
+      <div class="flex items-center gap-3 pt-1">
+        <button 
+          type="button" 
+          onclick="closeServiceModal()" 
+          class="flex-1 py-3 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
+          Close
+        </button>
+        <a 
+          id="modalBookServiceBtn"
+          href="booking.html?service=brazilian" 
+          class="flex-1 py-3 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold text-center transition-colors shadow-md flex items-center justify-center gap-2">
+          <i class="fa-solid fa-calendar-plus text-xs"></i>
+          <span>Book This Service</span>
+        </a>
+      </div>
+
+    </div>
+  </dialog>
+
+  <!-- ================= PROFILE MODAL ================= -->
+  <dialog id="profileModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d]">
+    <div class="p-6 sm:p-7 space-y-4">
+      <div class="flex items-center justify-between border-b border-[#F1E2D1] pb-3">
+        <h4 class="font-serif text-xl font-bold text-[#541A1A]">My Client Profile</h4>
+        <button 
+          type="button" 
+          onclick="document.getElementById('profileModal').close()" 
+          class="w-7 h-7 rounded-full bg-[#FAF6F0] text-[#735e5e] hover:text-[#541A1A] flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block font-bold text-[#541A1A] mb-1">Full Name</label>
+          <input 
+            type="text" 
+            value="Maria Santos" 
+            readonly
+            class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+        </div>
+
+        <div>
+          <label class="block font-bold text-[#541A1A] mb-1">Mobile Number</label>
+          <input 
+            type="tel" 
+            value="0917 888 9999" 
+            readonly
+            class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+        </div>
+
+        <div>
+          <label class="block font-bold text-[#541A1A] mb-1">Default Address</label>
+          <input 
+            type="text" 
+            value="BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City" 
+            readonly
+            class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button 
+          type="button" 
+          onclick="document.getElementById('profileModal').close()" 
+          class="w-full py-2.5 rounded-xl bg-[#810B38] text-white text-xs font-bold hover:bg-[#62082b] transition-colors">
+          Done
+        </button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ================= TOAST CONTAINER ================= -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- Page JavaScript -->
+  <script src="../assets/js/pages/customer/services.js"></script>
+</body>
+</html>
