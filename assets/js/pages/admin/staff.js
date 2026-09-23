@@ -24,7 +24,7 @@ const SERVICE_CATALOG = {
   'Footspa': { price: 199, priceFormatted: '₱199', category: 'Foot Care' }
 };
 
-// 5 Sample staff members matching user specifications
+// 3 Sample staff members matching user specifications
 const DEFAULT_STAFF = [
   {
     id: 'staff-1',
@@ -91,50 +91,6 @@ const DEFAULT_STAFF = [
       'Saturday': '10:00 AM – 7:00 PM',
       'Sunday': 'Day Off'
     }
-  },
-  {
-    id: 'staff-4',
-    name: 'Grace',
-    fullName: 'Grace Villanueva',
-    position: 'Salon Staff / Junior Colorist',
-    phone: '0995 444 5566',
-    email: 'grace@nelyssalon.ph',
-    address: 'San Jose del Monte, Bulacan',
-    dateJoined: 'February 2026',
-    status: 'Active',
-    availability: 'Day Off',
-    specializations: ['Hair Dye', 'Power Dose', 'Bonacure', 'Trim'],
-    schedule: {
-      'Monday': 'Day Off',
-      'Tuesday': '9:00 AM – 6:00 PM',
-      'Wednesday': '9:00 AM – 6:00 PM',
-      'Thursday': '9:00 AM – 6:00 PM',
-      'Friday': '9:00 AM – 6:00 PM',
-      'Saturday': '9:00 AM – 6:00 PM',
-      'Sunday': '9:00 AM – 5:00 PM'
-    }
-  },
-  {
-    id: 'staff-5',
-    name: 'Joy',
-    fullName: 'Joylyn Fernandez',
-    position: 'Salon Staff / Texture Technician',
-    phone: '0933 555 6677',
-    email: 'joy@nelyssalon.ph',
-    address: 'Greater Lagro, Quezon City',
-    dateJoined: 'March 2026',
-    status: 'Active',
-    availability: 'Available',
-    specializations: ['Cold Wave', 'Keratine Treatment', 'Brazilian', 'Power Dose'],
-    schedule: {
-      'Monday': '9:00 AM – 6:00 PM',
-      'Tuesday': '9:00 AM – 6:00 PM',
-      'Wednesday': 'Day Off',
-      'Thursday': '9:00 AM – 6:00 PM',
-      'Friday': '9:00 AM – 6:00 PM',
-      'Saturday': '9:00 AM – 6:00 PM',
-      'Sunday': '9:00 AM – 5:00 PM'
-    }
   }
 ];
 
@@ -154,6 +110,11 @@ function loadStaff() {
     const raw = localStorage.getItem(STAFF_STORAGE_KEY);
     if (raw) {
       staffList = JSON.parse(raw);
+      // Enforce 3 staff specification if user had old 5-staff dataset
+      if (staffList.length > 3) {
+        staffList = JSON.parse(JSON.stringify(DEFAULT_STAFF));
+        saveStaff();
+      }
     } else {
       staffList = JSON.parse(JSON.stringify(DEFAULT_STAFF));
       saveStaff();

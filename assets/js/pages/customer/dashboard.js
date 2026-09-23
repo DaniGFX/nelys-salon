@@ -251,9 +251,58 @@ function handleProfileSave(e) {
   showToast(`Profile updated successfully for ${name}.`, 'success');
 }
 
-// 9. Receipt Modal / Notification helper
+// 9. Receipt Modal
 function showReceiptModal(ref, service, amount, status) {
-  showToast(`Receipt for ${service} (${ref}) — ${amount} [${status}]. Ready to download in profile.`, 'info');
+  const modal = document.getElementById('receiptModal');
+  if (!modal) return;
+
+  const refEl = document.getElementById('receiptRef');
+  const serviceEl = document.getElementById('receiptService');
+  const amountEl = document.getElementById('receiptAmount');
+  const subtotalEl = document.getElementById('receiptSubtotal');
+  const statusEl = document.getElementById('receiptStatus');
+  const dateEl = document.getElementById('receiptDate');
+  const typeEl = document.getElementById('receiptType');
+
+  if (refEl) refEl.textContent = ref || 'NS-20260910-0321';
+  if (serviceEl) serviceEl.textContent = service || 'Salon Service';
+  
+  const formattedAmount = amount ? (amount.startsWith('₱') ? amount : `₱${amount}`) : '₱699.00';
+  if (amountEl) amountEl.textContent = formattedAmount;
+  if (subtotalEl) subtotalEl.textContent = formattedAmount;
+  if (statusEl) statusEl.textContent = (status || 'COMPLETED').toUpperCase();
+
+  if (dateEl) {
+    if (ref && ref.includes('0910')) {
+      dateEl.textContent = 'Sept. 10, 2026 · 1:30 PM';
+    } else if (ref && ref.includes('0822')) {
+      dateEl.textContent = 'Aug. 22, 2026 · 3:00 PM';
+    } else {
+      dateEl.textContent = 'Recent Session';
+    }
+  }
+
+  if (typeEl) {
+    if (service && service.toLowerCase().includes('dye')) {
+      typeEl.textContent = 'Home Service';
+    } else {
+      typeEl.textContent = 'Salon Visit (Lagro, QC)';
+    }
+  }
+
+  lockBodyScroll();
+  modal.showModal();
+}
+
+function closeReceiptModal() {
+  const modal = document.getElementById('receiptModal');
+  if (!modal) return;
+  modal.close();
+  unlockBodyScroll();
+}
+
+function printCustomerReceipt() {
+  window.print();
 }
 
 // 10. Filter Appointments

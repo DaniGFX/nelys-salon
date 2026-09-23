@@ -105,12 +105,8 @@ function setupEventListeners() {
 
   // Handle Window Resize to keep layouts consistent across breakpoints
   window.addEventListener('resize', () => {
-    const convCol = document.getElementById('conversationsColumn');
     const chatCol = document.getElementById('chatColumn');
-    if (!convCol || !chatCol) return;
-
-    if (window.innerWidth >= 1024) {
-      convCol.classList.remove('hidden');
+    if (chatCol) {
       chatCol.classList.remove('hidden');
       chatCol.classList.add('flex');
     }
@@ -437,8 +433,8 @@ function escapeHtml(string) {
 function openMobileChat() {
   const convCol = document.getElementById('conversationsColumn');
   const chatCol = document.getElementById('chatColumn');
-  if (convCol && chatCol) {
-    convCol.classList.add('hidden');
+  if (convCol) convCol.classList.add('hidden');
+  if (chatCol) {
     chatCol.classList.remove('hidden');
     chatCol.classList.add('flex');
     const stream = document.getElementById('customerChatStream');
