@@ -29,29 +29,44 @@
       scrollbar-gutter: stable;
     }
 
-    /* Visible themed horizontal scrollbar for tables */
+    /* High-contrast Always-Visible Themed Scrollbar for Tables */
+    #dashboardScheduleScrollContainer,
     .salon-visible-scrollbar {
-      overflow-x: auto !important;
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: thin;
-      scrollbar-color: #810B38 #F1E2D1;
+      overflow-x: scroll !important;
+      overflow-y: hidden !important;
+      -webkit-overflow-scrolling: touch !important;
+      scrollbar-width: auto !important;
+      scrollbar-color: #810B38 #F1E2D1 !important;
     }
+
+    #dashboardScheduleScrollContainer::-webkit-scrollbar,
     .salon-visible-scrollbar::-webkit-scrollbar {
-      height: 8px !important;
+      height: 12px !important;
+      width: 12px !important;
       display: block !important;
+      appearance: none !important;
+      -webkit-appearance: none !important;
     }
+
+    #dashboardScheduleScrollContainer::-webkit-scrollbar-track,
     .salon-visible-scrollbar::-webkit-scrollbar-track {
       background: #F1E2D1 !important;
-      border-radius: 9999px;
-      margin: 0 4px;
+      border-radius: 9999px !important;
+      border: 1px solid #DCC3AA !important;
+      margin: 0 4px !important;
     }
+
+    #dashboardScheduleScrollContainer::-webkit-scrollbar-thumb,
     .salon-visible-scrollbar::-webkit-scrollbar-thumb {
-      background: #810B38 !important;
-      border-radius: 9999px;
-      border: 1.5px solid #F1E2D1;
+      background-color: #810B38 !important;
+      border-radius: 9999px !important;
+      border: 2.5px solid #F1E2D1 !important;
+      min-width: 60px !important;
     }
+
+    #dashboardScheduleScrollContainer::-webkit-scrollbar-thumb:hover,
     .salon-visible-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: #541A1A !important;
+      background-color: #541A1A !important;
     }
 
     /* Modal Backdrop */
@@ -404,29 +419,51 @@
             </a>
           </div>
 
-          <!-- Schedule Table Container -->
-          <div id="dashboardScheduleScrollContainer" class="salon-visible-scrollbar overflow-x-auto rounded-2xl border border-[#E8D9CA] pb-2">
-            <table class="w-full text-left border-collapse text-xs min-w-[640px]">
-              <thead>
-                <tr
-                  class="bg-[#FAF6F0] border-b border-[#E8D9CA] text-[#541A1A] uppercase tracking-wider text-[11px] font-bold">
-                  <th class="py-3.5 px-4">Time</th>
-                  <th class="py-3.5 px-4">Customer</th>
-                  <th class="py-3.5 px-4">Service</th>
-                  <th class="py-3.5 px-4">Staff</th>
-                  <th class="py-3.5 px-4">Status</th>
-                  <th class="py-3.5 px-4 text-right">Action</th>
-                </tr>
-              </thead>
-              <tbody id="dashboardScheduleBody" class="divide-y divide-[#F1E2D1]">
-                <tr>
-                  <td colspan="6" class="py-10 px-4 text-center text-[#735e5e]">
-                    <i class="fa-solid fa-circle-notch fa-spin text-lg text-[#810B38] mb-2 block mx-auto"></i>
-                    <p class="text-xs font-medium">Loading appointment schedule...</p>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+          <!-- Schedule Table Container with Visible Scrollbar -->
+          <div class="space-y-2">
+            <div id="dashboardScheduleScrollContainer" class="salon-visible-scrollbar overflow-x-scroll rounded-2xl border border-[#E8D9CA] pb-1 bg-white">
+              <table class="w-full text-left border-collapse text-xs min-w-[850px]">
+                <thead>
+                  <tr
+                    class="bg-[#FAF6F0] border-b border-[#E8D9CA] text-[#541A1A] uppercase tracking-wider text-[11px] font-bold">
+                    <th class="py-3.5 px-4 whitespace-nowrap min-w-[120px]">Time</th>
+                    <th class="py-3.5 px-4 whitespace-nowrap min-w-[190px]">Customer</th>
+                    <th class="py-3.5 px-4 whitespace-nowrap min-w-[170px]">Service</th>
+                    <th class="py-3.5 px-4 whitespace-nowrap min-w-[150px]">Staff</th>
+                    <th class="py-3.5 px-4 whitespace-nowrap min-w-[120px]">Status</th>
+                    <th class="py-3.5 px-4 text-right whitespace-nowrap min-w-[130px]">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="dashboardScheduleBody" class="divide-y divide-[#F1E2D1]">
+                  <tr>
+                    <td colspan="6" class="py-10 px-4 text-center text-[#735e5e]">
+                      <i class="fa-solid fa-circle-notch fa-spin text-lg text-[#810B38] mb-2 block mx-auto"></i>
+                      <p class="text-xs font-medium">Loading appointment schedule...</p>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Table Sliding Indicator & Quick Nav Controls -->
+            <div class="flex items-center justify-between px-2 pt-0.5 text-[11px] text-[#735e5e]">
+              <span class="flex items-center gap-1.5 font-medium text-[#810B38]">
+                <i class="fa-solid fa-arrows-left-right text-xs"></i>
+                <span>Use the scrollbar above or buttons to slide columns (Time ➔ Action)</span>
+              </span>
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="scrollScheduleTable('left')" aria-label="Scroll table left"
+                  class="px-2 py-1 rounded-lg bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-[10px] font-bold flex items-center gap-1 transition-colors">
+                  <i class="fa-solid fa-chevron-left text-[9px]"></i>
+                  <span>Left</span>
+                </button>
+                <button type="button" onclick="scrollScheduleTable('right')" aria-label="Scroll table right"
+                  class="px-2 py-1 rounded-lg bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-[10px] font-bold flex items-center gap-1 transition-colors">
+                  <span>Right</span>
+                  <i class="fa-solid fa-chevron-right text-[9px]"></i>
+                </button>
+              </div>
+            </div>
           </div>
 
         </section>
@@ -550,6 +587,34 @@
                 </tr>
               </tbody>
             </table>
+          </div>
+
+          <!-- Pagination: 1-10 items with Page Links (1, 2, 3...) & Previous / Next Buttons -->
+          <div id="recentCustPaginationContainer" class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#F1E2D1] text-xs">
+            <div class="text-[#735e5e] text-[11px]">
+              Showing <span id="recentCustPageStart" class="font-bold text-[#541A1A]">1</span> to <span id="recentCustPageEnd" class="font-bold text-[#541A1A]">10</span> of <span id="recentCustTotal" class="font-bold text-[#541A1A]">0</span> customers
+            </div>
+
+            <div class="flex items-center gap-1.5 self-center sm:self-auto">
+              <!-- Previous Button -->
+              <button type="button" id="recentCustPrevBtn" onclick="changeRecentCustPage(currentCustPage - 1)"
+                class="px-3 py-1.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] font-semibold text-xs transition-colors flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none">
+                <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                <span>Previous</span>
+              </button>
+
+              <!-- Page Number Links (1, 2, 3...) -->
+              <div id="recentCustPageLinks" class="flex items-center gap-1">
+                <!-- Dynamically populated via JS -->
+              </div>
+
+              <!-- Next Button -->
+              <button type="button" id="recentCustNextBtn" onclick="changeRecentCustPage(currentCustPage + 1)"
+                class="px-3 py-1.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] font-semibold text-xs transition-colors flex items-center gap-1 disabled:opacity-40 disabled:pointer-events-none">
+                <span>Next</span>
+                <i class="fa-solid fa-chevron-right text-[10px]"></i>
+              </button>
+            </div>
           </div>
 
         </section>

@@ -152,7 +152,7 @@ class DashboardController {
             LEFT JOIN services s ON b.service_id = s.id
             WHERE u.role = 'customer'
             ORDER BY cp.created_at DESC
-            LIMIT 5
+            LIMIT 50
         ");
         $recentCustomers = $stmt->fetchAll();
 

@@ -9,6 +9,9 @@
 let dashboardData = null;
 let currentPeriod = 'week';
 let isDashboardModalScrollLocked = false;
+let recentCustomersList = [];
+let currentCustPage = 1;
+const CUST_PAGE_SIZE = 10;
 
 document.addEventListener('DOMContentLoaded', () => {
   checkAdminAuth();
@@ -321,12 +324,28 @@ function renderAppointmentsTable(appointments, dateInfo) {
   }).join('');
 }
 
-// 4.4 Recent Customers Table
+// 4.4 Recent Customers Table with Pagination (1-10 items per page, links 1, 2, 3, Prev/Next)
 function renderRecentCustomersTable(customers) {
+  recentCustomersList = Array.isArray(customers) ? customers : [];
+  currentCustPage = 1;
+  renderRecentCustomersPage();
+}
+
+function renderRecentCustomersPage() {
   const tbody = document.getElementById('dashboardRecentCustomersBody');
+  const paginationContainer = document.getElementById('recentCustPaginationContainer');
+  const pageStartEl = document.getElementById('recentCustPageStart');
+  const pageEndEl = document.getElementById('recentCustPageEnd');
+  const totalEl = document.getElementById('recentCustTotal');
+  const prevBtn = document.getElementById('recentCustPrevBtn');
+  const nextBtn = document.getElementById('recentCustNextBtn');
+  const linksContainer = document.getElementById('recentCustPageLinks');
+
   if (!tbody) return;
 
-  if (!customers || customers.length === 0) {
+  const totalItems = recentCustomersList.length;
+
+  if (totalItems === 0) {
     tbody.innerHTML = `
       <tr>
         <td colspan="5" class="py-8 text-center text-xs text-[#735e5e]">
@@ -334,10 +353,31 @@ function renderRecentCustomersTable(customers) {
         </td>
       </tr>
     `;
+    if (pageStartEl) pageStartEl.textContent = '0';
+    if (pageEndEl) pageEndEl.textContent = '0';
+    if (totalEl) totalEl.textContent = '0';
+    if (prevBtn) prevBtn.disabled = true;
+    if (nextBtn) nextBtn.disabled = true;
+    if (linksContainer) {
+      linksContainer.innerHTML = `
+        <button type="button" class="w-8 h-8 rounded-xl bg-[#810B38] text-white font-bold text-xs shadow-sm flex items-center justify-center">1</button>
+        <button type="button" disabled class="w-8 h-8 rounded-xl bg-[#FAF6F0]/60 text-[#735e5e]/50 border border-[#DCC3AA]/40 font-bold text-xs flex items-center justify-center cursor-not-allowed">2</button>
+        <button type="button" disabled class="w-8 h-8 rounded-xl bg-[#FAF6F0]/60 text-[#735e5e]/50 border border-[#DCC3AA]/40 font-bold text-xs flex items-center justify-center cursor-not-allowed">3</button>
+      `;
+    }
     return;
   }
 
-  tbody.innerHTML = customers.map(cust => {
+  const totalPages = Math.max(1, Math.ceil(totalItems / CUST_PAGE_SIZE));
+  if (currentCustPage > totalPages) currentCustPage = totalPages;
+  if (currentCustPage < 1) currentCustPage = 1;
+
+  const startIndex = (currentCustPage - 1) * CUST_PAGE_SIZE;
+  const endIndex = Math.min(startIndex + CUST_PAGE_SIZE, totalItems);
+  const pageItems = recentCustomersList.slice(startIndex, endIndex);
+
+  // Render Table Rows
+  tbody.innerHTML = pageItems.map(cust => {
     const name = escapeHtml(cust.full_name || cust.email || 'Patron');
     const initials = getInitials(name);
     const service = escapeHtml(cust.last_service || 'First Visit');
@@ -369,6 +409,56 @@ function renderRecentCustomersTable(customers) {
       </tr>
     `;
   }).join('');
+
+  // Update Pagination Info
+  if (pageStartEl) pageStartEl.textContent = startIndex + 1;
+  if (pageEndEl) pageEndEl.textContent = endIndex;
+  if (totalEl) totalEl.textContent = totalItems;
+
+  // Prev / Next button states
+  if (prevBtn) prevBtn.disabled = currentCustPage <= 1;
+  if (nextBtn) nextBtn.disabled = currentCustPage >= totalPages;
+
+  // Render Page Links (1, 2, 3...)
+  if (linksContainer) {
+    const maxDisplayPages = Math.max(3, totalPages);
+    const pagesList = [];
+    for (let p = 1; p <= maxDisplayPages; p++) {
+      pagesList.push(p);
+    }
+
+    linksContainer.innerHTML = pagesList.map(p => {
+      const isActive = p === currentCustPage;
+      const isAvailable = p <= totalPages;
+
+      if (isActive) {
+        return `
+          <button type="button" class="w-8 h-8 rounded-xl bg-[#810B38] text-white font-bold text-xs shadow-sm flex items-center justify-center pointer-events-none">
+            ${p}
+          </button>
+        `;
+      } else if (isAvailable) {
+        return `
+          <button type="button" onclick="changeRecentCustPage(${p})" class="w-8 h-8 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] font-bold text-xs transition-colors flex items-center justify-center">
+            ${p}
+          </button>
+        `;
+      } else {
+        return `
+          <button type="button" disabled class="w-8 h-8 rounded-xl bg-[#FAF6F0]/60 text-[#735e5e]/50 border border-[#DCC3AA]/40 font-bold text-xs flex items-center justify-center cursor-not-allowed">
+            ${p}
+          </button>
+        `;
+      }
+    }).join('');
+  }
+}
+
+function changeRecentCustPage(page) {
+  const totalPages = Math.max(1, Math.ceil(recentCustomersList.length / CUST_PAGE_SIZE));
+  if (page < 1 || page > totalPages) return;
+  currentCustPage = page;
+  renderRecentCustomersPage();
 }
 
 // 4.5 Appointment Status Breakdown Section
@@ -1137,4 +1227,16 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+// 14. Schedule Table Horizontal Scroll Controls
+function scrollScheduleTable(direction) {
+  const container = document.getElementById('dashboardScheduleScrollContainer');
+  if (!container) return;
+  const scrollAmount = 280;
+  if (direction === 'left') {
+    container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+  } else {
+    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+  }
 }
