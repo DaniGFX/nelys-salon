@@ -134,7 +134,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Appointments</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">12</span>
+        <span id="sidebarAppointmentsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Customers (Active) -->
@@ -142,7 +142,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
         <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA]"></i>
         <span>Customers</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">248</span>
+        <span id="sidebarCustomersBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Services -->
@@ -150,7 +150,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Services</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">13</span>
+        <span id="sidebarServicesBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Staff -->
@@ -158,7 +158,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Staff</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">5</span>
+        <span id="sidebarStaffBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Payments -->
@@ -180,7 +180,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">6</span>
+        <span id="sidebarNotificationsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Messages -->
@@ -188,7 +188,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">2</span>
+        <span id="sidebarMessagesBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Settings -->
@@ -272,7 +272,7 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statTotalCustomers" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">248</h3>
+          <h3 id="statTotalCustomers" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">0</h3>
           <span class="text-xs font-bold text-stone-400">All registered</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
@@ -290,8 +290,8 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statNewThisMonth" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">18</h3>
-          <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">+7.8%</span>
+          <h3 id="statNewThisMonth" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">0</h3>
+          <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Registered</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
           <i class="fa-solid fa-arrow-trend-up text-emerald-600 text-[10px]"></i>
@@ -308,7 +308,7 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statUpcoming" class="font-serif text-3xl sm:text-4xl font-bold text-blue-700">32</h3>
+          <h3 id="statUpcoming" class="font-serif text-3xl sm:text-4xl font-bold text-blue-700">0</h3>
           <span class="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-200">Scheduled</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
@@ -326,8 +326,8 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statReturning" class="font-serif text-3xl sm:text-4xl font-bold text-amber-700">86</h3>
-          <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">34.6%</span>
+          <h3 id="statReturning" class="font-serif text-3xl sm:text-4xl font-bold text-amber-700">0</h3>
+          <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Patrons</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
           <i class="fa-solid fa-heart text-amber-500 text-[10px]"></i>
@@ -995,20 +995,14 @@
 
       <!-- Form -->
       <form onsubmit="handleConfirmBookForCustomer(event)" class="p-6 space-y-4">
-        
-        <div>
-          <label for="bookForService" class="block text-xs font-bold text-stone-700 mb-1">
+            <label for="bookForService" class="block text-xs font-bold text-stone-700 mb-1">
             Service
           </label>
           <select 
             id="bookForService" 
+            required
             class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
-            <option value="Haircut">Haircut (₱250)</option>
-            <option value="Hair Color">Hair Color (₱850)</option>
-            <option value="Hair Treatment">Hair Treatment (₱600)</option>
-            <option value="Manicure">Manicure (₱300)</option>
-            <option value="Pedicure">Pedicure (₱350)</option>
-            <option value="Foot Spa">Foot Spa (₱450)</option>
+            <option value="" disabled selected>Select service...</option>
           </select>
         </div>
 
@@ -1019,9 +1013,7 @@
           <select 
             id="bookForStaff" 
             class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
-            <option value="Nely">Nely (Master Stylist)</option>
-            <option value="Ana">Ana (Color & Treatment)</option>
-            <option value="Elena">Elena (Nails & Foot Spa)</option>
+            <option value="">Any Available Staff</option>
           </select>
         </div>
 
@@ -1043,13 +1035,15 @@
             </label>
             <select 
               id="bookForTime" 
+              required
               class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
-              <option value="9:00 AM">9:00 AM</option>
-              <option value="10:30 AM">10:30 AM</option>
-              <option value="1:00 PM">1:00 PM</option>
-              <option value="2:30 PM">2:30 PM</option>
-              <option value="4:00 PM">4:00 PM</option>
-              <option value="5:30 PM">5:30 PM</option>
+              <option value="09:00:00">9:00 AM</option>
+              <option value="10:30:00">10:30 AM</option>
+              <option value="13:00:00">1:00 PM</option>
+              <option value="14:30:00">2:30 PM</option>
+              <option value="16:00:00">4:00 PM</option>
+              <option value="17:30:00">5:30 PM</option>
+              <option value="19:00:00">7:00 PM</option>
             </select>
           </div>
         </div>
@@ -1119,13 +1113,13 @@
       <div class="flex items-center justify-center gap-3 mt-6">
         <button 
           type="button" 
-          onclick="closeLogoutModal()"
+          onclick="closeLogoutModal()" 
           class="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
           Cancel
         </button>
         <button 
           type="button" 
-          onclick="handleConfirmLogout()"
+          onclick="handleConfirmLogout()" 
           class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
           Logout
         </button>
@@ -1134,7 +1128,7 @@
   </div>
 
   <!-- Customers Page JavaScript Controller -->
-  <script src="../assets/js/pages/admin/customers.js"></script>
+  <script src="../assets/js/pages/admin/customers.js?v=2.0"></script>
 
 </body>
 </html>

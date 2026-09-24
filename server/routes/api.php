@@ -106,9 +106,15 @@ class Router {
                 case 'customers':
                     $custCtrl = new CustomerController();
                     if ($id === null && $method === 'GET') $custCtrl->index();
+                    if ($id === null && $method === 'POST') $custCtrl->store();
                     if ($id === 'profile' && $method === 'GET') $custCtrl->getProfile();
                     if ($id === 'profile' && ($method === 'PUT' || $method === 'PATCH')) $custCtrl->updateProfile();
-                    if (is_numeric($id) && $method === 'GET') $custCtrl->show((int)$id);
+                    if (is_numeric($id)) {
+                        if ($subaction === 'notes' && $method === 'POST') $custCtrl->addNote((int)$id);
+                        if ($method === 'GET') $custCtrl->show((int)$id);
+                        if ($method === 'PUT' || $method === 'PATCH') $custCtrl->update((int)$id);
+                        if ($method === 'DELETE') $custCtrl->destroy((int)$id);
+                    }
                     Response::notFound('Customer endpoint not found.');
                     break;
 

@@ -1,936 +1,685 @@
 /**
  * Nely's Salon — Admin Customers Controller
- * Manages customer directory, search & multi-filtering, sorting,
- * customer profile detail view with appointment history & notes,
+ * Connected directly to the backend database API (/api/customers, /api/bookings)
+ * Manages customer directory, real-time search & multi-filtering, sorting,
+ * customer profile detail view with live appointment history & notes,
  * add customer modal, edit customer, quick appointment booking, and deletion.
  */
 
-// ================= GLOBAL STATE & INITIAL MOCK DATA =================
-const CUSTOMERS_STORAGE_KEY = 'nelys_admin_customers_data';
+// ================= GLOBAL STATE =================
+let customersData = [];
+let servicesList = [];
+let staffList = [];
+let summaryMetrics = {
+  total: 0,
+  newThisMonth: 0,
+  withUpcoming: 0,
+  returning: 0
+};
 
-// Default mock customers matching all specifications
-const DEFAULT_CUSTOMERS = [
-  {
-    id: 'CUST-1001',
-    name: 'Maria Santos',
-    phone: '0917 888 9999',
-    email: 'maria@email.com',
-    dob: '1992-04-12',
-    address: 'Blk 10 Lot 5, Lagro, Quezon City',
-    city: 'Quezon City',
-    gender: 'Female',
-    joinedDate: 'January 2026',
-    joinedTimestamp: '2026-01-15',
-    status: 'Active',
-    totalAppointments: 12,
-    completedAppointments: 10,
-    cancelledAppointments: 1,
-    pendingAppointments: 1,
-    totalSpent: 4850,
-    lastVisit: 'Sept 23',
-    notes: [
-      {
-        id: 'n1',
-        text: 'Prefers afternoon appointments. Regular hair color customer.',
-        date: 'Sept 10, 2026',
-        author: 'Admin'
-      }
-    ],
-    history: [
-      { id: 'h1', date: 'Sept 23, 2026', service: 'Haircut', staff: 'Nely', amount: 250, status: 'Confirmed' },
-      { id: 'h2', date: 'Sept 10, 2026', service: 'Hair Treatment', staff: 'Ana', amount: 600, status: 'Completed' },
-      { id: 'h3', date: 'Aug 25, 2026', service: 'Hair Color', staff: 'Nely', amount: 850, status: 'Completed' },
-      { id: 'h4', date: 'Aug 05, 2026', service: 'Manicure', staff: 'Ana', amount: 300, status: 'Completed' }
-    ]
-  },
-  {
-    id: 'CUST-1002',
-    name: 'Angela Cruz',
-    phone: '0928 777 6666',
-    email: 'angela.cruz@gmail.com',
-    dob: '1995-08-20',
-    address: 'Ascension Avenue, Lagro, Quezon City',
-    city: 'Quezon City',
-    gender: 'Female',
-    joinedDate: 'February 2026',
-    joinedTimestamp: '2026-02-10',
-    status: 'Active',
-    totalAppointments: 8,
-    completedAppointments: 7,
-    cancelledAppointments: 0,
-    pendingAppointments: 1,
-    totalSpent: 3450,
-    lastVisit: 'Sept 20',
-    notes: [
-      {
-        id: 'n2',
-        text: 'Sensitive scalp. Prefers natural and ammonia-free hair dyes.',
-        date: 'Aug 14, 2026',
-        author: 'Ana'
-      }
-    ],
-    history: [
-      { id: 'h5', date: 'Sept 20, 2026', service: 'Hair Color', staff: 'Ana', amount: 850, status: 'Completed' },
-      { id: 'h6', date: 'Aug 14, 2026', service: 'Hair Treatment', staff: 'Ana', amount: 600, status: 'Completed' },
-      { id: 'h7', date: 'Jul 29, 2026', service: 'Haircut', staff: 'Nely', amount: 250, status: 'Completed' }
-    ]
-  },
-  {
-    id: 'CUST-1003',
-    name: 'Jamie Reyes',
-    phone: '0919 555 4433',
-    email: 'jamie.reyes@yahoo.com',
-    dob: '1998-11-03',
-    address: 'Fairview, Quezon City',
-    city: 'Quezon City',
-    gender: 'Female',
-    joinedDate: 'March 2026',
-    joinedTimestamp: '2026-03-22',
-    status: 'Active',
-    totalAppointments: 5,
-    completedAppointments: 4,
-    cancelledAppointments: 0,
-    pendingAppointments: 1,
-    totalSpent: 1900,
-    lastVisit: 'Sept 15',
-    notes: [
-      {
-        id: 'n3',
-        text: 'Always requests gel nail art with pastel undertones.',
-        date: 'Sept 15, 2026',
-        author: 'Nely'
-      }
-    ],
-    history: [
-      { id: 'h8', date: 'Sept 15, 2026', service: 'Manicure', staff: 'Nely', amount: 300, status: 'Completed' },
-      { id: 'h9', date: 'Aug 12, 2026', service: 'Pedicure', staff: 'Nely', amount: 350, status: 'Completed' },
-      { id: 'h10', date: 'Jul 04, 2026', service: 'Foot Spa', staff: 'Elena', amount: 450, status: 'Completed' }
-    ]
-  },
-  {
-    id: 'CUST-1004',
-    name: 'Carla Dela Cruz',
-    phone: '0995 222 1100',
-    email: 'carla.delacruz@outlook.com',
-    dob: '1989-01-30',
-    address: 'Neopolitan, Novaliches, Quezon City',
-    city: 'Quezon City',
-    gender: 'Female',
-    joinedDate: 'January 2026',
-    joinedTimestamp: '2026-01-05',
-    status: 'Active',
-    totalAppointments: 15,
-    completedAppointments: 13,
-    cancelledAppointments: 1,
-    pendingAppointments: 1,
-    totalSpent: 7200,
-    lastVisit: 'Sept 22',
-    notes: [
-      {
-        id: 'n4',
-        text: 'VIP loyal regular patron. Prefers Ana for hair rejuvenation treatments.',
-        date: 'Sept 22, 2026',
-        author: 'Admin'
-      }
-    ],
-    history: [
-      { id: 'h11', date: 'Sept 22, 2026', service: 'Hair Treatment', staff: 'Ana', amount: 600, status: 'Confirmed' },
-      { id: 'h12', date: 'Sept 08, 2026', service: 'Haircut', staff: 'Nely', amount: 250, status: 'Completed' },
-      { id: 'h13', date: 'Aug 19, 2026', service: 'Hair Color', staff: 'Ana', amount: 850, status: 'Completed' }
-    ]
-  },
-  {
-    id: 'CUST-1005',
-    name: 'Sophia Reyes',
-    phone: '0917 444 3322',
-    email: 'sophia.reyes@gmail.com',
-    dob: '2001-06-18',
-    address: 'Greater Lagro, Quezon City',
-    city: 'Quezon City',
-    gender: 'Female',
-    joinedDate: 'June 2026',
-    joinedTimestamp: '2026-06-18',
-    status: 'Inactive',
-    totalAppointments: 2,
-    completedAppointments: 2,
-    cancelledAppointments: 0,
-    pendingAppointments: 0,
-    totalSpent: 700,
-    lastVisit: 'Aug 30',
-    notes: [
-      {
-        id: 'n5',
-        text: 'Needs SMS reminder calls 2 hours before scheduled salon slot.',
-        date: 'Aug 30, 2026',
-        author: 'Elena'
-      }
-    ],
-    history: [
-      { id: 'h14', date: 'Aug 30, 2026', service: 'Pedicure', staff: 'Nely', amount: 350, status: 'Completed' },
-      { id: 'h15', date: 'Jun 25, 2026', service: 'Manicure', staff: 'Nely', amount: 350, status: 'Completed' }
-    ]
-  },
-  {
-    id: 'CUST-1006',
-    name: 'Patricia Gomez',
-    phone: '0920 111 4477',
-    email: 'patricia.g@yahoo.com',
-    dob: '1994-09-14',
-    address: 'San Jose del Monte, Bulacan',
-    city: 'Bulacan',
-    gender: 'Female',
-    joinedDate: 'September 2026',
-    joinedTimestamp: '2026-09-02',
-    status: 'Active',
-    totalAppointments: 3,
-    completedAppointments: 2,
-    cancelledAppointments: 0,
-    pendingAppointments: 1,
-    totalSpent: 1650,
-    lastVisit: 'Sept 19',
-    notes: [
-      {
-        id: 'n6',
-        text: 'Travels from SJDM. Book back-to-back hair and foot services if possible.',
-        date: 'Sept 02, 2026',
-        author: 'Admin'
-      }
-    ],
-    history: [
-      { id: 'h16', date: 'Sept 19, 2026', service: 'Haircut', staff: 'Nely', amount: 250, status: 'Completed' },
-      { id: 'h17', date: 'Sept 02, 2026', service: 'Hair Color', staff: 'Ana', amount: 850, status: 'Completed' }
-    ]
-  },
-  {
-    id: 'CUST-1007',
-    name: 'Joshua Garcia',
-    phone: '0933 666 8899',
-    email: 'joshua.garcia@outlook.com',
-    dob: '1997-03-25',
-    address: 'Fairview Park, Quezon City',
-    city: 'Quezon City',
-    gender: 'Male',
-    joinedDate: 'September 2026',
-    joinedTimestamp: '2026-09-12',
-    status: 'Active',
-    totalAppointments: 1,
-    completedAppointments: 1,
-    cancelledAppointments: 0,
-    pendingAppointments: 0,
-    totalSpent: 300,
-    lastVisit: 'Sept 12',
-    notes: [],
-    history: [
-      { id: 'h18', date: 'Sept 12, 2026', service: 'Men’s Fade Cut', staff: 'Nely', amount: 300, status: 'Completed' }
-    ]
-  },
-  {
-    id: 'CUST-1008',
-    name: 'Katrina Halili',
-    phone: '0918 999 0011',
-    email: 'katrina.h@gmail.com',
-    dob: '1986-12-05',
-    address: 'Novaliches, Quezon City',
-    city: 'Quezon City',
-    gender: 'Female',
-    joinedDate: 'April 2026',
-    joinedTimestamp: '2026-04-18',
-    status: 'Active',
-    totalAppointments: 9,
-    completedAppointments: 8,
-    cancelledAppointments: 1,
-    pendingAppointments: 0,
-    totalSpent: 5350,
-    lastVisit: 'Sept 14',
-    notes: [
-      {
-        id: 'n7',
-        text: 'Loves Moroccan Argan oil treatments.',
-        date: 'May 04, 2026',
-        author: 'Ana'
-      }
-    ],
-    history: [
-      { id: 'h19', date: 'Sept 14, 2026', service: 'Hair Treatment', staff: 'Ana', amount: 600, status: 'Completed' },
-      { id: 'h20', date: 'Aug 02, 2026', service: 'Hair Color', staff: 'Nely', amount: 850, status: 'Completed' }
-    ]
-  }
-];
+// Filter & Sort State
+let filterState = {
+  search: '',
+  status: 'all',
+  gender: 'all',
+  date: 'all',
+  sortBy: 'newest',
+  summaryFilter: 'all'
+};
 
-// In-memory customer state
-let customers = [];
+// Active customer context for modals
 let activeCustomer = null;
-let activeKebabDropdown = null;
+let isCustomerModalScrollLocked = false;
 
-// Filter and sorting states
-let currentSearch = '';
-let currentStatusFilter = 'all';
-let currentGenderFilter = 'all';
-let currentDateFilter = 'all';
-let currentSort = 'newest';
-
-// ================= LOCAL STORAGE HELPERS =================
-function loadCustomers() {
-  try {
-    const raw = localStorage.getItem(CUSTOMERS_STORAGE_KEY);
-    if (raw) {
-      customers = JSON.parse(raw);
-    } else {
-      customers = JSON.parse(JSON.stringify(DEFAULT_CUSTOMERS));
-      saveCustomers();
-    }
-  } catch (err) {
-    console.error('Error loading customers from storage:', err);
-    customers = JSON.parse(JSON.stringify(DEFAULT_CUSTOMERS));
-  }
-}
-
-function saveCustomers() {
-  try {
-    localStorage.setItem(CUSTOMERS_STORAGE_KEY, JSON.stringify(customers));
-  } catch (err) {
-    console.error('Error saving customers to storage:', err);
-  }
-}
-
-// ================= DOM INITIALIZATION =================
+// ================= INITIALIZATION & AUTH =================
 document.addEventListener('DOMContentLoaded', () => {
-  loadCustomers();
-  renderSummaryCards();
-  applyFiltersAndRender();
-  setupEventListeners();
-  updateTimeBadge();
+  checkAdminAuth();
+  setupClickOutside();
+  setupModalDismissListeners();
+  fetchCustomersData();
 });
 
-// Setup DOM event listeners
-function setupEventListeners() {
-  // Global search input
-  const searchInput = document.getElementById('customerSearchInput');
-  if (searchInput) {
-    searchInput.addEventListener('input', (e) => {
-      currentSearch = e.target.value.trim().toLowerCase();
-      applyFiltersAndRender();
-    });
+function checkAdminAuth() {
+  const token = localStorage.getItem('nelys_token');
+  const userJson = localStorage.getItem('nelys_user');
+
+  if (!token) {
+    window.location.href = '../login.html';
+    return;
   }
 
-  // Status Filter
-  const statusFilter = document.getElementById('statusFilter');
-  if (statusFilter) {
-    statusFilter.addEventListener('change', (e) => {
-      currentStatusFilter = e.target.value;
-      applyFiltersAndRender();
-    });
-  }
-
-  // Gender Filter
-  const genderFilter = document.getElementById('genderFilter');
-  if (genderFilter) {
-    genderFilter.addEventListener('change', (e) => {
-      currentGenderFilter = e.target.value;
-      applyFiltersAndRender();
-    });
-  }
-
-  // Date Joined Filter
-  const dateFilter = document.getElementById('dateFilter');
-  if (dateFilter) {
-    dateFilter.addEventListener('change', (e) => {
-      currentDateFilter = e.target.value;
-      applyFiltersAndRender();
-    });
-  }
-
-  // Sort Dropdown
-  const sortSelect = document.getElementById('sortSelect');
-  if (sortSelect) {
-    sortSelect.addEventListener('change', (e) => {
-      currentSort = e.target.value;
-      applyFiltersAndRender();
-    });
-  }
-
-  // Close kebab dropdown when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.kebab-menu-container')) {
-      closeAllKebabMenus();
-    }
-  });
-
-  // Close modals on Escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeAllModals();
-    }
-  });
-}
-
-// ================= RENDER SUMMARY CARDS =================
-function renderSummaryCards() {
-  // Summary card counts: 248 total, 18 new this month, 32 upcoming, 86 returning
-  // We can calculate dynamically based on full mock statistics
-  const totalCountEl = document.getElementById('statTotalCustomers');
-  const newMonthEl = document.getElementById('statNewThisMonth');
-  const upcomingEl = document.getElementById('statUpcoming');
-  const returningEl = document.getElementById('statReturning');
-
-  if (totalCountEl) totalCountEl.textContent = '248';
-  if (newMonthEl) newMonthEl.textContent = '18';
-  if (upcomingEl) upcomingEl.textContent = '32';
-  if (returningEl) returningEl.textContent = '86';
-}
-
-// ================= FILTERING & SORTING LOGIC =================
-function applyFiltersAndRender() {
-  closeAllKebabMenus();
-
-  let filtered = [...customers];
-
-  // 1. Search filter (Name, Phone, Email, Address, Notes)
-  if (currentSearch) {
-    filtered = filtered.filter(c => {
-      const nameMatch = c.name.toLowerCase().includes(currentSearch);
-      const phoneMatch = c.phone.toLowerCase().includes(currentSearch);
-      const emailMatch = c.email.toLowerCase().includes(currentSearch);
-      const cityMatch = c.city ? c.city.toLowerCase().includes(currentSearch) : false;
-      const notesMatch = c.notes.some(n => n.text.toLowerCase().includes(currentSearch));
-      return nameMatch || phoneMatch || emailMatch || cityMatch || notesMatch;
-    });
-  }
-
-  // 2. Status filter
-  if (currentStatusFilter !== 'all') {
-    filtered = filtered.filter(c => c.status.toLowerCase() === currentStatusFilter.toLowerCase());
-  }
-
-  // 3. Gender filter
-  if (currentGenderFilter !== 'all') {
-    filtered = filtered.filter(c => c.gender && c.gender.toLowerCase() === currentGenderFilter.toLowerCase());
-  }
-
-  // 4. Date Joined filter
-  if (currentDateFilter !== 'all') {
-    filtered = filtered.filter(c => {
-      if (currentDateFilter === 'this_month') {
-        return c.joinedTimestamp && c.joinedTimestamp.startsWith('2026-09');
-      } else if (currentDateFilter === 'last_3_months') {
-        return c.joinedTimestamp && (c.joinedTimestamp >= '2026-06-01');
-      } else if (currentDateFilter === 'this_year') {
-        return c.joinedTimestamp && c.joinedTimestamp.startsWith('2026');
+  let displayName = 'Admin';
+  if (userJson) {
+    try {
+      const user = JSON.parse(userJson);
+      let rawName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Admin');
+      rawName = rawName.replace(/atelier\s*/gi, '').trim();
+      if (rawName && rawName.toLowerCase() !== 'admin') {
+        displayName = rawName;
       }
-      return true;
+    } catch (e) {
+      console.warn('Error reading admin profile:', e);
+    }
+  }
+
+  const mobileBadge = document.querySelector('header .bg-\\[\\#541A1A\\]');
+  if (mobileBadge) {
+    const parts = displayName.split(' ').filter(Boolean);
+    const initials = parts.length > 1 
+      ? (parts[0][0] + parts[1][0]).toUpperCase() 
+      : (displayName.substring(0, 2)).toUpperCase();
+    mobileBadge.textContent = initials || 'AD';
+  }
+}
+
+// Helper to get auth header
+function getAuthHeaders() {
+  const token = localStorage.getItem('nelys_token');
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+// Helper to get local YYYY-MM-DD
+function getLocalDateString(dateObj = new Date()) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+// Helper to format date string to human readable (e.g. Sept 25, 2026)
+function formatDateString(dateStr) {
+  if (!dateStr) return 'N/A';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return dateStr;
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+  const monthIdx = parseInt(parts[1], 10) - 1;
+  const day = parseInt(parts[2], 10);
+  const year = parts[0];
+  return `${months[monthIdx] || ''} ${day}, ${year}`;
+}
+
+// ================= FETCH LIVE CUSTOMERS FROM BACKEND =================
+async function fetchCustomersData() {
+  const tbody = document.getElementById('customersTableBody');
+  if (tbody && customersData.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="6" class="py-12 text-center text-[#735e5e]">
+          <div class="inline-flex items-center gap-2 font-semibold">
+            <i class="fa-solid fa-spinner fa-spin text-[#810B38]"></i>
+            <span>Loading live customer records from database...</span>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
+  try {
+    const res = await fetch('../api/customers', {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
     });
-  }
 
-  // 5. Sorting
-  if (currentSort === 'newest') {
-    filtered.sort((a, b) => (b.joinedTimestamp || '').localeCompare(a.joinedTimestamp || ''));
-  } else if (currentSort === 'oldest') {
-    filtered.sort((a, b) => (a.joinedTimestamp || '').localeCompare(b.joinedTimestamp || ''));
-  } else if (currentSort === 'name_asc') {
-    filtered.sort((a, b) => a.name.localeCompare(b.name));
-  } else if (currentSort === 'most_appointments') {
-    filtered.sort((a, b) => (b.totalAppointments || 0) - (a.totalAppointments || 0));
-  }
+    if (res.status === 401 || res.status === 403) {
+      showToast('Session expired. Redirecting to login...', 'warning');
+      setTimeout(() => { window.location.href = '../login.html'; }, 1200);
+      return;
+    }
 
-  renderCustomerTable(filtered);
+    const result = await res.json();
+    if (result.success && result.data) {
+      customersData = result.data.customers || [];
+      summaryMetrics = result.data.summary || summaryMetrics;
+      servicesList = result.data.services || [];
+      staffList = result.data.staff || [];
+
+      renderSummaryCards();
+      renderCustomersTable();
+      populateBookingDropdowns();
+      updateSidebarBadges();
+    } else {
+      showToast(result.message || 'Failed to load customer records.', 'error');
+    }
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+    showToast('Failed to connect to backend server. Please verify MySQL/Apache are active.', 'error');
+  }
 }
 
-// Reset all search and filter controls
-function resetFilters() {
-  currentSearch = '';
-  currentStatusFilter = 'all';
-  currentGenderFilter = 'all';
-  currentDateFilter = 'all';
-  currentSort = 'newest';
+// ================= RENDER SUMMARY CARDS & SIDEBAR BADGES =================
+function renderSummaryCards() {
+  const statTotal = document.getElementById('statTotalCustomers');
+  const statNew = document.getElementById('statNewThisMonth');
+  const statUpcoming = document.getElementById('statUpcoming');
+  const statReturning = document.getElementById('statReturning');
 
-  const sInput = document.getElementById('customerSearchInput');
-  if (sInput) sInput.value = '';
-
-  const sStatus = document.getElementById('statusFilter');
-  if (sStatus) sStatus.value = 'all';
-
-  const sGender = document.getElementById('genderFilter');
-  if (sGender) sGender.value = 'all';
-
-  const sDate = document.getElementById('dateFilter');
-  if (sDate) sDate.value = 'all';
-
-  const sSort = document.getElementById('sortSelect');
-  if (sSort) sSort.value = 'newest';
-
-  applyFiltersAndRender();
-  showToast('Filters have been reset', 'info');
+  if (statTotal) statTotal.textContent = summaryMetrics.total !== undefined ? summaryMetrics.total : customersData.length;
+  if (statNew) statNew.textContent = summaryMetrics.newThisMonth !== undefined ? summaryMetrics.newThisMonth : 0;
+  if (statUpcoming) statUpcoming.textContent = summaryMetrics.withUpcoming !== undefined ? summaryMetrics.withUpcoming : 0;
+  if (statReturning) statReturning.textContent = summaryMetrics.returning !== undefined ? summaryMetrics.returning : 0;
 }
 
-// Summary card click shortcuts
-function filterBySummaryCard(filterType) {
-  if (filterType === 'all') {
-    currentStatusFilter = 'all';
-    currentDateFilter = 'all';
-  } else if (filterType === 'new_month') {
-    currentDateFilter = 'this_month';
-    const sDate = document.getElementById('dateFilter');
-    if (sDate) sDate.value = 'this_month';
-  } else if (filterType === 'upcoming') {
-    currentStatusFilter = 'Active';
-    const sStatus = document.getElementById('statusFilter');
-    if (sStatus) sStatus.value = 'Active';
-  } else if (filterType === 'returning') {
-    currentSort = 'most_appointments';
-    const sSort = document.getElementById('sortSelect');
-    if (sSort) sSort.value = 'most_appointments';
+function updateSidebarBadges() {
+  const custBadge = document.getElementById('sidebarCustomersBadge');
+  if (custBadge) {
+    custBadge.textContent = customersData.length;
   }
-  applyFiltersAndRender();
+  const svcBadge = document.getElementById('sidebarServicesBadge');
+  if (svcBadge && servicesList.length) {
+    svcBadge.textContent = servicesList.length;
+  }
+  const staffBadge = document.getElementById('sidebarStaffBadge');
+  if (staffBadge && staffList.length) {
+    staffBadge.textContent = staffList.length;
+  }
 }
 
-// ================= RENDER CUSTOMER TABLE =================
-function renderCustomerTable(items) {
-  const tableBody = document.getElementById('customersTableBody');
+function populateBookingDropdowns() {
+  const bookForService = document.getElementById('bookForService');
+  if (bookForService) {
+    let opts = '<option value="" disabled selected>Select service...</option>';
+    servicesList.forEach(svc => {
+      opts += `<option value="${svc.id}" data-price="${svc.price}" data-name="${escapeHtml(svc.name)}">${escapeHtml(svc.name)} (₱${Number(svc.price).toLocaleString()})</option>`;
+    });
+    bookForService.innerHTML = opts;
+  }
+
+  const bookForStaff = document.getElementById('bookForStaff');
+  if (bookForStaff) {
+    let opts = '<option value="">Any Available Staff</option>';
+    staffList.forEach(st => {
+      opts += `<option value="${st.id}">${escapeHtml(st.name)} (${escapeHtml(st.role || 'Stylist')})</option>`;
+    });
+    bookForStaff.innerHTML = opts;
+  }
+}
+
+// ================= RENDER CUSTOMERS TABLE =================
+function renderCustomersTable() {
+  const tbody = document.getElementById('customersTableBody');
   const emptyState = document.getElementById('customersEmptyState');
-  const tableContainer = document.getElementById('customersTableContainer');
-  const resultsCount = document.getElementById('customersResultCount');
+  const resultCount = document.getElementById('customersResultCount');
+  if (!tbody) return;
 
-  if (resultsCount) {
-    resultsCount.textContent = `Showing ${items.length} customer${items.length === 1 ? '' : 's'}`;
+  const currentMonthPrefix = getLocalDateString().substring(0, 7);
+
+  // Filter
+  let filtered = customersData.filter(cust => {
+    // 1. Search filter
+    if (filterState.search) {
+      const q = filterState.search.toLowerCase();
+      const notesText = Array.isArray(cust.notes) ? cust.notes.map(n => n.text || '').join(' ') : (cust.notes || '');
+      const match = (cust.name && cust.name.toLowerCase().includes(q)) ||
+        (cust.phone && cust.phone.toLowerCase().includes(q)) ||
+        (cust.email && cust.email.toLowerCase().includes(q)) ||
+        (cust.address && cust.address.toLowerCase().includes(q)) ||
+        (cust.city && cust.city.toLowerCase().includes(q)) ||
+        (cust.id && cust.id.toLowerCase().includes(q)) ||
+        notesText.toLowerCase().includes(q);
+      if (!match) return false;
+    }
+
+    // 2. Status filter
+    if (filterState.status !== 'all') {
+      if (cust.status.toLowerCase() !== filterState.status.toLowerCase()) return false;
+    }
+
+    // 3. Gender filter
+    if (filterState.gender !== 'all') {
+      if (cust.gender.toLowerCase() !== filterState.gender.toLowerCase()) return false;
+    }
+
+    // 4. Date Joined filter
+    if (filterState.date === 'this_month') {
+      if (!cust.joinedTimestamp || !cust.joinedTimestamp.startsWith(currentMonthPrefix)) return false;
+    } else if (filterState.date === 'this_year') {
+      const yearPrefix = currentMonthPrefix.substring(0, 4);
+      if (!cust.joinedTimestamp || !cust.joinedTimestamp.startsWith(yearPrefix)) return false;
+    }
+
+    // 5. Summary Card Click filter
+    if (filterState.summaryFilter === 'new_month') {
+      if (!cust.joinedTimestamp || !cust.joinedTimestamp.startsWith(currentMonthPrefix)) return false;
+    } else if (filterState.summaryFilter === 'upcoming') {
+      if ((cust.pendingAppointments || 0) <= 0) return false;
+    } else if (filterState.summaryFilter === 'returning') {
+      if ((cust.totalAppointments || 0) <= 1) return false;
+    }
+
+    return true;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    if (filterState.sortBy === 'newest') {
+      return (b.userId || 0) - (a.userId || 0);
+    } else if (filterState.sortBy === 'oldest') {
+      return (a.userId || 0) - (b.userId || 0);
+    } else if (filterState.sortBy === 'name_asc') {
+      return a.name.localeCompare(b.name);
+    } else if (filterState.sortBy === 'most_appointments') {
+      return (b.totalAppointments || 0) - (a.totalAppointments || 0);
+    }
+    return 0;
+  });
+
+  if (resultCount) {
+    resultCount.textContent = `Showing ${filtered.length} registered patron${filtered.length === 1 ? '' : 's'}`;
   }
 
-  if (!tableBody) return;
-
-  if (items.length === 0) {
-    tableBody.innerHTML = '';
+  if (filtered.length === 0) {
+    tbody.innerHTML = '';
     if (emptyState) emptyState.classList.remove('hidden');
-    if (tableContainer) tableContainer.classList.add('hidden');
     return;
   }
 
   if (emptyState) emptyState.classList.add('hidden');
-  if (tableContainer) tableContainer.classList.remove('hidden');
 
-  tableBody.innerHTML = items.map(c => {
-    // Generate initials for avatar
-    const initials = c.name
-      .split(' ')
-      .filter(n => n.length > 0)
-      .map(n => n[0].toUpperCase())
-      .slice(0, 2)
-      .join('');
+  tbody.innerHTML = filtered.map(cust => {
+    // Generate initials
+    const nameParts = cust.name.trim().split(' ').filter(Boolean);
+    const initials = nameParts.length > 1 
+      ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+      : (cust.name.substring(0, 2)).toUpperCase();
 
-    // Status Badge
-    const isActive = c.status === 'Active';
-    const statusBadge = isActive
-      ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-           <i class="fa-solid fa-circle text-[8px] text-emerald-500"></i>
-           Active
+    const isActive = cust.status.toLowerCase() === 'active';
+    const statusPill = isActive
+      ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+           <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Active
          </span>`
-      : `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-neutral-100 text-neutral-600 border border-neutral-300">
-           <i class="fa-solid fa-circle text-[8px] text-neutral-400"></i>
-           Inactive
+      : `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-stone-100 text-stone-600 border border-stone-200">
+           <span class="w-1.5 h-1.5 rounded-full bg-stone-400"></span> Inactive
          </span>`;
 
-    // Appointments count badge
-    const apptBadgeColor = c.totalAppointments >= 10
-      ? 'bg-[#810B38] text-white'
-      : c.totalAppointments >= 5
-        ? 'bg-[#DCC3AA] text-[#541A1A]'
-        : 'bg-stone-200 text-stone-700';
+    const genderColor = cust.gender.toLowerCase() === 'female' 
+      ? 'bg-rose-50 text-rose-700 border-rose-200' 
+      : (cust.gender.toLowerCase() === 'male' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200');
 
     return `
-      <tr class="border-b border-[#F1E2D1]/60 hover:bg-[#FAF6F0]/60 transition-colors group">
-        <!-- Customer (Avatar, Name, Email) -->
-        <td class="px-5 py-4">
-          <div class="flex items-center gap-3.5">
-            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-[#810B38] to-[#541A1A] text-[#F1E2D1] border border-[#DCC3AA] flex items-center justify-center font-bold text-xs shadow-sm shrink-0">
+      <tr 
+        onclick="openCustomerProfileModal(${cust.userId})"
+        class="hover:bg-[#FAF6F0]/50 transition-colors cursor-pointer group">
+        
+        <!-- Customer Column -->
+        <td class="px-5 py-4 whitespace-nowrap">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA] text-[#541A1A] font-serif font-bold text-sm flex items-center justify-center shrink-0 group-hover:border-[#810B38] transition-colors">
               ${initials}
             </div>
             <div>
-              <button 
-                type="button" 
-                onclick="openCustomerProfileModal('${c.id}')"
-                class="font-serif font-bold text-sm text-[#541A1A] hover:text-[#810B38] transition-colors text-left group-hover:underline">
-                ${c.name}
-              </button>
-              <div class="text-xs text-stone-500 font-mono mt-0.5">
-                ${c.email}
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-[#541A1A] group-hover:text-[#810B38] transition-colors">
+                  ${escapeHtml(cust.name)}
+                </span>
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md border ${genderColor}">
+                  ${escapeHtml(cust.gender)}
+                </span>
               </div>
+              <span class="text-[11px] text-[#735e5e] flex items-center gap-1 mt-0.5">
+                <i class="fa-solid fa-location-dot text-[9px] text-[#810B38]"></i>
+                ${escapeHtml(cust.city || cust.address || 'Lagro, Quezon City')}
+              </span>
             </div>
           </div>
         </td>
 
-        <!-- Contact (Phone, City) -->
-        <td class="px-5 py-4">
-          <div class="text-xs font-semibold text-stone-800 font-mono flex items-center gap-1.5">
-            <i class="fa-solid fa-phone text-[10px] text-[#810B38]/60"></i>
-            ${c.phone}
+        <!-- Contact Column -->
+        <td class="px-5 py-4 whitespace-nowrap text-xs">
+          <div class="font-semibold text-stone-800">
+            <a href="tel:${escapeHtml(cust.phone)}" onclick="event.stopPropagation()" class="hover:underline flex items-center gap-1.5 text-stone-800">
+              <i class="fa-solid fa-phone text-[10px] text-[#810B38]"></i>
+              ${escapeHtml(cust.phone)}
+            </a>
           </div>
-          <div class="text-[11px] text-stone-500 mt-1 flex items-center gap-1">
-            <i class="fa-solid fa-location-dot text-[10px] text-stone-400"></i>
-            ${c.city || 'Quezon City'}
-          </div>
+          ${cust.email ? `
+            <div class="text-[11px] text-stone-400 mt-0.5">
+              <a href="mailto:${escapeHtml(cust.email)}" onclick="event.stopPropagation()" class="hover:underline font-mono text-stone-500">
+                ${escapeHtml(cust.email)}
+              </a>
+            </div>
+          ` : '<span class="text-[11px] text-stone-300">No email registered</span>'}
         </td>
 
-        <!-- Appointments -->
-        <td class="px-5 py-4">
+        <!-- Appointments Stats Column -->
+        <td class="px-5 py-4 whitespace-nowrap text-xs">
           <div class="flex items-center gap-2">
-            <span class="inline-flex items-center justify-center w-7 h-7 rounded-full text-xs font-bold ${apptBadgeColor} shadow-xs">
-              ${c.totalAppointments}
+            <span class="font-bold text-[#541A1A]">${cust.totalAppointments} total</span>
+            <span class="text-[11px] text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+              ${cust.completedAppointments} completed
             </span>
-            <span class="text-xs text-stone-500">visits</span>
           </div>
+          <span class="text-[10px] text-[#810B38] font-bold block mt-0.5">
+            Total Spent: ${cust.totalSpentFormatted}
+          </span>
         </td>
 
-        <!-- Last Visit -->
-        <td class="px-5 py-4">
-          <div class="text-xs font-semibold text-stone-800 flex items-center gap-1.5">
-            <i class="fa-solid fa-calendar-day text-[11px] text-[#DCC3AA]"></i>
-            ${c.lastVisit}
+        <!-- Last Visit Column -->
+        <td class="px-5 py-4 whitespace-nowrap text-xs text-stone-600">
+          <div class="font-semibold text-stone-800 flex items-center gap-1.5">
+            <i class="fa-regular fa-calendar-check text-[#810B38] text-[10px]"></i>
+            <span>${escapeHtml(cust.lastVisit)}</span>
           </div>
-          <div class="text-[11px] text-stone-400 mt-0.5">
-            Spent ₱${c.totalSpent.toLocaleString()}
-          </div>
+          <span class="text-[10px] text-stone-400 block mt-0.5">
+            Joined ${escapeHtml(cust.joinedDate)}
+          </span>
         </td>
 
-        <!-- Status -->
-        <td class="px-5 py-4">
-          ${statusBadge}
+        <!-- Status Column -->
+        <td class="px-5 py-4 whitespace-nowrap">
+          ${statusPill}
         </td>
 
-        <!-- Action (Kebab ⋮ Menu) -->
-        <td class="px-5 py-4 text-right">
-          <div class="relative inline-block text-left kebab-menu-container">
+        <!-- Action Column (Kebab Menu) -->
+        <td class="px-5 py-4 whitespace-nowrap text-right text-xs relative" onclick="event.stopPropagation()">
+          <div class="inline-block text-left">
             <button 
               type="button" 
-              onclick="toggleKebabMenu(event, '${c.id}')"
-              class="w-8 h-8 rounded-lg bg-stone-100 hover:bg-[#810B38] hover:text-white text-stone-600 transition-colors flex items-center justify-center text-sm shadow-xs focus:outline-none"
-              aria-label="Actions for ${c.name}">
-              <i class="fa-solid fa-ellipsis-vertical"></i>
+              onclick="toggleRowKebabMenu(${cust.userId}, event)"
+              class="w-8 h-8 rounded-xl bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA] flex items-center justify-center transition-colors shadow-2xs focus:outline-none"
+              title="Actions for ${escapeHtml(cust.name)}">
+              <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
             </button>
 
             <!-- Dropdown Menu -->
             <div 
-              id="kebab-menu-${c.id}" 
-              class="hidden absolute right-0 mt-1 w-48 bg-white border border-[#DCC3AA]/50 rounded-xl shadow-xl z-30 py-1.5 text-left text-xs divide-y divide-stone-100">
+              id="kebabMenu-${cust.userId}" 
+              class="kebab-dropdown-menu hidden absolute right-5 mt-1 w-48 rounded-2xl bg-white border border-[#DCC3AA] shadow-2xl py-1.5 z-30 text-left">
               
-              <div class="py-1">
-                <!-- View Profile -->
-                <button 
-                  type="button" 
-                  onclick="openCustomerProfileModal('${c.id}')"
-                  class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-[#810B38] font-medium flex items-center gap-2.5 transition-colors">
-                  <i class="fa-solid fa-eye text-[#810B38] w-4 text-center"></i>
-                  <span>View Profile</span>
-                </button>
+              <!-- 1. View Profile -->
+              <button 
+                type="button" 
+                onclick="openCustomerProfileModal(${cust.userId})"
+                class="w-full px-4 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
+                <i class="fa-solid fa-id-card text-[#810B38] w-4 text-center"></i>
+                <span>View Profile</span>
+              </button>
 
-                <!-- Edit Customer -->
-                <button 
-                  type="button" 
-                  onclick="openEditCustomerModal('${c.id}')"
-                  class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-[#810B38] font-medium flex items-center gap-2.5 transition-colors">
-                  <i class="fa-solid fa-pen-to-square text-[#810B38] w-4 text-center"></i>
-                  <span>Edit Customer</span>
-                </button>
-              </div>
+              <!-- 2. Edit Record -->
+              <button 
+                type="button" 
+                onclick="openEditCustomerModal(${cust.userId})"
+                class="w-full px-4 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
+                <i class="fa-solid fa-pen-to-square text-[#810B38] w-4 text-center"></i>
+                <span>Edit Customer</span>
+              </button>
 
-              <div class="py-1">
-                <!-- Book Appointment -->
-                <button 
-                  type="button" 
-                  onclick="openBookForCustomerModal('${c.id}')"
-                  class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-emerald-700 font-medium flex items-center gap-2.5 transition-colors">
-                  <i class="fa-solid fa-calendar-plus text-emerald-600 w-4 text-center"></i>
-                  <span>Book Appointment</span>
-                </button>
+              <!-- 3. Book Appointment -->
+              <button 
+                type="button" 
+                onclick="openBookForCustomerModal(${cust.userId})"
+                class="w-full px-4 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 flex items-center gap-2.5 transition-colors">
+                <i class="fa-solid fa-calendar-plus text-emerald-600 w-4 text-center"></i>
+                <span>Book Appointment</span>
+              </button>
 
-                <!-- View History -->
-                <button 
-                  type="button" 
-                  onclick="openCustomerHistoryModal('${c.id}')"
-                  class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-indigo-700 font-medium flex items-center gap-2.5 transition-colors">
-                  <i class="fa-solid fa-clock-rotate-left text-indigo-600 w-4 text-center"></i>
-                  <span>View History</span>
-                </button>
-              </div>
+              <div class="border-t border-[#F1E2D1] my-1"></div>
 
-              <div class="py-1">
-                <!-- Delete Customer -->
-                <button 
-                  type="button" 
-                  onclick="openDeleteCustomerModal('${c.id}')"
-                  class="w-full px-3.5 py-2 text-rose-600 hover:bg-rose-50 font-medium flex items-center gap-2.5 transition-colors">
-                  <i class="fa-solid fa-trash-can text-rose-600 w-4 text-center"></i>
-                  <span>Delete Customer</span>
-                </button>
-              </div>
+              <!-- 4. Delete Record -->
+              <button 
+                type="button" 
+                onclick="openDeleteCustomerModal(${cust.userId})"
+                class="w-full px-4 py-2 text-xs font-semibold text-rose-800 hover:bg-rose-50 flex items-center gap-2.5 transition-colors">
+                <i class="fa-solid fa-trash-can text-rose-600 w-4 text-center"></i>
+                <span>Delete Record</span>
+              </button>
+
             </div>
           </div>
         </td>
+
       </tr>
     `;
   }).join('');
 }
 
-// ================= KEBAB MENU TOGGLE =================
-function toggleKebabMenu(event, customerId) {
-  event.stopPropagation();
-  const menu = document.getElementById(`kebab-menu-${customerId}`);
-  if (!menu) return;
-
-  const isHidden = menu.classList.contains('hidden');
-  closeAllKebabMenus();
-
-  if (isHidden) {
-    menu.classList.remove('hidden');
-    activeKebabDropdown = menu;
-  }
-}
-
-function closeAllKebabMenus() {
-  document.querySelectorAll('[id^="kebab-menu-"]').forEach(el => {
-    el.classList.add('hidden');
+// ================= SEARCH, FILTER, SORT HANDLERS =================
+const searchInputEl = document.getElementById('customerSearchInput');
+if (searchInputEl) {
+  searchInputEl.addEventListener('input', (e) => {
+    filterState.search = e.target.value.trim();
+    renderCustomersTable();
   });
-  activeKebabDropdown = null;
 }
 
-// ================= CUSTOMER PROFILE MODAL =================
-function openCustomerProfileModal(customerId, focusHistory = false) {
-  closeAllKebabMenus();
-  const customer = customers.find(c => c.id === customerId);
-  if (!customer) return;
+const statusFilterEl = document.getElementById('statusFilter');
+if (statusFilterEl) {
+  statusFilterEl.addEventListener('change', (e) => {
+    filterState.status = e.target.value;
+    renderCustomersTable();
+  });
+}
 
-  activeCustomer = customer;
+const genderFilterEl = document.getElementById('genderFilter');
+if (genderFilterEl) {
+  genderFilterEl.addEventListener('change', (e) => {
+    filterState.gender = e.target.value;
+    renderCustomersTable();
+  });
+}
 
-  // Initials
-  const initials = customer.name
-    .split(' ')
-    .filter(n => n.length > 0)
-    .map(n => n[0].toUpperCase())
-    .slice(0, 2)
-    .join('');
+const dateFilterEl = document.getElementById('dateFilter');
+if (dateFilterEl) {
+  dateFilterEl.addEventListener('change', (e) => {
+    filterState.date = e.target.value;
+    renderCustomersTable();
+  });
+}
 
-  // 1. Populate Profile Header & Contact
-  const nameEl = document.getElementById('profileModalCustomerName');
-  const avatarEl = document.getElementById('profileModalAvatar');
-  const phoneEl = document.getElementById('profileModalPhone');
-  const emailEl = document.getElementById('profileModalEmail');
-  const addressEl = document.getElementById('profileModalAddress');
-  const sinceEl = document.getElementById('profileModalSince');
-  const statusBadgeEl = document.getElementById('profileModalStatusBadge');
+const sortSelectEl = document.getElementById('sortSelect');
+if (sortSelectEl) {
+  sortSelectEl.addEventListener('change', (e) => {
+    filterState.sortBy = e.target.value;
+    renderCustomersTable();
+  });
+}
 
-  if (nameEl) nameEl.textContent = customer.name;
-  if (avatarEl) avatarEl.textContent = initials;
-  if (phoneEl) phoneEl.textContent = customer.phone;
-  if (emailEl) {
-    emailEl.textContent = customer.email;
-    emailEl.href = `mailto:${customer.email}`;
+function filterBySummaryCard(type) {
+  filterState.summaryFilter = type;
+  renderCustomersTable();
+  showToast(`Filtered customers by: ${type.toUpperCase()}`, 'info');
+}
+
+function resetFilters() {
+  filterState = {
+    search: '',
+    status: 'all',
+    gender: 'all',
+    date: 'all',
+    sortBy: 'newest',
+    summaryFilter: 'all'
+  };
+
+  if (searchInputEl) searchInputEl.value = '';
+  if (statusFilterEl) statusFilterEl.value = 'all';
+  if (genderFilterEl) genderFilterEl.value = 'all';
+  if (dateFilterEl) dateFilterEl.value = 'all';
+  if (sortSelectEl) sortSelectEl.value = 'newest';
+
+  renderCustomersTable();
+  showToast('All filters have been reset.', 'info');
+}
+
+// ================= KEBAB MENU HANDLER =================
+function toggleRowKebabMenu(userId, event) {
+  event.stopPropagation();
+  const allMenus = document.querySelectorAll('.kebab-dropdown-menu');
+  const targetMenu = document.getElementById(`kebabMenu-${userId}`);
+
+  allMenus.forEach(menu => {
+    if (menu !== targetMenu) menu.classList.add('hidden');
+  });
+
+  if (targetMenu) {
+    targetMenu.classList.toggle('hidden');
   }
-  if (addressEl) addressEl.textContent = customer.address || customer.city || 'Quezon City';
-  if (sinceEl) sinceEl.textContent = `Customer since: ${customer.joinedDate || 'January 2026'}`;
+}
 
-  if (statusBadgeEl) {
-    const isActive = customer.status === 'Active';
-    statusBadgeEl.innerHTML = isActive
-      ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-           <i class="fa-solid fa-circle text-[8px] text-emerald-500"></i>
-           Active
-         </span>`
-      : `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-stone-100 text-stone-600 border border-stone-300">
-           <i class="fa-solid fa-circle text-[8px] text-stone-400"></i>
-           Inactive
-         </span>`;
-  }
+function setupClickOutside() {
+  document.addEventListener('click', () => {
+    const allMenus = document.querySelectorAll('.kebab-dropdown-menu');
+    allMenus.forEach(menu => menu.classList.add('hidden'));
+  });
+}
 
-  // 2. Customer Statistics
-  const statTotal = document.getElementById('profileModalStatTotal');
-  const statCompleted = document.getElementById('profileModalStatCompleted');
-  const statCancelled = document.getElementById('profileModalStatCancelled');
-  const statPending = document.getElementById('profileModalStatPending');
-  const statSpent = document.getElementById('profileModalStatSpent');
+// ================= MODAL 1: CUSTOMER PROFILE & HISTORY MODAL =================
+async function openCustomerProfileModal(userId) {
+  let cust = customersData.find(c => c.userId === userId || c.id === userId);
+  if (!cust) return;
 
-  if (statTotal) statTotal.textContent = customer.totalAppointments || customer.history.length;
-  if (statCompleted) statCompleted.textContent = customer.completedAppointments || 0;
-  if (statCancelled) statCancelled.textContent = customer.cancelledAppointments || 0;
-  if (statPending) statPending.textContent = customer.pendingAppointments || 0;
-  if (statSpent) statSpent.textContent = `₱${(customer.totalSpent || 0).toLocaleString()}`;
+  activeCustomer = cust;
+  lockCustomerBodyScroll();
 
-  // 3. Appointment History Table
-  renderProfileHistory(customer.history);
-
-  // 4. Customer Internal Notes
-  renderProfileNotes(customer.notes);
-
-  // Open Modal
   const modal = document.getElementById('customerProfileModal');
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
   }
 
-  if (focusHistory) {
-    const historySection = document.getElementById('profileModalHistorySection');
-    if (historySection) {
-      historySection.scrollIntoView({ behavior: 'smooth' });
+  // Populate immediate details
+  renderProfileModalData(cust);
+
+  // Fetch detailed history & notes from server
+  try {
+    const res = await fetch(`../api/customers/${userId}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    const result = await res.json();
+    if (result.success && result.data) {
+      activeCustomer = result.data;
+      renderProfileModalData(result.data);
     }
+  } catch (error) {
+    console.warn('Could not fetch full history for customer:', error);
   }
 }
 
-// Render Appointment History Table inside Customer Profile
-function renderProfileHistory(historyList) {
-  const container = document.getElementById('profileHistoryTableBody');
-  if (!container) return;
+function renderProfileModalData(cust) {
+  const nameParts = (cust.name || 'Customer').trim().split(' ').filter(Boolean);
+  const initials = nameParts.length > 1 
+    ? (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase()
+    : (cust.name.substring(0, 2)).toUpperCase();
 
-  if (!historyList || historyList.length === 0) {
-    container.innerHTML = `
-      <tr>
-        <td colspan="5" class="py-6 text-center text-xs text-stone-400 italic">
-          No appointment history recorded yet.
-        </td>
-      </tr>
-    `;
-    return;
+  const avatarEl = document.getElementById('profileModalAvatar');
+  if (avatarEl) avatarEl.textContent = initials;
+
+  const nameEl = document.getElementById('profileModalCustomerName');
+  if (nameEl) nameEl.textContent = cust.name;
+
+  const phoneEl = document.getElementById('profileModalPhone');
+  if (phoneEl) phoneEl.textContent = cust.phone;
+
+  const emailEl = document.getElementById('profileModalEmail');
+  if (emailEl) {
+    emailEl.textContent = cust.email || 'No email registered';
+    emailEl.href = cust.email ? `mailto:${cust.email}` : '#';
   }
 
-  container.innerHTML = historyList.map(h => {
-    let statusClass = 'bg-stone-100 text-stone-700 border-stone-200';
-    let icon = 'fa-circle';
-    if (h.status === 'Confirmed') {
-      statusClass = 'bg-emerald-50 text-emerald-800 border-emerald-200';
-      icon = 'fa-circle-check text-emerald-500';
-    } else if (h.status === 'Completed') {
-      statusClass = 'bg-blue-50 text-blue-800 border-blue-200';
-      icon = 'fa-check text-blue-500';
-    } else if (h.status === 'Pending') {
-      statusClass = 'bg-amber-50 text-amber-800 border-amber-200';
-      icon = 'fa-clock text-amber-500';
-    } else if (h.status === 'Cancelled') {
-      statusClass = 'bg-rose-50 text-rose-800 border-rose-200';
-      icon = 'fa-xmark text-rose-500';
-    }
+  const addressEl = document.getElementById('profileModalAddress');
+  if (addressEl) addressEl.textContent = cust.address || cust.city || 'Lagro, Quezon City';
 
-    return `
-      <tr class="border-b border-stone-100 hover:bg-[#FAF6F0]/50 transition-colors text-xs">
-        <td class="px-4 py-3 font-medium text-stone-800">${h.date}</td>
-        <td class="px-4 py-3 font-semibold text-[#810B38]">${h.service}</td>
-        <td class="px-4 py-3 text-stone-600">${h.staff}</td>
-        <td class="px-4 py-3 font-mono font-bold text-stone-800">₱${h.amount.toLocaleString()}</td>
-        <td class="px-4 py-3">
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${statusClass}">
-            <i class="fa-solid ${icon} text-[9px]"></i>
-            ${h.status}
-          </span>
-        </td>
-      </tr>
-    `;
-  }).join('');
+  const sinceEl = document.getElementById('profileModalSince');
+  if (sinceEl) sinceEl.textContent = `Customer since: ${cust.joinedDate || 'Recently'}`;
+
+  // Status badge
+  const statusBadgeEl = document.getElementById('profileModalStatusBadge');
+  if (statusBadgeEl) {
+    const isActive = (cust.status || 'active').toLowerCase() === 'active';
+    statusBadgeEl.innerHTML = isActive
+      ? `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/40">Active</span>`
+      : `<span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/20 text-stone-300 border border-white/30">Inactive</span>`;
+  }
+
+  // 5 Stats
+  const statTotal = document.getElementById('profileModalStatTotal');
+  const statCompleted = document.getElementById('profileModalStatCompleted');
+  const statCancelled = document.getElementById('profileModalStatCancelled');
+  const statPending = document.getElementById('profileModalStatPending');
+  const statSpent = document.getElementById('profileModalStatSpent');
+
+  if (statTotal) statTotal.textContent = cust.totalAppointments || 0;
+  if (statCompleted) statCompleted.textContent = cust.completedAppointments || 0;
+  if (statCancelled) statCancelled.textContent = cust.cancelledAppointments || 0;
+  if (statPending) statPending.textContent = cust.pendingAppointments || 0;
+  if (statSpent) statSpent.textContent = cust.totalSpentFormatted || `₱${Number(cust.totalSpent || 0).toLocaleString()}`;
+
+  // History table
+  const historyTbody = document.getElementById('profileHistoryTableBody');
+  if (historyTbody) {
+    const historyList = cust.history || [];
+    if (historyList.length === 0) {
+      historyTbody.innerHTML = `
+        <tr>
+          <td colspan="5" class="px-4 py-6 text-center text-stone-400 text-xs italic">
+            No past appointment sessions recorded for this customer yet.
+          </td>
+        </tr>
+      `;
+    } else {
+      historyTbody.innerHTML = historyList.map(h => {
+        let statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-700">${escapeHtml(h.status)}</span>`;
+        if (h.status.toLowerCase() === 'completed') {
+          statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Completed</span>`;
+        } else if (h.status.toLowerCase() === 'confirmed') {
+          statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">Confirmed</span>`;
+        } else if (h.status.toLowerCase() === 'pending') {
+          statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200">Pending</span>`;
+        } else if (h.status.toLowerCase() === 'cancelled') {
+          statusBadge = `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">Cancelled</span>`;
+        }
+
+        return `
+          <tr class="hover:bg-stone-50/60 text-xs">
+            <td class="px-4 py-2.5 font-semibold text-stone-800 whitespace-nowrap">${escapeHtml(h.date)}</td>
+            <td class="px-4 py-2.5 font-bold text-[#810B38] whitespace-nowrap">${escapeHtml(h.service)}</td>
+            <td class="px-4 py-2.5 text-stone-600 whitespace-nowrap">${escapeHtml(h.staff || 'Unassigned')}</td>
+            <td class="px-4 py-2.5 font-serif font-bold text-stone-800 whitespace-nowrap">${h.amountFormatted || ('₱' + Number(h.amount || 0).toLocaleString())}</td>
+            <td class="px-4 py-2.5 whitespace-nowrap">${statusBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
+
+  // Internal Notes List
+  renderProfileNotes(cust.notes || []);
 }
 
-// Render Notes inside Customer Profile
-function renderProfileNotes(notesList) {
+function renderProfileNotes(notes) {
   const container = document.getElementById('profileNotesList');
   if (!container) return;
 
-  if (!notesList || notesList.length === 0) {
+  const notesList = Array.isArray(notes) ? notes : [];
+  if (notesList.length === 0) {
     container.innerHTML = `
-      <p class="text-xs text-stone-400 italic py-2">
-        No internal notes added for this customer yet.
+      <p class="text-xs text-stone-400 italic p-3 bg-stone-50 rounded-xl border border-stone-200">
+        No internal staff notes on file. Click "+ Add Note" to record customer preferences.
       </p>
     `;
     return;
   }
 
   container.innerHTML = notesList.map(n => `
-    <div class="p-3 bg-[#FAF6F0] rounded-xl border border-[#DCC3AA]/50 text-xs text-stone-800 flex items-start justify-between gap-3">
-      <div class="flex items-start gap-2.5">
-        <i class="fa-solid fa-note-sticky text-[#810B38] mt-0.5 text-sm shrink-0"></i>
-        <div>
-          <p class="leading-relaxed font-medium">${n.text}</p>
-          <div class="text-[10px] text-stone-500 mt-1 flex items-center gap-2">
-            <span><i class="fa-regular fa-clock mr-1"></i>${n.date}</span>
-            <span>·</span>
-            <span>By ${n.author || 'Admin'}</span>
-          </div>
-        </div>
+    <div class="p-3 bg-stone-50 rounded-xl border border-[#DCC3AA]/50 text-xs space-y-1">
+      <div class="flex items-center justify-between text-[11px] text-stone-400 font-medium">
+        <span class="font-bold text-[#810B38]">${escapeHtml(n.author || 'Admin')}</span>
+        <span>${escapeHtml(n.date || 'Recently')}</span>
       </div>
-      <button 
-        type="button" 
-        onclick="deleteCustomerNote('${n.id}')"
-        class="text-stone-400 hover:text-rose-600 transition-colors p-1"
-        title="Delete note">
-        <i class="fa-solid fa-xmark text-xs"></i>
-      </button>
+      <p class="text-stone-700 leading-relaxed">${escapeHtml(n.text)}</p>
     </div>
   `).join('');
 }
 
-// Shortcut to view history tab directly
-function openCustomerHistoryModal(customerId) {
-  openCustomerProfileModal(customerId, true);
-}
-
-// Toggle Note Input Form
-function toggleAddNoteInput(show) {
-  const form = document.getElementById('addNoteInlineForm');
-  const btn = document.getElementById('toggleAddNoteBtn');
-  const noteInput = document.getElementById('newNoteInputText');
-
-  if (form) {
-    if (show) {
-      form.classList.remove('hidden');
-      if (btn) btn.classList.add('hidden');
-      if (noteInput) noteInput.focus();
-    } else {
-      form.classList.add('hidden');
-      if (btn) btn.classList.remove('hidden');
-      if (noteInput) noteInput.value = '';
-    }
-  }
-}
-
-// Save New Internal Note to Active Customer
-function saveCustomerNote() {
-  if (!activeCustomer) return;
-  const noteInput = document.getElementById('newNoteInputText');
-  if (!noteInput || !noteInput.value.trim()) {
-    showToast('Please type a note before saving.', 'error');
-    return;
-  }
-
-  const newNote = {
-    id: 'note_' + Date.now(),
-    text: noteInput.value.trim(),
-    date: 'Sept 23, 2026',
-    author: 'Admin'
-  };
-
-  if (!activeCustomer.notes) activeCustomer.notes = [];
-  activeCustomer.notes.unshift(newNote);
-
-  // Sync to master array and local storage
-  const idx = customers.findIndex(c => c.id === activeCustomer.id);
-  if (idx !== -1) {
-    customers[idx] = activeCustomer;
-    saveCustomers();
-  }
-
-  renderProfileNotes(activeCustomer.notes);
-  toggleAddNoteInput(false);
-  showToast('Customer note added successfully!', 'success');
-}
-
-// Delete Note from Active Customer
-function deleteCustomerNote(noteId) {
-  if (!activeCustomer || !activeCustomer.notes) return;
-  activeCustomer.notes = activeCustomer.notes.filter(n => n.id !== noteId);
-
-  const idx = customers.findIndex(c => c.id === activeCustomer.id);
-  if (idx !== -1) {
-    customers[idx] = activeCustomer;
-    saveCustomers();
-  }
-
-  renderProfileNotes(activeCustomer.notes);
-  showToast('Note removed', 'info');
-}
-
-// Close Customer Profile Modal
 function closeCustomerProfileModal() {
   const modal = document.getElementById('customerProfileModal');
   if (modal) {
@@ -938,18 +687,73 @@ function closeCustomerProfileModal() {
     modal.classList.remove('flex');
   }
   toggleAddNoteInput(false);
+  unlockCustomerBodyScroll();
 }
 
-// ================= ADD NEW CUSTOMER MODAL =================
+function toggleAddNoteInput(show) {
+  const form = document.getElementById('addNoteInlineForm');
+  const input = document.getElementById('newNoteInputText');
+  if (!form) return;
+
+  if (show) {
+    form.classList.remove('hidden');
+    if (input) {
+      input.value = '';
+      input.focus();
+    }
+  } else {
+    form.classList.add('hidden');
+  }
+}
+
+async function saveCustomerNote() {
+  if (!activeCustomer) return;
+  const input = document.getElementById('newNoteInputText');
+  const text = input ? input.value.trim() : '';
+  if (!text) {
+    showToast('Please enter a note.', 'error');
+    return;
+  }
+
+  try {
+    const res = await fetch(`../api/customers/${activeCustomer.userId}/notes`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ note: text }),
+      credentials: 'include'
+    });
+
+    const result = await res.json();
+    if (result.success) {
+      toggleAddNoteInput(false);
+      showToast('Note added successfully!', 'success');
+      activeCustomer.notes = result.data || [];
+      renderProfileNotes(result.data);
+      fetchCustomersData();
+    } else {
+      showToast(result.message || 'Failed to add note.', 'error');
+    }
+  } catch (error) {
+    console.error('Error saving note:', error);
+    showToast('Network error while saving note.', 'error');
+  }
+}
+
+// ================= MODAL 2: ADD CUSTOMER =================
 function openAddCustomerModal() {
-  closeAllKebabMenus();
-  const form = document.getElementById('addCustomerForm');
-  if (form) form.reset();
+  document.getElementById('addCustName').value = '';
+  document.getElementById('addCustPhone').value = '';
+  document.getElementById('addCustEmail').value = '';
+  document.getElementById('addCustDob').value = '';
+  document.getElementById('addCustGender').value = 'Female';
+  document.getElementById('addCustAddress').value = '';
+  document.getElementById('addCustNotes').value = '';
 
   const modal = document.getElementById('addCustomerModal');
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    lockCustomerBodyScroll();
   }
 }
 
@@ -958,111 +762,82 @@ function closeAddCustomerModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    unlockCustomerBodyScroll();
   }
 }
 
-function handleSaveCustomer(event) {
-  event.preventDefault();
+async function handleSaveCustomer(e) {
+  e.preventDefault();
 
-  const nameInput = document.getElementById('addCustName');
-  const phoneInput = document.getElementById('addCustPhone');
-  const emailInput = document.getElementById('addCustEmail');
-  const dobInput = document.getElementById('addCustDob');
-  const addressInput = document.getElementById('addCustAddress');
-  const genderInput = document.getElementById('addCustGender');
-  const notesInput = document.getElementById('addCustNotes');
+  const name = document.getElementById('addCustName').value.trim();
+  const phone = document.getElementById('addCustPhone').value.trim();
+  const email = document.getElementById('addCustEmail').value.trim();
+  const dob = document.getElementById('addCustDob').value;
+  const gender = document.getElementById('addCustGender').value;
+  const address = document.getElementById('addCustAddress').value.trim();
+  const notes = document.getElementById('addCustNotes').value.trim();
 
-  if (!nameInput || !nameInput.value.trim()) {
-    showToast('Please enter the customer full name.', 'error');
+  if (!name || !phone) {
+    showToast('Customer full name and phone are required.', 'error');
     return;
   }
 
-  if (!phoneInput || !phoneInput.value.trim()) {
-    showToast('Please enter a contact phone number.', 'error');
-    return;
-  }
-
-  const newId = 'CUST-' + (1000 + customers.length + 1);
-  const fullName = nameInput.value.trim();
-  const phone = phoneInput.value.trim();
-  const email = emailInput && emailInput.value.trim() ? emailInput.value.trim() : `${fullName.toLowerCase().replace(/\s+/g, '')}@email.com`;
-  const dob = dobInput ? dobInput.value : '';
-  const address = addressInput && addressInput.value.trim() ? addressInput.value.trim() : 'Quezon City';
-  const gender = genderInput ? genderInput.value : 'Female';
-  const notesText = notesInput ? notesInput.value.trim() : '';
-
-  const initialNotes = notesText ? [
-    {
-      id: 'n_' + Date.now(),
-      text: notesText,
-      date: 'Sept 23, 2026',
-      author: 'Admin'
-    }
-  ] : [];
-
-  const newCustomerObj = {
-    id: newId,
-    name: fullName,
-    phone: phone,
-    email: email,
-    dob: dob,
-    address: address,
-    city: 'Quezon City',
-    gender: gender,
-    joinedDate: 'September 2026',
-    joinedTimestamp: '2026-09-23',
-    status: 'Active',
-    totalAppointments: 0,
-    completedAppointments: 0,
-    cancelledAppointments: 0,
-    pendingAppointments: 0,
-    totalSpent: 0,
-    lastVisit: 'None yet',
-    notes: initialNotes,
-    history: []
+  const payload = {
+    name,
+    phone,
+    email,
+    dob,
+    gender,
+    address,
+    notes,
+    status: 'Active'
   };
 
-  customers.unshift(newCustomerObj);
-  saveCustomers();
-  applyFiltersAndRender();
-  closeAddCustomerModal();
+  try {
+    const res = await fetch('../api/customers', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+      credentials: 'include'
+    });
 
-  showToast(`Customer ${fullName} successfully registered!`, 'success');
+    const result = await res.json();
+    if (result.success) {
+      closeAddCustomerModal();
+      showToast(`Customer "${name}" registered successfully!`, 'success');
+      fetchCustomersData();
+    } else {
+      showToast(result.message || 'Failed to register customer.', 'error');
+    }
+  } catch (error) {
+    console.error('Error adding customer:', error);
+    showToast('Network error while registering customer.', 'error');
+  }
 }
 
-// ================= EDIT CUSTOMER MODAL =================
-function openEditCustomerModal(customerId) {
-  closeAllKebabMenus();
+// ================= MODAL 3: EDIT CUSTOMER =================
+function openEditCustomerModal(userId) {
+  let cust = customersData.find(c => c.userId === userId || c.id === userId);
+  if (!cust && activeCustomer) cust = activeCustomer;
+  if (!cust) return;
+
+  activeCustomer = cust;
   closeCustomerProfileModal();
 
-  const customer = customers.find(c => c.id === customerId);
-  if (!customer) return;
-
-  activeCustomer = customer;
-
-  // Pre-fill inputs
-  const idInput = document.getElementById('editCustId');
-  const nameInput = document.getElementById('editCustName');
-  const phoneInput = document.getElementById('editCustPhone');
-  const emailInput = document.getElementById('editCustEmail');
-  const dobInput = document.getElementById('editCustDob');
-  const addressInput = document.getElementById('editCustAddress');
-  const genderInput = document.getElementById('editCustGender');
-  const statusInput = document.getElementById('editCustStatus');
-
-  if (idInput) idInput.value = customer.id;
-  if (nameInput) nameInput.value = customer.name;
-  if (phoneInput) phoneInput.value = customer.phone;
-  if (emailInput) emailInput.value = customer.email;
-  if (dobInput) dobInput.value = customer.dob || '';
-  if (addressInput) addressInput.value = customer.address || '';
-  if (genderInput) genderInput.value = customer.gender || 'Female';
-  if (statusInput) statusInput.value = customer.status || 'Active';
+  document.getElementById('editCustId').value = cust.userId;
+  document.getElementById('editCustName').value = cust.name;
+  document.getElementById('editCustPhone').value = cust.phone === 'N/A' ? '' : cust.phone;
+  document.getElementById('editCustEmail').value = cust.email || '';
+  document.getElementById('editCustDob').value = cust.dob || '';
+  document.getElementById('editCustGender').value = cust.gender || 'Female';
+  document.getElementById('editCustAddress').value = cust.address || '';
+  document.getElementById('editCustStatus').value = cust.status || 'Active';
 
   const modal = document.getElementById('editCustomerModal');
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    lockCustomerBodyScroll();
   }
 }
 
@@ -1071,67 +846,79 @@ function closeEditCustomerModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    unlockCustomerBodyScroll();
   }
 }
 
-function handleSaveEditCustomer(event) {
-  event.preventDefault();
-  if (!activeCustomer) return;
+async function handleSaveEditCustomer(e) {
+  e.preventDefault();
+  const userId = document.getElementById('editCustId').value;
+  if (!userId) return;
 
-  const nameInput = document.getElementById('editCustName');
-  const phoneInput = document.getElementById('editCustPhone');
-  const emailInput = document.getElementById('editCustEmail');
-  const dobInput = document.getElementById('editCustDob');
-  const addressInput = document.getElementById('editCustAddress');
-  const genderInput = document.getElementById('editCustGender');
-  const statusInput = document.getElementById('editCustStatus');
+  const name = document.getElementById('editCustName').value.trim();
+  const phone = document.getElementById('editCustPhone').value.trim();
+  const email = document.getElementById('editCustEmail').value.trim();
+  const dob = document.getElementById('editCustDob').value;
+  const gender = document.getElementById('editCustGender').value;
+  const address = document.getElementById('editCustAddress').value.trim();
+  const status = document.getElementById('editCustStatus').value;
 
-  if (!nameInput || !nameInput.value.trim()) {
-    showToast('Name cannot be empty.', 'error');
-    return;
+  const payload = {
+    name,
+    phone,
+    email,
+    dob,
+    gender,
+    address,
+    status
+  };
+
+  try {
+    const res = await fetch(`../api/customers/${userId}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+      credentials: 'include'
+    });
+
+    const result = await res.json();
+    if (result.success) {
+      closeEditCustomerModal();
+      showToast(`Customer record for "${name}" updated!`, 'success');
+      fetchCustomersData();
+    } else {
+      showToast(result.message || 'Failed to update customer.', 'error');
+    }
+  } catch (error) {
+    console.error('Error updating customer:', error);
+    showToast('Network error while updating customer.', 'error');
   }
-
-  activeCustomer.name = nameInput.value.trim();
-  activeCustomer.phone = phoneInput ? phoneInput.value.trim() : activeCustomer.phone;
-  activeCustomer.email = emailInput ? emailInput.value.trim() : activeCustomer.email;
-  activeCustomer.dob = dobInput ? dobInput.value : activeCustomer.dob;
-  activeCustomer.address = addressInput ? addressInput.value.trim() : activeCustomer.address;
-  activeCustomer.gender = genderInput ? genderInput.value : activeCustomer.gender;
-  activeCustomer.status = statusInput ? statusInput.value : activeCustomer.status;
-
-  const idx = customers.findIndex(c => c.id === activeCustomer.id);
-  if (idx !== -1) {
-    customers[idx] = activeCustomer;
-    saveCustomers();
-  }
-
-  applyFiltersAndRender();
-  closeEditCustomerModal();
-  showToast('Customer record updated successfully!', 'success');
 }
 
-// ================= BOOK APPOINTMENT FOR CUSTOMER =================
-function openBookForCustomerModal(customerId) {
-  closeAllKebabMenus();
+// ================= MODAL 4: BOOK APPOINTMENT FOR CUSTOMER =================
+function openBookForCustomerModal(userId) {
+  let cust = customersData.find(c => c.userId === userId || c.id === userId);
+  if (!cust && activeCustomer) cust = activeCustomer;
+  if (!cust) return;
+
+  activeCustomer = cust;
   closeCustomerProfileModal();
 
-  const customer = customers.find(c => c.id === customerId);
-  if (!customer) return;
+  document.getElementById('bookForCustomerName').textContent = cust.name;
+  document.getElementById('bookForCustomerPhone').textContent = cust.phone;
+  document.getElementById('bookForDate').value = getLocalDateString();
+  document.getElementById('bookForTime').value = '09:00:00';
 
-  activeCustomer = customer;
-
-  const nameEl = document.getElementById('bookForCustomerName');
-  const phoneEl = document.getElementById('bookForCustomerPhone');
-  const dateInput = document.getElementById('bookForDate');
-
-  if (nameEl) nameEl.textContent = customer.name;
-  if (phoneEl) phoneEl.textContent = customer.phone;
-  if (dateInput) dateInput.value = '2026-09-24';
+  const bookForService = document.getElementById('bookForService');
+  if (bookForService && bookForService.options.length > 1) {
+    bookForService.selectedIndex = 1;
+  }
 
   const modal = document.getElementById('bookForCustomerModal');
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    lockCustomerBodyScroll();
   }
 }
 
@@ -1140,74 +927,77 @@ function closeBookForCustomerModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    unlockCustomerBodyScroll();
   }
 }
 
-function handleConfirmBookForCustomer(event) {
-  event.preventDefault();
+async function handleConfirmBookForCustomer(e) {
+  e.preventDefault();
   if (!activeCustomer) return;
 
-  const serviceSelect = document.getElementById('bookForService');
-  const staffSelect = document.getElementById('bookForStaff');
-  const dateInput = document.getElementById('bookForDate');
-  const timeSelect = document.getElementById('bookForTime');
-
-  const service = serviceSelect ? serviceSelect.value : 'Haircut';
-  const staff = staffSelect ? staffSelect.value : 'Nely';
-  const dateVal = dateInput ? dateInput.value : 'Sept 24, 2026';
-  const timeVal = timeSelect ? timeSelect.value : '10:00 AM';
-
-  const servicePrices = {
-    'Haircut': 250,
-    'Hair Color': 850,
-    'Hair Treatment': 600,
-    'Manicure': 300,
-    'Pedicure': 350,
-    'Foot Spa': 450
-  };
-  const amount = servicePrices[service] || 350;
-
-  // Add to activeCustomer's history
-  const newAppointment = {
-    id: 'apt_' + Date.now(),
-    date: `${dateVal}, ${timeVal}`,
-    service: service,
-    staff: staff,
-    amount: amount,
-    status: 'Confirmed'
-  };
-
-  if (!activeCustomer.history) activeCustomer.history = [];
-  activeCustomer.history.unshift(newAppointment);
-  activeCustomer.totalAppointments = (activeCustomer.totalAppointments || 0) + 1;
-  activeCustomer.lastVisit = 'Sept 24';
-
-  const idx = customers.findIndex(c => c.id === activeCustomer.id);
-  if (idx !== -1) {
-    customers[idx] = activeCustomer;
-    saveCustomers();
+  const serviceId = document.getElementById('bookForService').value;
+  if (!serviceId) {
+    showToast('Please select a service.', 'error');
+    return;
   }
 
-  applyFiltersAndRender();
-  closeBookForCustomerModal();
-  showToast(`Appointment booked for ${activeCustomer.name}!`, 'success');
+  const staffIdVal = document.getElementById('bookForStaff').value;
+  const staffId = staffIdVal ? parseInt(staffIdVal, 10) : null;
+  const date = document.getElementById('bookForDate').value;
+  const time = document.getElementById('bookForTime').value;
+
+  const payload = {
+    customer_id: activeCustomer.userId,
+    service_id: parseInt(serviceId, 10),
+    staff_id: staffId,
+    booking_date: date,
+    booking_time: time,
+    payment_method: 'cash',
+    payment_status: 'paid',
+    status: 'confirmed',
+    notes: `Scheduled by admin for customer ${activeCustomer.name}`,
+    visit_type: 'salon'
+  };
+
+  try {
+    const res = await fetch('../api/bookings', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+      credentials: 'include'
+    });
+
+    const result = await res.json();
+    if (result.success) {
+      closeBookForCustomerModal();
+      showToast(`Appointment booked successfully for ${activeCustomer.name}!`, 'success');
+      fetchCustomersData();
+    } else {
+      showToast(result.message || 'Failed to book appointment.', 'error');
+    }
+  } catch (error) {
+    console.error('Error booking appointment:', error);
+    showToast('Network error while booking appointment.', 'error');
+  }
 }
 
-// ================= DELETE CUSTOMER =================
-function openDeleteCustomerModal(customerId) {
-  closeAllKebabMenus();
-  const customer = customers.find(c => c.id === customerId);
-  if (!customer) return;
+// ================= MODAL 5: DELETE CUSTOMER =================
+function openDeleteCustomerModal(userId) {
+  let cust = customersData.find(c => c.userId === userId || c.id === userId);
+  if (!cust && activeCustomer) cust = activeCustomer;
+  if (!cust) return;
 
-  activeCustomer = customer;
+  activeCustomer = cust;
+  closeCustomerProfileModal();
 
-  const nameEl = document.getElementById('deleteCustomerNameTarget');
-  if (nameEl) nameEl.textContent = customer.name;
+  const targetNameEl = document.getElementById('deleteCustomerNameTarget');
+  if (targetNameEl) targetNameEl.textContent = `"${cust.name}"`;
 
   const modal = document.getElementById('deleteCustomerModal');
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    lockCustomerBodyScroll();
   }
 }
 
@@ -1216,67 +1006,41 @@ function closeDeleteCustomerModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    unlockCustomerBodyScroll();
   }
 }
 
-function handleConfirmDeleteCustomer() {
+async function handleConfirmDeleteCustomer() {
   if (!activeCustomer) return;
 
-  const deletedName = activeCustomer.name;
-  customers = customers.filter(c => c.id !== activeCustomer.id);
-  saveCustomers();
+  try {
+    const res = await fetch(`../api/customers/${activeCustomer.userId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
 
-  applyFiltersAndRender();
-  closeDeleteCustomerModal();
-  showToast(`Customer ${deletedName} deleted from records.`, 'info');
-}
-
-// ================= MODAL HELPERS =================
-function closeAllModals() {
-  const modalIds = [
-    'customerProfileModal',
-    'addCustomerModal',
-    'editCustomerModal',
-    'bookForCustomerModal',
-    'deleteCustomerModal',
-    'logoutModal'
-  ];
-  modalIds.forEach(id => {
-    const m = document.getElementById(id);
-    if (m) {
-      m.classList.add('hidden');
-      m.classList.remove('flex');
+    const result = await res.json();
+    if (result.success) {
+      closeDeleteCustomerModal();
+      showToast(`Customer record deleted permanently.`, 'info');
+      fetchCustomersData();
+    } else {
+      showToast(result.message || 'Failed to delete customer record.', 'error');
     }
-  });
-  closeAllKebabMenus();
-}
-
-// ================= MOBILE NAVIGATION =================
-function toggleMobileSidebar(show) {
-  const sidebar = document.getElementById('sidebar');
-  const backdrop = document.getElementById('mobileSidebarBackdrop');
-  if (!sidebar || !backdrop) return;
-
-  const isClosed = sidebar.classList.contains('-translate-x-full');
-  const shouldOpen = typeof show === 'boolean' ? show : isClosed;
-
-  if (shouldOpen) {
-    sidebar.classList.remove('-translate-x-full');
-    backdrop.classList.remove('pointer-events-none', 'opacity-0');
-    backdrop.classList.add('opacity-100');
-  } else {
-    sidebar.classList.add('-translate-x-full');
-    backdrop.classList.add('pointer-events-none', 'opacity-0');
-    backdrop.classList.remove('opacity-100');
+  } catch (error) {
+    console.error('Error deleting customer:', error);
+    showToast('Network error while deleting customer.', 'error');
   }
 }
 
-// Logout Modal
+// ================= MODAL 6: LOGOUT =================
 function openLogoutModal() {
   const modal = document.getElementById('logoutModal');
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    lockCustomerBodyScroll();
   }
 }
 
@@ -1285,59 +1049,131 @@ function closeLogoutModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    unlockCustomerBodyScroll();
   }
 }
 
 function handleConfirmLogout() {
+  localStorage.removeItem('nelys_token');
+  localStorage.removeItem('nelys_user');
   window.location.href = '../login.html';
 }
 
-// Toast notification system
+// ================= MOBILE SIDEBAR DRAWER =================
+function toggleMobileSidebar(open = null) {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('mobileSidebarBackdrop');
+  if (!sidebar || !backdrop) return;
+
+  const isOpen = sidebar.classList.contains('translate-x-0');
+  const shouldOpen = open !== null ? open : !isOpen;
+
+  if (shouldOpen) {
+    sidebar.classList.remove('-translate-x-full');
+    sidebar.classList.add('translate-x-0');
+    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    backdrop.classList.add('opacity-100');
+    document.body.style.overflow = 'hidden';
+  } else {
+    sidebar.classList.remove('translate-x-0');
+    sidebar.classList.add('-translate-x-full');
+    backdrop.classList.remove('opacity-100');
+    backdrop.classList.add('opacity-0', 'pointer-events-none');
+    document.body.style.overflow = '';
+  }
+}
+
+// ================= SCROLL LOCK & MODAL DISMISS =================
+function lockCustomerBodyScroll() {
+  if (isCustomerModalScrollLocked) return;
+  isCustomerModalScrollLocked = true;
+  document.body.classList.add('modal-open');
+}
+
+function unlockCustomerBodyScroll() {
+  const anyOpen = document.querySelector('.fixed.inset-0.z-50.flex:not(.hidden)');
+  if (anyOpen) return;
+
+  isCustomerModalScrollLocked = false;
+  document.body.classList.remove('modal-open');
+}
+
+function setupModalDismissListeners() {
+  const backdropModals = [
+    'customerProfileModal',
+    'addCustomerModal',
+    'editCustomerModal',
+    'bookForCustomerModal',
+    'deleteCustomerModal',
+    'logoutModal'
+  ];
+
+  backdropModals.forEach(id => {
+    const modalEl = document.getElementById(id);
+    if (!modalEl) return;
+
+    modalEl.addEventListener('click', (e) => {
+      if (e.target === modalEl) {
+        modalEl.classList.add('hidden');
+        modalEl.classList.remove('flex');
+        unlockCustomerBodyScroll();
+      }
+    });
+  });
+}
+
+// ================= TOAST HELPER =================
 function showToast(message, type = 'info') {
-  let toastContainer = document.getElementById('adminToastContainer');
-  if (!toastContainer) {
-    toastContainer = document.createElement('div');
-    toastContainer.id = 'adminToastContainer';
-    toastContainer.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none';
-    document.body.appendChild(toastContainer);
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none';
+    document.body.appendChild(container);
   }
 
   const toast = document.createElement('div');
-  const icon = type === 'success'
-    ? 'fa-circle-check text-emerald-400'
-    : type === 'error'
-      ? 'fa-circle-exclamation text-rose-400'
-      : 'fa-circle-info text-[#DCC3AA]';
+  const colors = {
+    info: 'bg-[#541A1A] text-[#F1E2D1] border-[#810B38]',
+    success: 'bg-emerald-800 text-white border-emerald-500',
+    warning: 'bg-amber-800 text-white border-amber-500',
+    error: 'bg-rose-900 text-white border-rose-500'
+  };
 
-  const borderColor = type === 'success'
-    ? 'border-emerald-500/50'
-    : type === 'error'
-      ? 'border-rose-500/50'
-      : 'border-[#DCC3AA]/50';
+  const icons = {
+    info: 'fa-solid fa-circle-info text-[#DCC3AA]',
+    success: 'fa-solid fa-circle-check text-emerald-300',
+    warning: 'fa-solid fa-triangle-exclamation text-amber-300',
+    error: 'fa-solid fa-circle-xmark text-rose-300'
+  };
 
-  toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 bg-[#541A1A] text-[#F1E2D1] border ${borderColor} rounded-xl shadow-2xl text-xs font-medium animate-fadeIn transition-all duration-300`;
+  toast.className = `p-4 rounded-2xl shadow-2xl border text-xs font-medium flex items-center gap-3 transition-all duration-300 transform translate-y-3 opacity-0 pointer-events-auto max-w-sm ${colors[type] || colors.info}`;
   toast.innerHTML = `
-    <i class="fa-solid ${icon} text-base shrink-0"></i>
-    <span class="flex-1">${message}</span>
+    <i class="${icons[type] || icons.info} text-base shrink-0"></i>
+    <span class="flex-1">${escapeHtml(message)}</span>
+    <button type="button" onclick="this.parentElement.remove()" class="w-5 h-5 rounded-md hover:bg-white/20 flex items-center justify-center text-xs opacity-75 hover:opacity-100">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
   `;
 
-  toastContainer.appendChild(toast);
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.remove('translate-y-3', 'opacity-0');
+  });
 
   setTimeout(() => {
     toast.classList.add('opacity-0', 'translate-y-2');
     setTimeout(() => toast.remove(), 300);
-  }, 3500);
+  }, 4000);
 }
 
-// Real-time clock badge
-function updateTimeBadge() {
-  const clockEl = document.getElementById('topClockDisplay');
-  if (!clockEl) return;
-
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  clockEl.textContent = `${dateStr} · ${timeStr}`;
-
-  setTimeout(updateTimeBadge, 1000);
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
