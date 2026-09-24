@@ -45,35 +45,41 @@ class BookingController {
 
         // Determine customer ID
         $customerId = null;
-        if ($auth) {
+        if ($auth && $auth['role'] === 'customer') {
             $customerId = $auth['id'];
+        } elseif (!empty($input['customer_id'])) {
+            $customerId = (int)$input['customer_id'];
         } else {
-            // Guest customer
+            // Guest or manual customer
             $clientName  = trim($input['client_name'] ?? $input['name'] ?? 'Guest Patron');
             $clientEmail = trim($input['client_email'] ?? $input['email'] ?? '');
             $clientPhone = trim($input['client_phone'] ?? $input['phone'] ?? '');
 
-            if (empty($clientEmail) && empty($clientPhone)) {
-                Response::error('Please provide your name, phone number, or email for the booking.', 422);
-            }
-
-            $user = null;
-            if (!empty($clientEmail)) {
-                $user = User::findByEmail($clientEmail);
-            }
-            if (!$user && !empty($clientPhone)) {
-                $cleanP = Sanitizer::cleanPhone($clientPhone);
-                $user = User::findByPhone($cleanP) ?: User::findByPhone($clientPhone);
-            }
-
-            if ($user) {
-                $customerId = $user['id'];
+            if (empty($clientEmail) && empty($clientPhone) && empty($clientName)) {
+                if ($auth) {
+                    $customerId = $auth['id'];
+                } else {
+                    Response::error('Please provide customer name, phone number, or email for the booking.', 422);
+                }
             } else {
-                $guestEmail = !empty($clientEmail) ? $clientEmail : ('guest_' . time() . '_' . rand(100, 999) . '@guest.nelyssalon.com');
-                $guestPhone = !empty($clientPhone) ? Sanitizer::cleanPhone($clientPhone) : '09170000000';
-                $tempPassword = password_hash(bin2hex(random_bytes(8)), PASSWORD_BCRYPT);
-                $customerId = User::create($guestEmail, $guestPhone, $tempPassword, 'customer');
-                CustomerProfile::create($customerId, $clientName, is_string($input['home_address'] ?? null) ? $input['home_address'] : null);
+                $user = null;
+                if (!empty($clientEmail)) {
+                    $user = User::findByEmail($clientEmail);
+                }
+                if (!$user && !empty($clientPhone)) {
+                    $cleanP = Sanitizer::cleanPhone($clientPhone);
+                    $user = User::findByPhone($cleanP) ?: User::findByPhone($clientPhone);
+                }
+
+                if ($user) {
+                    $customerId = $user['id'];
+                } else {
+                    $guestEmail = !empty($clientEmail) ? $clientEmail : ('guest_' . time() . '_' . rand(100, 999) . '@guest.nelyssalon.com');
+                    $guestPhone = !empty($clientPhone) ? Sanitizer::cleanPhone($clientPhone) : '09170000000';
+                    $tempPassword = password_hash(bin2hex(random_bytes(8)), PASSWORD_BCRYPT);
+                    $customerId = User::create($guestEmail, $guestPhone, $tempPassword, 'customer');
+                    CustomerProfile::create($customerId, $clientName, is_string($input['home_address'] ?? null) ? $input['home_address'] : null);
+                }
             }
         }
 
@@ -110,6 +116,8 @@ class BookingController {
             $totalPrice += 150.00; // standard home service transport fee
         }
 
+        $initialStatus = !empty($input['status']) ? strtolower($input['status']) : 'pending';
+
         $bookingId = Booking::create([
             'reference_no' => $referenceNo,
             'customer_id'  => $customerId,
@@ -119,19 +127,20 @@ class BookingController {
             'booking_time' => $bookingTime,
             'visit_type'   => $visitType,
             'home_address' => $homeAddress,
-            'status'       => 'pending',
+            'status'       => $initialStatus,
             'notes'        => $input['notes'] ?? null,
             'total_price'  => $totalPrice,
         ]);
 
         // Record payment
+        $paymentStatus = !empty($input['payment_status']) ? strtolower($input['payment_status']) : ($paymentMethod === 'cash' ? 'pending' : 'paid');
         Payment::create([
             'booking_id'       => $bookingId,
             'amount'           => $totalPrice,
             'payment_method'   => $paymentMethod,
             'reference_number' => $input['reference_number'] ?? null,
-            'status'           => $paymentMethod === 'cash' ? 'pending' : 'paid',
-            'paid_at'          => $paymentMethod !== 'cash' ? date('Y-m-d H:i:s') : null,
+            'status'           => $paymentStatus,
+            'paid_at'          => $paymentStatus === 'paid' ? date('Y-m-d H:i:s') : null,
         ]);
 
         // Create alert notification
@@ -156,11 +165,41 @@ class BookingController {
                 'search' => $_GET['search'] ?? null,
             ];
             $bookings = Booking::all($filters);
+
+            // Summary metrics
+            $pdo = Database::getConnection();
+            $today = date('Y-m-d');
+            $summary = [
+                'today'     => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE booking_date = '$today'")->fetchColumn(),
+                'pending'   => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'pending'")->fetchColumn(),
+                'confirmed' => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'confirmed'")->fetchColumn(),
+                'completed' => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'completed'")->fetchColumn(),
+                'cancelled' => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status IN ('cancelled', 'no_show')")->fetchColumn(),
+                'total'     => (int)$pdo->query("SELECT COUNT(*) FROM bookings")->fetchColumn(),
+            ];
+
+            // Services & Staff lists for dropdown filters & modal selects
+            $services = Service::all(true);
+            $staff = $pdo->query("SELECT id, name, role FROM staff WHERE is_active = 1 ORDER BY name ASC")->fetchAll();
+            $customers = $pdo->query("
+                SELECT u.id as user_id, u.email, u.phone, cp.full_name 
+                FROM users u 
+                LEFT JOIN customer_profiles cp ON u.id = cp.user_id 
+                WHERE u.role = 'customer' 
+                ORDER BY cp.full_name ASC, u.email ASC
+            ")->fetchAll();
+
+            Response::success([
+                'bookings'  => $bookings,
+                'summary'   => $summary,
+                'services'  => $services,
+                'staff'     => $staff,
+                'customers' => $customers,
+            ]);
         } else {
             $bookings = Booking::findByCustomer($auth['id'], $_GET['status'] ?? null);
+            Response::success($bookings);
         }
-
-        Response::success($bookings);
     }
 
     public function show(string $idOrRef): void {
@@ -252,5 +291,72 @@ class BookingController {
         }
 
         Response::success(null, "Booking status updated to {$status}.");
+    }
+
+    public function update(int $id): void {
+        require_once dirname(__DIR__) . '/middleware/RoleMiddleware.php';
+        RoleMiddleware::requireAdmin();
+
+        $booking = Booking::findById($id);
+        if (!$booking) {
+            Response::notFound('Appointment not found.');
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $input = Sanitizer::cleanArray($input);
+
+        $updateData = [];
+        if (!empty($input['service_id'])) $updateData['service_id'] = (int)$input['service_id'];
+        if (isset($input['staff_id'])) $updateData['staff_id'] = !empty($input['staff_id']) ? (int)$input['staff_id'] : null;
+        if (!empty($input['booking_date'])) $updateData['booking_date'] = date('Y-m-d', strtotime($input['booking_date']));
+        if (!empty($input['booking_time'])) $updateData['booking_time'] = date('H:i:s', strtotime($input['booking_time']));
+        if (!empty($input['status'])) $updateData['status'] = $input['status'];
+        if (isset($input['notes'])) $updateData['notes'] = $input['notes'];
+        if (isset($input['total_price'])) $updateData['total_price'] = (float)$input['total_price'];
+
+        Booking::update($id, $updateData);
+
+        // Update customer profile or user contact if provided
+        $pdo = Database::getConnection();
+        if (!empty($input['customer_name']) && !empty($booking['customer_id'])) {
+            $pdo->prepare("UPDATE customer_profiles SET full_name = :name WHERE user_id = :uid")
+                ->execute(['name' => $input['customer_name'], 'uid' => $booking['customer_id']]);
+        }
+        if (!empty($input['customer_phone']) && !empty($booking['customer_id'])) {
+            $pdo->prepare("UPDATE users SET phone = :phone WHERE id = :uid")
+                ->execute(['phone' => $input['customer_phone'], 'uid' => $booking['customer_id']]);
+        }
+        if (!empty($input['payment_status'])) {
+            $pdo->prepare("UPDATE payments SET status = :pst WHERE booking_id = :bid")
+                ->execute(['pst' => strtolower($input['payment_status']), 'bid' => $id]);
+        }
+
+        // If marked completed, record to sales ledger if not already recorded
+        if (($input['status'] ?? '') === 'completed') {
+            Sale::create([
+                'booking_id'     => $booking['id'],
+                'amount'         => $input['total_price'] ?? $booking['total_price'],
+                'service_name'   => $booking['service_name'],
+                'customer_name'  => $input['customer_name'] ?? ($booking['customer_name'] ?? 'Patron'),
+                'payment_method' => $booking['payment_method'] ?? 'Cash',
+                'transaction_date'=> date('Y-m-d'),
+            ]);
+        }
+
+        $updated = Booking::findById($id);
+        Response::success($updated, 'Appointment updated successfully.');
+    }
+
+    public function destroy(int $id): void {
+        require_once dirname(__DIR__) . '/middleware/RoleMiddleware.php';
+        RoleMiddleware::requireAdmin();
+
+        $booking = Booking::findById($id);
+        if (!$booking) {
+            Response::notFound('Appointment not found.');
+        }
+
+        Booking::delete($id);
+        Response::success(null, 'Appointment record deleted successfully.');
     }
 }

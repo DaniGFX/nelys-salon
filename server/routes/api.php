@@ -90,12 +90,14 @@ class Router {
                     if ($id === null) {
                         if ($method === 'GET') $bookingCtrl->index();
                         if ($method === 'POST') $bookingCtrl->create();
-                    } elseif ($id !== null && $subaction === 'cancel' && $method === 'POST') {
+                    } elseif ($id !== null && $subaction === 'cancel' && ($method === 'POST' || $method === 'PATCH')) {
                         $bookingCtrl->cancel($id);
                     } elseif ($id !== null && $subaction === 'status' && ($method === 'POST' || $method === 'PATCH')) {
                         $bookingCtrl->updateStatus((int)$id);
-                    } else {
+                    } elseif ($id !== null) {
                         if ($method === 'GET') $bookingCtrl->show($id);
+                        if ($method === 'PUT' || $method === 'PATCH') $bookingCtrl->update((int)$id);
+                        if ($method === 'DELETE') $bookingCtrl->destroy((int)$id);
                     }
                     Response::notFound('Booking endpoint not found.');
                     break;

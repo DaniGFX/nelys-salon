@@ -156,4 +156,55 @@ class Booking {
             'id'     => $id,
         ]);
     }
+
+    public static function update(int $id, array $data): bool {
+        $pdo = Database::getConnection();
+        $fields = [];
+        $params = ['id' => $id];
+
+        if (isset($data['service_id'])) {
+            $fields[] = 'service_id = :service_id';
+            $params['service_id'] = $data['service_id'];
+        }
+        if (isset($data['staff_id'])) {
+            $fields[] = 'staff_id = :staff_id';
+            $params['staff_id'] = $data['staff_id'];
+        }
+        if (isset($data['booking_date'])) {
+            $fields[] = 'booking_date = :booking_date';
+            $params['booking_date'] = $data['booking_date'];
+        }
+        if (isset($data['booking_time'])) {
+            $fields[] = 'booking_time = :booking_time';
+            $params['booking_time'] = $data['booking_time'];
+        }
+        if (isset($data['status'])) {
+            $fields[] = 'status = :status';
+            $params['status'] = $data['status'];
+        }
+        if (isset($data['notes'])) {
+            $fields[] = 'notes = :notes';
+            $params['notes'] = $data['notes'];
+        }
+        if (isset($data['total_price'])) {
+            $fields[] = 'total_price = :total_price';
+            $params['total_price'] = $data['total_price'];
+        }
+
+        if (empty($fields)) {
+            return false;
+        }
+
+        $sql = "UPDATE bookings SET " . implode(', ', $fields) . " WHERE id = :id";
+        $stmt = $pdo->prepare($sql);
+        return $stmt->execute($params);
+    }
+
+    public static function delete(int $id): bool {
+        $pdo = Database::getConnection();
+        $pdo->prepare("DELETE FROM payments WHERE booking_id = :id")->execute(['id' => $id]);
+        $pdo->prepare("DELETE FROM notifications WHERE booking_id = :id")->execute(['id' => $id]);
+        $stmt = $pdo->prepare("DELETE FROM bookings WHERE id = :id");
+        return $stmt->execute(['id' => $id]);
+    }
 }
