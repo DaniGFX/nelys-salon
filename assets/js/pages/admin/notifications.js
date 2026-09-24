@@ -1,422 +1,255 @@
 /**
  * Nely's Salon — Admin Notifications Controller
- * Manages admin notifications, real-time unread dot status,
- * category filtering (All, Appointments, Payments, Customers, System),
- * quick action links, notification modal, and notification preferences settings.
+ * Directly connected to backend database API (/api/notifications, /api/dashboard/stats)
+ * Manages admin notifications, unread status indicators, category filtering,
+ * quick action routing, details modal, and notification preferences settings.
  */
 
-// ================= STORAGE KEYS & INITIAL DATA =================
-const NOTIFICATIONS_STORAGE_KEY = 'nelys_admin_notifications_data';
-const NOTIF_PREFS_STORAGE_KEY = 'nelys_admin_notif_prefs';
+// ================= GLOBAL STATE =================
+let notificationsList = [];
+let summaryMetrics = {
+  total: 0,
+  unread: 0,
+  appointments: 0,
+  payments: 0,
+  customers: 0,
+  system: 0
+};
+let notificationPreferences = {
+  newBooking: true,
+  apptConfirmation: true,
+  apptCancellation: true,
+  apptRescheduling: true,
+  paymentReceived: true,
+  pendingPayment: true,
+  newCustomer: true
+};
 
-// Initial dataset matching specifications: Total 24, Unread 6, Appointments 12, Payments 6
-const DEFAULT_NOTIFICATIONS = [
-  {
-    id: 'notif-1',
-    category: 'appointments',
-    type: 'new_booking',
-    title: 'Maria Santos booked an appointment',
-    details: 'Haircut — September 23, 2026 at 9:00 AM',
-    timestamp: '5 minutes ago',
-    date: 'Sept 23, 2026',
-    time: '8:55 AM',
-    isUnread: true,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-calendar-plus',
-    iconColor: 'text-blue-600 bg-blue-50 border-blue-200'
-  },
-  {
-    id: 'notif-2',
-    category: 'appointments',
-    type: 'confirmation',
-    title: 'Angela Cruz\'s appointment was confirmed',
-    details: 'Brazilian — September 23, 2026 at 10:30 AM',
-    timestamp: '20 minutes ago',
-    date: 'Sept 23, 2026',
-    time: '8:40 AM',
-    isUnread: true,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-calendar-check',
-    iconColor: 'text-blue-600 bg-blue-50 border-blue-200'
-  },
-  {
-    id: 'notif-3',
-    category: 'payments',
-    type: 'payment_received',
-    title: 'Payment received from Jamie Reyes',
-    details: '₱149 — Manicure — Cash',
-    timestamp: '1 hour ago',
-    date: 'Sept 23, 2026',
-    time: '8:00 AM',
-    isUnread: true,
-    actionText: 'View Payment',
-    actionUrl: 'payments.html',
-    icon: 'fa-money-bill-wave',
-    iconColor: 'text-emerald-600 bg-emerald-50 border-emerald-200'
-  },
-  {
-    id: 'notif-4',
-    category: 'appointments',
-    type: 'rescheduled',
-    title: 'Carla Dela Cruz rescheduled an appointment',
-    details: 'Hair Dye — September 24 → September 25',
-    timestamp: '2 hours ago',
-    date: 'Sept 23, 2026',
-    time: '7:00 AM',
-    isUnread: true,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-clock-rotate-left',
-    iconColor: 'text-amber-600 bg-amber-50 border-amber-200'
-  },
-  {
-    id: 'notif-5',
-    category: 'appointments',
-    type: 'cancelled',
-    title: 'Sophia Reyes cancelled an appointment',
-    details: 'Pedicure — September 23, 2026 at 2:00 PM',
-    timestamp: 'Yesterday',
-    date: 'Sept 22, 2026',
-    time: '4:30 PM',
-    isUnread: true,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-calendar-xmark',
-    iconColor: 'text-rose-600 bg-rose-50 border-rose-200'
-  },
-  {
-    id: 'notif-6',
-    category: 'customers',
-    type: 'new_customer',
-    title: 'Joshua Garcia registered as a new customer',
-    details: 'Customer ID: CUST-1007 · Mobile: 0933 666 8899',
-    timestamp: 'Yesterday',
-    date: 'Sept 22, 2026',
-    time: '2:15 PM',
-    isUnread: true,
-    actionText: 'View Profile',
-    actionUrl: 'customers.html',
-    icon: 'fa-user-plus',
-    iconColor: 'text-indigo-600 bg-indigo-50 border-indigo-200'
-  },
-  {
-    id: 'notif-7',
-    category: 'payments',
-    type: 'payment_received',
-    title: 'Payment received from Maria Santos',
-    details: '₱250 — Haircut — Cash (PAY-0001)',
-    timestamp: 'Sept 22',
-    date: 'Sept 22, 2026',
-    time: '11:00 AM',
-    isUnread: false,
-    actionText: 'View Payment',
-    actionUrl: 'payments.html',
-    icon: 'fa-money-bill-wave',
-    iconColor: 'text-emerald-600 bg-emerald-50 border-emerald-200'
-  },
-  {
-    id: 'notif-8',
-    category: 'appointments',
-    type: 'new_booking',
-    title: 'Katrina Halili booked an appointment',
-    details: 'Keratine Treatment — September 23, 2026 at 1:30 PM',
-    timestamp: 'Sept 22',
-    date: 'Sept 22, 2026',
-    time: '10:00 AM',
-    isUnread: false,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-calendar-plus',
-    iconColor: 'text-blue-600 bg-blue-50 border-blue-200'
-  },
-  {
-    id: 'notif-9',
-    category: 'payments',
-    type: 'payment_received',
-    title: 'Payment received from Angela Cruz',
-    details: '₱1,999 — Brazilian — GCash (PAY-0002)',
-    timestamp: 'Sept 22',
-    date: 'Sept 22, 2026',
-    time: '9:30 AM',
-    isUnread: false,
-    actionText: 'View Payment',
-    actionUrl: 'payments.html',
-    icon: 'fa-money-bill-wave',
-    iconColor: 'text-emerald-600 bg-emerald-50 border-emerald-200'
-  },
-  {
-    id: 'notif-10',
-    category: 'system',
-    type: 'system_alert',
-    title: 'Daily salon database backup completed',
-    details: 'Automated backup completed with 248 patrons and 186 appointments synced.',
-    timestamp: 'Sept 22',
-    date: 'Sept 22, 2026',
-    time: '3:00 AM',
-    isUnread: false,
-    actionText: 'System Health',
-    actionUrl: 'settings.html',
-    icon: 'fa-server',
-    iconColor: 'text-stone-600 bg-stone-100 border-stone-200'
-  },
-  {
-    id: 'notif-11',
-    category: 'payments',
-    type: 'pending_payment',
-    title: 'Pending balance reminder: Sophia Reyes',
-    details: '₱149 balance pending for Pedicure appointment',
-    timestamp: 'Sept 21',
-    date: 'Sept 21, 2026',
-    time: '5:00 PM',
-    isUnread: false,
-    actionText: 'View Payment',
-    actionUrl: 'payments.html',
-    icon: 'fa-clock',
-    iconColor: 'text-amber-600 bg-amber-50 border-amber-200'
-  },
-  {
-    id: 'notif-12',
-    category: 'appointments',
-    type: 'confirmation',
-    title: 'Patricia Gomez\'s appointment was confirmed',
-    details: 'Haircut & Styling — September 22, 2026 at 3:00 PM',
-    timestamp: 'Sept 21',
-    date: 'Sept 21, 2026',
-    time: '2:30 PM',
-    isUnread: false,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-calendar-check',
-    iconColor: 'text-blue-600 bg-blue-50 border-blue-200'
-  },
-  {
-    id: 'notif-13',
-    category: 'appointments',
-    type: 'new_booking',
-    title: 'Carla Dela Cruz booked an appointment',
-    details: 'Hair Dye & Color Refresh — September 22, 2026 at 3:00 PM',
-    timestamp: 'Sept 21',
-    date: 'Sept 21, 2026',
-    time: '1:15 PM',
-    isUnread: false,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-calendar-plus',
-    iconColor: 'text-blue-600 bg-blue-50 border-blue-200'
-  },
-  {
-    id: 'notif-14',
-    category: 'customers',
-    type: 'new_customer',
-    title: 'Patricia Gomez registered as a new customer',
-    details: 'Customer ID: CUST-1006 · Mobile: 0920 111 4477',
-    timestamp: 'Sept 21',
-    date: 'Sept 21, 2026',
-    time: '11:00 AM',
-    isUnread: false,
-    actionText: 'View Profile',
-    actionUrl: 'customers.html',
-    icon: 'fa-user-plus',
-    iconColor: 'text-indigo-600 bg-indigo-50 border-indigo-200'
-  },
-  {
-    id: 'notif-15',
-    category: 'payments',
-    type: 'refund_processed',
-    title: 'Refund processed for Patricia Gomez',
-    details: '₱500 — Consultation Deposit — GCash reversed (PAY-0008)',
-    timestamp: 'Sept 21',
-    date: 'Sept 21, 2026',
-    time: '3:05 PM',
-    isUnread: false,
-    actionText: 'View Payment',
-    actionUrl: 'payments.html',
-    icon: 'fa-arrow-rotate-left',
-    iconColor: 'text-rose-600 bg-rose-50 border-rose-200'
-  },
-  {
-    id: 'notif-16',
-    category: 'appointments',
-    type: 'rescheduled',
-    title: 'Maria Santos rescheduled an appointment',
-    details: 'Haircut — September 22 → September 23',
-    timestamp: 'Sept 20',
-    date: 'Sept 20, 2026',
-    time: '4:15 PM',
-    isUnread: false,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-clock-rotate-left',
-    iconColor: 'text-amber-600 bg-amber-50 border-amber-200'
-  },
-  {
-    id: 'notif-17',
-    category: 'appointments',
-    type: 'confirmation',
-    title: 'Jamie Reyes\'s appointment was confirmed',
-    details: 'Manicure — September 23, 2026 at 1:00 PM',
-    timestamp: 'Sept 20',
-    date: 'Sept 20, 2026',
-    time: '3:00 PM',
-    isUnread: false,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-calendar-check',
-    iconColor: 'text-blue-600 bg-blue-50 border-blue-200'
-  },
-  {
-    id: 'notif-18',
-    category: 'appointments',
-    type: 'cancelled',
-    title: 'Elena Cruz cancelled an appointment',
-    details: 'Cold Wave — September 20, 2026 at 10:00 AM',
-    timestamp: 'Sept 20',
-    date: 'Sept 20, 2026',
-    time: '8:45 AM',
-    isUnread: false,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-calendar-xmark',
-    iconColor: 'text-rose-600 bg-rose-50 border-rose-200'
-  },
-  {
-    id: 'notif-19',
-    category: 'payments',
-    type: 'payment_received',
-    title: 'Payment received from Carla Dela Cruz',
-    details: '₱699 — Hair Dye — GCash (PAY-0004)',
-    timestamp: 'Sept 19',
-    date: 'Sept 19, 2026',
-    time: '4:30 PM',
-    isUnread: false,
-    actionText: 'View Payment',
-    actionUrl: 'payments.html',
-    icon: 'fa-money-bill-wave',
-    iconColor: 'text-emerald-600 bg-emerald-50 border-emerald-200'
-  },
-  {
-    id: 'notif-20',
-    category: 'appointments',
-    type: 'new_booking',
-    title: 'Bea Alonzo booked an appointment',
-    details: 'Power Dose — September 22, 2026 at 11:00 AM',
-    timestamp: 'Sept 19',
-    date: 'Sept 19, 2026',
-    time: '2:00 PM',
-    isUnread: false,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-calendar-plus',
-    iconColor: 'text-blue-600 bg-blue-50 border-blue-200'
-  },
-  {
-    id: 'notif-21',
-    category: 'appointments',
-    type: 'confirmation',
-    title: 'Joshua Garcia\'s appointment was confirmed',
-    details: 'Trim — September 23, 2026 at 9:30 AM',
-    timestamp: 'Sept 19',
-    date: 'Sept 19, 2026',
-    time: '11:30 AM',
-    isUnread: false,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-calendar-check',
-    iconColor: 'text-blue-600 bg-blue-50 border-blue-200'
-  },
-  {
-    id: 'notif-22',
-    category: 'system',
-    type: 'system_alert',
-    title: 'System update: Price configuration updated',
-    details: 'Rebonding set to consultation pricing; Brazilian updated to ₱1,999.',
-    timestamp: 'Sept 18',
-    date: 'Sept 18, 2026',
-    time: '6:00 PM',
-    isUnread: false,
-    actionText: 'View Services',
-    actionUrl: 'services.html',
-    icon: 'fa-gear',
-    iconColor: 'text-stone-600 bg-stone-100 border-stone-200'
-  },
-  {
-    id: 'notif-23',
-    category: 'appointments',
-    type: 'new_booking',
-    title: 'Sophia Reyes booked an appointment',
-    details: 'Pedicure — September 22, 2026 at 2:00 PM',
-    timestamp: 'Sept 18',
-    date: 'Sept 18, 2026',
-    time: '1:45 PM',
-    isUnread: false,
-    actionText: 'View Appointment',
-    actionUrl: 'appointments.html',
-    icon: 'fa-calendar-plus',
-    iconColor: 'text-blue-600 bg-blue-50 border-blue-200'
-  },
-  {
-    id: 'notif-24',
-    category: 'customers',
-    type: 'new_customer',
-    title: 'Katrina Halili registered as a new customer',
-    details: 'Customer ID: CUST-1008 · Mobile: 0918 999 0011',
-    timestamp: 'Sept 18',
-    date: 'Sept 18, 2026',
-    time: '10:15 AM',
-    isUnread: false,
-    actionText: 'View Profile',
-    actionUrl: 'customers.html',
-    icon: 'fa-user-plus',
-    iconColor: 'text-indigo-600 bg-indigo-50 border-indigo-200'
-  }
-];
-
-// In-memory state
-let notifications = [];
 let activeNotification = null;
 let currentFilter = 'all';
 
-// ================= STORAGE HELPERS =================
-function loadNotifications() {
-  try {
-    const raw = localStorage.getItem(NOTIFICATIONS_STORAGE_KEY);
-    if (raw) {
-      notifications = JSON.parse(raw);
-    } else {
-      notifications = JSON.parse(JSON.stringify(DEFAULT_NOTIFICATIONS));
-      saveNotifications();
-    }
-  } catch (err) {
-    console.error('Error loading notifications:', err);
-    notifications = JSON.parse(JSON.stringify(DEFAULT_NOTIFICATIONS));
-  }
-}
-
-function saveNotifications() {
-  try {
-    localStorage.setItem(NOTIFICATIONS_STORAGE_KEY, JSON.stringify(notifications));
-  } catch (err) {
-    console.error('Error saving notifications:', err);
-  }
-}
-
-// ================= DOM INITIALIZATION =================
+// ================= DOM INITIALIZATION & AUTH =================
 document.addEventListener('DOMContentLoaded', () => {
-  loadNotifications();
-  renderSummaryCards();
-  applyFilterAndRender();
-  loadNotificationPreferences();
-  updateTimeBadge();
+  checkAdminAuth();
+  fetchNotificationsData();
+  fetchSidebarStats();
 });
 
-// ================= SUMMARY CARDS =================
+function checkAdminAuth() {
+  const token = localStorage.getItem('nelys_token');
+  const userJson = localStorage.getItem('nelys_user');
+
+  if (!token) {
+    window.location.href = '../login.html';
+    return;
+  }
+
+  let displayName = 'Admin';
+  if (userJson) {
+    try {
+      const user = JSON.parse(userJson);
+      let rawName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Admin');
+      rawName = rawName.replace(/atelier\s*/gi, '').trim();
+      if (rawName && rawName.toLowerCase() !== 'admin') {
+        displayName = rawName;
+      }
+    } catch (e) {
+      console.warn('Error reading admin user:', e);
+    }
+  }
+
+  const mobileBadge = document.querySelector('header .bg-\\[\\#541A1A\\]');
+  if (mobileBadge) {
+    const parts = displayName.split(' ').filter(Boolean);
+    const initials = parts.length > 1
+      ? (parts[0][0] + parts[1][0]).toUpperCase()
+      : (displayName.substring(0, 2)).toUpperCase();
+    mobileBadge.textContent = initials || 'AD';
+  }
+}
+
+// Helper to get auth headers
+function getAuthHeaders() {
+  const token = localStorage.getItem('nelys_token');
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+// ================= FETCH DATA FROM BACKEND =================
+async function fetchNotificationsData() {
+  try {
+    const res = await fetch(`../api/notifications?category=${encodeURIComponent(currentFilter)}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      console.warn('Admin session unauthenticated or expired.');
+      window.location.href = '../login.html';
+      return;
+    }
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: Failed to fetch notifications`);
+    }
+
+    const json = await res.json();
+    if (json.data) {
+      if (Array.isArray(json.data.notifications)) {
+        notificationsList = json.data.notifications.map(mapNotificationRecord);
+      } else if (Array.isArray(json.data)) {
+        notificationsList = json.data.map(mapNotificationRecord);
+      }
+
+      if (json.data.metrics) {
+        summaryMetrics = Object.assign(summaryMetrics, json.data.metrics);
+      }
+
+      if (json.data.preferences) {
+        notificationPreferences = Object.assign(notificationPreferences, json.data.preferences);
+        populatePreferencesForm(notificationPreferences);
+      }
+    }
+
+    renderSummaryCards();
+    applyFilterAndRender();
+
+  } catch (err) {
+    console.error('Error fetching notifications:', err);
+    showToast('Failed to load notifications from database.', 'error');
+  }
+}
+
+// Fetch sidebar badge counts
+async function fetchSidebarStats() {
+  try {
+    const res = await fetch('../api/dashboard/stats', {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data) {
+        const d = json.data;
+        const bAppt = document.getElementById('sidebarAppointmentsBadge');
+        const bCust = document.getElementById('sidebarCustomersBadge');
+        const bSvc = document.getElementById('sidebarServicesBadge');
+        const bStaff = document.getElementById('sidebarStaffBadge');
+        const bNotif = document.getElementById('sidebarNotificationsBadge');
+        const bMsg = document.getElementById('sidebarMessagesBadge');
+
+        if (bAppt && d.total_appointments !== undefined) bAppt.textContent = d.total_appointments;
+        if (bCust && d.total_customers !== undefined) bCust.textContent = d.total_customers;
+        if (bSvc && d.total_services !== undefined) bSvc.textContent = d.total_services;
+        if (bStaff && d.total_staff !== undefined) bStaff.textContent = d.total_staff;
+        if (bNotif && d.unread_notifications !== undefined) bNotif.textContent = d.unread_notifications;
+        if (bMsg && d.unread_messages !== undefined) bMsg.textContent = d.unread_messages;
+      }
+    }
+  } catch (err) {
+    // Non-critical, ignore
+  }
+}
+
+// Map raw notification from backend
+function mapNotificationRecord(n) {
+  const isUnread = n.is_read === 0 || n.is_read === false || n.is_read === '0' || n.isUnread === true;
+  const category = (n.category || 'appointments').toLowerCase();
+
+  return {
+    id: n.id,
+    user_id: n.user_id,
+    booking_id: n.booking_id,
+    category: category,
+    title: n.title || 'Notification Alert',
+    details: n.details || n.message || '',
+    message: n.message || n.details || '',
+    actionText: n.actionText || getActionTextForCategory(category),
+    actionUrl: n.actionUrl || getActionUrlForCategory(category),
+    isUnread: isUnread,
+    is_read: isUnread ? 0 : 1,
+    timestamp: n.timestamp || 'Recently',
+    date: n.date || 'Today',
+    time: n.time || '',
+    created_at: n.created_at || '',
+    icon: n.icon || getIconForCategory(category, n.title),
+    iconColor: n.iconColor || getIconColorForCategory(category, n.title)
+  };
+}
+
+function getActionTextForCategory(cat) {
+  switch (cat) {
+    case 'appointments': return 'View Appointment';
+    case 'payments': return 'View Payment';
+    case 'customers': return 'View Profile';
+    case 'system': return 'System Health';
+    default: return 'View Details';
+  }
+}
+
+function getActionUrlForCategory(cat) {
+  switch (cat) {
+    case 'appointments': return 'appointments.html';
+    case 'payments': return 'payments.html';
+    case 'customers': return 'customers.html';
+    case 'system': return 'settings.html';
+    default: return 'dashboard.html';
+  }
+}
+
+function getIconForCategory(cat, title = '') {
+  const t = (title || '').toLowerCase();
+  if (cat === 'appointments') {
+    if (t.includes('cancel')) return 'fa-calendar-xmark';
+    if (t.includes('resched')) return 'fa-clock-rotate-left';
+    if (t.includes('confirm')) return 'fa-calendar-check';
+    return 'fa-calendar-plus';
+  }
+  if (cat === 'payments') {
+    if (t.includes('refund')) return 'fa-arrow-rotate-left';
+    if (t.includes('pending')) return 'fa-clock';
+    return 'fa-money-bill-wave';
+  }
+  if (cat === 'customers') return 'fa-user-plus';
+  if (cat === 'system') {
+    if (t.includes('backup') || t.includes('server')) return 'fa-server';
+    if (t.includes('price') || t.includes('service')) return 'fa-gear';
+    return 'fa-sliders';
+  }
+  return 'fa-bell';
+}
+
+function getIconColorForCategory(cat, title = '') {
+  const t = (title || '').toLowerCase();
+  if (cat === 'appointments') {
+    if (t.includes('cancel')) return 'text-rose-600 bg-rose-50 border-rose-200';
+    if (t.includes('resched')) return 'text-amber-600 bg-amber-50 border-amber-200';
+    return 'text-blue-600 bg-blue-50 border-blue-200';
+  }
+  if (cat === 'payments') {
+    if (t.includes('refund')) return 'text-rose-600 bg-rose-50 border-rose-200';
+    if (t.includes('pending')) return 'text-amber-600 bg-amber-50 border-amber-200';
+    return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+  }
+  if (cat === 'customers') return 'text-indigo-600 bg-indigo-50 border-indigo-200';
+  return 'text-stone-600 bg-stone-100 border-stone-200';
+}
+
+// ================= SUMMARY STATS RENDERING =================
 function renderSummaryCards() {
-  const total = notifications.length;
-  const unread = notifications.filter(n => n.isUnread).length;
-  const appts = notifications.filter(n => n.category === 'appointments').length;
-  const paymentsCount = notifications.filter(n => n.category === 'payments').length;
+  const total = summaryMetrics.total !== undefined ? summaryMetrics.total : notificationsList.length;
+  const unread = summaryMetrics.unread !== undefined ? summaryMetrics.unread : notificationsList.filter(n => n.isUnread).length;
+  const appts = summaryMetrics.appointments !== undefined ? summaryMetrics.appointments : notificationsList.filter(n => n.category === 'appointments').length;
+  const paymentsCount = summaryMetrics.payments !== undefined ? summaryMetrics.payments : notificationsList.filter(n => n.category === 'payments').length;
 
   const totalEl = document.getElementById('statTotalNotifs');
   const unreadEl = document.getElementById('statUnreadNotifs');
@@ -427,21 +260,27 @@ function renderSummaryCards() {
   if (unreadEl) unreadEl.textContent = unread;
   if (apptsEl) apptsEl.textContent = appts;
   if (paymentsEl) paymentsEl.textContent = paymentsCount;
+
+  // Sync sidebar badge directly
+  const sidebarNotifBadge = document.getElementById('sidebarNotificationsBadge');
+  if (sidebarNotifBadge) {
+    sidebarNotifBadge.textContent = unread;
+  }
 }
 
 // ================= FILTER & RENDER TIMELINE =================
 function setNotificationFilter(filter) {
   currentFilter = filter;
 
-  // Update tabs styling (fixed dimensions to avoid layout shifting)
+  // Update tabs styling
   const tabs = ['all', 'appointments', 'payments', 'customers', 'system'];
   tabs.forEach(t => {
     const btn = document.getElementById(`tab-notif-${t}`);
     if (btn) {
       if (t === filter) {
-        btn.className = 'px-4 py-2 rounded-xl text-xs font-bold bg-[#810B38] text-white shadow-sm transition-colors duration-150';
+        btn.className = 'px-4 py-2 rounded-xl text-xs font-bold bg-[#810B38] text-white shadow-sm transition-colors duration-150 shrink-0';
       } else {
-        btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#FAF6F0] hover:bg-[#DCC3AA]/40 text-stone-700 transition-colors duration-150';
+        btn.className = 'px-4 py-2 rounded-xl text-xs font-semibold bg-[#FAF6F0] hover:bg-[#DCC3AA]/40 text-stone-700 transition-colors duration-150 shrink-0';
       }
     }
   });
@@ -450,7 +289,7 @@ function setNotificationFilter(filter) {
 }
 
 function applyFilterAndRender() {
-  let filtered = [...notifications];
+  let filtered = [...notificationsList];
 
   if (currentFilter !== 'all') {
     filtered = filtered.filter(n => n.category === currentFilter);
@@ -492,7 +331,7 @@ function renderNotificationsList(items) {
       <div class="${cardBg} rounded-2xl border p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:shadow-md hover:border-[#810B38] group">
         
         <!-- Left: Dot + Icon + Content -->
-        <div class="flex items-start gap-3.5 min-w-0">
+        <div class="flex items-start gap-3.5 min-w-0 flex-1">
           
           <!-- Blue Dot Indicator -->
           <div class="pt-2">
@@ -508,17 +347,17 @@ function renderNotificationsList(items) {
           <div class="min-w-0 flex-1">
             <div class="flex items-center gap-2 flex-wrap">
               <h4 class="font-serif font-bold text-sm text-[#541A1A] group-hover:text-[#810B38] transition-colors">
-                ${n.title}
+                ${escapeHtml(n.title)}
               </h4>
-              <span class="text-[11px] font-mono text-stone-400">· ${n.timestamp}</span>
+              <span class="text-[11px] font-mono text-stone-400">· ${escapeHtml(n.timestamp)}</span>
             </div>
             
             <p class="text-xs text-stone-600 mt-1 leading-relaxed">
-              ${n.details}
+              ${escapeHtml(n.details)}
             </p>
 
             <div class="flex items-center gap-3 text-[11px] text-stone-400 mt-2 font-mono">
-              <span><i class="fa-regular fa-clock mr-1"></i>${n.date} · ${n.time}</span>
+              <span><i class="fa-regular fa-clock mr-1"></i>${escapeHtml(n.date)}${n.time ? ` · ${escapeHtml(n.time)}` : ''}</span>
             </div>
           </div>
         </div>
@@ -526,19 +365,19 @@ function renderNotificationsList(items) {
         <!-- Right: Actions (View, Mark Read, Delete) -->
         <div class="flex items-center gap-2 self-end sm:self-center shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-stone-100 w-full sm:w-auto justify-end">
           
-          <!-- Direct Quick Action (e.g. View Appointment) -->
+          <!-- Direct Quick Action -->
           <a 
-            href="${n.actionUrl}"
-            onclick="markSingleAsRead('${n.id}')"
+            href="${escapeHtml(n.actionUrl)}"
+            onclick="markSingleAsRead(${n.id})"
             class="px-3.5 py-1.5 rounded-xl bg-white border border-[#DCC3AA] text-[#541A1A] hover:bg-[#FAF6F0] font-semibold text-xs transition-colors flex items-center gap-1.5 shadow-2xs">
             <i class="fa-solid fa-arrow-up-right-from-square text-[10px] text-[#810B38]"></i>
-            <span>${n.actionText}</span>
+            <span>${escapeHtml(n.actionText)}</span>
           </a>
 
           <!-- View Modal -->
           <button 
             type="button" 
-            onclick="openNotificationModal('${n.id}')"
+            onclick="openNotificationModal(${n.id})"
             class="w-8 h-8 rounded-xl bg-stone-100 hover:bg-[#810B38] hover:text-white text-stone-600 transition-colors flex items-center justify-center text-xs shadow-2xs"
             title="View Details">
             <i class="fa-solid fa-eye"></i>
@@ -547,7 +386,7 @@ function renderNotificationsList(items) {
           <!-- Toggle Read/Unread -->
           <button 
             type="button" 
-            onclick="toggleReadStatus('${n.id}')"
+            onclick="toggleReadStatus(${n.id})"
             class="w-8 h-8 rounded-xl bg-stone-100 hover:bg-emerald-600 hover:text-white text-stone-600 transition-colors flex items-center justify-center text-xs shadow-2xs"
             title="${n.isUnread ? 'Mark as Read' : 'Mark as Unread'}">
             <i class="fa-solid ${n.isUnread ? 'fa-check' : 'fa-envelope'}"></i>
@@ -556,7 +395,7 @@ function renderNotificationsList(items) {
           <!-- Delete -->
           <button 
             type="button" 
-            onclick="deleteNotification('${n.id}')"
+            onclick="deleteNotification(${n.id})"
             class="w-8 h-8 rounded-xl bg-stone-100 hover:bg-rose-600 hover:text-white text-stone-600 transition-colors flex items-center justify-center text-xs shadow-2xs"
             title="Delete Notification">
             <i class="fa-solid fa-trash-can"></i>
@@ -570,60 +409,144 @@ function renderNotificationsList(items) {
 }
 
 // ================= NOTIFICATION ACTIONS =================
-function markAllAsRead() {
-  let count = 0;
-  notifications.forEach(n => {
-    if (n.isUnread) {
-      n.isUnread = false;
-      count++;
+async function markAllAsRead() {
+  try {
+    const res = await fetch('../api/notifications/mark-all-read', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: Failed to mark all notifications as read`);
     }
-  });
 
-  saveNotifications();
-  renderSummaryCards();
-  applyFilterAndRender();
+    notificationsList.forEach(n => {
+      n.isUnread = false;
+      n.is_read = 1;
+    });
 
-  showToast(`Marked ${count} notifications as read.`, 'success');
-}
+    if (summaryMetrics) {
+      summaryMetrics.unread = 0;
+    }
 
-function markSingleAsRead(id) {
-  const notif = notifications.find(n => n.id === id);
-  if (notif && notif.isUnread) {
-    notif.isUnread = false;
-    saveNotifications();
     renderSummaryCards();
+    applyFilterAndRender();
+    fetchSidebarStats();
+
+    showToast('All notifications marked as read.', 'success');
+  } catch (err) {
+    console.error('Error marking all as read:', err);
+    showToast('Failed to mark all as read.', 'error');
   }
 }
 
-function toggleReadStatus(id) {
-  const notif = notifications.find(n => n.id === id);
-  if (!notif) return;
+async function markSingleAsRead(id) {
+  const notif = notificationsList.find(n => n.id == id);
+  if (!notif || !notif.isUnread) return;
 
-  notif.isUnread = !notif.isUnread;
-  saveNotifications();
+  notif.isUnread = false;
+  notif.is_read = 1;
+  if (summaryMetrics.unread > 0) summaryMetrics.unread--;
+
   renderSummaryCards();
   applyFilterAndRender();
 
-  showToast(`Notification marked as ${notif.isUnread ? 'unread' : 'read'}.`, 'info');
+  try {
+    await fetch(`../api/notifications/${id}/read`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ is_read: true })
+    });
+    fetchSidebarStats();
+  } catch (err) {
+    console.error('Error updating notification read state:', err);
+  }
 }
 
-function deleteNotification(id) {
-  notifications = notifications.filter(n => n.id !== id);
-  saveNotifications();
+async function toggleReadStatus(id) {
+  const notif = notificationsList.find(n => n.id == id);
+  if (!notif) return;
+
+  const previousState = notif.isUnread;
+  notif.isUnread = !notif.isUnread;
+  notif.is_read = notif.isUnread ? 0 : 1;
+
+  if (notif.isUnread) {
+    summaryMetrics.unread = (summaryMetrics.unread || 0) + 1;
+  } else {
+    summaryMetrics.unread = Math.max(0, (summaryMetrics.unread || 0) - 1);
+  }
+
   renderSummaryCards();
   applyFilterAndRender();
 
-  showToast('Notification deleted.', 'info');
+  try {
+    const res = await fetch(`../api/notifications/${id}/toggle`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    fetchSidebarStats();
+    showToast(`Notification marked as ${notif.isUnread ? 'unread' : 'read'}.`, 'info');
+  } catch (err) {
+    console.error('Error toggling notification read status:', err);
+    // Revert state on failure
+    notif.isUnread = previousState;
+    notif.is_read = previousState ? 0 : 1;
+    renderSummaryCards();
+    applyFilterAndRender();
+    showToast('Failed to update notification state.', 'error');
+  }
+}
+
+async function deleteNotification(id) {
+  if (!confirm('Are you sure you want to delete this notification?')) {
+    return;
+  }
+
+  const notifIndex = notificationsList.findIndex(n => n.id == id);
+  if (notifIndex === -1) return;
+
+  const [deleted] = notificationsList.splice(notifIndex, 1);
+  if (summaryMetrics.total > 0) summaryMetrics.total--;
+  if (deleted.isUnread && summaryMetrics.unread > 0) summaryMetrics.unread--;
+  if (summaryMetrics[deleted.category] && summaryMetrics[deleted.category] > 0) {
+    summaryMetrics[deleted.category]--;
+  }
+
+  renderSummaryCards();
+  applyFilterAndRender();
+
+  try {
+    const res = await fetch(`../api/notifications/${id}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    fetchSidebarStats();
+    showToast('Notification deleted successfully.', 'info');
+  } catch (err) {
+    console.error('Error deleting notification:', err);
+    showToast('Failed to delete notification.', 'error');
+    fetchNotificationsData();
+  }
 }
 
 // ================= NOTIFICATION DETAILS MODAL =================
 function openNotificationModal(id) {
-  const notif = notifications.find(n => n.id === id);
+  const notif = notificationsList.find(n => n.id == id);
   if (!notif) return;
 
   activeNotification = notif;
   markSingleAsRead(id);
-  applyFilterAndRender();
 
   const titleEl = document.getElementById('modalNotifTitle');
   const detailsEl = document.getElementById('modalNotifDetails');
@@ -633,14 +556,14 @@ function openNotificationModal(id) {
 
   if (titleEl) titleEl.textContent = notif.title;
   if (detailsEl) detailsEl.textContent = notif.details;
-  if (dateEl) dateEl.textContent = `${notif.date} at ${notif.time} (${notif.timestamp})`;
+  if (dateEl) dateEl.textContent = `${notif.date}${notif.time ? ` at ${notif.time}` : ''} (${notif.timestamp})`;
   if (categoryEl) categoryEl.textContent = notif.category.toUpperCase();
 
   if (actionBtn) {
     actionBtn.href = notif.actionUrl;
     actionBtn.innerHTML = `
       <i class="fa-solid fa-arrow-up-right-from-square"></i>
-      <span>${notif.actionText}</span>
+      <span>${escapeHtml(notif.actionText)}</span>
     `;
   }
 
@@ -661,25 +584,7 @@ function closeNotificationModal() {
 }
 
 // ================= NOTIFICATION PREFERENCES =================
-function loadNotificationPreferences() {
-  const defaultPrefs = {
-    newBooking: true,
-    apptConfirmation: true,
-    apptCancellation: true,
-    apptRescheduling: true,
-    paymentReceived: true,
-    pendingPayment: true,
-    newCustomer: true
-  };
-
-  let prefs = defaultPrefs;
-  try {
-    const raw = localStorage.getItem(NOTIF_PREFS_STORAGE_KEY);
-    if (raw) prefs = JSON.parse(raw);
-  } catch (e) {
-    prefs = defaultPrefs;
-  }
-
+function populatePreferencesForm(prefs) {
   const elNewBooking = document.getElementById('prefNewBooking');
   const elApptConf = document.getElementById('prefApptConfirmation');
   const elApptCancel = document.getElementById('prefApptCancellation');
@@ -688,16 +593,16 @@ function loadNotificationPreferences() {
   const elPayPending = document.getElementById('prefPendingPayment');
   const elNewCust = document.getElementById('prefNewCustomer');
 
-  if (elNewBooking) elNewBooking.checked = prefs.newBooking;
-  if (elApptConf) elApptConf.checked = prefs.apptConfirmation;
-  if (elApptCancel) elApptCancel.checked = prefs.apptCancellation;
-  if (elApptResched) elApptResched.checked = prefs.apptRescheduling;
-  if (elPayReceived) elPayReceived.checked = prefs.paymentReceived;
-  if (elPayPending) elPayPending.checked = prefs.pendingPayment;
-  if (elNewCust) elNewCust.checked = prefs.newCustomer;
+  if (elNewBooking) elNewBooking.checked = prefs.newBooking !== false;
+  if (elApptConf) elApptConf.checked = prefs.apptConfirmation !== false;
+  if (elApptCancel) elApptCancel.checked = prefs.apptCancellation !== false;
+  if (elApptResched) elApptResched.checked = prefs.apptRescheduling !== false;
+  if (elPayReceived) elPayReceived.checked = prefs.paymentReceived !== false;
+  if (elPayPending) elPayPending.checked = prefs.pendingPayment !== false;
+  if (elNewCust) elNewCust.checked = prefs.newCustomer !== false;
 }
 
-function saveNotificationPreferences(event) {
+async function saveNotificationPreferences(event) {
   if (event) event.preventDefault();
 
   const prefs = {
@@ -711,25 +616,24 @@ function saveNotificationPreferences(event) {
   };
 
   try {
-    localStorage.setItem(NOTIF_PREFS_STORAGE_KEY, JSON.stringify(prefs));
+    const res = await fetch('../api/notifications/preferences', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(prefs)
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    notificationPreferences = prefs;
     showToast('Notification preferences saved successfully!', 'success');
   } catch (err) {
-    showToast('Failed to save preferences.', 'error');
+    console.error('Error saving notification preferences:', err);
+    showToast('Failed to save preferences to server.', 'error');
   }
 }
 
 // ================= MODAL HELPERS & NAV =================
-function closeAllModals() {
-  const modalIds = ['notificationDetailsModal', 'logoutModal'];
-  modalIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.classList.add('hidden');
-      el.classList.remove('flex');
-    }
-  });
-}
-
 function toggleMobileSidebar(show) {
   const sidebar = document.getElementById('sidebar');
   const backdrop = document.getElementById('mobileSidebarBackdrop');
@@ -766,6 +670,8 @@ function closeLogoutModal() {
 }
 
 function handleConfirmLogout() {
+  localStorage.removeItem('nelys_token');
+  localStorage.removeItem('nelys_user');
   window.location.href = '../login.html';
 }
 
@@ -794,25 +700,26 @@ function showToast(message, type = 'info') {
   toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 bg-[#541A1A] text-[#F1E2D1] border ${borderColor} rounded-xl shadow-2xl text-xs font-medium animate-fadeIn transition-all duration-300`;
   toast.innerHTML = `
     <i class="fa-solid ${icon} text-base shrink-0"></i>
-    <span class="flex-1">${message}</span>
+    <span class="flex-1">${escapeHtml(message)}</span>
   `;
 
   toastContainer.appendChild(toast);
 
   setTimeout(() => {
     toast.classList.add('opacity-0', 'translate-y-2');
-    setTimeout(() => toast.remove(), 300);
+    setTimeout(() => {
+      if (toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 300);
   }, 3500);
 }
 
-function updateTimeBadge() {
-  const clockEl = document.getElementById('topClockDisplay');
-  if (!clockEl) return;
-
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  clockEl.textContent = `${dateStr} · ${timeStr}`;
-
-  setTimeout(updateTimeBadge, 1000);
+// Utility: Escape HTML
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }

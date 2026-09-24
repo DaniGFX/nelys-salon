@@ -1,221 +1,139 @@
 /**
  * Nely's Salon — Admin Reports Controller
+ * Directly connected to backend database API (/api/reports, /api/dashboard/stats)
  * Manages comprehensive business analytics, revenue timeline chart, appointment distribution,
  * popular services, customer growth statistics, staff performance, full service revenue breakdown,
- * and multi-format PDF/Excel export.
+ * and multi-format PDF/Excel CSV export.
  */
 
-// ================= MASTER REPORT DATASETS =================
-
-// Date range datasets
-const REPORT_DATASETS = {
-  'this_month': {
-    label: 'This Month (September 2026)',
-    totalRevenue: 52680,
-    revenueGrowth: '+12.5%',
-    totalAppointments: 186,
-    appointmentGrowth: '+8.2%',
-    totalCustomers: 248,
-    newCustomers: 18,
-    completedServices: 164,
-    completionRate: '88.2%',
-    avgDailyRevenue: 7525,
-    chartPoints: [
-      { day: 'Mon', amount: 4200 },
-      { day: 'Tue', amount: 5100 },
-      { day: 'Wed', amount: 6800 },
-      { day: 'Thu', amount: 5600 },
-      { day: 'Fri', amount: 8450 },
-      { day: 'Sat', amount: 10200 },
-      { day: 'Sun', amount: 7500 }
-    ],
-    appointments: {
-      total: 186,
-      completed: 164,
-      confirmed: 12,
-      pending: 6,
-      cancelled: 4
-    }
-  },
-  'today': {
-    label: 'Today (September 23, 2026)',
-    totalRevenue: 8450,
-    revenueGrowth: '+5.4%',
-    totalAppointments: 12,
-    appointmentGrowth: '+4.0%',
-    totalCustomers: 248,
-    newCustomers: 3,
-    completedServices: 7,
-    completionRate: '58.3%',
-    avgDailyRevenue: 8450,
-    chartPoints: [
-      { day: '9 AM', amount: 1200 },
-      { day: '11 AM', amount: 1999 },
-      { day: '1 PM', amount: 1450 },
-      { day: '3 PM', amount: 2200 },
-      { day: '5 PM', amount: 1601 }
-    ],
-    appointments: {
-      total: 12,
-      completed: 7,
-      confirmed: 3,
-      pending: 2,
-      cancelled: 0
-    }
-  },
-  'this_week': {
-    label: 'This Week (Sept 20 – Sept 26, 2026)',
-    totalRevenue: 47850,
-    revenueGrowth: '+9.8%',
-    totalAppointments: 68,
-    appointmentGrowth: '+6.1%',
-    totalCustomers: 248,
-    newCustomers: 7,
-    completedServices: 58,
-    completionRate: '85.3%',
-    avgDailyRevenue: 6835,
-    chartPoints: [
-      { day: 'Mon', amount: 4200 },
-      { day: 'Tue', amount: 5100 },
-      { day: 'Wed', amount: 6800 },
-      { day: 'Thu', amount: 5600 },
-      { day: 'Fri', amount: 8450 },
-      { day: 'Sat', amount: 10200 },
-      { day: 'Sun', amount: 7500 }
-    ],
-    appointments: {
-      total: 68,
-      completed: 58,
-      confirmed: 6,
-      pending: 3,
-      cancelled: 1
-    }
-  },
-  'last_month': {
-    label: 'Last Month (August 2026)',
-    totalRevenue: 46800,
-    revenueGrowth: '+11.0%',
-    totalAppointments: 172,
-    appointmentGrowth: '+7.5%',
-    totalCustomers: 230,
-    newCustomers: 14,
-    completedServices: 151,
-    completionRate: '87.7%',
-    avgDailyRevenue: 6685,
-    chartPoints: [
-      { day: 'Wk 1', amount: 10800 },
-      { day: 'Wk 2', amount: 11400 },
-      { day: 'Wk 3', amount: 12100 },
-      { day: 'Wk 4', amount: 12500 }
-    ],
-    appointments: {
-      total: 172,
-      completed: 151,
-      confirmed: 0,
-      pending: 0,
-      cancelled: 21
-    }
-  },
-  'this_year': {
-    label: 'This Year (2026 YTD)',
-    totalRevenue: 412500,
-    revenueGrowth: '+22.4%',
-    totalAppointments: 1420,
-    appointmentGrowth: '+18.0%',
-    totalCustomers: 248,
-    newCustomers: 248,
-    completedServices: 1280,
-    completionRate: '90.1%',
-    avgDailyRevenue: 7200,
-    chartPoints: [
-      { day: 'Jan', amount: 38200 },
-      { day: 'Feb', amount: 41500 },
-      { day: 'Mar', amount: 44800 },
-      { day: 'Apr', amount: 46200 },
-      { day: 'May', amount: 49800 },
-      { day: 'Jun', amount: 51200 },
-      { day: 'Jul', amount: 53400 },
-      { day: 'Aug', amount: 46800 },
-      { day: 'Sep', amount: 52680 }
-    ],
-    appointments: {
-      total: 1420,
-      completed: 1280,
-      confirmed: 65,
-      pending: 25,
-      cancelled: 50
-    }
-  }
-};
-
-// Popular Services (matching user specification)
-const POPULAR_SERVICES = [
-  { rank: 1, service: 'Brazilian', category: 'Hair Care', bookings: 32, revenue: 63968 },
-  { rank: 2, service: 'Hair Dye', category: 'Hair Care', bookings: 28, revenue: 19572 },
-  { rank: 3, service: 'Manicure', category: 'Nails', bookings: 24, revenue: 3576 },
-  { rank: 4, service: 'Gel Manicure', category: 'Nails', bookings: 21, revenue: 10479 },
-  { rank: 5, service: 'Pedicure', category: 'Nails', bookings: 19, revenue: 2831 }
-];
-
-// Customer Growth (Jan – Sep 2026)
-const CUSTOMER_GROWTH = [
-  { month: 'Jan', count: 45, barPercent: 35 },
-  { month: 'Feb', count: 72, barPercent: 48 },
-  { month: 'Mar', count: 105, barPercent: 60 },
-  { month: 'Apr', count: 138, barPercent: 72 },
-  { month: 'May', count: 174, barPercent: 82 },
-  { month: 'Jun', count: 202, barPercent: 90 },
-  { month: 'Jul', count: 218, barPercent: 93 },
-  { month: 'Aug', count: 230, barPercent: 96 },
-  { month: 'Sep', count: 248, barPercent: 100 }
-];
-
-// Staff Performance
-const STAFF_PERFORMANCE = [
-  { staff: 'Nely', role: 'Master Stylist', appointments: 42, completed: 38, revenue: 18450 },
-  { staff: 'Ana', role: 'Senior Nail Artist', appointments: 35, completed: 32, revenue: 14800 },
-  { staff: 'Elena', role: 'Spa Specialist', appointments: 29, completed: 26, revenue: 11200 },
-  { staff: 'Grace', role: 'Junior Colorist', appointments: 22, completed: 20, revenue: 7850 },
-  { staff: 'Joy', role: 'Texture Specialist', appointments: 20, completed: 18, revenue: 8350 }
-];
-
-// Complete Service Revenue Report (All 13 catalog services)
-const SERVICE_REVENUE_REPORT = [
-  { service: 'Brazilian', price: 1999, priceDisplay: '₱1,999', bookings: 32, revenue: 63968 },
-  { service: 'Hair Dye', price: 699, priceDisplay: '₱699', bookings: 28, revenue: 19572 },
-  { service: 'Power Dose', price: 499, priceDisplay: '₱499', bookings: 15, revenue: 7485 },
-  { service: 'Cold Wave', price: 699, priceDisplay: '₱699', bookings: 12, revenue: 8388 },
-  { service: 'Bonacure', price: 499, priceDisplay: '₱499', bookings: 10, revenue: 4990 },
-  { service: 'Keratine Treatment', price: 499, priceDisplay: '₱499', bookings: 14, revenue: 6986 },
-  { service: 'Footspa', price: 199, priceDisplay: '₱199', bookings: 9, revenue: 1791 },
-  { service: 'Manicure', price: 149, priceDisplay: '₱149', bookings: 24, revenue: 3576 },
-  { service: 'Pedicure', price: 149, priceDisplay: '₱149', bookings: 19, revenue: 2831 },
-  { service: 'Trim', price: 149, priceDisplay: '₱149', bookings: 16, revenue: 2384 },
-  { service: 'Gel Manicure', price: 499, priceDisplay: '₱499', bookings: 21, revenue: 10479 },
-  { service: 'Gel Pedicure', price: 499, priceDisplay: '₱499', bookings: 17, revenue: 8483 },
-  { service: 'Rebonding', price: null, priceDisplay: 'Price not set', bookings: 5, revenue: 'Price not set' }
-];
-
+// ================= GLOBAL STATE =================
 let currentDateRange = 'this_month';
+let reportData = null;
 
-// ================= DOM INITIALIZATION =================
+// ================= INITIALIZATION & AUTH =================
 document.addEventListener('DOMContentLoaded', () => {
-  renderActiveDataset();
-  renderPopularServices();
-  renderCustomerGrowth();
-  renderStaffPerformance();
-  renderServiceRevenueBreakdown();
+  checkAdminAuth();
   setupEventListeners();
-  updateTimeBadge();
+  fetchReportsData();
+  fetchSidebarStats();
 });
 
+function checkAdminAuth() {
+  const token = localStorage.getItem('nelys_token');
+  const userJson = localStorage.getItem('nelys_user');
+
+  if (!token) {
+    window.location.href = '../login.html';
+    return;
+  }
+
+  let displayName = 'Admin';
+  if (userJson) {
+    try {
+      const user = JSON.parse(userJson);
+      let rawName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Admin');
+      rawName = rawName.replace(/atelier\s*/gi, '').trim();
+      if (rawName && rawName.toLowerCase() !== 'admin') {
+        displayName = rawName;
+      }
+    } catch (e) {
+      console.warn('Error reading admin user:', e);
+    }
+  }
+
+  const mobileBadge = document.querySelector('header .bg-\\[\\#541A1A\\]');
+  if (mobileBadge) {
+    const parts = displayName.split(' ').filter(Boolean);
+    const initials = parts.length > 1 
+      ? (parts[0][0] + parts[1][0]).toUpperCase() 
+      : (displayName.substring(0, 2)).toUpperCase();
+    mobileBadge.textContent = initials || 'AD';
+  }
+}
+
+// Helper to get auth headers
+function getAuthHeaders() {
+  const token = localStorage.getItem('nelys_token');
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+// ================= FETCH REPORTS DATA FROM BACKEND =================
+async function fetchReportsData() {
+  try {
+    const res = await fetch(`../api/reports?range=${currentDateRange}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      console.warn('Admin session expired or unauthenticated.');
+    }
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: Failed to fetch reports data`);
+    }
+
+    const json = await res.json();
+    if (json.data) {
+      reportData = json.data;
+      renderAllSections();
+    }
+
+  } catch (err) {
+    console.error('Error fetching reports from backend:', err);
+    showToast('Failed to load report analytics from server.', 'error');
+  }
+}
+
+// Fetch sidebar badge counts
+async function fetchSidebarStats() {
+  try {
+    const res = await fetch('../api/dashboard/stats', {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data) {
+        const d = json.data;
+        const bAppt = document.getElementById('sidebarAppointmentsBadge');
+        const bCust = document.getElementById('sidebarCustomersBadge');
+        const bSvc = document.getElementById('sidebarServicesBadge');
+        const bStaff = document.getElementById('sidebarStaffBadge');
+        const bNotif = document.getElementById('sidebarNotificationsBadge');
+        const bMsg = document.getElementById('sidebarMessagesBadge');
+
+        if (bAppt && d.total_appointments !== undefined) bAppt.textContent = d.total_appointments;
+        if (bCust && d.total_customers !== undefined) bCust.textContent = d.total_customers;
+        if (bSvc && d.total_services !== undefined) bSvc.textContent = d.total_services;
+        if (bStaff && d.total_staff !== undefined) bStaff.textContent = d.total_staff;
+        if (bNotif && d.unread_notifications !== undefined) bNotif.textContent = d.unread_notifications;
+        if (bMsg && d.unread_messages !== undefined) bMsg.textContent = d.unread_messages;
+      }
+    }
+  } catch (err) {
+    // Non-critical, ignore
+  }
+}
+
+// ================= SETUP EVENT LISTENERS =================
 function setupEventListeners() {
   const rangeSelect = document.getElementById('reportDateRangeSelect');
   if (rangeSelect) {
     rangeSelect.addEventListener('change', (e) => {
       currentDateRange = e.target.value;
-      renderActiveDataset();
-      showToast(`Showing reports for: ${REPORT_DATASETS[currentDateRange].label}`, 'info');
+      fetchReportsData();
+      showToast(`Loading reports for selected period...`, 'info');
     });
   }
 
@@ -227,11 +145,24 @@ function setupEventListeners() {
   });
 }
 
-// ================= RENDER DATASET ACCORDING TO TIMEFRAME =================
-function renderActiveDataset() {
-  const data = REPORT_DATASETS[currentDateRange] || REPORT_DATASETS['this_month'];
+// ================= RENDER ALL SECTIONS =================
+function renderAllSections() {
+  if (!reportData) return;
 
-  // 1. KPI Cards
+  renderSummaryCards();
+  renderRevenueSection();
+  renderAppointmentSection();
+  renderPopularServices();
+  renderCustomerStats();
+  renderStaffPerformance();
+  renderServiceRevenueBreakdown();
+}
+
+// ================= 1. SUMMARY CARDS =================
+function renderSummaryCards() {
+  const summary = reportData.summary;
+  if (!summary) return;
+
   const totalRevEl = document.getElementById('statTotalRevenue');
   const revGrowthEl = document.getElementById('statRevenueGrowth');
   const totalApptEl = document.getElementById('statTotalAppointments');
@@ -240,39 +171,44 @@ function renderActiveDataset() {
   const newCustEl = document.getElementById('statNewCustomers');
   const compServEl = document.getElementById('statCompletedServices');
   const compRateEl = document.getElementById('statCompletionRate');
+  const compRateBadge = document.getElementById('statCompletionRateBadge');
 
-  if (totalRevEl) totalRevEl.textContent = `₱${data.totalRevenue.toLocaleString()}`;
-  if (revGrowthEl) revGrowthEl.textContent = `${data.revenueGrowth} from previous period`;
-  if (totalApptEl) totalApptEl.textContent = data.totalAppointments;
-  if (apptGrowthEl) apptGrowthEl.textContent = `${data.appointmentGrowth} from previous period`;
-  if (totalCustEl) totalCustEl.textContent = data.totalCustomers;
-  if (newCustEl) newCustEl.textContent = `${data.newCustomers} new customers`;
-  if (compServEl) compServEl.textContent = data.completedServices;
-  if (compRateEl) compRateEl.textContent = `${data.completionRate} completion rate`;
-
-  // 2. Revenue Overview Section
-  const revTotalEl = document.getElementById('chartRevenueTotal');
-  const revAvgEl = document.getElementById('chartRevenueAverage');
-  if (revTotalEl) revTotalEl.textContent = `₱${data.totalRevenue.toLocaleString()}`;
-  if (revAvgEl) revAvgEl.textContent = `₱${data.avgDailyRevenue.toLocaleString()}`;
-
-  renderRevenueChart(data.chartPoints);
-
-  // 3. Appointment Overview Section
-  renderAppointmentDonut(data.appointments);
+  if (totalRevEl) totalRevEl.textContent = `₱${summary.total_revenue.toLocaleString()}`;
+  if (revGrowthEl) revGrowthEl.innerHTML = `<i class="fa-solid fa-arrow-trend-up text-emerald-600 text-[10px]"></i> <span class="text-emerald-600 font-semibold">${summary.revenue_growth}</span> from previous period`;
+  if (totalApptEl) totalApptEl.textContent = summary.total_appointments;
+  if (apptGrowthEl) apptGrowthEl.innerHTML = `<i class="fa-solid fa-arrow-trend-up text-emerald-600 text-[10px]"></i> <span class="text-emerald-600 font-semibold">${summary.appointment_growth}</span> from previous period`;
+  if (totalCustEl) totalCustEl.textContent = summary.total_customers;
+  if (newCustEl) newCustEl.innerHTML = `<i class="fa-solid fa-user-plus text-amber-600 text-[10px]"></i> <span class="text-amber-700 font-semibold">${summary.new_customers} new</span> customer${summary.new_customers === 1 ? '' : 's'}`;
+  if (compServEl) compServEl.textContent = summary.completed_services;
+  if (compRateEl) compRateEl.innerHTML = `<i class="fa-solid fa-percent text-emerald-600 text-[10px]"></i> <span class="text-emerald-700 font-semibold">${summary.completion_rate}</span> completion rate`;
+  if (compRateBadge) compRateBadge.textContent = summary.completion_rate;
 }
 
-// ================= REVENUE CHART =================
-function renderRevenueChart(points) {
+// ================= 2. REVENUE OVERVIEW & CHART =================
+function renderRevenueSection() {
+  const chartData = reportData.revenue_chart;
+  if (!chartData) return;
+
+  const revTotalEl = document.getElementById('chartRevenueTotal');
+  const revAvgEl = document.getElementById('chartRevenueAverage');
+  const revHighestEl = document.getElementById('chartRevenueHighest');
+
+  if (revTotalEl) revTotalEl.textContent = `₱${chartData.total.toLocaleString()}`;
+  if (revAvgEl) revAvgEl.textContent = `₱${chartData.average.toLocaleString()}`;
+  if (revHighestEl) revHighestEl.textContent = chartData.highest;
+
   const container = document.getElementById('revenueChartBars');
   if (!container) return;
 
+  const points = chartData.points || [];
   const maxVal = Math.max(...points.map(p => p.amount), 1);
 
   container.innerHTML = points.map(pt => {
-    const heightPercent = Math.round((pt.amount / maxVal) * 100);
-    const isPeak = pt.amount === maxVal;
-    const barBg = isPeak ? 'bg-[#810B38]' : 'bg-[#DCC3AA] group-hover:bg-[#810B38]/80';
+    const heightPercent = pt.amount > 0 ? Math.max(Math.round((pt.amount / maxVal) * 100), 8) : 4;
+    const isPeak = pt.amount > 0 && pt.amount === maxVal;
+    const barBg = isPeak 
+      ? 'bg-[#810B38]' 
+      : (pt.amount > 0 ? 'bg-[#DCC3AA] group-hover:bg-[#810B38]/80' : 'bg-stone-200');
 
     return `
       <div class="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
@@ -289,7 +225,7 @@ function renderRevenueChart(points) {
           </div>
         </div>
 
-        <!-- Day Label -->
+        <!-- Day/Period Label -->
         <div class="text-center mt-1">
           <span class="block text-xs font-bold text-stone-700">${pt.day}</span>
           <span class="block text-[10px] text-stone-400 font-mono">₱${(pt.amount / 1000).toFixed(1)}k</span>
@@ -299,15 +235,12 @@ function renderRevenueChart(points) {
   }).join('');
 }
 
-// ================= APPOINTMENT DONUT / PROGRESS RINGS =================
-function renderAppointmentDonut(appts) {
-  const total = appts.total || 1;
-  const completedPct = Math.round((appts.completed / total) * 100);
-  const confirmedPct = Math.round((appts.confirmed / total) * 100);
-  const pendingPct = Math.round((appts.pending / total) * 100);
-  const cancelledPct = Math.round((appts.cancelled / total) * 100);
+// ================= 3. APPOINTMENT OVERVIEW & DONUT =================
+function renderAppointmentSection() {
+  const appts = reportData.appointments;
+  if (!appts) return;
 
-  // Values in DOM
+  const tBadge = document.getElementById('apptTotalBadge');
   const tTotal = document.getElementById('apptDonutTotal');
   const cComp = document.getElementById('apptCountCompleted');
   const cConf = document.getElementById('apptCountConfirmed');
@@ -319,16 +252,17 @@ function renderAppointmentDonut(appts) {
   const pPend = document.getElementById('apptPctPending');
   const pCanc = document.getElementById('apptPctCancelled');
 
+  if (tBadge) tBadge.textContent = `${appts.total} total`;
   if (tTotal) tTotal.textContent = appts.total;
   if (cComp) cComp.textContent = appts.completed;
   if (cConf) cConf.textContent = appts.confirmed;
   if (cPend) cPend.textContent = appts.pending;
   if (cCanc) cCanc.textContent = appts.cancelled;
 
-  if (pComp) pComp.textContent = `${completedPct}%`;
-  if (pConf) pConf.textContent = `${confirmedPct}%`;
-  if (pPend) pPend.textContent = `${pendingPct}%`;
-  if (pCanc) pCanc.textContent = `${cancelledPct}%`;
+  if (pComp) pComp.textContent = `${appts.completed_pct}%`;
+  if (pConf) pConf.textContent = `${appts.confirmed_pct}%`;
+  if (pPend) pPend.textContent = `${appts.pending_pct}%`;
+  if (pCanc) pCanc.textContent = `${appts.cancelled_pct}%`;
 
   // Multi-segment progress bar
   const barCompleted = document.getElementById('apptBarCompleted');
@@ -336,18 +270,30 @@ function renderAppointmentDonut(appts) {
   const barPending = document.getElementById('apptBarPending');
   const barCancelled = document.getElementById('apptBarCancelled');
 
-  if (barCompleted) barCompleted.style.width = `${completedPct}%`;
-  if (barConfirmed) barConfirmed.style.width = `${confirmedPct}%`;
-  if (barPending) barPending.style.width = `${pendingPct}%`;
-  if (barCancelled) barCancelled.style.width = `${cancelledPct}%`;
+  if (barCompleted) barCompleted.style.width = `${appts.completed_pct}%`;
+  if (barConfirmed) barConfirmed.style.width = `${appts.confirmed_pct}%`;
+  if (barPending) barPending.style.width = `${appts.pending_pct}%`;
+  if (barCancelled) barCancelled.style.width = `${appts.cancelled_pct}%`;
 }
 
-// ================= POPULAR SERVICES TABLE =================
+// ================= 4. POPULAR SERVICES TABLE =================
 function renderPopularServices() {
   const container = document.getElementById('popularServicesTableBody');
   if (!container) return;
 
-  container.innerHTML = POPULAR_SERVICES.map(s => `
+  const popular = reportData.popular_services || [];
+  if (popular.length === 0) {
+    container.innerHTML = `
+      <tr>
+        <td colspan="3" class="px-5 py-6 text-center text-xs text-stone-400">
+          No services booked for this period.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  container.innerHTML = popular.map(s => `
     <tr class="border-b border-stone-100 hover:bg-[#FAF6F0]/60 transition-colors text-xs">
       <td class="px-5 py-3.5 font-bold text-stone-800 flex items-center gap-2">
         <span class="w-5 h-5 rounded-full bg-[#FAF6F0] border border-[#DCC3AA] text-[#810B38] font-bold text-[10px] flex items-center justify-center shrink-0">
@@ -358,7 +304,7 @@ function renderPopularServices() {
       <td class="px-5 py-3.5 text-stone-600">
         <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#FAF6F0] border border-[#DCC3AA]/60 text-[#810B38]">
           <i class="fa-solid fa-scissors text-[9px]"></i>
-          ${s.bookings} bookings
+          ${s.bookings} booking${s.bookings === 1 ? '' : 's'}
         </span>
       </td>
       <td class="px-5 py-3.5 font-mono font-bold text-stone-800 text-right">
@@ -368,16 +314,40 @@ function renderPopularServices() {
   `).join('');
 }
 
-// ================= CUSTOMER GROWTH BARS =================
-function renderCustomerGrowth() {
+// ================= 5. CUSTOMER STATISTICS & GROWTH =================
+function renderCustomerStats() {
+  const custStats = reportData.customer_stats;
+  if (!custStats) return;
+
+  const totalEl = document.getElementById('custStatTotal');
+  const newEl = document.getElementById('custStatNew');
+  const retEl = document.getElementById('custStatReturning');
+  const inactEl = document.getElementById('custStatInactive');
+  const footerEl = document.getElementById('customerRetentionFooter');
+
+  if (totalEl) totalEl.textContent = custStats.total;
+  if (newEl) newEl.textContent = custStats.new;
+  if (retEl) retEl.textContent = custStats.returning;
+  if (inactEl) inactEl.textContent = custStats.inactive;
+
+  if (footerEl) {
+    footerEl.textContent = `Consistent client retention at ${custStats.retention_rate}% repeat rate`;
+  }
+
   const container = document.getElementById('customerGrowthBars');
   if (!container) return;
 
-  container.innerHTML = CUSTOMER_GROWTH.map(g => `
+  const growth = custStats.growth_bars || [];
+  if (growth.length === 0) {
+    container.innerHTML = `<div class="text-xs text-stone-400 py-4 text-center">No customer acquisition data recorded yet.</div>`;
+    return;
+  }
+
+  container.innerHTML = growth.map(g => `
     <div class="space-y-1">
       <div class="flex items-center justify-between text-xs">
         <span class="font-bold text-stone-700">${g.month}</span>
-        <span class="font-mono text-stone-500 font-semibold">${g.count} clients</span>
+        <span class="font-mono text-stone-500 font-semibold">${g.count} client${g.count === 1 ? '' : 's'}</span>
       </div>
       <div class="h-2 w-full bg-stone-100 rounded-full overflow-hidden">
         <div 
@@ -389,17 +359,34 @@ function renderCustomerGrowth() {
   `).join('');
 }
 
-// ================= STAFF PERFORMANCE TABLE =================
+// ================= 6. STAFF PERFORMANCE TABLE =================
 function renderStaffPerformance() {
   const container = document.getElementById('staffPerformanceTableBody');
+  const countLabel = document.getElementById('staffCountLabel');
   if (!container) return;
 
-  container.innerHTML = STAFF_PERFORMANCE.map(st => `
+  const staff = reportData.staff_performance || [];
+  if (countLabel) {
+    countLabel.textContent = `${staff.length} Stylist${staff.length === 1 ? '' : 's'}`;
+  }
+
+  if (staff.length === 0) {
+    container.innerHTML = `
+      <tr>
+        <td colspan="4" class="px-5 py-6 text-center text-xs text-stone-400">
+          No staff records available.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  container.innerHTML = staff.map(st => `
     <tr class="border-b border-stone-100 hover:bg-[#FAF6F0]/60 transition-colors text-xs">
       <td class="px-5 py-3.5">
         <div class="flex items-center gap-2.5">
           <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#810B38] to-[#541A1A] text-[#F1E2D1] flex items-center justify-center font-bold text-xs shrink-0">
-            ${st.staff[0]}
+            ${st.staff ? st.staff[0].toUpperCase() : 'S'}
           </div>
           <div>
             <span class="font-serif font-bold text-sm text-[#541A1A] block">${st.staff}</span>
@@ -421,12 +408,29 @@ function renderStaffPerformance() {
   `).join('');
 }
 
-// ================= COMPLETE SERVICE REVENUE REPORT =================
+// ================= 7. COMPLETE SERVICE REVENUE REPORT =================
 function renderServiceRevenueBreakdown() {
   const container = document.getElementById('serviceRevenueTableBody');
+  const countLabel = document.getElementById('serviceCountLabel');
   if (!container) return;
 
-  container.innerHTML = SERVICE_REVENUE_REPORT.map(sr => {
+  const services = reportData.service_breakdown || [];
+  if (countLabel) {
+    countLabel.textContent = `All ${services.length} Services`;
+  }
+
+  if (services.length === 0) {
+    container.innerHTML = `
+      <tr>
+        <td colspan="4" class="px-5 py-6 text-center text-xs text-stone-400">
+          No catalog services found.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  container.innerHTML = services.map(sr => {
     const isPriceNotSet = sr.price === null;
     const pricePill = isPriceNotSet
       ? `<span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Price not set</span>`
@@ -446,7 +450,7 @@ function renderServiceRevenueBreakdown() {
           ${pricePill}
         </td>
         <td class="px-5 py-3 font-semibold text-stone-700">
-          ${sr.bookings} bookings
+          ${sr.bookings} booking${sr.bookings === 1 ? '' : 's'}
         </td>
         <td class="px-5 py-3 text-right">
           ${revenuePill}
@@ -456,7 +460,7 @@ function renderServiceRevenueBreakdown() {
   }).join('');
 }
 
-// ================= EXPORT REPORT MODAL & DOWNLOAD =================
+// ================= 8. EXPORT REPORT MODAL & DOWNLOAD =================
 function openExportModal() {
   const modal = document.getElementById('exportReportModal');
   if (modal) {
@@ -477,25 +481,41 @@ function closeExportModal() {
 function handleExportPDF() {
   const reportType = document.getElementById('exportReportType') ? document.getElementById('exportReportType').value : 'Complete Salon Report';
   closeExportModal();
-  showToast(`Preparing ${reportType} for PDF printing...`, 'info');
+  showToast(`Preparing ${reportType} for printable PDF statement...`, 'info');
   setTimeout(() => {
     window.print();
-  }, 500);
+  }, 400);
 }
 
-// Export Excel / CSV spreadsheet
+// Export Excel / CSV spreadsheet using live backend data
 function handleExportExcel() {
   const reportType = document.getElementById('exportReportType') ? document.getElementById('exportReportType').value : 'Complete Salon Report';
-  
+  if (!reportData) {
+    showToast('Report data is still loading. Please try again.', 'warning');
+    return;
+  }
+
   let csvContent = "data:text/csv;charset=utf-8,";
   csvContent += "NELY'S SALON MANAGEMENT SYSTEM - OFFICIAL REPORT\n";
-  csvContent += `Generated Date: September 23, 2026\n`;
+  csvContent += `Generated Date: ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}\n`;
+  csvContent += `Date Range: ${reportData.label}\n`;
   csvContent += `Report Type: ${reportType}\n\n`;
+
+  // Summary section
+  csvContent += "EXECUTIVE SUMMARY\n";
+  csvContent += `Total Revenue (PHP),${reportData.summary.total_revenue}\n`;
+  csvContent += `Revenue Growth,${reportData.summary.revenue_growth}\n`;
+  csvContent += `Total Appointments,${reportData.summary.total_appointments}\n`;
+  csvContent += `Appointment Growth,${reportData.summary.appointment_growth}\n`;
+  csvContent += `Total Customers,${reportData.summary.total_customers}\n`;
+  csvContent += `New Customers,${reportData.summary.new_customers}\n`;
+  csvContent += `Completed Services,${reportData.summary.completed_services}\n`;
+  csvContent += `Completion Rate,${reportData.summary.completion_rate}\n\n`;
 
   if (reportType === 'Service Report' || reportType === 'Complete Salon Report') {
     csvContent += "SERVICE REVENUE BREAKDOWN\n";
-    csvContent += "Service,Price,Bookings,Total Revenue\n";
-    SERVICE_REVENUE_REPORT.forEach(row => {
+    csvContent += "Service,Price,Bookings,Total Revenue (PHP)\n";
+    (reportData.service_breakdown || []).forEach(row => {
       csvContent += `"${row.service}","${row.priceDisplay}","${row.bookings}","${row.revenue}"\n`;
     });
     csvContent += "\n";
@@ -503,8 +523,8 @@ function handleExportExcel() {
 
   if (reportType === 'Staff Report' || reportType === 'Complete Salon Report') {
     csvContent += "STAFF PERFORMANCE\n";
-    csvContent += "Staff,Role,Appointments,Completed,Revenue (PHP)\n";
-    STAFF_PERFORMANCE.forEach(row => {
+    csvContent += "Staff Name,Role,Appointments,Completed,Revenue (PHP)\n";
+    (reportData.staff_performance || []).forEach(row => {
       csvContent += `"${row.staff}","${row.role}","${row.appointments}","${row.completed}","${row.revenue}"\n`;
     });
     csvContent += "\n";
@@ -512,25 +532,26 @@ function handleExportExcel() {
 
   if (reportType === 'Customer Report' || reportType === 'Complete Salon Report') {
     csvContent += "CUSTOMER STATISTICS\n";
-    csvContent += "Total Customers,248\n";
-    csvContent += "New Customers,18\n";
-    csvContent += "Returning Customers,86\n";
-    csvContent += "Inactive Customers,24\n\n";
+    csvContent += `Total Customers,${reportData.customer_stats.total}\n`;
+    csvContent += `New Customers,${reportData.customer_stats.new}\n`;
+    csvContent += `Returning Customers,${reportData.customer_stats.returning}\n`;
+    csvContent += `Inactive Customers,${reportData.customer_stats.inactive}\n`;
+    csvContent += `Retention Rate,${reportData.customer_stats.retention_rate}%\n\n`;
   }
 
   const encodedUri = encodeURI(csvContent);
   const link = document.createElement("a");
   link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `Nelys_Salon_${reportType.replace(/\s+/g, '_')}_Sept_2026.csv`);
+  link.setAttribute("download", `Nelys_Salon_${reportType.replace(/\s+/g, '_')}_${currentDateRange}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 
   closeExportModal();
-  showToast(`Excel CSV downloaded: ${reportType}`, 'success');
+  showToast(`Excel CSV exported: ${reportType}`, 'success');
 }
 
-// ================= MODAL HELPERS & NAV =================
+// ================= CLOSE ALL MODALS =================
 function closeAllModals() {
   const modalIds = ['exportReportModal', 'logoutModal'];
   modalIds.forEach(id => {
@@ -542,6 +563,7 @@ function closeAllModals() {
   });
 }
 
+// ================= MOBILE NAVIGATION =================
 function toggleMobileSidebar(show) {
   const sidebar = document.getElementById('sidebar');
   const backdrop = document.getElementById('mobileSidebarBackdrop');
@@ -561,7 +583,9 @@ function toggleMobileSidebar(show) {
   }
 }
 
+// ================= LOGOUT MODAL =================
 function openLogoutModal() {
+  closeAllModals();
   const modal = document.getElementById('logoutModal');
   if (modal) {
     modal.classList.remove('hidden');
@@ -572,15 +596,27 @@ function openLogoutModal() {
 function closeLogoutModal() {
   const modal = document.getElementById('logoutModal');
   if (modal) {
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
   }
 }
 
-function handleConfirmLogout() {
+async function handleConfirmLogout() {
+  try {
+    await fetch('../api/auth/logout', {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+  } catch (e) {
+    // Proceed with local logout regardless
+  }
+  localStorage.removeItem('nelys_token');
+  localStorage.removeItem('nelys_user');
+  sessionStorage.clear();
   window.location.href = '../login.html';
 }
 
+// ================= TOAST NOTIFICATIONS =================
 function showToast(message, type = 'info') {
   let toastContainer = document.getElementById('adminToastContainer');
   if (!toastContainer) {
@@ -615,16 +651,4 @@ function showToast(message, type = 'info') {
     toast.classList.add('opacity-0', 'translate-y-2');
     setTimeout(() => toast.remove(), 300);
   }, 3500);
-}
-
-function updateTimeBadge() {
-  const clockEl = document.getElementById('topClockDisplay');
-  if (!clockEl) return;
-
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  clockEl.textContent = `${dateStr} · ${timeStr}`;
-
-  setTimeout(updateTimeBadge, 1000);
 }

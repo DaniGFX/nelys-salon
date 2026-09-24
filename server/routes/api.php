@@ -30,6 +30,7 @@ require_once dirname(__DIR__) . '/controllers/MessageController.php';
 require_once dirname(__DIR__) . '/controllers/DashboardController.php';
 require_once dirname(__DIR__) . '/controllers/StaffController.php';
 require_once dirname(__DIR__) . '/controllers/PaymentController.php';
+require_once dirname(__DIR__) . '/controllers/ReportController.php';
 
 class Router {
     public static function dispatch(string $method, string $uri): void {
@@ -174,11 +175,35 @@ class Router {
                     Response::notFound('Sales endpoint not found.');
                     break;
 
+                // Business Intelligence & Reports Routes
+                case 'reports':
+                    $reportCtrl = new ReportController();
+                    if ($id === null && $method === 'GET') $reportCtrl->index();
+                    if ($id === 'export' && $method === 'GET') $reportCtrl->export();
+                    Response::notFound('Reports endpoint not found.');
+                    break;
+
                 // Notifications Routes
                 case 'notifications':
                     $notifCtrl = new NotificationController();
                     if ($id === null && $method === 'GET') $notifCtrl->index();
-                    if (is_numeric($id) && $subaction === 'resend' && $method === 'POST') $notifCtrl->resend((int)$id);
+                    if (($id === 'read-all' || $id === 'mark-all-read') && ($method === 'POST' || $method === 'PUT' || $method === 'PATCH')) {
+                        $notifCtrl->markAllRead();
+                    }
+                    if ($id === 'preferences') {
+                        $notifCtrl->preferences();
+                    }
+                    if (is_numeric($id)) {
+                        if ($subaction === 'read' && ($method === 'PUT' || $method === 'PATCH' || $method === 'POST')) {
+                            $notifCtrl->markRead((int)$id);
+                        }
+                        if ($subaction === 'toggle' && ($method === 'PUT' || $method === 'PATCH' || $method === 'POST')) {
+                            $notifCtrl->toggleRead((int)$id);
+                        }
+                        if ($method === 'DELETE') {
+                            $notifCtrl->destroy((int)$id);
+                        }
+                    }
                     Response::notFound('Notification endpoint not found.');
                     break;
 

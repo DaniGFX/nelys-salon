@@ -135,7 +135,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Appointments</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">12</span>
+        <span id="sidebarAppointmentsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Customers -->
@@ -143,7 +143,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Customers</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">248</span>
+        <span id="sidebarCustomersBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Services -->
@@ -151,7 +151,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Services</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">13</span>
+        <span id="sidebarServicesBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Staff -->
@@ -159,7 +159,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Staff</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">5</span>
+        <span id="sidebarStaffBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Payments -->
@@ -181,7 +181,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA]"></i>
         <span>Notifications</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">6</span>
+        <span id="sidebarNotificationsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Messages -->
@@ -189,7 +189,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">2</span>
+        <span id="sidebarMessagesBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Settings -->
@@ -265,7 +265,7 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statTotalNotifs" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">24</h3>
+          <h3 id="statTotalNotifs" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">0</h3>
           <span class="text-xs font-bold text-stone-400">Total logs</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
@@ -283,7 +283,7 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statUnreadNotifs" class="font-serif text-3xl sm:text-4xl font-bold text-blue-700">6</h3>
+          <h3 id="statUnreadNotifs" class="font-serif text-3xl sm:text-4xl font-bold text-blue-700">0</h3>
           <span class="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
@@ -301,7 +301,7 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statApptNotifs" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">12</h3>
+          <h3 id="statApptNotifs" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">0</h3>
           <span class="text-xs font-bold text-stone-400">Schedule</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
@@ -319,7 +319,7 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statPaymentNotifs" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">6</h3>
+          <h3 id="statPaymentNotifs" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">0</h3>
           <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Billing</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
@@ -338,7 +338,7 @@
           
           <div>
             <h2 class="font-serif text-lg font-bold text-[#541A1A]">Activity Feed</h2>
-            <p class="text-xs text-stone-400" id="notificationsResultCount">Showing 24 notifications</p>
+            <p class="text-xs text-stone-400" id="notificationsResultCount">Showing 0 notifications</p>
           </div>
 
           <!-- Fixed Tabs: All, Appointments, Payments, Customers, System -->
@@ -628,7 +628,7 @@
   <div id="adminToastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
   <!-- Admin Notifications Controller Script -->
-  <script src="../assets/js/pages/admin/notifications.js"></script>
+  <script src="../assets/js/pages/admin/notifications.js?v=2.0"></script>
 </body>
 
 </html>
