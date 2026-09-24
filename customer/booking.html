@@ -55,7 +55,7 @@
       <a href="notifications.html" aria-label="Notifications"
         class="relative w-9 h-9 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors">
         <i class="fa-solid fa-bell text-sm"></i>
-        <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#DCC3AA]"></span>
+        <span id="mobileNotifDot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#DCC3AA]"></span>
       </a>
 
       <a href="profile.html"
@@ -147,7 +147,7 @@
         <i
           class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>My Appointments</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        <span id="sidebarAppointmentsBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Services & Prices -->
@@ -162,7 +162,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        <span id="sidebarMessagesBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Notifications -->
@@ -170,7 +170,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        <span id="sidebarNotifBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- My Profile -->
@@ -319,7 +319,7 @@
                 <h3 class="font-serif text-xl font-bold text-[#541A1A]">Hair Services</h3>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div id="hairServicesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
 
                 <!-- Brazilian -->
                 <div onclick="selectService('brazilian', 'Brazilian', 1999, 'Hair Services', '120 mins')"
@@ -582,7 +582,7 @@
                 <h3 class="font-serif text-xl font-bold text-[#541A1A]">Nail & Foot Care</h3>
               </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div id="nailFootServicesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
 
                 <!-- Footspa -->
                 <div onclick="selectService('footspa', 'Footspa', 199, 'Nail & Foot Care', '45 mins')"
@@ -832,7 +832,7 @@
               </div>
 
               <!-- Time Pills Grid -->
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div id="timeSlotsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <button type="button" onclick="selectTime('9:00 AM', this)"
                   class="time-btn py-3 px-3 rounded-xl bg-white border border-[#DCC3AA] text-xs font-bold text-[#2b1d1d] hover:border-[#810B38] transition-all">
                   9:00 AM

@@ -55,7 +55,7 @@
         aria-label="View notifications"
         class="relative w-9 h-9 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors">
         <i class="fa-solid fa-bell text-sm"></i>
-        <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#DCC3AA] animate-pulse"></span>
+        <span id="mobileNotifDot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#DCC3AA] animate-pulse"></span>
       </a>
 
       <a 
@@ -153,7 +153,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>My Appointments</span>
-        <span id="sidebarAppointmentsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        <span id="sidebarAppointmentsBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Services & Prices -->
@@ -168,7 +168,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
-        <span id="sidebarMessagesBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        <span id="sidebarMessagesBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Notifications -->
@@ -176,7 +176,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
-        <span id="sidebarNotifBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        <span id="sidebarNotifBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- My Profile -->
@@ -590,7 +590,7 @@
           </a>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div id="dashFeaturedServicesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           
           <!-- Service 1: Brazilian -->
           <div class="p-5 rounded-2xl bg-white border border-[#DCC3AA] shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
@@ -709,7 +709,7 @@
           </button>
         </div>
 
-        <div id="dashNotificationList" class="bg-white p-5 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-4">
+        <div id="dashNotificationList" class="bg-white p-5 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-3">
           <div class="p-6 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] text-center space-y-2">
             <div class="w-10 h-10 rounded-full bg-white text-[#810B38] flex items-center justify-center text-sm mx-auto border border-[#DCC3AA]/60 shadow-sm">
               <i class="fa-solid fa-bell-slash"></i>

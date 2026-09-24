@@ -66,7 +66,7 @@ async function loadCustomerAppointments() {
     const res = await fetch('../api/bookings', { headers });
     const result = await res.json();
 
-    if (res.ok && result.status === 'success' && Array.isArray(result.data)) {
+    if (res.ok && (result.status === 'success' || result.success) && Array.isArray(result.data)) {
       appointmentsData = result.data.map(mapBookingToAppointment);
       updateTabCounters();
       renderAppointments();
@@ -89,11 +89,13 @@ function mapBookingToAppointment(b) {
   const rawMethod = (b.payment_method || 'cash').toLowerCase();
   const methodLabel = rawMethod.includes('gcash') ? 'GCash' : (rawMethod.includes('bank') ? 'Bank Transfer' : 'Cash');
   const statusLabel = isPaid ? 'Paid / Verified' : (rawMethod.includes('cash') ? 'Pay on Visit' : 'Pending');
+  const rawStatus = (b.status || 'pending').toLowerCase();
+  const isConfirmed = rawStatus === 'confirmed' || rawStatus === 'approved';
 
   return {
     id: b.reference_no,
     dbId: b.id,
-    status: b.status === 'confirmed' ? 'upcoming' : b.status,
+    status: isConfirmed ? 'upcoming' : rawStatus,
     dbStatus: b.status,
     service: b.service_name || 'Salon Service',
     serviceId: b.service_id,
@@ -111,6 +113,7 @@ function mapBookingToAppointment(b) {
       : "BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City",
     paymentMethod: methodLabel,
     paymentStatus: statusLabel,
+    staffName: b.staff_name || null,
     cancellationReason: b.cancellation_reason || null,
     cancelledAt: b.updated_at ? formatDisplayDate(b.updated_at.split(' ')[0]) : null,
     slug: b.service_code || 'brazilian'
@@ -181,6 +184,18 @@ function updateTabCounters() {
   for (const [key, val] of Object.entries(counts)) {
     const el = document.getElementById(`count-${key}`);
     if (el) el.textContent = val;
+  }
+
+  // Update sidebar counter for active appointments
+  const asideAppointmentsBadge = document.getElementById('sidebarAppointmentsBadge');
+  if (asideAppointmentsBadge) {
+    const totalActive = counts.upcoming + counts.pending;
+    if (totalActive > 0) {
+      asideAppointmentsBadge.textContent = totalActive;
+      asideAppointmentsBadge.classList.remove('hidden');
+    } else {
+      asideAppointmentsBadge.classList.add('hidden');
+    }
   }
 }
 
@@ -341,6 +356,12 @@ function buildAppointmentCardHtml(item) {
               <i class="fa-solid fa-location-dot text-[#810B38]"></i>
               ${item.visitType === 'Home Service' ? 'Home Service' : "Nely's Salon (Lagro)"}
             </span>
+            ${item.staffName ? `
+            <span class="flex items-center gap-1.5 text-[#541A1A] font-semibold bg-[#FAF6F0] px-2 py-0.5 rounded-md border border-[#DCC3AA]">
+              <i class="fa-solid fa-scissors text-[#810B38]"></i>
+              Stylist: ${escapeHtml(item.staffName)}
+            </span>
+            ` : ''}
           </div>
         </div>
 
@@ -385,6 +406,18 @@ function openDetailsModal(bookingId) {
   document.getElementById('modalDetailAddress').textContent = item.address;
   document.getElementById('modalDetailPayment').textContent = `${item.paymentMethod} (${item.paymentStatus})`;
   document.getElementById('modalDetailTotal').textContent = item.priceFormatted;
+
+  // Stylist row in modal
+  const staffRow = document.getElementById('modalDetailStaffRow');
+  const staffEl = document.getElementById('modalDetailStaff');
+  if (staffRow && staffEl) {
+    if (item.staffName) {
+      staffEl.textContent = item.staffName;
+      staffRow.classList.remove('hidden');
+    } else {
+      staffRow.classList.add('hidden');
+    }
+  }
 
   // Status Badge in modal
   const statusEl = document.getElementById('modalDetailStatus');

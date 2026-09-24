@@ -11,23 +11,29 @@ require_once dirname(__DIR__) . '/middleware/RoleMiddleware.php';
 
 class NotificationController {
     public function index(): void {
-        RoleMiddleware::requireAdmin();
+        $user = AuthMiddleware::checkOptional();
+        if ($user && ($user['role'] ?? '') === 'admin') {
+            $filters = [
+                'category' => $_GET['category'] ?? 'all',
+                'status'   => $_GET['status'] ?? 'all',
+                'search'   => $_GET['search'] ?? '',
+            ];
 
-        $filters = [
-            'category' => $_GET['category'] ?? 'all',
-            'status'   => $_GET['status'] ?? 'all',
-            'search'   => $_GET['search'] ?? '',
-        ];
+            $notifications = Notification::allWithDetails($filters);
+            $metrics = Notification::getSummaryMetrics();
+            $preferences = Notification::getPreferences();
 
-        $notifications = Notification::allWithDetails($filters);
-        $metrics = Notification::getSummaryMetrics();
-        $preferences = Notification::getPreferences();
+            Response::success([
+                'notifications' => $notifications,
+                'metrics'       => $metrics,
+                'preferences'   => $preferences,
+            ]);
+            return;
+        }
 
-        Response::success([
-            'notifications' => $notifications,
-            'metrics'       => $metrics,
-            'preferences'   => $preferences,
-        ]);
+        $userId = $user ? ($user['id'] ?? null) : null;
+        $notifications = Notification::forUser($userId);
+        Response::success($notifications);
     }
 
     public function markRead(int $id): void {

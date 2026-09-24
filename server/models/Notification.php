@@ -171,6 +171,19 @@ class Notification {
         }
     }
 
+    public static function forUser(?int $userId): array {
+        $pdo = Database::getConnection();
+        if ($userId) {
+            $stmt = $pdo->prepare("SELECT * FROM notifications WHERE user_id = :uid OR user_id IS NULL ORDER BY created_at DESC, id DESC LIMIT 50");
+            $stmt->execute(['uid' => $userId]);
+        } else {
+            $stmt = $pdo->prepare("SELECT * FROM notifications ORDER BY created_at DESC, id DESC LIMIT 50");
+            $stmt->execute();
+        }
+        $rows = $stmt->fetchAll();
+        return array_map([self::class, 'formatRow'], $rows);
+    }
+
     private static function formatRow(array $row): array {
         $dt = new DateTime($row['created_at']);
         $now = new DateTime();

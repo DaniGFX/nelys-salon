@@ -149,7 +149,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
         <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA]"></i>
         <span>My Appointments</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        <span id="sidebarAppointmentsBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Services & Prices -->
@@ -164,7 +164,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        <span id="sidebarMessagesBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Notifications -->
@@ -172,7 +172,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        <span id="sidebarNotificationsBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- My Profile -->
@@ -359,6 +359,11 @@
         <div class="flex justify-between items-center">
           <span class="text-[#735e5e]">Service:</span>
           <strong id="modalDetailService" class="text-[#541A1A] text-right font-bold">--</strong>
+        </div>
+
+        <div id="modalDetailStaffRow" class="flex justify-between items-center">
+          <span class="text-[#735e5e]">Assigned Stylist:</span>
+          <span id="modalDetailStaff" class="font-semibold text-[#810B38] text-right">--</span>
         </div>
 
         <div class="flex justify-between items-center">

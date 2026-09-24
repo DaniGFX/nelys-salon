@@ -1,21 +1,80 @@
 /**
- * Nely's Salon - Customer Dashboard JavaScript
- * Handles live database booking synchronization, interactive appointment cards,
- * cancellation modals, receipts, filters, and client profile management.
+ * Nely's Salon — Customer Dashboard Controller
+ * Fully connected to Backend APIs:
+ * - GET ../api/customers/profile & PUT ../api/customers/profile (Patron identity & quick edit)
+ * - GET ../api/bookings & POST ../api/bookings/{ref}/cancel (Live appointments, metrics, table, cancellation)
+ * - GET ../api/services (Dynamic featured services catalog)
+ * - GET ../api/notifications (Live notification alerts & badges)
+ * - GET ../api/messages (Live message unread counter)
  */
 
+// Global State
 let customerBookings = [];
 let currentSelectedBooking = null;
 let currentCancelBooking = null;
+let currentServices = [];
+let currentNotifications = [];
 
-document.addEventListener('DOMContentLoaded', () => {
+// Fallback Services in case backend API is temporarily offline
+const defaultFeaturedServices = [
+  {
+    code: 'brazilian',
+    name: 'Brazilian',
+    category: 'Hair Services',
+    badge: 'Signature Care',
+    description: 'Keratin smoothing treatment eliminating frizz.',
+    price: 1999,
+    priceFormatted: '₱1,999',
+    duration: '120 mins'
+  },
+  {
+    code: 'hair-dye',
+    name: 'Hair Dye',
+    category: 'Hair Services',
+    badge: 'Custom Blend',
+    description: 'Rich dimensional coloration or grey coverage.',
+    price: 699,
+    priceFormatted: '₱699',
+    duration: '90 mins'
+  },
+  {
+    code: 'keratine-treatment',
+    name: 'Keratine Treatment',
+    category: 'Hair Services',
+    badge: 'Protein Therapy',
+    description: 'Deep conditioning protein restoration therapy.',
+    price: 499,
+    priceFormatted: '₱499',
+    duration: '60 mins'
+  },
+  {
+    code: 'gel-manicure',
+    name: 'Gel Manicure',
+    category: 'Nail & Foot Care',
+    badge: 'Nail & Foot Care',
+    description: 'Long-lasting UV-cured gel polish with cuticle care.',
+    price: 499,
+    priceFormatted: '₱499',
+    duration: '60 mins'
+  }
+];
+
+document.addEventListener('DOMContentLoaded', async () => {
   initGreeting();
   initPatronProfile();
   setupDialogSteadyListeners();
-  loadDashboardAppointments();
+
+  // Load backend data in parallel
+  await Promise.allSettled([
+    fetchFreshPatronProfile(),
+    loadDashboardAppointments(),
+    loadFeaturedServices(),
+    loadDashboardNotifications(),
+    loadSidebarBadgeCounters()
+  ]);
 });
 
-// 1. Dynamic Greeting based on time of day and patron name
+// 1. Dynamic Greeting based on time of day
 function initGreeting() {
   const greetingEl = document.getElementById('greetingTimeOfDay');
   if (!greetingEl) return;
@@ -32,53 +91,94 @@ function initGreeting() {
   greetingEl.textContent = greeting;
 }
 
+// 2. Initialize Patron Profile from Storage & Populate UI
 function initPatronProfile() {
   const savedUserJson = localStorage.getItem('nelys_user');
   if (!savedUserJson) return;
 
   try {
     const user = JSON.parse(savedUserJson);
-    if (user.full_name) {
-      const firstName = user.full_name.split(' ')[0];
-      const greetingSpan = document.getElementById('customerGreetingName');
-      if (greetingSpan) {
-        greetingSpan.textContent = `${firstName}!`;
-      }
-
-      const sidebarName = document.querySelector('aside .truncate');
-      if (sidebarName) {
-        sidebarName.textContent = user.full_name;
-      }
-
-      const avatarEl = document.querySelector('aside .w-10.h-10.rounded-full');
-      if (avatarEl) {
-        const initials = user.full_name
-          .split(' ')
-          .filter(Boolean)
-          .map(w => w[0])
-          .slice(0, 2)
-          .join('')
-          .toUpperCase();
-        if (initials) avatarEl.textContent = initials;
-      }
-
-      // Pre-fill profile modal fields if present
-      const profileNameInput = document.getElementById('profileFullName');
-      const profilePhoneInput = document.getElementById('profilePhone');
-      const profileEmailInput = document.getElementById('profileEmail');
-      const profileAddrInput = document.getElementById('profileAddress');
-
-      if (profileNameInput) profileNameInput.value = user.full_name || '';
-      if (profilePhoneInput) profilePhoneInput.value = user.phone || '';
-      if (profileEmailInput) profileEmailInput.value = user.email || '';
-      if (profileAddrInput && user.address) profileAddrInput.value = user.address;
-    }
+    applyUserProfileToUI(user);
   } catch (e) {
     console.warn('Error reading saved user in dashboard:', e);
   }
 }
 
-// 2. Load Bookings from Backend API
+function applyUserProfileToUI(user) {
+  if (!user) return;
+  const fullName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Client');
+  const firstName = fullName.split(' ')[0];
+
+  const greetingSpan = document.getElementById('customerGreetingName');
+  if (greetingSpan) {
+    greetingSpan.textContent = `${firstName}!`;
+  }
+
+  const sidebarName = document.getElementById('customerSidebarName') || document.querySelector('aside .truncate');
+  if (sidebarName) {
+    sidebarName.textContent = fullName;
+  }
+
+  const avatarEl = document.getElementById('customerAvatarInitials') || document.querySelector('aside .w-10.h-10.rounded-full');
+  if (avatarEl) {
+    const initials = fullName
+      .split(' ')
+      .filter(Boolean)
+      .map(w => w[0])
+      .slice(0, 2)
+      .join('')
+      .toUpperCase();
+    if (initials) avatarEl.textContent = initials;
+  }
+
+  // Pre-fill profile modal fields if present
+  const profileNameInput = document.getElementById('profileFullName');
+  const profilePhoneInput = document.getElementById('profilePhone');
+  const profileEmailInput = document.getElementById('profileEmail');
+  const profileAddrInput = document.getElementById('profileAddress');
+
+  if (profileNameInput) profileNameInput.value = user.full_name || user.name || '';
+  if (profilePhoneInput) profilePhoneInput.value = user.phone || '';
+  if (profileEmailInput) profileEmailInput.value = user.email || '';
+  if (profileAddrInput) profileAddrInput.value = user.address || user.home_address || '';
+}
+
+// 3. Fetch Fresh Profile from Server API
+async function fetchFreshPatronProfile() {
+  const token = localStorage.getItem('nelys_token');
+  if (!token) return;
+
+  try {
+    const res = await fetch('../api/customers/profile', {
+      headers: {
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (res.ok) {
+      const result = await res.json();
+      if (result.status === 'success' && result.data) {
+        const d = result.data;
+        const saved = localStorage.getItem('nelys_user');
+        const user = saved ? JSON.parse(saved) : {};
+        if (d.full_name) user.full_name = d.full_name;
+        if (d.email) user.email = d.email;
+        if (d.phone) user.phone = d.phone;
+        if (d.home_address) {
+          user.address = d.home_address;
+          user.home_address = d.home_address;
+        }
+        localStorage.setItem('nelys_user', JSON.stringify(user));
+        applyUserProfileToUI(user);
+      }
+    }
+  } catch (e) {
+    console.warn('Notice loading fresh profile:', e);
+  }
+}
+
+// 4. Load Bookings from Backend API
 async function loadDashboardAppointments() {
   const token = localStorage.getItem('nelys_token');
   const headers = {
@@ -96,7 +196,7 @@ async function loadDashboardAppointments() {
       renderDashboardUpcoming(customerBookings);
       renderDashboardRecentTable(customerBookings);
     } else {
-      console.warn('Could not load bookings from server, using local fallback state:', result);
+      console.warn('No active bookings returned from server:', result);
       handleEmptyBookingState();
     }
   } catch (err) {
@@ -106,6 +206,8 @@ async function loadDashboardAppointments() {
 }
 
 function handleEmptyBookingState() {
+  customerBookings = [];
+  updateDashboardMetrics([]);
   const activeCard = document.getElementById('activeAppointmentCard');
   const emptyCard = document.getElementById('emptyAppointmentCard');
   if (activeCard) activeCard.classList.add('hidden');
@@ -113,7 +215,7 @@ function handleEmptyBookingState() {
   renderDashboardRecentTable([]);
 }
 
-// 3. Update Dashboard Metric Cards
+// 5. Update Dashboard Metric Cards
 function updateDashboardMetrics(bookings) {
   const upcomingCount = bookings.filter(b => b.status === 'confirmed' || b.status === 'pending').length;
   const completedCount = bookings.filter(b => b.status === 'completed').length;
@@ -134,13 +236,18 @@ function updateDashboardMetrics(bookings) {
   if (elSpent) elSpent.textContent = `₱${totalSpent.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
 
   // Update sidebar counter for appointments
-  const asideAppointmentsBadge = document.querySelector('a[href="appointments.html"] span.ml-auto');
+  const asideAppointmentsBadge = document.getElementById('sidebarAppointmentsBadge');
   if (asideAppointmentsBadge) {
-    asideAppointmentsBadge.textContent = upcomingCount;
+    if (upcomingCount > 0) {
+      asideAppointmentsBadge.textContent = upcomingCount;
+      asideAppointmentsBadge.classList.remove('hidden');
+    } else {
+      asideAppointmentsBadge.classList.add('hidden');
+    }
   }
 }
 
-// 4. Render Active Next Upcoming Appointment
+// 6. Render Active Next Upcoming Appointment
 function renderDashboardUpcoming(bookings) {
   const activeCard = document.getElementById('activeAppointmentCard');
   const emptyCard = document.getElementById('emptyAppointmentCard');
@@ -195,7 +302,7 @@ function renderDashboardUpcoming(bookings) {
   if (timeEl) timeEl.textContent = formatDisplayTime(nextBooking.booking_time);
   if (locEl) {
     const locText = nextBooking.visit_type === 'home' 
-      ? 'Home Service' 
+      ? (nextBooking.home_address ? `Home Service · ${nextBooking.home_address}` : 'Home Service') 
       : "Nely's Salon (Lagro)";
     locEl.textContent = locText;
     locEl.title = locText;
@@ -236,7 +343,7 @@ function renderDashboardUpcoming(bookings) {
   }
 }
 
-// 5. Render Recent Appointments Table & Mobile Cards
+// 7. Render Recent Appointments Table & Mobile Cards
 function renderDashboardRecentTable(bookings) {
   const tbody = document.getElementById('dashRecentTableBody');
   const mobileContainer = document.getElementById('dashRecentMobileContainer');
@@ -333,7 +440,306 @@ function renderDashboardRecentTable(bookings) {
   if (mobileContainer) mobileContainer.innerHTML = mobileHtml;
 }
 
-// 6. Appointment Details Modal
+// 8. Load Featured Services Dynamically from Backend API
+async function loadFeaturedServices() {
+  const container = document.getElementById('dashFeaturedServicesGrid');
+  if (!container) return;
+
+  try {
+    const res = await fetch('../api/services');
+    if (res.ok) {
+      const result = await res.json();
+      if ((result.success || result.status === 'success') && Array.isArray(result.data) && result.data.length > 0) {
+        const active = result.data.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
+        if (active.length > 0) {
+          currentServices = active.slice(0, 4).map(mapBackendServiceToCard);
+          renderFeaturedServices(currentServices);
+          return;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Backend services API notice, using fallback featured:', err);
+  }
+
+  // Fallback
+  currentServices = defaultFeaturedServices;
+  renderFeaturedServices(currentServices);
+}
+
+function mapBackendServiceToCard(item) {
+  const code = (item.code || `svc-${item.id}`).toLowerCase();
+  const name = item.name || 'Salon Treatment';
+  const cat = (item.category || 'hair').toLowerCase();
+  const priceNum = parseFloat(item.price || 0);
+
+  let categoryLabel = 'Hair Services';
+  let badge = 'Signature Care';
+
+  if (cat.includes('nail') || name.toLowerCase().includes('manicure') || name.toLowerCase().includes('pedicure')) {
+    categoryLabel = 'Nail & Foot Care';
+    badge = 'Nail & Foot Care';
+  } else if (name.toLowerCase().includes('dye') || name.toLowerCase().includes('color')) {
+    badge = 'Custom Blend';
+  } else if (name.toLowerCase().includes('keratin') || name.toLowerCase().includes('repair') || name.toLowerCase().includes('treatment')) {
+    badge = 'Protein Therapy';
+  }
+
+  return {
+    code: code,
+    name: name,
+    category: categoryLabel,
+    badge: badge,
+    description: item.description || 'Professional styling and rejuvenating salon care.',
+    price: priceNum,
+    priceFormatted: `₱${priceNum.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+    duration: item.duration_minutes ? `${item.duration_minutes} mins` : '60 mins'
+  };
+}
+
+function renderFeaturedServices(services) {
+  const container = document.getElementById('dashFeaturedServicesGrid');
+  if (!container) return;
+
+  let html = '';
+  services.forEach(svc => {
+    html += `
+      <div class="p-5 rounded-2xl bg-white border border-[#DCC3AA] shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/40">
+              ${escapeHtml(svc.badge)}
+            </span>
+            <h4 class="font-serif text-lg font-bold text-[#541A1A] mt-2">${escapeHtml(svc.name)}</h4>
+            <p class="text-xs text-[#735e5e] mt-0.5 line-clamp-2">${escapeHtml(svc.description)}</p>
+          </div>
+          <span class="font-serif text-lg font-bold text-[#810B38] shrink-0">${svc.priceFormatted}</span>
+        </div>
+        <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
+          <span class="text-[11px] text-[#735e5e] flex items-center gap-1">
+            <i class="fa-solid fa-clock text-[10px]"></i> ${escapeHtml(svc.duration)}
+          </span>
+          <a 
+            href="booking.html?service=${encodeURIComponent(svc.code)}" 
+            class="px-3.5 py-1.5 rounded-lg bg-[#810B38] text-white text-[11px] font-bold hover:bg-[#62082b] transition-colors shadow-xs">
+            Book
+          </a>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// 9. Load Notifications from Backend API & Bookings
+async function loadDashboardNotifications() {
+  const token = localStorage.getItem('nelys_token');
+  const headers = {
+    'Accept': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+
+  let notifs = [];
+
+  try {
+    const res = await fetch('../api/notifications', { headers });
+    if (res.ok) {
+      const json = await res.json();
+      if ((json.success || json.status === 'success') && Array.isArray(json.data)) {
+        notifs = json.data;
+      }
+    }
+  } catch (e) {
+    console.warn('Notice loading notifications:', e);
+  }
+
+  // Complement with recent booking notifications if available
+  if (customerBookings && customerBookings.length > 0) {
+    customerBookings.slice(0, 3).forEach(b => {
+      const refNo = b.reference_no || `NS-${b.id}`;
+      const serviceName = b.service_name || 'Salon Visit';
+      let title = `Booking ${b.status ? b.status.toUpperCase() : 'UPDATE'}`;
+      let msg = `Your appointment for ${serviceName} on ${formatDisplayDate(b.booking_date)} is currently ${b.status || 'pending'}.`;
+      
+      if (b.status === 'confirmed') {
+        title = 'Appointment Confirmed';
+        msg = `Your ${serviceName} appointment on ${formatDisplayDate(b.booking_date)} at ${formatDisplayTime(b.booking_time)} is confirmed!`;
+      } else if (b.status === 'completed') {
+        title = 'Service Completed';
+        msg = `Thank you for visiting Nely's Salon! Your receipt for ${serviceName} is now ready.`;
+      } else if (b.status === 'cancelled') {
+        title = 'Appointment Cancelled';
+        msg = `Your appointment for ${serviceName} was cancelled.`;
+      }
+
+      notifs.push({
+        id: `BOOK-${b.id}`,
+        title: title,
+        message: msg,
+        created_at: b.created_at || b.booking_date,
+        relative_time: formatDisplayDate(b.booking_date),
+        is_read: false
+      });
+    });
+  }
+
+  currentNotifications = notifs;
+  renderDashboardNotificationsPanel(notifs);
+  renderDashboardNotificationsModal(notifs);
+}
+
+function renderDashboardNotificationsPanel(notifs) {
+  const container = document.getElementById('dashNotificationList');
+  if (!container) return;
+
+  if (!notifs || notifs.length === 0) {
+    container.innerHTML = `
+      <div class="p-6 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] text-center space-y-2">
+        <div class="w-10 h-10 rounded-full bg-white text-[#810B38] flex items-center justify-center text-sm mx-auto border border-[#DCC3AA]/60 shadow-sm">
+          <i class="fa-solid fa-bell-slash"></i>
+        </div>
+        <p class="text-xs font-bold text-[#541A1A]">No new notifications</p>
+        <p class="text-[11px] text-[#735e5e]">You're all caught up with your appointment alerts.</p>
+      </div>
+      <button 
+        type="button" 
+        onclick="openNotificationsModal()" 
+        class="w-full py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#810B38] text-xs font-bold transition-colors flex items-center justify-center gap-1.5 border border-[#DCC3AA]/50">
+        <span>View All Notifications</span>
+        <i class="fa-solid fa-arrow-right text-[10px]"></i>
+      </button>
+    `;
+    return;
+  }
+
+  let html = '';
+  notifs.slice(0, 3).forEach(n => {
+    html += `
+      <div class="p-3.5 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] hover:border-[#DCC3AA] transition-colors flex items-start gap-3">
+        <div class="w-8 h-8 rounded-xl bg-white text-[#810B38] flex items-center justify-center text-xs shrink-0 border border-[#DCC3AA]/60 shadow-xs">
+          <i class="fa-solid fa-bell"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between gap-2">
+            <h4 class="font-bold text-xs text-[#541A1A] truncate">${escapeHtml(n.title)}</h4>
+            <span class="text-[10px] text-[#735e5e] shrink-0">${escapeHtml(n.relative_time || 'Recent')}</span>
+          </div>
+          <p class="text-[11px] text-[#735e5e] mt-0.5 line-clamp-2">${escapeHtml(n.message)}</p>
+        </div>
+      </div>
+    `;
+  });
+
+  html += `
+    <button 
+      type="button" 
+      onclick="openNotificationsModal()" 
+      class="w-full py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#810B38] text-xs font-bold transition-colors flex items-center justify-center gap-1.5 border border-[#DCC3AA]/50">
+      <span>View All Notifications (${notifs.length})</span>
+      <i class="fa-solid fa-arrow-right text-[10px]"></i>
+    </button>
+  `;
+
+  container.innerHTML = html;
+}
+
+function renderDashboardNotificationsModal(notifs) {
+  const container = document.getElementById('modalNotificationList');
+  if (!container) return;
+
+  if (!notifs || notifs.length === 0) {
+    container.innerHTML = `
+      <div class="p-6 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] text-center space-y-2">
+        <div class="w-10 h-10 rounded-full bg-white text-[#810B38] flex items-center justify-center text-sm mx-auto border border-[#DCC3AA]/60 shadow-sm">
+          <i class="fa-solid fa-bell-slash"></i>
+        </div>
+        <p class="text-xs font-bold text-[#541A1A]">No notifications yet</p>
+        <p class="text-[11px] text-[#735e5e]">Updates and reminders for your bookings will appear here.</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  notifs.forEach(n => {
+    html += `
+      <div class="p-3.5 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] flex items-start gap-3">
+        <div class="w-8 h-8 rounded-xl bg-white text-[#810B38] flex items-center justify-center text-xs shrink-0 border border-[#DCC3AA]">
+          <i class="fa-solid fa-bell"></i>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center justify-between gap-2">
+            <h5 class="font-bold text-xs text-[#541A1A] truncate">${escapeHtml(n.title)}</h5>
+            <span class="text-[10px] text-[#735e5e] shrink-0">${escapeHtml(n.relative_time || 'Recent')}</span>
+          </div>
+          <p class="text-xs text-[#735e5e] mt-1">${escapeHtml(n.message)}</p>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// 10. Load Live Sidebar Badges (Messages & Notifications)
+async function loadSidebarBadgeCounters() {
+  const token = localStorage.getItem('nelys_token');
+  const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+  // 1. Unread Notifications Count
+  try {
+    const res = await fetch('../api/notifications', { headers });
+    if (res.ok) {
+      const json = await res.json();
+      if ((json.success || json.status === 'success') && Array.isArray(json.data)) {
+        const unreadCount = json.data.filter(n => !n.is_read).length;
+        const badge = document.getElementById('sidebarNotifBadge');
+        const mobileDot = document.getElementById('mobileNotifDot');
+
+        if (badge) {
+          if (unreadCount > 0) {
+            badge.textContent = unreadCount;
+            badge.classList.remove('hidden');
+          } else {
+            badge.classList.add('hidden');
+          }
+        }
+        if (mobileDot) {
+          if (unreadCount > 0) {
+            mobileDot.classList.remove('hidden');
+          } else {
+            mobileDot.classList.add('hidden');
+          }
+        }
+      }
+    }
+  } catch (_) {}
+
+  // 2. Unread Messages Count
+  if (token) {
+    try {
+      const res = await fetch('../api/messages', { headers });
+      if (res.ok) {
+        const json = await res.json();
+        if ((json.success || json.status === 'success') && Array.isArray(json.data)) {
+          const unreadMsgs = json.data.filter(m => m.sender === 'salon' && !m.is_read).length;
+          const msgBadge = document.getElementById('sidebarMessagesBadge');
+          if (msgBadge) {
+            if (unreadMsgs > 0) {
+              msgBadge.textContent = unreadMsgs;
+              msgBadge.classList.remove('hidden');
+            } else {
+              msgBadge.classList.add('hidden');
+            }
+          }
+        }
+      }
+    } catch (_) {}
+  }
+}
+
+// 11. Appointment Details Modal
 function openDetailsModal(ref) {
   let booking = null;
   if (ref) {
@@ -414,7 +820,7 @@ function closeDetailsModal() {
   unlockBodyScroll();
 }
 
-// 7. Cancel Appointment Modal & Live API Cancel
+// 12. Cancel Appointment Modal & Live API Cancel
 function openCancelModal(ref) {
   let booking = null;
   if (ref) {
@@ -498,7 +904,7 @@ async function confirmCancellation() {
   }
 }
 
-// 8. Notifications Modal
+// 13. Notifications Modal
 function openNotificationsModal() {
   const modal = document.getElementById('notificationsModal');
   if (modal && typeof modal.showModal === 'function') {
@@ -513,7 +919,7 @@ function closeNotificationsModal() {
   unlockBodyScroll();
 }
 
-// 9. Location Modal
+// 14. Location Modal
 function openLocationModal() {
   const modal = document.getElementById('locationModal');
   if (modal && typeof modal.showModal === 'function') {
@@ -528,7 +934,7 @@ function closeLocationModal() {
   unlockBodyScroll();
 }
 
-// 10. Profile Modal & Save
+// 15. Profile Modal & Live API Save
 function openProfileModal() {
   const modal = document.getElementById('profileModal');
   if (modal && typeof modal.showModal === 'function') {
@@ -543,28 +949,56 @@ function closeProfileModal() {
   unlockBodyScroll();
 }
 
-function handleProfileSave(e) {
+async function handleProfileSave(e) {
   e.preventDefault();
-  const name = document.getElementById('profileFullName')?.value || 'Client';
+  const name = document.getElementById('profileFullName')?.value.trim() || 'Client';
+  const phone = document.getElementById('profilePhone')?.value.trim() || '';
+  const email = document.getElementById('profileEmail')?.value.trim() || '';
+  const address = document.getElementById('profileAddress')?.value.trim() || '';
+
+  // 1. Update LocalStorage
   const savedUserJson = localStorage.getItem('nelys_user');
+  let user = {};
   if (savedUserJson) {
     try {
-      const user = JSON.parse(savedUserJson);
-      user.full_name = name;
-      user.phone = document.getElementById('profilePhone')?.value || user.phone;
-      user.email = document.getElementById('profileEmail')?.value || user.email;
-      user.address = document.getElementById('profileAddress')?.value || user.address;
-      localStorage.setItem('nelys_user', JSON.stringify(user));
-      initPatronProfile();
+      user = JSON.parse(savedUserJson);
+    } catch (_) {}
+  }
+
+  user.full_name = name;
+  user.phone = phone;
+  user.email = email || user.email;
+  user.address = address;
+  user.home_address = address;
+  localStorage.setItem('nelys_user', JSON.stringify(user));
+  applyUserProfileToUI(user);
+
+  // 2. Persist to Backend API if logged in
+  const token = localStorage.getItem('nelys_token');
+  if (token) {
+    try {
+      await fetch('../api/customers/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          full_name: name,
+          phone: phone,
+          home_address: address
+        })
+      });
     } catch (err) {
-      console.warn('Error updating profile in storage:', err);
+      console.warn('API profile save warning:', err);
     }
   }
+
   closeProfileModal();
   showToast(`Profile updated successfully for ${name}.`, 'success');
 }
 
-// 11. Receipt Modal
+// 16. Receipt Modal
 function showReceiptModal(ref, service, amount, status) {
   const modal = document.getElementById('receiptModal');
   if (!modal) return;
@@ -635,7 +1069,7 @@ function printCustomerReceipt() {
   window.print();
 }
 
-// 12. Filter Appointments in Table
+// 17. Filter Appointments in Table
 function filterAppointments(filterValue) {
   const rows = document.querySelectorAll('#recent-appointments-section table tbody tr');
   rows.forEach(row => {
@@ -652,7 +1086,7 @@ function filterAppointments(filterValue) {
   });
 }
 
-// 13. Helpers: Date / Time / Formatting
+// 18. Helpers: Date / Time / Formatting
 function formatDisplayDate(dateStr) {
   if (!dateStr) return 'Date TBD';
   const parts = dateStr.split('-');
@@ -698,7 +1132,7 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-// 14. Mobile Sidebar Drawer Toggle
+// 19. Mobile Sidebar Drawer Toggle
 function toggleMobileSidebar(open = null) {
   const sidebar = document.getElementById('sidebar');
   const backdrop = document.getElementById('mobileSidebarBackdrop');
@@ -722,7 +1156,7 @@ function toggleMobileSidebar(open = null) {
   }
 }
 
-// 15. Steady Background Lock & Modal Listeners
+// 20. Steady Background Lock & Modal Listeners
 let isCustomerModalScrollLocked = false;
 
 function onPreventCustomerBackgroundWheel(e) {
@@ -797,7 +1231,7 @@ function setupDialogSteadyListeners() {
   });
 }
 
-// 16. Logout Handler
+// 21. Logout Handler
 function handleLogout(e) {
   if (confirm("Are you sure you want to log out of Nely's Salon?")) {
     localStorage.removeItem('nelys_token');
@@ -809,7 +1243,7 @@ function handleLogout(e) {
   return false;
 }
 
-// 17. Toast Notification Helper
+// 22. Toast Notification Helper
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   if (!container) return;
