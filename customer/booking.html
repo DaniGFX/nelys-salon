@@ -119,11 +119,11 @@
 
     <!-- Customer Profile Quick Pill -->
     <div class="px-5 py-4 mx-4 my-3 rounded-2xl bg-[#6e1335]/40 border border-[#810B38]/50 flex items-center gap-3">
-      <div class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
-        MS
+      <div id="customerAvatarInitials" class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
+        --
       </div>
       <div class="min-w-0 flex-1">
-        <span class="block text-sm font-semibold text-[#F1E2D1] truncate">Maria Santos</span>
+        <span id="customerSidebarName" class="block text-sm font-semibold text-[#F1E2D1] truncate">Client Patron</span>
         <span class="inline-flex items-center gap-1.5 text-[11px] text-[#DCC3AA]">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
           Verified Client
@@ -153,7 +153,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>My Appointments</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Services & Prices -->
@@ -168,7 +168,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Notifications -->
@@ -176,7 +176,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">3</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- My Profile -->
@@ -191,6 +191,7 @@
     <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
       <a 
         href="../login.html"
+        onclick="confirmLogout()"
         class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
         <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
         <span>Log Out</span>
@@ -776,71 +777,52 @@
             <!-- Calendar Section -->
             <div class="space-y-3">
               <div class="flex items-center justify-between">
-                <h3 class="font-serif text-xl font-bold text-[#541A1A] flex items-center gap-2">
-                  <i class="fa-solid fa-calendar text-[#810B38] text-sm"></i>
-                  <span>September 2026</span>
-                </h3>
-                <span class="text-xs text-[#735e5e]">Mon – Sun Booking Available</span>
+                <div class="flex items-center gap-3">
+                  <h3 id="calendarMonthYear" class="font-serif text-xl sm:text-2xl font-bold text-[#541A1A] flex items-center gap-2">
+                    <i class="fa-solid fa-calendar text-[#810B38] text-base"></i>
+                    <span>September 2026</span>
+                  </h3>
+                </div>
+                
+                <!-- Month navigation controls -->
+                <div class="flex items-center gap-1.5">
+                  <button 
+                    type="button" 
+                    id="prevMonthBtn"
+                    onclick="changeCalendarMonth(-1)" 
+                    class="w-9 h-9 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    title="Previous Month"
+                    aria-label="Previous Month">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                  </button>
+                  <button 
+                    type="button" 
+                    id="nextMonthBtn"
+                    onclick="changeCalendarMonth(1)" 
+                    class="w-9 h-9 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] flex items-center justify-center transition-colors"
+                    title="Next Month"
+                    aria-label="Next Month">
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                  </button>
+                </div>
               </div>
 
               <!-- Interactive Days Grid -->
-              <div class="p-4 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/60">
+              <div class="p-4 sm:p-5 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/60 shadow-sm">
                 <!-- Day names -->
-                <div class="grid grid-cols-7 text-center font-bold text-[11px] text-[#735e5e] pb-2 border-b border-[#DCC3AA]/40 mb-2">
+                <div class="grid grid-cols-7 text-center font-bold text-[11px] text-[#735e5e] pb-2.5 border-b border-[#DCC3AA]/40 mb-3 uppercase tracking-wider">
+                  <span>Sun</span>
                   <span>Mon</span>
                   <span>Tue</span>
                   <span>Wed</span>
                   <span>Thu</span>
                   <span>Fri</span>
                   <span>Sat</span>
-                  <span>Sun</span>
                 </div>
 
-                <!-- Day buttons -->
-                <div class="grid grid-cols-7 gap-2 text-center text-xs font-semibold">
-                  <!-- Disabled past dates -->
-                  <button type="button" disabled class="py-2.5 rounded-xl text-gray-300 cursor-not-allowed">21</button>
-                  <button type="button" disabled class="py-2.5 rounded-xl text-gray-300 cursor-not-allowed">22</button>
-                  <button type="button" disabled class="py-2.5 rounded-xl text-gray-300 cursor-not-allowed">23</button>
-                  <button type="button" disabled class="py-2.5 rounded-xl text-gray-300 cursor-not-allowed">24</button>
-                  
-                  <!-- Selectable dates -->
-                  <button 
-                    type="button" 
-                    onclick="selectDate('September 25, 2026', this)" 
-                    class="date-btn py-2.5 rounded-xl bg-[#810B38] text-white font-bold shadow-md border border-[#810B38] transition-all">
-                    25
-                  </button>
-                  <button 
-                    type="button" 
-                    onclick="selectDate('September 26, 2026', this)" 
-                    class="date-btn py-2.5 rounded-xl bg-white hover:bg-[#F1E2D1] text-[#2b1d1d] border border-[#DCC3AA] transition-all">
-                    26
-                  </button>
-                  <button 
-                    type="button" 
-                    onclick="selectDate('September 27, 2026', this)" 
-                    class="date-btn py-2.5 rounded-xl bg-white hover:bg-[#F1E2D1] text-[#2b1d1d] border border-[#DCC3AA] transition-all">
-                    27
-                  </button>
-                  <button 
-                    type="button" 
-                    onclick="selectDate('September 28, 2026', this)" 
-                    class="date-btn py-2.5 rounded-xl bg-white hover:bg-[#F1E2D1] text-[#2b1d1d] border border-[#DCC3AA] transition-all">
-                    28
-                  </button>
-                  <button 
-                    type="button" 
-                    onclick="selectDate('September 29, 2026', this)" 
-                    class="date-btn py-2.5 rounded-xl bg-white hover:bg-[#F1E2D1] text-[#2b1d1d] border border-[#DCC3AA] transition-all">
-                    29
-                  </button>
-                  <button 
-                    type="button" 
-                    onclick="selectDate('September 30, 2026', this)" 
-                    class="date-btn py-2.5 rounded-xl bg-white hover:bg-[#F1E2D1] text-[#2b1d1d] border border-[#DCC3AA] transition-all">
-                    30
-                  </button>
+                <!-- Day buttons container (rendered dynamically) -->
+                <div id="calendarDaysGrid" class="grid grid-cols-7 gap-1.5 sm:gap-2 text-center text-xs font-semibold">
+                  <!-- Dynamically generated full monthly days -->
                 </div>
               </div>
             </div>
@@ -1013,23 +995,23 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <label class="block font-bold text-[#541A1A] mb-1">House / Building No.</label>
-                  <input type="text" id="homeBuilding" value="Blk 12 Lot 4" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
+                  <input type="text" id="homeBuilding" placeholder="e.g. Blk 12 Lot 4" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
                 </div>
                 <div>
                   <label class="block font-bold text-[#541A1A] mb-1">Street</label>
-                  <input type="text" id="homeStreet" value="Evergreen St." class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
+                  <input type="text" id="homeStreet" placeholder="e.g. Evergreen St." class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
                 </div>
                 <div>
                   <label class="block font-bold text-[#541A1A] mb-1">Barangay</label>
-                  <input type="text" id="homeBarangay" value="Greater Lagro" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
+                  <input type="text" id="homeBarangay" placeholder="e.g. Greater Lagro" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
                 </div>
                 <div>
                   <label class="block font-bold text-[#541A1A] mb-1">City</label>
-                  <input type="text" id="homeCity" value="Quezon City" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
+                  <input type="text" id="homeCity" placeholder="Quezon City" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
                 </div>
                 <div class="sm:col-span-2">
                   <label class="block font-bold text-[#541A1A] mb-1">Landmark</label>
-                  <input type="text" id="homeLandmark" value="Near Lagro Elementary School gate" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
+                  <input type="text" id="homeLandmark" placeholder="e.g. Near Lagro Elementary School gate" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
                 </div>
               </div>
 
@@ -1062,7 +1044,7 @@
                   <input 
                     type="text" 
                     id="clientNameInput" 
-                    value="Maria Santos" 
+                    placeholder="Your Full Name" 
                     readonly 
                     class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/60 font-medium text-[#2b1d1d] focus:outline-none focus:border-[#810B38]">
                 </div>
@@ -1071,7 +1053,7 @@
                   <input 
                     type="email" 
                     id="clientEmailInput" 
-                    value="maria@email.com" 
+                    placeholder="your.email@example.com" 
                     readonly 
                     class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/60 font-medium text-[#2b1d1d] focus:outline-none focus:border-[#810B38]">
                 </div>
@@ -1080,7 +1062,7 @@
                   <input 
                     type="tel" 
                     id="clientPhoneInput" 
-                    value="0917 888 9999" 
+                    placeholder="0917XXXXXXX" 
                     readonly 
                     class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/60 font-medium text-[#2b1d1d] focus:outline-none focus:border-[#810B38]">
                 </div>
@@ -1223,7 +1205,6 @@
                   type="text" 
                   id="referenceNumberInput" 
                   placeholder="e.g. 1029 3847 5612" 
-                  value="982347102938"
                   class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs font-mono tracking-wider text-[#2b1d1d] focus:outline-none focus:border-[#810B38]">
               </div>
 
@@ -1270,12 +1251,11 @@
           
           <!-- Header -->
           <div class="border-b border-[#F1E2D1] pb-3 flex items-center justify-between">
-            <h3 class="font-serif text-xl font-bold text-[#541A1A] flex items-center gap-2">
-              <i class="fa-solid fa-receipt text-[#810B38] text-sm"></i>
-              <span>Appointment Summary</span>
+            <h3 class="font-serif text-xl font-bold text-[#541A1A]">
+              Appointment Summary
             </h3>
-            <span class="text-[10px] uppercase font-bold text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
-              Live Preview
+            <span class="text-[10px] uppercase font-bold text-[#810B38] bg-[#FAF6F0] px-2.5 py-0.5 rounded-full border border-[#DCC3AA]/50">
+              Preview
             </span>
           </div>
 
@@ -1372,7 +1352,7 @@
             Booking Confirmed
           </span>
           <h2 class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">
-            Thank you, Maria!
+            Thank you, <span id="succCustomerName">Valued Client</span>!
           </h2>
           <p class="text-xs sm:text-sm text-[#735e5e] max-w-md mx-auto">
             Your appointment has been successfully submitted to Nely's Salon. We look forward to welcoming you!
@@ -1384,32 +1364,32 @@
           
           <div class="flex justify-between border-b border-[#DCC3AA]/50 pb-2">
             <span class="text-[#735e5e]">Booking ID:</span>
-            <span id="succBookingId" class="font-mono font-bold text-[#810B38]">NS-20260925-001</span>
+            <span id="succBookingId" class="font-mono font-bold text-[#810B38]">--</span>
           </div>
 
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Service:</span>
-            <span id="succService" class="font-bold text-[#541A1A]">Brazilian</span>
+            <span id="succService" class="font-bold text-[#541A1A]">--</span>
           </div>
 
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Date:</span>
-            <span id="succDate" class="font-semibold text-[#2b1d1d]">September 25, 2026</span>
+            <span id="succDate" class="font-semibold text-[#2b1d1d]">--</span>
           </div>
 
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Time:</span>
-            <span id="succTime" class="font-bold text-[#810B38]">10:00 AM</span>
+            <span id="succTime" class="font-bold text-[#810B38]">--</span>
           </div>
 
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Visit Type:</span>
-            <span id="succVisit" class="font-semibold text-[#2b1d1d]">Salon Visit</span>
+            <span id="succVisit" class="font-semibold text-[#2b1d1d]">--</span>
           </div>
 
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Payment Method:</span>
-            <span id="succPayment" class="font-bold text-[#541A1A]">GCash</span>
+            <span id="succPayment" class="font-bold text-[#541A1A]">--</span>
           </div>
 
           <div class="flex justify-between items-center">
@@ -1422,7 +1402,7 @@
 
           <div class="flex justify-between items-baseline pt-2 border-t border-[#DCC3AA]/50 text-sm">
             <span class="font-bold text-[#541A1A]">Total Charged:</span>
-            <span id="succTotal" class="font-serif text-xl font-bold text-[#810B38]">₱1,999.00</span>
+            <span id="succTotal" class="font-serif text-xl font-bold text-[#810B38]">₱0.00</span>
           </div>
 
         </div>
@@ -1435,14 +1415,14 @@
           </span>
           <div class="p-2.5 rounded-xl bg-[#FAF6F0] border border-[#E8D9CA] flex items-start gap-2 text-[11px]">
             <i class="fa-solid fa-check text-emerald-600 mt-0.5"></i>
-            <div>
-              <strong>Appointment Confirmed:</strong> Your Brazilian appointment is scheduled for September 25, 2026 at 10:00 AM.
+            <div id="succNotifConfirmed">
+              <strong>Appointment Confirmed:</strong> Your appointment has been scheduled and is recorded in the system.
             </div>
           </div>
           <div class="p-2.5 rounded-xl bg-[#FAF6F0] border border-[#E8D9CA] flex items-start gap-2 text-[11px]">
             <i class="fa-solid fa-clock text-[#810B38] mt-0.5"></i>
             <div>
-              <strong>Appointment Reminder:</strong> Reminder: Your appointment at Nely's Salon is tomorrow at 10:00 AM.
+              <strong>Appointment Reminder:</strong> A reminder alert will be visible in your Notifications tab.
             </div>
           </div>
         </div>

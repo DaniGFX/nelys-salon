@@ -18,26 +18,72 @@ const bookingState = {
   time: '10:00 AM',
   visitType: 'salon', // 'salon' | 'home'
   homeAddress: {
-    building: 'Blk 12 Lot 4',
-    street: 'Evergreen St.',
-    barangay: 'Greater Lagro',
+    building: '',
+    street: '',
+    barangay: '',
     city: 'Quezon City',
-    landmark: 'Near Lagro Elementary School gate'
+    landmark: ''
   },
   client: {
-    name: 'Maria Santos',
-    email: 'maria@email.com',
-    phone: '0917 888 9999'
+    name: '',
+    email: '',
+    phone: ''
   },
   payment: {
     method: 'gcash', // 'cash' | 'gcash' | 'bank_transfer'
-    referenceNumber: '982347102938',
+    referenceNumber: '',
     receiptFileName: ''
   }
 };
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Pre-fill patron profile if logged in
+  const savedUserJson = localStorage.getItem('nelys_user');
+  if (savedUserJson) {
+    try {
+      const user = JSON.parse(savedUserJson);
+      if (user.full_name) {
+        bookingState.client.name = user.full_name;
+        const nameInput = document.getElementById('clientNameInput');
+        if (nameInput) nameInput.value = user.full_name;
+
+        const sidebarName = document.getElementById('customerSidebarName');
+        if (sidebarName) sidebarName.textContent = user.full_name;
+
+        const avatarEl = document.getElementById('customerAvatarInitials');
+        if (avatarEl) {
+          const initials = user.full_name
+            .split(' ')
+            .filter(Boolean)
+            .map(w => w[0])
+            .slice(0, 2)
+            .join('')
+            .toUpperCase();
+          if (initials) avatarEl.textContent = initials;
+        }
+      }
+      if (user.email) {
+        bookingState.client.email = user.email;
+        const emailInput = document.getElementById('clientEmailInput');
+        if (emailInput) emailInput.value = user.email;
+      }
+      if (user.phone) {
+        bookingState.client.phone = user.phone;
+        const phoneInput = document.getElementById('clientPhoneInput');
+        if (phoneInput) phoneInput.value = user.phone;
+      }
+      if (user.address) {
+        const addrInput = document.getElementById('homeBuilding');
+        if (addrInput && !addrInput.value) addrInput.value = user.address;
+      }
+    } catch (e) {
+      console.warn('Error reading stored patron details:', e);
+    }
+  }
+
+  initCalendar();
   updateSummary();
+
   // Check URL query parameters for pre-selected service
   const params = new URLSearchParams(window.location.search);
   const serviceParam = params.get('service');
@@ -51,6 +97,114 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 });
+
+// Calendar State
+let currentCalYear = new Date().getFullYear();
+let currentCalMonth = new Date().getMonth();
+
+const calendarMonthNames = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
+
+function initCalendar() {
+  const now = new Date();
+  currentCalYear = now.getFullYear();
+  currentCalMonth = now.getMonth();
+
+  if (!bookingState.date) {
+    bookingState.date = `${calendarMonthNames[currentCalMonth]} ${now.getDate()}, ${currentCalYear}`;
+  }
+
+  renderCalendar();
+}
+
+function changeCalendarMonth(delta) {
+  const now = new Date();
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  const targetMonthStart = new Date(currentCalYear, currentCalMonth + delta, 1).getTime();
+
+  if (targetMonthStart < currentMonthStart) return;
+
+  currentCalMonth += delta;
+  if (currentCalMonth > 11) {
+    currentCalMonth = 0;
+    currentCalYear += 1;
+  } else if (currentCalMonth < 0) {
+    currentCalMonth = 11;
+    currentCalYear -= 1;
+  }
+
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const monthTitleEl = document.getElementById('calendarMonthYear');
+  const daysGridEl = document.getElementById('calendarDaysGrid');
+  const prevBtn = document.getElementById('prevMonthBtn');
+  if (!daysGridEl) return;
+
+  if (monthTitleEl) {
+    monthTitleEl.innerHTML = `<i class="fa-solid fa-calendar text-[#810B38] text-base"></i> <span>${calendarMonthNames[currentCalMonth]} ${currentCalYear}</span>`;
+  }
+
+  const now = new Date();
+  const todayZero = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+
+  // Disable Prev button if at current month
+  if (prevBtn) {
+    const isCurrentMonth = currentCalYear === now.getFullYear() && currentCalMonth === now.getMonth();
+    prevBtn.disabled = isCurrentMonth;
+  }
+
+  // Sunday = 0, Monday = 1, ..., Saturday = 6
+  const firstDayIndex = new Date(currentCalYear, currentCalMonth, 1).getDay();
+  const totalDays = new Date(currentCalYear, currentCalMonth + 1, 0).getDate();
+
+  let gridHtml = '';
+
+  // Blank leading offset cells
+  for (let b = 0; b < firstDayIndex; b++) {
+    gridHtml += `<div class="py-2.5"></div>`;
+  }
+
+  // Days in month
+  for (let day = 1; day <= totalDays; day++) {
+    const thisDateObj = new Date(currentCalYear, currentCalMonth, day);
+    const thisDateTime = thisDateObj.getTime();
+    const formattedDate = `${calendarMonthNames[currentCalMonth]} ${day}, ${currentCalYear}`;
+    const isPast = thisDateTime < todayZero;
+    const isSelected = bookingState.date === formattedDate;
+
+    if (isPast) {
+      gridHtml += `
+        <button type="button" disabled class="py-2.5 rounded-xl text-stone-300 bg-transparent cursor-not-allowed text-xs font-semibold select-none">
+          ${day}
+        </button>
+      `;
+    } else if (isSelected) {
+      gridHtml += `
+        <button 
+          type="button" 
+          onclick="selectDate('${formattedDate}', this)" 
+          class="date-btn py-2.5 rounded-xl bg-[#810B38] text-white font-bold shadow-md border border-[#810B38] transition-all text-xs">
+          ${day}
+        </button>
+      `;
+    } else {
+      gridHtml += `
+        <button 
+          type="button" 
+          onclick="selectDate('${formattedDate}', this)" 
+          class="date-btn py-2.5 rounded-xl bg-white hover:bg-[#F1E2D1] text-[#2b1d1d] border border-[#DCC3AA] transition-all font-semibold text-xs shadow-sm">
+          ${day}
+        </button>
+      `;
+    }
+  }
+
+  daysGridEl.innerHTML = gridHtml;
+}
 
 // 1. Navigation Between Steps
 function goToStep(targetStep) {
@@ -186,11 +340,11 @@ function selectDate(dateStr, btnElement) {
   bookingState.date = dateStr;
 
   document.querySelectorAll('.date-btn').forEach(btn => {
-    btn.className = 'date-btn py-2.5 rounded-xl bg-white hover:bg-[#F1E2D1] text-[#2b1d1d] border border-[#DCC3AA] transition-all font-semibold';
+    btn.className = 'date-btn py-2.5 rounded-xl bg-white hover:bg-[#F1E2D1] text-[#2b1d1d] border border-[#DCC3AA] transition-all font-semibold text-xs shadow-sm';
   });
 
   if (btnElement) {
-    btnElement.className = 'date-btn py-2.5 rounded-xl bg-[#810B38] text-white font-bold shadow-md border border-[#810B38] transition-all';
+    btnElement.className = 'date-btn py-2.5 rounded-xl bg-[#810B38] text-white font-bold shadow-md border border-[#810B38] transition-all text-xs';
   }
 
   updateSummary();
@@ -385,60 +539,151 @@ function closeConfirmModal() {
 }
 
 // 8. Finalize Booking & Show Success Screen
-function finalizeBooking() {
-  closeConfirmModal();
+async function finalizeBooking() {
+  const confirmBtn = document.querySelector('#confirmModal button[onclick="finalizeBooking()"]');
+  const originalBtnContent = confirmBtn ? confirmBtn.innerHTML : '';
+  if (confirmBtn) {
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i> <span>Confirming...</span>';
+  }
 
-  // Hide two-column wizard layout and stepper
-  const mainGrid = document.querySelector('.grid.grid-cols-1.lg\\:grid-cols-12');
-  if (mainGrid) mainGrid.classList.add('hidden');
+  const token = localStorage.getItem('nelys_token');
+  const apiBase = window.location.pathname.includes('/customer/') ? '../api' : 'api';
 
-  // Fill in success screen details
-  const randomId = `NS-20260925-${Math.floor(100 + Math.random() * 900)}`;
-  document.getElementById('succBookingId').textContent = randomId;
-  document.getElementById('succService').textContent = bookingState.service.name;
-  document.getElementById('succDate').textContent = bookingState.date;
-  document.getElementById('succTime').textContent = bookingState.time;
-  document.getElementById('succVisit').textContent = bookingState.visitType === 'salon' ? 'Salon Visit' : 'Home Service';
-  
-  const payMap = {
-    'cash': 'Cash',
-    'gcash': 'GCash',
-    'bank_transfer': 'Bank Transfer'
+  // Gather client and address data
+  const bldg = document.getElementById('homeBuilding')?.value.trim() || '';
+  const street = document.getElementById('homeStreet')?.value.trim() || '';
+  const brgy = document.getElementById('homeBarangay')?.value.trim() || '';
+  const city = document.getElementById('homeCity')?.value.trim() || 'Quezon City';
+  const landmark = document.getElementById('homeLandmark')?.value.trim() || '';
+
+  const homeAddressObj = {
+    building: bldg || bookingState.homeAddress.building,
+    street: street || bookingState.homeAddress.street,
+    barangay: brgy || bookingState.homeAddress.barangay,
+    city: city || bookingState.homeAddress.city,
+    landmark: landmark || bookingState.homeAddress.landmark
   };
-  document.getElementById('succPayment').textContent = payMap[bookingState.payment.method] || 'GCash';
-  document.getElementById('succTotal').textContent = bookingState.service.priceFormatted;
 
-  const badgeEl = document.getElementById('succPaymentBadge');
-  if (bookingState.payment.method === 'cash') {
-    badgeEl.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold border border-blue-300';
-    badgeEl.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Unpaid (Pay at salon)';
-  } else {
-    badgeEl.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-300';
-    badgeEl.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Payment Verification Pending';
-  }
+  const refNum = document.getElementById('referenceNumberInput')?.value.trim() || bookingState.payment.referenceNumber;
+  const clientName = document.getElementById('clientNameInput')?.value.trim() || bookingState.client.name;
+  const clientEmail = document.getElementById('clientEmailInput')?.value.trim() || bookingState.client.email;
+  const clientPhone = document.getElementById('clientPhoneInput')?.value.trim() || bookingState.client.phone;
 
-  // Show Success Screen
-  const successSection = document.getElementById('successScreen');
-  if (successSection) {
-    successSection.classList.remove('hidden');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
+  const payload = {
+    service_id: bookingState.service.id,
+    booking_date: bookingState.date,
+    booking_time: bookingState.time,
+    visit_type: bookingState.visitType,
+    home_address: bookingState.visitType === 'home' ? homeAddressObj : null,
+    payment_method: bookingState.payment.method,
+    reference_number: refNum,
+    client_name: clientName,
+    client_email: clientEmail,
+    client_phone: clientPhone
+  };
 
-  // Activate Step 5 on stepper
-  for (let i = 1; i <= 4; i++) {
-    const circle = document.getElementById(`stepCircle-${i}`);
-    if (circle) {
-      circle.className = 'w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-md transition-all border-2 border-[#DCC3AA]';
-      circle.innerHTML = '<i class="fa-solid fa-check text-xs"></i>';
+  try {
+    const headers = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${apiBase}/bookings`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || result.status === 'error') {
+      const errorMsg = result.message || 'Failed to confirm booking. Please try again.';
+      showToast(errorMsg, 'error');
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = originalBtnContent;
+      }
+      return;
+    }
+
+    const bookingData = result.data;
+    const realRefCode = bookingData.reference_no;
+
+    closeConfirmModal();
+
+    // Hide two-column wizard layout and stepper
+    const mainGrid = document.querySelector('.grid.grid-cols-1.lg\\:grid-cols-12');
+    if (mainGrid) mainGrid.classList.add('hidden');
+
+    // Fill in success screen details with real database data
+    const succNameEl = document.getElementById('succCustomerName');
+    if (succNameEl) succNameEl.textContent = clientName || 'Valued Client';
+
+    document.getElementById('succBookingId').textContent = realRefCode;
+    document.getElementById('succService').textContent = bookingData.service_name || bookingState.service.name;
+    document.getElementById('succDate').textContent = bookingState.date;
+    document.getElementById('succTime').textContent = bookingState.time;
+    document.getElementById('succVisit').textContent = bookingData.visit_type === 'home' ? 'Home Service' : 'Salon Visit';
+    
+    const notifConfirmedEl = document.getElementById('succNotifConfirmed');
+    if (notifConfirmedEl) {
+      notifConfirmedEl.innerHTML = `<strong>Appointment Confirmed:</strong> Your ${bookingData.service_name || bookingState.service.name} appointment is scheduled for ${bookingState.date} at ${bookingState.time}.`;
+    }
+
+    const payMap = {
+      'cash': 'Cash',
+      'gcash': 'GCash',
+      'bank_transfer': 'Bank Transfer'
+    };
+    document.getElementById('succPayment').textContent = payMap[bookingData.payment_method || bookingState.payment.method] || 'GCash';
+    document.getElementById('succTotal').textContent = bookingData.total_price 
+      ? `₱${parseFloat(bookingData.total_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+      : bookingState.service.priceFormatted;
+
+    const badgeEl = document.getElementById('succPaymentBadge');
+    if (bookingState.payment.method === 'cash') {
+      badgeEl.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-800 text-[10px] font-bold border border-blue-300';
+      badgeEl.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span> Unpaid (Pay at salon)';
+    } else {
+      badgeEl.className = 'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-300';
+      badgeEl.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Payment Verification Pending';
+    }
+
+    // Show Success Screen
+    const successSection = document.getElementById('successScreen');
+    if (successSection) {
+      successSection.classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Activate Step 5 on stepper
+    for (let i = 1; i <= 4; i++) {
+      const circle = document.getElementById(`stepCircle-${i}`);
+      if (circle) {
+        circle.className = 'w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-md transition-all border-2 border-[#DCC3AA]';
+        circle.innerHTML = '<i class="fa-solid fa-check text-xs"></i>';
+      }
+    }
+    const circle5 = document.getElementById('stepCircle-5');
+    if (circle5) {
+      circle5.className = 'w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-md transition-all border-2 border-emerald-300';
+      circle5.innerHTML = '<i class="fa-solid fa-check text-xs"></i>';
+    }
+
+    showToast(`Booking ${realRefCode} confirmed and saved to database!`, 'success');
+
+  } catch (err) {
+    console.error('Booking submission error:', err);
+    showToast('Unable to connect to the booking server. Please check connection.', 'error');
+    if (confirmBtn) {
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = originalBtnContent;
     }
   }
-  const circle5 = document.getElementById('stepCircle-5');
-  if (circle5) {
-    circle5.className = 'w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-md transition-all border-2 border-emerald-300';
-    circle5.innerHTML = '<i class="fa-solid fa-check text-xs"></i>';
-  }
-
-  showToast('Booking successfully confirmed and logged into your account!', 'success');
 }
 
 // 9. Toast Notification Helper
@@ -518,6 +763,8 @@ function closeLogoutModal() {
 
 function confirmLogout() {
   closeLogoutModal();
+  localStorage.removeItem('nelys_token');
+  localStorage.removeItem('nelys_user');
   showToast('Signing out... Goodbye!', 'info');
   setTimeout(() => {
     window.location.href = '../login.html';

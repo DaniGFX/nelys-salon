@@ -1,0 +1,3 @@
+# Deny all direct browser access to the server/ directory.
+# All requests must go through api/index.php gateway.
+Deny from all

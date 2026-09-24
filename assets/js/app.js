@@ -606,7 +606,7 @@ function initBookingForm() {
   // Service select change
   document.getElementById('bookingServiceSelect')?.addEventListener('change', updateBookingPriceSummary);
 
-  form.addEventListener('submit', (e) => {
+  form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
     const serviceSelect = document.getElementById('bookingServiceSelect');
@@ -630,51 +630,103 @@ function initBookingForm() {
       : 'Blk 42 Lot 59 Ascension Rd, Lagro, QC (Salon Visit)';
     const notes = document.getElementById('bookingNotes')?.value.trim() || '';
 
-    // Generate unique reference number (e.g. NS-8492)
-    const randomDigits = Math.floor(1000 + Math.random() * 9000);
-    const referenceCode = `NS-${randomDigits}`;
-    const homeServiceFee = serviceType === 'home-service' ? 150 : 0;
-    const totalPrice = selectedService.price + homeServiceFee;
-
-    const newBooking = {
-      id: referenceCode,
-      customerName,
-      phone,
-      email,
-      serviceId: selectedService.id,
-      serviceName: selectedService.name,
-      price: totalPrice,
-      serviceType,
-      date,
-      time,
-      paymentMethod,
-      address,
-      notes,
-      status: 'Confirmed',
-      createdAt: new Date().toISOString()
-    };
-
-    const bookings = getStoredBookings();
-    bookings.unshift(newBooking);
-    saveBookings(bookings);
-
-    // Show Confirmation screen in modal
-    document.getElementById('bookingFormSection')?.classList.add('hidden');
-    const successSection = document.getElementById('bookingSuccessSection');
-    if (successSection) {
-      successSection.classList.remove('hidden');
-      document.getElementById('confirmRefCode').textContent = referenceCode;
-      document.getElementById('confirmService').textContent = selectedService.name;
-      document.getElementById('confirmDateTime').textContent = `${date} at ${time}`;
-      document.getElementById('confirmType').textContent = serviceType === 'home-service' ? 'Home Service' : 'Salon Visit (Lagro QC)';
-      document.getElementById('confirmAmount').textContent = selectedService.id === 'rebonding' 
-        ? 'Price to be confirmed (Consultation)' 
-        : `₱${totalPrice.toLocaleString()} (${paymentMethod})`;
-      document.getElementById('confirmClientPhone').textContent = phone;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnContent = submitBtn ? submitBtn.innerHTML : '';
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i> <span>Booking...</span>';
     }
 
-    showToast(`Appointment confirmed! Reference ID: ${referenceCode}`, 'success');
-    form.reset();
+    try {
+      const token = localStorage.getItem('nelys_token');
+      const headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch('api/bookings', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          service_id: selectedService.id,
+          booking_date: date,
+          booking_time: time,
+          visit_type: serviceType === 'home-service' ? 'home' : 'salon',
+          home_address: serviceType === 'home-service' ? address : null,
+          payment_method: paymentMethod.toLowerCase(),
+          client_name: customerName,
+          client_phone: phone,
+          client_email: email,
+          notes: notes
+        })
+      });
+
+      const result = await res.json();
+
+      if (!res.ok || result.status === 'error') {
+        const errorMsg = result.message || 'Failed to submit appointment. Please try again.';
+        showToast(errorMsg, 'error');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnContent;
+        }
+        return;
+      }
+
+      const bookingData = result.data;
+      const referenceCode = bookingData.reference_no;
+      const totalPrice = parseFloat(bookingData.total_price || selectedService.price);
+
+      const newBooking = {
+        id: referenceCode,
+        customerName,
+        phone,
+        email,
+        serviceId: selectedService.id,
+        serviceName: selectedService.name,
+        price: totalPrice,
+        serviceType,
+        date,
+        time,
+        paymentMethod,
+        address,
+        notes,
+        status: 'Pending',
+        createdAt: new Date().toISOString()
+      };
+
+      const bookings = getStoredBookings();
+      bookings.unshift(newBooking);
+      saveBookings(bookings);
+
+      // Show Confirmation screen in modal
+      document.getElementById('bookingFormSection')?.classList.add('hidden');
+      const successSection = document.getElementById('bookingSuccessSection');
+      if (successSection) {
+        successSection.classList.remove('hidden');
+        document.getElementById('confirmRefCode').textContent = referenceCode;
+        document.getElementById('confirmService').textContent = selectedService.name;
+        document.getElementById('confirmDateTime').textContent = `${date} at ${time}`;
+        document.getElementById('confirmType').textContent = serviceType === 'home-service' ? 'Home Service' : 'Salon Visit (Lagro QC)';
+        document.getElementById('confirmAmount').textContent = selectedService.id === 'rebonding' 
+          ? 'Price to be confirmed (Consultation)' 
+          : `₱${totalPrice.toLocaleString()} (${paymentMethod})`;
+        document.getElementById('confirmClientPhone').textContent = phone;
+      }
+
+      showToast(`Appointment confirmed! Reference ID: ${referenceCode}`, 'success');
+      form.reset();
+
+    } catch (err) {
+      console.error('Homepage booking error:', err);
+      showToast('Unable to connect to the booking server.', 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnContent;
+      }
+    }
   });
 }
 

@@ -1,4 +1,18 @@
 # Dependencies
 /node_modules
-.vscode
+
+# Environment / secrets — NEVER commit these
 .env
+.env.local
+.env.production
+
+# PHP error logs
+error_log
+*.log
+php_errors.log
+
+# Editor & OS noise
+.vscode
+.idea
+Thumbs.db
+.DS_Store

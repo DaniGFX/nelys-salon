@@ -5,102 +5,117 @@
  */
 
 // Global appointments data state
-let appointmentsData = [
-  {
-    id: "NS-20260925-0814",
-    status: "upcoming", // upcoming (confirmed)
-    service: "Brazilian Treatment",
-    price: 1999,
-    priceFormatted: "₱1,999",
-    date: "September 25, 2026",
-    time: "10:00 AM",
-    customerName: "Maria Santos",
-    contactNumber: "0917 888 9999",
-    visitType: "Salon Visit",
-    address: "BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City",
-    paymentMethod: "GCash",
-    paymentStatus: "Paid / Verified",
-    cancellationReason: null,
-    slug: "brazilian"
-  },
-  {
-    id: "NS-20260928-1420",
-    status: "pending",
-    service: "Hair Dye",
-    price: 699,
-    priceFormatted: "₱699",
-    date: "September 28, 2026",
-    time: "2:00 PM",
-    customerName: "Maria Santos",
-    contactNumber: "0917 888 9999",
-    visitType: "Salon Visit",
-    address: "BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City",
-    paymentMethod: "Cash",
-    paymentStatus: "Unpaid (Pay on Visit)",
-    cancellationReason: null,
-    slug: "hair-dye"
-  },
-  {
-    id: "NS-20260910-1100",
-    status: "completed",
-    service: "Gel Manicure",
-    price: 499,
-    priceFormatted: "₱499",
-    date: "September 10, 2026",
-    time: "11:00 AM",
-    customerName: "Maria Santos",
-    contactNumber: "0917 888 9999",
-    visitType: "Salon Visit",
-    address: "BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City",
-    paymentMethod: "GCash",
-    paymentStatus: "Completed",
-    cancellationReason: null,
-    slug: "gel-manicure"
-  },
-  {
-    id: "NS-20260820-1330",
-    status: "completed",
-    service: "Keratine Treatment",
-    price: 499,
-    priceFormatted: "₱499",
-    date: "August 20, 2026",
-    time: "1:30 PM",
-    customerName: "Maria Santos",
-    contactNumber: "0917 888 9999",
-    visitType: "Salon Visit",
-    address: "BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City",
-    paymentMethod: "Cash",
-    paymentStatus: "Completed",
-    cancellationReason: null,
-    slug: "keratine-treatment"
-  },
-  {
-    id: "NS-20260902-1500",
-    status: "cancelled",
-    service: "Cold Wave & Trim",
-    price: 848,
-    priceFormatted: "₱848",
-    date: "September 02, 2026",
-    time: "3:00 PM",
-    customerName: "Maria Santos",
-    contactNumber: "0917 888 9999",
-    visitType: "Salon Visit",
-    address: "BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City",
-    paymentMethod: "Cash",
-    paymentStatus: "Cancelled (No charge)",
-    cancellationReason: "Change of schedule",
-    cancelledAt: "August 31, 2026",
-    slug: "cold-wave"
-  }
-];
-
+let appointmentsData = [];
 let activeTab = 'upcoming';
 let currentSelectedAppointmentId = null;
+let currentRebookAppointment = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-  renderAppointments();
-  updateTabCounters();
+  initPatronProfile();
+  setupDialogSteadyListeners();
+  loadCustomerAppointments();
 });
+
+function initPatronProfile() {
+  const savedUserJson = localStorage.getItem('nelys_user');
+  if (!savedUserJson) return;
+
+  try {
+    const user = JSON.parse(savedUserJson);
+    const displayName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Client Patron');
+
+    const sidebarName = document.getElementById('customerSidebarName') || document.querySelector('aside .truncate');
+    if (sidebarName) {
+      sidebarName.textContent = displayName;
+    }
+
+    const avatarEl = document.getElementById('customerAvatarInitials') || document.querySelector('aside .w-10.h-10.rounded-full');
+    if (avatarEl) {
+      const initials = displayName
+        .split(' ')
+        .filter(Boolean)
+        .map(w => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+      if (initials) avatarEl.textContent = initials;
+    }
+
+    const modalName = document.getElementById('profileModalName');
+    if (modalName) modalName.value = user.full_name || user.name || '';
+
+    const modalPhone = document.getElementById('profileModalPhone');
+    if (modalPhone) modalPhone.value = user.phone || '';
+
+    const modalAddress = document.getElementById('profileModalAddress');
+    if (modalAddress && user.address) modalAddress.value = user.address;
+  } catch (e) {
+    console.warn('Error reading saved user:', e);
+  }
+}
+
+// 1. Fetch appointments from live database
+async function loadCustomerAppointments() {
+  const token = localStorage.getItem('nelys_token');
+  const headers = {
+    'Accept': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+
+  try {
+    const res = await fetch('../api/bookings', { headers });
+    const result = await res.json();
+
+    if (res.ok && result.status === 'success' && Array.isArray(result.data)) {
+      appointmentsData = result.data.map(mapBookingToAppointment);
+      updateTabCounters();
+      renderAppointments();
+    } else {
+      console.warn('No active appointments returned from server:', result);
+      appointmentsData = [];
+      updateTabCounters();
+      renderAppointments();
+    }
+  } catch (err) {
+    console.error('Error loading customer appointments from server:', err);
+    appointmentsData = [];
+    updateTabCounters();
+    renderAppointments();
+  }
+}
+
+function mapBookingToAppointment(b) {
+  const isPaid = b.payment_status === 'paid';
+  const rawMethod = (b.payment_method || 'cash').toLowerCase();
+  const methodLabel = rawMethod.includes('gcash') ? 'GCash' : (rawMethod.includes('bank') ? 'Bank Transfer' : 'Cash');
+  const statusLabel = isPaid ? 'Paid / Verified' : (rawMethod.includes('cash') ? 'Pay on Visit' : 'Pending');
+
+  return {
+    id: b.reference_no,
+    dbId: b.id,
+    status: b.status === 'confirmed' ? 'upcoming' : b.status,
+    dbStatus: b.status,
+    service: b.service_name || 'Salon Service',
+    serviceId: b.service_id,
+    price: parseFloat(b.total_price || 0),
+    priceFormatted: `₱${parseFloat(b.total_price || 0).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+    date: formatDisplayDate(b.booking_date),
+    rawDate: b.booking_date,
+    time: formatDisplayTime(b.booking_time),
+    rawTime: b.booking_time,
+    customerName: b.customer_name || 'Valued Patron',
+    contactNumber: b.customer_phone || '',
+    visitType: b.visit_type === 'home' ? 'Home Service' : 'Salon Visit',
+    address: b.visit_type === 'home' 
+      ? (b.home_address || 'Customer Registered Address')
+      : "BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City",
+    paymentMethod: methodLabel,
+    paymentStatus: statusLabel,
+    cancellationReason: b.cancellation_reason || null,
+    cancelledAt: b.updated_at ? formatDisplayDate(b.updated_at.split(' ')[0]) : null,
+    slug: b.service_code || 'brazilian'
+  };
+}
 
 // 1. Mobile Sidebar Drawer Controls
 function toggleMobileSidebar(open = null) {
@@ -216,8 +231,7 @@ function buildAppointmentCardHtml(item) {
   let statusBadge = '';
   let noteHtml = '';
 
-  const serviceSlug = item.slug || 'brazilian';
-  const actionButtons = `
+  let actionButtons = `
     <button 
       type="button" 
       onclick="openDetailsModal('${item.id}')"
@@ -225,6 +239,21 @@ function buildAppointmentCardHtml(item) {
       <i class="fa-solid fa-circle-info text-xs"></i>
       <span>Details</span>
     </button>
+  `;
+
+  if (item.status === 'upcoming' || item.status === 'pending') {
+    actionButtons += `
+      <button 
+        type="button" 
+        onclick="openCancelModal('${item.id}')" 
+        class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-white hover:bg-rose-50 text-rose-700 border border-rose-300 text-xs font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2">
+        <i class="fa-solid fa-calendar-xmark text-xs"></i>
+        <span>Cancel</span>
+      </button>
+    `;
+  }
+
+  actionButtons += `
     <button 
       type="button" 
       onclick="openQuickRebookModal('${item.id}')" 
@@ -310,7 +339,7 @@ function buildAppointmentCardHtml(item) {
             </span>
             <span class="flex items-center gap-1.5 text-[#541A1A]">
               <i class="fa-solid fa-location-dot text-[#810B38]"></i>
-              ${item.address.includes('Lagro') ? "Nely's Salon (Lagro)" : "Home Service"}
+              ${item.visitType === 'Home Service' ? 'Home Service' : "Nely's Salon (Lagro)"}
             </span>
           </div>
         </div>
@@ -387,8 +416,6 @@ function closeDetailsModal() {
 }
 
 // 7. Express 1-Step Quick Re-booking System (Without going through steps 1-5)
-let currentRebookAppointment = null;
-
 function openQuickRebookModal(bookingId) {
   const item = appointmentsData.find(a => a.id === bookingId);
   if (!item) return;
@@ -451,49 +478,61 @@ function selectRebookTime(time, btn = null) {
   });
 }
 
-function handleQuickRebookSubmit(event) {
+async function handleQuickRebookSubmit(event) {
   event.preventDefault();
   if (!currentRebookAppointment) return;
 
   const dateVal = document.getElementById('rebookDateInput').value;
   const timeVal = document.getElementById('rebookTimeSelected').value;
 
-  // Format date nicely (e.g. September 28, 2026)
-  const [yyyy, mm, dd] = dateVal.split('-');
-  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  const formattedDate = `${months[parseInt(mm, 10) - 1]} ${parseInt(dd, 10)}, ${yyyy}`;
+  // Convert "10:00 AM" to "10:00:00"
+  let formattedTime = '10:00:00';
+  if (timeVal) {
+    const [t, meridiem] = timeVal.split(' ');
+    let [hh, mm] = t.split(':');
+    let h = parseInt(hh, 10);
+    if (meridiem === 'PM' && h < 12) h += 12;
+    if (meridiem === 'AM' && h === 12) h = 0;
+    formattedTime = `${String(h).padStart(2, '0')}:${mm || '00'}:00`;
+  }
 
-  // Generate new booking ID
-  const randNum = Math.floor(1000 + Math.random() * 9000);
-  const newBookingId = `NS-2026${mm}${dd}-${randNum}`;
-
-  const newAppointment = {
-    id: newBookingId,
-    status: 'upcoming',
-    service: currentRebookAppointment.service,
-    price: currentRebookAppointment.price,
-    priceFormatted: currentRebookAppointment.priceFormatted,
-    date: formattedDate,
-    time: timeVal,
-    customerName: currentRebookAppointment.customerName,
-    contactNumber: currentRebookAppointment.contactNumber,
-    visitType: currentRebookAppointment.visitType,
-    address: currentRebookAppointment.address,
-    paymentMethod: currentRebookAppointment.paymentMethod,
-    paymentStatus: currentRebookAppointment.paymentMethod === 'Cash' ? 'Pay on Visit' : 'Paid / Verified',
-    cancellationReason: null,
-    slug: currentRebookAppointment.slug || 'brazilian'
+  const token = localStorage.getItem('nelys_token');
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
   };
 
-  // Add new appointment to list
-  appointmentsData.unshift(newAppointment);
+  const payload = {
+    service_id: currentRebookAppointment.serviceId || 1,
+    booking_date: dateVal,
+    booking_time: formattedTime,
+    visit_type: currentRebookAppointment.visitType === 'Home Service' ? 'home' : 'salon',
+    payment_method: currentRebookAppointment.paymentMethod.toLowerCase().includes('gcash') ? 'gcash' : 'cash'
+  };
 
-  closeQuickRebookModal();
+  try {
+    const res = await fetch('../api/bookings', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload)
+    });
 
-  // Switch to upcoming tab and refresh UI
-  switchTab('upcoming');
+    const result = await res.json();
 
-  showToast(`${currentRebookAppointment.service} successfully re-booked for ${formattedDate} at ${timeVal}!`, 'success');
+    if (res.ok && result.status === 'success') {
+      closeQuickRebookModal();
+      showToast(`${currentRebookAppointment.service} successfully re-booked!`, 'success');
+      await loadCustomerAppointments();
+      switchTab('pending');
+    } else {
+      const msg = result.message || 'Failed to complete re-booking.';
+      showToast(msg, 'error');
+    }
+  } catch (err) {
+    console.error('Rebook network error:', err);
+    showToast('Failed to connect to booking server.', 'error');
+  }
 }
 
 // 8. Open Cancel Modal
@@ -522,8 +561,8 @@ function closeCancelModal() {
   if (modal) modal.close();
 }
 
-// 8. Confirm Cancellation Logic
-function handleConfirmCancellation(event) {
+// 8. Confirm Cancellation Logic (Connected to DB API)
+async function handleConfirmCancellation(event) {
   event.preventDefault();
 
   const reasonSelect = document.getElementById('cancelReasonSelect');
@@ -534,19 +573,40 @@ function handleConfirmCancellation(event) {
     finalReason = otherNotes.value.trim();
   }
 
-  const appointment = appointmentsData.find(a => a.id === currentSelectedAppointmentId);
-  if (appointment) {
-    appointment.status = 'cancelled';
-    appointment.cancellationReason = finalReason;
-    appointment.cancelledAt = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-
+  const ref = currentSelectedAppointmentId;
+  if (!ref) {
     closeCancelModal();
-    updateTabCounters();
+    return;
+  }
 
-    // Automatically switch to Cancelled tab to demonstrate the updated status!
-    switchTab('cancelled');
+  const token = localStorage.getItem('nelys_token');
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
 
-    showToast(`Appointment ${appointment.id} has been cancelled.`, 'warning');
+  try {
+    const res = await fetch(`../api/bookings/${ref}/cancel`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ reason: finalReason })
+    });
+
+    const result = await res.json();
+
+    if (res.ok && result.status === 'success') {
+      closeCancelModal();
+      showToast(`Appointment ${ref} has been cancelled.`, 'warning');
+      await loadCustomerAppointments();
+      switchTab('cancelled');
+    } else {
+      const errMsg = result.message || 'Could not cancel appointment.';
+      showToast(errMsg, 'error');
+    }
+  } catch (err) {
+    console.error('Cancellation error:', err);
+    showToast('Server connection failed.', 'error');
   }
 }
 
@@ -624,4 +684,59 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function setupDialogSteadyListeners() {
+  document.querySelectorAll('dialog').forEach(dlg => {
+    dlg.addEventListener('click', (e) => {
+      const rect = dlg.getBoundingClientRect();
+      const isInDialog = (
+        rect.top <= e.clientY &&
+        e.clientY <= rect.top + rect.height &&
+        rect.left <= e.clientX &&
+        e.clientX <= rect.left + rect.width
+      );
+      if (!isInDialog) {
+        dlg.close();
+      }
+    });
+  });
+}
+
+function formatDisplayDate(dateStr) {
+  if (!dateStr) return 'Date TBD';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    const yyyy = parseInt(parts[0], 10);
+    const mm = parseInt(parts[1], 10);
+    const dd = parseInt(parts[2], 10);
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return `${months[mm - 1]} ${dd}, ${yyyy}`;
+  }
+  return dateStr;
+}
+
+function formatDisplayTime(timeStr) {
+  if (!timeStr) return 'Time TBD';
+  const parts = timeStr.split(':');
+  if (parts.length >= 2) {
+    let hour = parseInt(parts[0], 10);
+    const min = parts[1];
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    hour = hour % 12;
+    if (hour === 0) hour = 12;
+    return `${hour}:${min} ${ampm}`;
+  }
+  return timeStr;
+}
+
+function handleLogout(e) {
+  if (confirm("Are you sure you want to log out of Nely's Salon?")) {
+    localStorage.removeItem('nelys_token');
+    localStorage.removeItem('nelys_user');
+    showToast('Logging out...', 'info');
+    return true;
+  }
+  if (e) e.preventDefault();
+  return false;
 }

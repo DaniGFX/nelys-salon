@@ -119,11 +119,11 @@
 
     <!-- Customer Profile Quick Pill -->
     <div class="px-5 py-4 mx-4 my-3 rounded-2xl bg-[#6e1335]/40 border border-[#810B38]/50 flex items-center gap-3">
-      <div class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
-        MS
+      <div id="customerAvatarInitials" class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
+        --
       </div>
       <div class="min-w-0 flex-1">
-        <span class="block text-sm font-semibold text-[#F1E2D1] truncate">Maria Santos</span>
+        <span id="customerSidebarName" class="block text-sm font-semibold text-[#F1E2D1] truncate">Client Patron</span>
         <span class="inline-flex items-center gap-1.5 text-[11px] text-[#DCC3AA]">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
           Verified Client
@@ -153,7 +153,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>My Appointments</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+        <span id="sidebarAppointmentsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Services & Prices -->
@@ -168,7 +168,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+        <span id="sidebarMessagesBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Notifications -->
@@ -176,7 +176,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">3</span>
+        <span id="sidebarNotifBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- My Profile -->
@@ -191,6 +191,7 @@
     <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
       <a 
         href="../login.html"
+        onclick="handleLogout(event)"
         class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
         <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
         <span>Log Out</span>
@@ -215,15 +216,15 @@
       <div class="space-y-2 relative z-10">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810B38]/10 text-[#810B38] text-xs font-bold uppercase tracking-wider">
           <i class="fa-solid fa-sparkles text-[#810B38]"></i>
-          <span id="greetingTimeOfDay">Good morning</span>
+          <span id="greetingTimeOfDay">Good day</span>
         </div>
 
         <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#541A1A] leading-tight">
-          Good morning, <span class="text-[#810B38]">Maria!</span>
+          Welcome, <span id="customerGreetingName" class="text-[#810B38]">Client!</span>
         </h2>
 
         <p class="text-sm sm:text-base text-[#735e5e] max-w-xl font-normal leading-relaxed">
-          Welcome back to Nely's Salon. Ready for your next beauty appointment?
+          Welcome to your Nely's Salon dashboard. Manage your bookings and beauty appointments.
         </p>
       </div>
 
@@ -249,10 +250,10 @@
         </div>
       </div>
 
-      <!-- ACTIVE UPCOMING APPOINTMENT CARD -->
+      <!-- ACTIVE UPCOMING APPOINTMENT CARD (Hidden initially until loaded from DB) -->
       <div 
         id="activeAppointmentCard" 
-        class="bg-white rounded-3xl border-2 border-[#DCC3AA] shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
+        class="hidden bg-white rounded-3xl border-2 border-[#DCC3AA] shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl">
         
         <!-- Card Top Bar: Badge & Reference -->
         <div class="bg-gradient-to-r from-[#541A1A] to-[#810B38] px-6 py-4 text-white flex flex-wrap items-center justify-between gap-3">
@@ -261,13 +262,15 @@
               <i class="fa-solid fa-calendar-check text-[#810B38]"></i>
               NEXT APPOINTMENT
             </span>
-            <span class="text-xs text-[#F1E2D1] font-mono tracking-wider">Ref: NS-20260925-0814</span>
+            <span id="activeBookingRef" class="text-xs text-[#F1E2D1] font-mono tracking-wider">Ref: --</span>
           </div>
 
-          <!-- Status badge: Confirmed -->
-          <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/40 text-xs font-bold tracking-wide shadow-sm">
-            <i class="fa-solid fa-circle-check text-emerald-300"></i>
-            <span>Confirmed</span>
+          <!-- Status badge container -->
+          <div id="activeBookingStatusContainer">
+            <div id="activeBookingStatusBadge" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/40 text-xs font-bold tracking-wide shadow-sm">
+              <i class="fa-solid fa-circle-check text-emerald-300"></i>
+              <span id="activeBookingStatusText">Confirmed</span>
+            </div>
           </div>
         </div>
 
@@ -281,12 +284,12 @@
                 <i class="fa-solid fa-spa"></i>
               </div>
               <div>
-                <span class="text-xs uppercase font-bold tracking-widest text-[#810B38]">Hair Care Treatment</span>
-                <h4 class="font-serif text-2xl sm:text-3xl font-bold text-[#541A1A]">
-                  Brazilian Treatment
+                <span id="activeBookingCategory" class="text-xs uppercase font-bold tracking-widest text-[#810B38]">Hair Care Treatment</span>
+                <h4 id="activeBookingService" class="font-serif text-2xl sm:text-3xl font-bold text-[#541A1A]">
+                  --
                 </h4>
-                <p class="text-xs sm:text-sm text-[#735e5e] mt-1">
-                  Transformative keratin smoothing treatment eliminating frizz with mirror-like shine. (Est. 120 mins)
+                <p id="activeBookingDescription" class="text-xs sm:text-sm text-[#735e5e] mt-1">
+                  Loading appointment details...
                 </p>
               </div>
             </div>
@@ -301,7 +304,7 @@
                 </div>
                 <div>
                   <span class="text-[10px] uppercase font-bold tracking-wider text-[#735e5e] block">Date</span>
-                  <span class="text-xs sm:text-sm font-bold text-[#2b1d1d] block">Sept. 25, 2026</span>
+                  <span id="activeBookingDate" class="text-xs sm:text-sm font-bold text-[#2b1d1d] block">--</span>
                 </div>
               </div>
 
@@ -312,7 +315,7 @@
                 </div>
                 <div>
                   <span class="text-[10px] uppercase font-bold tracking-wider text-[#735e5e] block">Time Slot</span>
-                  <span class="text-xs sm:text-sm font-bold text-[#2b1d1d] block">10:00 AM</span>
+                  <span id="activeBookingTime" class="text-xs sm:text-sm font-bold text-[#2b1d1d] block">--</span>
                 </div>
               </div>
 
@@ -323,7 +326,7 @@
                 </div>
                 <div>
                   <span class="text-[10px] uppercase font-bold tracking-wider text-[#735e5e] block">Location</span>
-                  <span class="text-xs sm:text-sm font-bold text-[#2b1d1d] block truncate">Nely's Salon</span>
+                  <span id="activeBookingLocation" class="text-xs sm:text-sm font-bold text-[#2b1d1d] block truncate">Nely's Salon</span>
                 </div>
               </div>
 
@@ -336,15 +339,15 @@
             <div class="bg-[#FAF6F0] p-4 rounded-2xl border border-[#DCC3AA]/60 flex items-center justify-between">
               <div>
                 <span class="text-xs text-[#735e5e] block">Payment Method:</span>
-                <span class="text-sm font-bold text-[#541A1A] flex items-center gap-1.5 mt-0.5">
+                <span id="activeBookingPayment" class="text-sm font-bold text-[#541A1A] flex items-center gap-1.5 mt-0.5">
                   <i class="fa-solid fa-mobile-screen-button text-[#810B38]"></i>
-                  GCash
+                  --
                 </span>
               </div>
               <div class="text-right">
                 <span class="text-xs text-[#735e5e] block">Total Amount:</span>
-                <span class="text-xl sm:text-2xl font-serif font-bold text-[#810B38] block leading-tight">
-                  ₱1,999
+                <span id="activeBookingTotal" class="text-xl sm:text-2xl font-serif font-bold text-[#810B38] block leading-tight">
+                  ₱0
                 </span>
               </div>
             </div>
@@ -353,6 +356,7 @@
             <div class="flex flex-col sm:flex-row items-center gap-3">
               <button 
                 type="button" 
+                id="activeBookingDetailsBtn"
                 onclick="openDetailsModal()" 
                 class="w-full sm:flex-1 py-3 px-4 rounded-xl bg-[#541A1A] text-[#F1E2D1] hover:bg-[#401212] hover:text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shadow-md">
                 <i class="fa-solid fa-circle-info text-xs"></i>
@@ -361,6 +365,7 @@
 
               <button 
                 type="button" 
+                id="activeBookingCancelBtn"
                 onclick="openCancelModal()" 
                 class="w-full sm:flex-1 py-3 px-4 rounded-xl bg-white border border-[#810B38] text-[#810B38] hover:bg-[#810B38] hover:text-white text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 shadow-sm">
                 <i class="fa-solid fa-calendar-xmark text-xs"></i>
@@ -515,7 +520,7 @@
             </span>
           </div>
           <div class="mt-3">
-            <span class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A] block">1</span>
+            <span id="dashMetricUpcoming" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A] block">0</span>
             <span class="text-xs text-[#735e5e] font-medium">Appointments</span>
           </div>
         </div>
@@ -529,7 +534,7 @@
             </span>
           </div>
           <div class="mt-3">
-            <span class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A] block">8</span>
+            <span id="dashMetricCompleted" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A] block">0</span>
             <span class="text-xs text-[#735e5e] font-medium">Appointments</span>
           </div>
         </div>
@@ -543,7 +548,7 @@
             </span>
           </div>
           <div class="mt-3">
-            <span class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A] block">2</span>
+            <span id="dashMetricCancelled" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A] block">0</span>
             <span class="text-xs text-[#735e5e] font-medium">Appointments</span>
           </div>
         </div>
@@ -557,7 +562,7 @@
             </span>
           </div>
           <div class="mt-3">
-            <span class="font-serif text-2xl sm:text-3xl font-bold text-[#810B38] block">₱6,490</span>
+            <span id="dashMetricSpent" class="font-serif text-2xl sm:text-3xl font-bold text-[#810B38] block">₱0</span>
             <span class="text-xs text-[#735e5e] font-medium">Your salon visits</span>
           </div>
         </div>
@@ -704,54 +709,13 @@
           </button>
         </div>
 
-        <div class="bg-white p-5 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-4">
-          
-          <!-- Notification 1 -->
-          <div class="p-3.5 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] flex items-start gap-3">
-            <div class="w-9 h-9 rounded-xl bg-[#810B38] text-white flex items-center justify-center text-xs shrink-0 shadow-sm">
-              <i class="fa-solid fa-bell"></i>
+        <div id="dashNotificationList" class="bg-white p-5 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-4">
+          <div class="p-6 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] text-center space-y-2">
+            <div class="w-10 h-10 rounded-full bg-white text-[#810B38] flex items-center justify-center text-sm mx-auto border border-[#DCC3AA]/60 shadow-sm">
+              <i class="fa-solid fa-bell-slash"></i>
             </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between">
-                <h5 class="text-xs font-bold text-[#541A1A]">Appointment Reminder</h5>
-                <span class="text-[10px] text-[#735e5e]">2 hours ago</span>
-              </div>
-              <p class="text-xs text-[#2b1d1d] mt-1 leading-snug">
-                Your Brazilian appointment is tomorrow at 10:00 AM.
-              </p>
-            </div>
-          </div>
-
-          <!-- Notification 2 -->
-          <div class="p-3.5 rounded-2xl bg-white border border-[#E8D9CA] flex items-start gap-3">
-            <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center text-xs shrink-0 border border-emerald-200">
-              <i class="fa-solid fa-check"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between">
-                <h5 class="text-xs font-bold text-[#541A1A]">Booking Confirmed</h5>
-                <span class="text-[10px] text-[#735e5e]">Yesterday</span>
-              </div>
-              <p class="text-xs text-[#2b1d1d] mt-1 leading-snug">
-                Your appointment has been confirmed.
-              </p>
-            </div>
-          </div>
-
-          <!-- Notification 3 -->
-          <div class="p-3.5 rounded-2xl bg-white border border-[#E8D9CA] flex items-start gap-3">
-            <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-700 flex items-center justify-center text-xs shrink-0 border border-blue-200">
-              <i class="fa-solid fa-credit-card"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between">
-                <h5 class="text-xs font-bold text-[#541A1A]">Payment Verified</h5>
-                <span class="text-[10px] text-[#735e5e]">Yesterday</span>
-              </div>
-              <p class="text-xs text-[#2b1d1d] mt-1 leading-snug">
-                Your GCash payment has been verified.
-              </p>
-            </div>
+            <p class="text-xs font-bold text-[#541A1A]">No new notifications</p>
+            <p class="text-[11px] text-[#735e5e]">You're all caught up with your appointment alerts.</p>
           </div>
 
           <!-- View all notifications trigger button -->
@@ -803,184 +767,22 @@
                 <th class="py-4 px-6 text-right">Action</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-[#F1E2D1] text-xs">
-              
-              <!-- Row 1: Brazilian -->
-              <tr class="hover:bg-[#FAF6F0]/60 transition-colors">
-                <td class="py-4 px-6 font-bold text-[#541A1A] flex items-center gap-2.5">
-                  <div class="w-7 h-7 rounded-lg bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xs shrink-0 border border-[#DCC3AA]/50">
-                    <i class="fa-solid fa-spa"></i>
-                  </div>
-                  <span>Brazilian</span>
-                </td>
-                <td class="py-4 px-6 text-[#2b1d1d] font-medium">Sept. 25, 2026</td>
-                <td class="py-4 px-6">
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FAF6F0] text-[#541A1A] border border-[#DCC3AA]/60 text-[10px] font-semibold">
-                    <i class="fa-solid fa-store text-[9px] text-[#810B38]"></i>
-                    Salon
-                  </span>
-                </td>
-                <td class="py-4 px-6">
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
-                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    Confirmed
-                  </span>
-                </td>
-                <td class="py-4 px-6 font-serif font-bold text-sm text-right text-[#810B38]">₱1,999</td>
-                <td class="py-4 px-6 text-right">
-                  <button 
-                    onclick="openDetailsModal()" 
-                    class="px-3 py-1.5 rounded-lg bg-[#541A1A] text-[#F1E2D1] hover:bg-[#810B38] hover:text-white transition-colors text-[11px] font-semibold">
-                    Details
-                  </button>
+            <tbody id="dashRecentTableBody" class="divide-y divide-[#F1E2D1] text-xs">
+              <tr>
+                <td colspan="6" class="py-8 text-center text-xs text-[#735e5e] italic">
+                  No appointments found.
                 </td>
               </tr>
-
-              <!-- Row 2: Hair Dye -->
-              <tr class="hover:bg-[#FAF6F0]/60 transition-colors">
-                <td class="py-4 px-6 font-bold text-[#541A1A] flex items-center gap-2.5">
-                  <div class="w-7 h-7 rounded-lg bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xs shrink-0 border border-[#DCC3AA]/50">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                  </div>
-                  <span>Hair Dye</span>
-                </td>
-                <td class="py-4 px-6 text-[#2b1d1d] font-medium">Sept. 10, 2026</td>
-                <td class="py-4 px-6">
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-semibold">
-                    <i class="fa-solid fa-house-chimney text-[9px] text-amber-600"></i>
-                    Home Service
-                  </span>
-                </td>
-                <td class="py-4 px-6">
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold">
-                    <i class="fa-solid fa-check text-[9px]"></i>
-                    Completed
-                  </span>
-                </td>
-                <td class="py-4 px-6 font-serif font-bold text-sm text-right text-[#810B38]">₱699</td>
-                <td class="py-4 px-6 text-right">
-                  <button 
-                    onclick="showReceiptModal('NS-20260910-0321', 'Hair Dye', '₱699', 'Completed')" 
-                    class="px-3 py-1.5 rounded-lg bg-white border border-[#DCC3AA] text-[#541A1A] hover:bg-[#FAF6F0] transition-colors text-[11px] font-semibold">
-                    Receipt
-                  </button>
-                </td>
-              </tr>
-
-              <!-- Row 3: Gel Manicure -->
-              <tr class="hover:bg-[#FAF6F0]/60 transition-colors">
-                <td class="py-4 px-6 font-bold text-[#541A1A] flex items-center gap-2.5">
-                  <div class="w-7 h-7 rounded-lg bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xs shrink-0 border border-[#DCC3AA]/50">
-                    <i class="fa-solid fa-hand-sparkles"></i>
-                  </div>
-                  <span>Gel Manicure</span>
-                </td>
-                <td class="py-4 px-6 text-[#2b1d1d] font-medium">Aug. 22, 2026</td>
-                <td class="py-4 px-6">
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#FAF6F0] text-[#541A1A] border border-[#DCC3AA]/60 text-[10px] font-semibold">
-                    <i class="fa-solid fa-store text-[9px] text-[#810B38]"></i>
-                    Salon
-                  </span>
-                </td>
-                <td class="py-4 px-6">
-                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold">
-                    <i class="fa-solid fa-check text-[9px]"></i>
-                    Completed
-                  </span>
-                </td>
-                <td class="py-4 px-6 font-serif font-bold text-sm text-right text-[#810B38]">₱499</td>
-                <td class="py-4 px-6 text-right">
-                  <button 
-                    onclick="showReceiptModal('NS-20260822-0112', 'Gel Manicure', '₱499', 'Completed')" 
-                    class="px-3 py-1.5 rounded-lg bg-white border border-[#DCC3AA] text-[#541A1A] hover:bg-[#FAF6F0] transition-colors text-[11px] font-semibold">
-                    Receipt
-                  </button>
-                </td>
-              </tr>
-
             </tbody>
           </table>
         </div>
       </div>
 
       <!-- MOBILE CARD VIEW (Shown exclusively on mobile < sm) -->
-      <div class="sm:hidden space-y-3">
-        
-        <!-- Mobile Card 1: Brazilian -->
-        <div class="p-4 rounded-2xl bg-white border border-[#DCC3AA] shadow-sm space-y-3">
-          <div class="flex items-start justify-between">
-            <div>
-              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38]">Sept. 25, 2026</span>
-              <h4 class="font-bold text-base text-[#541A1A]">Brazilian</h4>
-            </div>
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-bold">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Confirmed
-            </span>
-          </div>
-          <div class="flex items-center justify-between text-xs pt-2 border-t border-[#F1E2D1]">
-            <span class="text-[#735e5e] flex items-center gap-1">
-              <i class="fa-solid fa-store text-[#810B38]"></i> Salon Visit
-            </span>
-            <span class="font-serif font-bold text-base text-[#810B38]">₱1,999</span>
-          </div>
-          <button 
-            type="button" 
-            onclick="openDetailsModal()" 
-            class="w-full py-2 rounded-xl bg-[#541A1A] text-[#F1E2D1] text-xs font-bold uppercase tracking-wider hover:bg-[#810B38] transition-colors">
-            View Details
-          </button>
+      <div id="dashRecentMobileContainer" class="sm:hidden space-y-3">
+        <div class="p-6 rounded-2xl bg-white border border-[#DCC3AA] text-center text-xs text-[#735e5e] italic">
+          No appointments found.
         </div>
-
-        <!-- Mobile Card 2: Hair Dye -->
-        <div class="p-4 rounded-2xl bg-white border border-[#DCC3AA] shadow-sm space-y-3">
-          <div class="flex items-start justify-between">
-            <div>
-              <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e]">Sept. 10, 2026</span>
-              <h4 class="font-bold text-base text-[#541A1A]">Hair Dye</h4>
-            </div>
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold">
-              <i class="fa-solid fa-check text-[9px]"></i> Completed
-            </span>
-          </div>
-          <div class="flex items-center justify-between text-xs pt-2 border-t border-[#F1E2D1]">
-            <span class="text-[#735e5e] flex items-center gap-1">
-              <i class="fa-solid fa-house-chimney text-amber-600"></i> Home Service
-            </span>
-            <span class="font-serif font-bold text-base text-[#810B38]">₱699</span>
-          </div>
-          <button 
-            type="button" 
-            onclick="showReceiptModal('NS-20260910-0321', 'Hair Dye', '₱699', 'Completed')" 
-            class="w-full py-2 rounded-xl bg-white border border-[#DCC3AA] text-[#541A1A] text-xs font-bold uppercase tracking-wider hover:bg-[#FAF6F0] transition-colors">
-            View Receipt
-          </button>
-        </div>
-
-        <!-- Mobile Card 3: Gel Manicure -->
-        <div class="p-4 rounded-2xl bg-white border border-[#DCC3AA] shadow-sm space-y-3">
-          <div class="flex items-start justify-between">
-            <div>
-              <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e]">Aug. 22, 2026</span>
-              <h4 class="font-bold text-base text-[#541A1A]">Gel Manicure</h4>
-            </div>
-            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-bold">
-              <i class="fa-solid fa-check text-[9px]"></i> Completed
-            </span>
-          </div>
-          <div class="flex items-center justify-between text-xs pt-2 border-t border-[#F1E2D1]">
-            <span class="text-[#735e5e] flex items-center gap-1">
-              <i class="fa-solid fa-store text-[#810B38]"></i> Salon Visit
-            </span>
-            <span class="font-serif font-bold text-base text-[#810B38]">₱499</span>
-          </div>
-          <button 
-            type="button" 
-            onclick="showReceiptModal('NS-20260822-0112', 'Gel Manicure', '₱499', 'Completed')" 
-            class="w-full py-2 rounded-xl bg-white border border-[#DCC3AA] text-[#541A1A] text-xs font-bold uppercase tracking-wider hover:bg-[#FAF6F0] transition-colors">
-            View Receipt
-          </button>
-        </div>
-
       </div>
 
     </section>
@@ -1049,7 +851,7 @@
           </div>
           <div>
             <h4 class="font-serif text-xl font-bold text-[#541A1A]">Booking Details</h4>
-            <span class="text-xs text-[#735e5e] font-mono">Ref: NS-20260925-0814</span>
+            <span id="detailModalRef" class="text-xs text-[#735e5e] font-mono">Ref: --</span>
           </div>
         </div>
 
@@ -1068,44 +870,44 @@
         <div class="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] space-y-2">
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Service:</span>
-            <span class="font-bold text-[#541A1A]">Brazilian Treatment</span>
+            <span id="detailModalService" class="font-bold text-[#541A1A]">--</span>
           </div>
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Category:</span>
-            <span class="font-semibold text-[#2b1d1d]">Hair Care</span>
+            <span id="detailModalCategory" class="font-semibold text-[#2b1d1d]">--</span>
           </div>
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Est. Duration:</span>
-            <span class="font-semibold text-[#2b1d1d]">120 Minutes</span>
+            <span id="detailModalDuration" class="font-semibold text-[#2b1d1d]">--</span>
           </div>
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Scheduled Date:</span>
-            <span class="font-bold text-[#2b1d1d]">September 25, 2026</span>
+            <span id="detailModalDate" class="font-bold text-[#2b1d1d]">--</span>
           </div>
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Scheduled Time:</span>
-            <span class="font-bold text-[#810B38]">10:00 AM</span>
+            <span id="detailModalTime" class="font-bold text-[#810B38]">--</span>
           </div>
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Location:</span>
-            <span class="font-semibold text-[#2b1d1d]">Nely's Salon (Lagro, QC)</span>
+            <span id="detailModalLocation" class="font-semibold text-[#2b1d1d]">--</span>
           </div>
         </div>
 
         <div class="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] space-y-2">
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Payment Method:</span>
-            <span class="font-bold text-[#541A1A]">GCash (Manual Verification)</span>
+            <span id="detailModalMethod" class="font-bold text-[#541A1A]">--</span>
           </div>
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Payment Status:</span>
-            <span class="inline-flex items-center gap-1 text-emerald-700 font-bold">
-              <i class="fa-solid fa-circle-check text-[10px]"></i> Verified
+            <span id="detailModalPaymentStatus" class="inline-flex items-center gap-1 text-emerald-700 font-bold">
+              <i class="fa-solid fa-circle-check text-[10px]"></i> --
             </span>
           </div>
           <div class="flex justify-between text-sm pt-2 border-t border-[#DCC3AA]/50 font-bold">
             <span class="text-[#541A1A]">Total Charged:</span>
-            <span class="font-serif text-lg text-[#810B38]">₱1,999.00</span>
+            <span id="detailModalTotal" class="font-serif text-lg text-[#810B38]">₱0.00</span>
           </div>
         </div>
 
@@ -1128,6 +930,7 @@
         </button>
         <button 
           type="button" 
+          id="detailModalCancelBtn"
           onclick="closeDetailsModal(); openCancelModal();" 
           class="px-5 py-2.5 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold transition-colors">
           Cancel This Booking
@@ -1147,8 +950,8 @@
 
       <div class="text-center space-y-1.5">
         <h4 class="font-serif text-2xl font-bold text-[#541A1A]">Cancel Appointment?</h4>
-        <p class="text-xs text-[#735e5e] max-w-xs mx-auto">
-          Are you sure you want to cancel your <strong>Brazilian Treatment</strong> on <strong>Sept. 25, 2026 at 10:00 AM</strong>?
+        <p id="cancelModalPrompt" class="text-xs text-[#735e5e] max-w-xs mx-auto">
+          Are you sure you want to cancel your <strong id="cancelModalService">--</strong> on <strong id="cancelModalDateTime">--</strong>?
         </p>
       </div>
 
@@ -1188,6 +991,7 @@
         </button>
         <button 
           type="button" 
+          id="cancelModalSubmitBtn"
           onclick="confirmCancellation()" 
           class="flex-1 py-3 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold transition-colors shadow-md">
           Confirm Cancel
@@ -1216,72 +1020,14 @@
         </button>
       </div>
 
-      <div class="space-y-3 max-h-96 overflow-y-auto pr-1">
-        
-        <!-- Notif 1 -->
-        <div class="p-3.5 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] flex items-start gap-3">
-          <div class="w-8 h-8 rounded-lg bg-[#810B38] text-white flex items-center justify-center text-xs shrink-0">
-            <i class="fa-solid fa-bell"></i>
+      <div id="modalNotificationList" class="space-y-3 max-h-96 overflow-y-auto pr-1">
+        <div class="p-6 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] text-center space-y-2">
+          <div class="w-10 h-10 rounded-full bg-white text-[#810B38] flex items-center justify-center text-sm mx-auto border border-[#DCC3AA]/60 shadow-sm">
+            <i class="fa-solid fa-bell-slash"></i>
           </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex justify-between">
-              <span class="text-xs font-bold text-[#541A1A]">Appointment Reminder</span>
-              <span class="text-[10px] text-[#735e5e]">2 hours ago</span>
-            </div>
-            <p class="text-xs text-[#2b1d1d] mt-1">
-              Your Brazilian appointment is tomorrow at 10:00 AM.
-            </p>
-          </div>
+          <p class="text-xs font-bold text-[#541A1A]">No notifications yet</p>
+          <p class="text-[11px] text-[#735e5e]">Updates and reminders for your bookings will appear here.</p>
         </div>
-
-        <!-- Notif 2 -->
-        <div class="p-3.5 rounded-2xl bg-white border border-[#E8D9CA] flex items-start gap-3">
-          <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center text-xs shrink-0 border border-emerald-200">
-            <i class="fa-solid fa-check"></i>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex justify-between">
-              <span class="text-xs font-bold text-[#541A1A]">Booking Confirmed</span>
-              <span class="text-[10px] text-[#735e5e]">Yesterday</span>
-            </div>
-            <p class="text-xs text-[#2b1d1d] mt-1">
-              Your appointment has been confirmed.
-            </p>
-          </div>
-        </div>
-
-        <!-- Notif 3 -->
-        <div class="p-3.5 rounded-2xl bg-white border border-[#E8D9CA] flex items-start gap-3">
-          <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center text-xs shrink-0 border border-blue-200">
-            <i class="fa-solid fa-credit-card"></i>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex justify-between">
-              <span class="text-xs font-bold text-[#541A1A]">Payment Verified</span>
-              <span class="text-[10px] text-[#735e5e]">Yesterday</span>
-            </div>
-            <p class="text-xs text-[#2b1d1d] mt-1">
-              Your GCash payment has been verified.
-            </p>
-          </div>
-        </div>
-
-        <!-- Notif 4 -->
-        <div class="p-3.5 rounded-2xl bg-white border border-[#E8D9CA] flex items-start gap-3">
-          <div class="w-8 h-8 rounded-lg bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xs shrink-0 border border-[#DCC3AA]">
-            <i class="fa-solid fa-gift"></i>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex justify-between">
-              <span class="text-xs font-bold text-[#541A1A]">15-Year Anniversary Treat</span>
-              <span class="text-[10px] text-[#735e5e]">3 days ago</span>
-            </div>
-            <p class="text-xs text-[#2b1d1d] mt-1">
-              Thank you for being our loyal patron! Enjoy complimentary hair consultation on your next visit.
-            </p>
-          </div>
-        </div>
-
       </div>
 
       <div class="pt-2">
@@ -1363,7 +1109,7 @@
           <input 
             type="text" 
             id="profileFullName" 
-            value="Maria Santos" 
+            placeholder="Your Full Name"
             class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs focus:outline-none focus:border-[#810B38]">
         </div>
 
@@ -1372,7 +1118,7 @@
           <input 
             type="tel" 
             id="profilePhone" 
-            value="0917 888 9999" 
+            placeholder="0917XXXXXXX"
             class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs focus:outline-none focus:border-[#810B38]">
         </div>
 
@@ -1381,7 +1127,7 @@
           <input 
             type="email" 
             id="profileEmail" 
-            value="maria.santos@example.com" 
+            placeholder="your.email@example.com"
             class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs focus:outline-none focus:border-[#810B38]">
         </div>
 
@@ -1390,7 +1136,8 @@
           <textarea 
             id="profileAddress" 
             rows="2" 
-            class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs focus:outline-none focus:border-[#810B38]">Blk 12 Lot 4, Lagro Subd., Quezon City</textarea>
+            placeholder="House/Unit No., Street, Barangay, City"
+            class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs focus:outline-none focus:border-[#810B38]"></textarea>
         </div>
 
         <div class="pt-2 flex items-center justify-end gap-2">
@@ -1448,7 +1195,7 @@
         <div class="flex items-center justify-between pb-3 border-b border-dashed border-[#DCC3AA]">
           <div>
             <span class="text-[10px] text-[#735e5e] uppercase tracking-wider block">Reference No.</span>
-            <span id="receiptRef" class="font-bold text-[#541A1A] text-sm">NS-20260910-0321</span>
+            <span id="receiptRef" class="font-bold text-[#541A1A] text-sm">--</span>
           </div>
           <span id="receiptStatusBadge" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-bold">
             <i class="fa-solid fa-check text-[9px]"></i>
@@ -1460,23 +1207,23 @@
         <div class="space-y-2 pb-3 border-b border-dashed border-[#DCC3AA]">
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Client:</span>
-            <span id="receiptCustomer" class="font-bold text-[#2b1d1d]">Maria Santos</span>
+            <span id="receiptCustomer" class="font-bold text-[#2b1d1d]">--</span>
           </div>
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Service:</span>
-            <span id="receiptService" class="font-bold text-[#810B38]">Hair Dye</span>
+            <span id="receiptService" class="font-bold text-[#810B38]">--</span>
           </div>
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Visit Type:</span>
-            <span id="receiptType" class="font-semibold text-[#2b1d1d]">Home Service</span>
+            <span id="receiptType" class="font-semibold text-[#2b1d1d]">--</span>
           </div>
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Service Date:</span>
-            <span id="receiptDate" class="font-semibold text-[#2b1d1d]">Sept. 10, 2026 · 1:30 PM</span>
+            <span id="receiptDate" class="font-semibold text-[#2b1d1d]">--</span>
           </div>
           <div class="flex justify-between">
             <span class="text-[#735e5e]">Payment Method:</span>
-            <span id="receiptMethod" class="font-semibold text-[#2b1d1d]">GCash (Paid in Full)</span>
+            <span id="receiptMethod" class="font-semibold text-[#2b1d1d]">--</span>
           </div>
         </div>
 
@@ -1484,7 +1231,7 @@
         <div class="space-y-1.5 pb-3 border-b border-dashed border-[#DCC3AA]">
           <div class="flex justify-between text-xs text-[#735e5e]">
             <span>Subtotal:</span>
-            <span id="receiptSubtotal" class="font-semibold">₱699.00</span>
+            <span id="receiptSubtotal" class="font-semibold">₱0.00</span>
           </div>
           <div class="flex justify-between text-xs text-[#735e5e]">
             <span>Discount / Promo:</span>
@@ -1492,7 +1239,7 @@
           </div>
           <div class="flex justify-between items-center text-sm pt-2 border-t border-[#F1E2D1] font-bold">
             <span class="text-[#541A1A]">Total Amount:</span>
-            <span id="receiptAmount" class="font-serif text-xl font-bold text-[#810B38]">₱699.00</span>
+            <span id="receiptAmount" class="font-serif text-xl font-bold text-[#810B38]">₱0.00</span>
           </div>
         </div>
 

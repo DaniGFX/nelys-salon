@@ -282,14 +282,73 @@
       }, 4500);
     }
 
-    function handleLoginSubmit(e) {
+    async function handleLoginSubmit(e) {
       e.preventDefault();
       const identifier = document.getElementById('loginIdentifier').value.trim();
-      
-      showToast(`Welcome back, ${identifier}! Directing to appointment dashboard...`, 'success');
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 1500);
+      const password = document.getElementById('loginPassword').value;
+
+      if (!identifier || !password) {
+        showToast('Please enter your email or mobile number and password.', 'error');
+        return;
+      }
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalBtnContent = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i> <span>LOGGING IN...</span>';
+      }
+
+      try {
+        const response = await fetch('api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            email: identifier,
+            password: password
+          })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || result.status === 'error') {
+          const errorMsg = result.message || 'Invalid login credentials.';
+          showToast(errorMsg, 'error');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnContent;
+          }
+          return;
+        }
+
+        // Login success!
+        const user = result.data.user;
+        const token = result.data.token;
+        localStorage.setItem('nelys_token', token);
+        localStorage.setItem('nelys_user', JSON.stringify(user));
+
+        const displayName = user.full_name || identifier;
+        showToast(`Welcome back, ${displayName}! Directing to your dashboard...`, 'success');
+
+        setTimeout(() => {
+          if (user.role === 'admin') {
+            window.location.href = 'admin/dashboard.html';
+          } else {
+            window.location.href = 'customer/dashboard.html';
+          }
+        }, 1200);
+
+      } catch (err) {
+        console.error('Login connection error:', err);
+        showToast('Unable to connect to server. Please check your connection.', 'error');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnContent;
+        }
+      }
     }
 
     // Redirect if visited with #signup

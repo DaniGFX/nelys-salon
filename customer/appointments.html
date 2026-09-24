@@ -116,11 +116,11 @@
 
     <!-- Customer Profile Quick Pill -->
     <div class="px-5 py-4 mx-4 my-3 rounded-2xl bg-[#6e1335]/40 border border-[#810B38]/50 flex items-center gap-3">
-      <div class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
-        MS
+      <div id="customerAvatarInitials" class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
+        --
       </div>
       <div class="min-w-0 flex-1">
-        <span class="block text-sm font-semibold text-[#F1E2D1] truncate">Maria Santos</span>
+        <span id="customerSidebarName" class="block text-sm font-semibold text-[#F1E2D1] truncate">Client Patron</span>
         <span class="inline-flex items-center gap-1.5 text-[11px] text-[#DCC3AA]">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
           Verified Client
@@ -149,7 +149,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
         <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA]"></i>
         <span>My Appointments</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Services & Prices -->
@@ -164,7 +164,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- Notifications -->
@@ -172,7 +172,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">3</span>
+        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
 
       <!-- My Profile -->
@@ -243,7 +243,7 @@
           class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#810B38] bg-[#810B38] text-white shadow-sm focus:outline-none">
           <span>Upcoming</span>
           <span id="count-upcoming"
-            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA] bg-[#DCC3AA] text-[#541A1A] min-w-[20px] text-center inline-block">1</span>
+            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA] bg-[#DCC3AA] text-[#541A1A] min-w-[20px] text-center inline-block">0</span>
         </button>
 
         <!-- Tab 2: Pending -->
@@ -251,7 +251,7 @@
           class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
           <span>Pending</span>
           <span id="count-pending"
-            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">1</span>
+            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">0</span>
         </button>
 
         <!-- Tab 3: Completed -->
@@ -259,7 +259,7 @@
           class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
           <span>Completed</span>
           <span id="count-completed"
-            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">2</span>
+            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">0</span>
         </button>
 
         <!-- Tab 4: Cancelled -->
@@ -267,75 +267,14 @@
           class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
           <span>Cancelled</span>
           <span id="count-cancelled"
-            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">1</span>
+            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">0</span>
         </button>
 
       </div>
 
       <!-- ================= 3, 4, 7. DYNAMIC APPOINTMENTS LIST CONTAINER ================= -->
       <div id="appointmentsListContainer" class="space-y-4">
-
-        <!-- 3. Upcoming Appointment Card (Default Initial) -->
-        <article
-          class="bg-white rounded-3xl border border-[#DCC3AA] shadow-sm hover:shadow-md transition-all p-6 sm:p-7 relative overflow-hidden">
-          <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#F1E2D1]">
-            <div
-              class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold tracking-wide">
-              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <i class="fa-solid fa-circle-check text-emerald-600 text-xs"></i>
-              <span>CONFIRMED</span>
-            </div>
-            <span class="text-xs font-mono text-[#735e5e] bg-[#FAF6F0] px-3 py-1 rounded-lg border border-[#E8D9CA]">
-              ID: NS-20260925-0814
-            </span>
-          </div>
-
-          <div class="py-5 flex flex-col md:flex-row md:items-center justify-between gap-5">
-            <div>
-              <h3 class="font-serif text-2xl sm:text-3xl font-bold text-[#541A1A]">
-                Brazilian Treatment
-              </h3>
-              <div class="flex flex-wrap items-center gap-y-2 gap-x-4 text-xs text-[#735e5e] mt-2">
-                <span class="flex items-center gap-1.5 font-medium text-[#2b1d1d]">
-                  <i class="fa-regular fa-calendar text-[#810B38]"></i>
-                  September 25, 2026
-                </span>
-                <span class="flex items-center gap-1.5 font-bold text-[#810B38]">
-                  <i class="fa-regular fa-clock text-[#810B38]"></i>
-                  10:00 AM
-                </span>
-                <span class="flex items-center gap-1.5 text-[#541A1A]">
-                  <i class="fa-solid fa-location-dot text-[#810B38]"></i>
-                  Nely's Salon (Lagro)
-                </span>
-              </div>
-            </div>
-
-            <div class="md:text-right shrink-0">
-              <span class="block text-[11px] uppercase tracking-wider text-[#735e5e] font-semibold">Total Amount</span>
-              <span class="font-serif text-2xl sm:text-3xl font-extrabold text-[#810B38]">
-                ₱1,999
-              </span>
-              <span class="block text-[11px] text-[#735e5e] mt-0.5">
-                Payment: <strong class="text-[#541A1A]">GCash</strong>
-              </span>
-            </div>
-          </div>
-
-          <div class="pt-4 border-t border-[#F1E2D1] flex flex-wrap items-center justify-end gap-3">
-            <button type="button" onclick="openDetailsModal('NS-20260925-0814')"
-              class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2">
-              <i class="fa-solid fa-circle-info text-xs"></i>
-              <span>Details</span>
-            </button>
-            <button type="button" onclick="openQuickRebookModal('NS-20260925-0814')"
-              class="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold uppercase tracking-wider transition-colors shadow-sm flex items-center justify-center gap-2">
-              <i class="fa-solid fa-repeat text-xs"></i>
-              <span>Re-book</span>
-            </button>
-          </div>
-        </article>
-
+        <!-- Dynamically loaded from database API -->
       </div>
 
       <!-- EMPTY STATE CONTAINER (Hidden when appointments exist) -->
@@ -397,7 +336,7 @@
           </div>
           <div>
             <h4 class="font-serif text-xl font-bold text-[#541A1A]">Appointment Information</h4>
-            <span id="modalDetailId" class="text-[11px] font-mono text-[#735e5e] block">NS-20260925-0814</span>
+            <span id="modalDetailId" class="text-[11px] font-mono text-[#735e5e] block">--</span>
           </div>
         </div>
 
@@ -419,44 +358,42 @@
 
         <div class="flex justify-between items-center">
           <span class="text-[#735e5e]">Service:</span>
-          <strong id="modalDetailService" class="text-[#541A1A] text-right font-bold">Brazilian Treatment</strong>
+          <strong id="modalDetailService" class="text-[#541A1A] text-right font-bold">--</strong>
         </div>
 
         <div class="flex justify-between items-center">
           <span class="text-[#735e5e]">Date & Time:</span>
-          <span id="modalDetailDateTime" class="font-semibold text-[#810B38] text-right">September 25, 2026 at 10:00
-            AM</span>
+          <span id="modalDetailDateTime" class="font-semibold text-[#810B38] text-right">--</span>
         </div>
 
         <div class="flex justify-between items-center">
           <span class="text-[#735e5e]">Customer Name:</span>
-          <span id="modalDetailCustomer" class="font-medium text-[#2b1d1d] text-right">Maria Santos</span>
+          <span id="modalDetailCustomer" class="font-medium text-[#2b1d1d] text-right">--</span>
         </div>
 
         <div class="flex justify-between items-center">
           <span class="text-[#735e5e]">Contact Number:</span>
-          <span id="modalDetailPhone" class="font-mono text-[#2b1d1d] text-right">0917 888 9999</span>
+          <span id="modalDetailPhone" class="font-mono text-[#2b1d1d] text-right">--</span>
         </div>
 
         <div class="flex justify-between items-center">
           <span class="text-[#735e5e]">Visit Type:</span>
-          <span id="modalDetailVisitType" class="font-semibold text-[#541A1A] text-right">Salon Visit</span>
+          <span id="modalDetailVisitType" class="font-semibold text-[#541A1A] text-right">--</span>
         </div>
 
         <div class="flex justify-between items-start">
           <span class="text-[#735e5e] shrink-0">Address:</span>
-          <span id="modalDetailAddress" class="text-right text-[#2b1d1d] pl-4">BLK 42 Lot 59 Ascension Rd, Lagro, Quezon
-            City</span>
+          <span id="modalDetailAddress" class="text-right text-[#2b1d1d] pl-4">--</span>
         </div>
 
         <div class="flex justify-between items-center">
           <span class="text-[#735e5e]">Payment Method:</span>
-          <span id="modalDetailPayment" class="font-semibold text-[#541A1A] text-right">GCash (Paid)</span>
+          <span id="modalDetailPayment" class="font-semibold text-[#541A1A] text-right">--</span>
         </div>
 
         <div class="flex justify-between items-center pt-2 border-t border-[#DCC3AA]/50 font-bold">
           <span class="text-[#541A1A]">Total Amount:</span>
-          <span id="modalDetailTotal" class="font-serif text-lg text-[#810B38]">₱1,999</span>
+          <span id="modalDetailTotal" class="font-serif text-lg text-[#810B38]">₱0.00</span>
         </div>
       </div>
 
@@ -504,12 +441,12 @@
       <div class="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] flex items-center justify-between">
         <div>
           <span class="text-[10px] uppercase font-bold text-[#810B38] tracking-wider block">Selected Treatment</span>
-          <h5 id="rebookServiceName" class="font-serif text-lg font-bold text-[#541A1A]">Brazilian Treatment</h5>
-          <span id="rebookVisitInfo" class="text-xs text-[#735e5e] block mt-0.5">Salon Visit · Pay via GCash</span>
+          <h5 id="rebookServiceName" class="font-serif text-lg font-bold text-[#541A1A]">--</h5>
+          <span id="rebookVisitInfo" class="text-xs text-[#735e5e] block mt-0.5">--</span>
         </div>
         <div class="text-right">
           <span class="text-[10px] uppercase text-[#735e5e] block">Rate</span>
-          <strong id="rebookServicePrice" class="font-serif text-xl font-extrabold text-[#810B38]">₱1,999</strong>
+          <strong id="rebookServicePrice" class="font-serif text-xl font-extrabold text-[#810B38]">₱0.00</strong>
         </div>
       </div>
 
@@ -705,35 +642,13 @@
       </div>
 
       <div class="space-y-3 max-h-80 overflow-y-auto">
-        <div class="p-3.5 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA] flex items-start gap-3">
-          <div class="w-8 h-8 rounded-lg bg-[#810B38] text-white flex items-center justify-center text-xs shrink-0">
-            <i class="fa-solid fa-bell"></i>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex justify-between">
-              <span class="text-xs font-bold text-[#541A1A]">Appointment Confirmed</span>
-              <span class="text-[10px] text-[#735e5e]">Today</span>
-            </div>
-            <p class="text-xs text-[#2b1d1d] mt-1">
-              Your Brazilian Treatment is scheduled for Sept 25, 2026 at 10:00 AM.
-            </p>
-          </div>
-        </div>
-
-        <div class="p-3.5 rounded-2xl bg-white border border-[#E8D9CA] flex items-start gap-3">
+        <div class="py-8 text-center space-y-2">
           <div
-            class="w-8 h-8 rounded-lg bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xs shrink-0 border border-[#DCC3AA]">
-            <i class="fa-solid fa-clock"></i>
+            class="w-12 h-12 rounded-full bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl mx-auto border border-[#DCC3AA]">
+            <i class="fa-solid fa-bell-slash"></i>
           </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex justify-between">
-              <span class="text-xs font-bold text-[#541A1A]">Hair Dye Booking Received</span>
-              <span class="text-[10px] text-[#735e5e]">Yesterday</span>
-            </div>
-            <p class="text-xs text-[#2b1d1d] mt-1">
-              Waiting for salon review for Sept 28, 2026 at 2:00 PM.
-            </p>
-          </div>
+          <p class="text-xs font-semibold text-[#541A1A]">No new notifications</p>
+          <p class="text-[11px] text-[#735e5e]">You're all caught up with your appointments.</p>
         </div>
       </div>
 
@@ -760,19 +675,19 @@
       <div class="space-y-3 text-xs">
         <div>
           <label class="block font-bold text-[#541A1A] mb-1">Full Name</label>
-          <input type="text" value="Maria Santos" readonly
+          <input type="text" id="profileModalName" placeholder="Full Name" readonly
             class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
         </div>
 
         <div>
           <label class="block font-bold text-[#541A1A] mb-1">Mobile Number</label>
-          <input type="tel" value="0917 888 9999" readonly
+          <input type="tel" id="profileModalPhone" placeholder="Mobile Number" readonly
             class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
         </div>
 
         <div>
           <label class="block font-bold text-[#541A1A] mb-1">Default Address</label>
-          <input type="text" value="BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City" readonly
+          <input type="text" id="profileModalAddress" placeholder="Address" readonly
             class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
         </div>
       </div>
@@ -790,7 +705,26 @@
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
   <!-- Page JavaScript -->
-  <script src="../assets/js/pages/customer/appointments.js"></script>
+  <script src="../assets/js/pages/customer/appointments.js?v=1.0.1"></script>
+  <script>
+    // Immediate fallback hydration from localStorage
+    (function() {
+      try {
+        const saved = localStorage.getItem('nelys_user');
+        if (saved) {
+          const user = JSON.parse(saved);
+          const name = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Client Patron');
+          const el = document.getElementById('customerSidebarName');
+          if (el) el.textContent = name;
+          const av = document.getElementById('customerAvatarInitials');
+          if (av) {
+            const inits = name.split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
+            if (inits) av.textContent = inits;
+          }
+        }
+      } catch(e) {}
+    })();
+  </script>
 </body>
 
 </html>
