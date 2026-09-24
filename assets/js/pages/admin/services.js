@@ -1,222 +1,234 @@
 /**
  * Nely's Salon — Admin Services Controller
- * Manages the salon service catalog, pricing, duration, active/inactive states,
- * search & category filtering, and modal CRUD operations.
+ * Directly connected to backend database API (/api/services)
+ * Manages service catalog, live pricing & duration, active/inactive toggles,
+ * real-time search & category filtering, modal Add/Edit/Delete, and sidebar badge updates.
  */
 
-// ================= GLOBAL STATE & INITIAL MOCK DATA =================
-const SERVICES_STORAGE_KEY = 'nelys_admin_services_data';
+// ================= GLOBAL STATE =================
+let servicesData = [];
+let summaryMetrics = {
+  total: 0,
+  active: 0,
+  inactive: 0
+};
 
-// 13 Actual Salon Services matching user specification
-const DEFAULT_SERVICES = [
-  {
-    id: 'srv-rebonding',
-    name: 'Rebonding',
-    category: 'hair',
-    categoryLabel: 'Hair Care',
-    price: null, // Note: Rebonding has no price yet, displayed as "Price not set"
-    duration: 180, // in minutes
-    durationLabel: '180 mins (3 hrs)',
-    description: 'Permanent thermal smoothing system that relaxes curly or unruly hair bonds into pin-straight, ultra-glossy locks.',
-    status: 'Active',
-    icon: 'fa-star'
-  },
-  {
-    id: 'srv-brazilian',
-    name: 'Brazilian',
-    category: 'hair',
-    categoryLabel: 'Hair Care',
-    price: 1999,
-    duration: 120,
-    durationLabel: '120 mins (2 hrs)',
-    description: 'Professional Brazilian hair treatment that infuses hydrolysed keratin deep into the cuticle for sleek, frizz-free hair.',
-    status: 'Active',
-    icon: 'fa-wand-magic-sparkles'
-  },
-  {
-    id: 'srv-hair-dye',
-    name: 'Hair Dye',
-    category: 'hair',
-    categoryLabel: 'Hair Care',
-    price: 699,
-    duration: 90,
-    durationLabel: '90 mins',
-    description: 'Premium salon-grade hair coloring tailored to your preferred shade with rich, multidimensional color vibrancy.',
-    status: 'Active',
-    icon: 'fa-paintbrush'
-  },
-  {
-    id: 'srv-power-dose',
-    name: 'Power Dose',
-    category: 'hair',
-    categoryLabel: 'Hair Care',
-    price: 499,
-    duration: 45,
-    durationLabel: '45 mins',
-    description: 'Targeted molecular shot that instantly replenishes lost lipids and moisture in weakened, dry, or color-treated hair.',
-    status: 'Active',
-    icon: 'fa-bolt'
-  },
-  {
-    id: 'srv-cold-wave',
-    name: 'Cold Wave',
-    category: 'hair',
-    categoryLabel: 'Hair Care',
-    price: 699,
-    duration: 120,
-    durationLabel: '120 mins',
-    description: 'Classic salon perming technique creating long-lasting, bouncy curls, volume, and natural body.',
-    status: 'Active',
-    icon: 'fa-wind'
-  },
-  {
-    id: 'srv-bonacure',
-    name: 'Bonacure',
-    category: 'hair',
-    categoryLabel: 'Hair Care',
-    price: 499,
-    duration: 60,
-    durationLabel: '60 mins',
-    description: 'Cellular peptide hair therapy that repairs cuticular damage from within, sealing in moisture.',
-    status: 'Active',
-    icon: 'fa-shield-heart'
-  },
-  {
-    id: 'srv-keratine-treatment',
-    name: 'Keratine Treatment',
-    category: 'hair',
-    categoryLabel: 'Hair Care',
-    price: 499,
-    duration: 90,
-    durationLabel: '90 mins',
-    description: 'Deep conditioning restorative protein therapy that seals the outer cuticle layer for frizz defense.',
-    status: 'Active',
-    icon: 'fa-feather-pointed'
-  },
-  {
-    id: 'srv-footspa',
-    name: 'Footspa',
-    category: 'foot-care',
-    categoryLabel: 'Foot Care',
-    price: 199,
-    duration: 45,
-    durationLabel: '45 mins',
-    description: 'Invigorating aromatherapy foot soak, dead-skin scrub, calming moisturizing balm, and gentle massage.',
-    status: 'Active',
-    icon: 'fa-spa'
-  },
-  {
-    id: 'srv-manicure',
-    name: 'Manicure',
-    category: 'nails',
-    categoryLabel: 'Nails',
-    price: 149,
-    duration: 35,
-    durationLabel: '35 mins',
-    description: 'Professional nail filing, gentle cuticle grooming, light hand massage, and regular salon lacquer polish.',
-    status: 'Active',
-    icon: 'fa-hand-sparkles'
-  },
-  {
-    id: 'srv-pedicure',
-    name: 'Pedicure',
-    category: 'nails',
-    categoryLabel: 'Nails',
-    price: 149,
-    duration: 40,
-    durationLabel: '40 mins',
-    description: 'Complete toenail care, shape refinement, gentle cuticle grooming, and vibrant polish application.',
-    status: 'Active',
-    icon: 'fa-socks'
-  },
-  {
-    id: 'srv-trim',
-    name: 'Trim',
-    category: 'hair',
-    categoryLabel: 'Hair Care',
-    price: 149,
-    duration: 30,
-    durationLabel: '30 mins',
-    description: 'Precision haircut and split-end cleanup for clean lines, healthy shape, and everyday elegance.',
-    status: 'Active',
-    icon: 'fa-scissors'
-  },
-  {
-    id: 'srv-gel-manicure',
-    name: 'Gel Manicure',
-    category: 'nails',
-    categoryLabel: 'Nails',
-    price: 499,
-    duration: 50,
-    durationLabel: '50 mins',
-    description: 'Long-wearing chip-free gel polish cured under high-performance LED light, lasting 3+ weeks with high gloss.',
-    status: 'Active',
-    icon: 'fa-gem'
-  },
-  {
-    id: 'srv-gel-pedicure',
-    name: 'Gel Pedicure',
-    category: 'nails',
-    categoryLabel: 'Nails',
-    price: 499,
-    duration: 55,
-    durationLabel: '55 mins',
-    description: 'Long-lasting salon gel pedicure with chip-resistant high-gloss finish and restorative cuticle care.',
-    status: 'Active',
-    icon: 'fa-sparkles'
-  }
-];
+// Filter & Sort State
+let filterState = {
+  search: '',
+  category: 'all',
+  status: 'all',
+  sortBy: 'default'
+};
 
-// In-memory state
-let services = [];
+// Active service context for modals
 let activeService = null;
+let isModalScrollLocked = false;
 
-// Filter and search state
-let currentSearch = '';
-let currentCategoryFilter = 'all';
-let currentStatusFilter = 'all';
-let currentSort = 'default';
-
-// ================= STORAGE HELPERS =================
-function loadServices() {
-  try {
-    const raw = localStorage.getItem(SERVICES_STORAGE_KEY);
-    if (raw) {
-      services = JSON.parse(raw);
-    } else {
-      services = JSON.parse(JSON.stringify(DEFAULT_SERVICES));
-      saveServices();
-    }
-  } catch (err) {
-    console.error('Error loading services from localStorage:', err);
-    services = JSON.parse(JSON.stringify(DEFAULT_SERVICES));
-  }
-}
-
-function saveServices() {
-  try {
-    localStorage.setItem(SERVICES_STORAGE_KEY, JSON.stringify(services));
-  } catch (err) {
-    console.error('Error saving services to localStorage:', err);
-  }
-}
-
-// ================= DOM INITIALIZATION =================
+// ================= INITIALIZATION & AUTH =================
 document.addEventListener('DOMContentLoaded', () => {
-  loadServices();
-  renderSummaryCards();
-  applyFiltersAndRender();
+  checkAdminAuth();
   setupEventListeners();
   setupModalSteadyListeners();
   updateTimeBadge();
+  fetchServicesData();
+  fetchSidebarStats();
 });
 
+function checkAdminAuth() {
+  const token = localStorage.getItem('nelys_token');
+  const userJson = localStorage.getItem('nelys_user');
+
+  if (!token) {
+    window.location.href = '../login.html';
+    return;
+  }
+
+  let displayName = 'Admin';
+  if (userJson) {
+    try {
+      const user = JSON.parse(userJson);
+      let rawName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Admin');
+      rawName = rawName.replace(/atelier\s*/gi, '').trim();
+      if (rawName && rawName.toLowerCase() !== 'admin') {
+        displayName = rawName;
+      }
+    } catch (e) {
+      console.warn('Error parsing admin user:', e);
+    }
+  }
+
+  const mobileBadge = document.querySelector('header .bg-\\[\\#541A1A\\]');
+  if (mobileBadge) {
+    const parts = displayName.split(' ').filter(Boolean);
+    const initials = parts.length > 1 
+      ? (parts[0][0] + parts[1][0]).toUpperCase() 
+      : (displayName.substring(0, 2)).toUpperCase();
+    mobileBadge.textContent = initials || 'AD';
+  }
+}
+
+// Helper to get auth headers
+function getAuthHeaders() {
+  const token = localStorage.getItem('nelys_token');
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+// ================= FETCH DATA FROM DATABASE =================
+async function fetchServicesData() {
+  try {
+    const res = await fetch('../api/services?all=true', {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      console.warn('Admin session expired or unauthenticated.');
+    }
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: Failed to fetch services data`);
+    }
+
+    const json = await res.json();
+    let rawServices = [];
+    if (json.data) {
+      if (Array.isArray(json.data)) {
+        rawServices = json.data;
+      } else if (json.data.services && Array.isArray(json.data.services)) {
+        rawServices = json.data.services;
+        if (json.data.metrics) {
+          summaryMetrics = json.data.metrics;
+        }
+      }
+    }
+
+    // Map raw database rows to UI schema
+    servicesData = rawServices.map(mapServiceRecord);
+
+    // Compute metrics if not returned from backend
+    computeSummaryMetrics();
+
+    // Render stats & UI
+    renderSummaryCards();
+    applyFiltersAndRender();
+
+  } catch (err) {
+    console.error('Error fetching services from backend:', err);
+    showToast('Failed to load services from server. Please refresh.', 'error');
+  }
+}
+
+// Fetch sidebar badge counts
+async function fetchSidebarStats() {
+  try {
+    const res = await fetch('../api/dashboard/stats', {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data) {
+        const d = json.data;
+        const bAppt = document.getElementById('sidebarAppointmentsBadge');
+        const bCust = document.getElementById('sidebarCustomersBadge');
+        const bStaff = document.getElementById('sidebarStaffBadge');
+        const bNotif = document.getElementById('sidebarNotificationsBadge');
+        const bMsg = document.getElementById('sidebarMessagesBadge');
+
+        if (bAppt && d.total_appointments !== undefined) bAppt.textContent = d.total_appointments;
+        if (bCust && d.total_customers !== undefined) bCust.textContent = d.total_customers;
+        if (bStaff && d.total_staff !== undefined) bStaff.textContent = d.total_staff;
+        if (bNotif && d.unread_notifications !== undefined) bNotif.textContent = d.unread_notifications;
+        if (bMsg && d.unread_messages !== undefined) bMsg.textContent = d.unread_messages;
+      }
+    }
+  } catch (err) {
+    // Non-critical, ignore
+  }
+}
+
+// Map service record from DB to normalized object
+function mapServiceRecord(item) {
+  const categoryRaw = item.category || 'Hair Services';
+  const categoryNormalized = categoryRaw.trim();
+  
+  let icon = 'fa-sparkles';
+  const lowerCat = categoryNormalized.toLowerCase();
+  if (lowerCat.includes('hair')) {
+    icon = 'fa-scissors';
+  } else if (lowerCat.includes('nail') || lowerCat.includes('foot') || lowerCat.includes('mani') || lowerCat.includes('pedi')) {
+    icon = lowerCat.includes('foot') ? 'fa-spa' : 'fa-hand-sparkles';
+  } else if (lowerCat.includes('spa') || lowerCat.includes('massage')) {
+    icon = 'fa-spa';
+  }
+
+  const durationMin = parseInt(item.duration_minutes || 60, 10);
+  let durationLabel = `${durationMin} mins`;
+  if (durationMin >= 60) {
+    const hrs = Math.floor(durationMin / 60);
+    const mins = durationMin % 60;
+    durationLabel = mins > 0 ? `${hrs} hr ${mins} mins` : `${hrs} hr${hrs > 1 ? 's' : ''}`;
+  }
+
+  const isPriceNotSet = item.price === null || item.price === undefined || item.price === '' || String(item.price).trim() === '';
+  const numericPrice = isPriceNotSet ? null : parseFloat(item.price);
+
+  const isActive = item.is_active === 1 || item.is_active === '1' || item.is_active === true || item.is_active === 'active';
+
+  return {
+    id: parseInt(item.id, 10),
+    code: item.code || '',
+    name: item.name || 'Untitled Service',
+    category: categoryNormalized,
+    categoryLabel: categoryNormalized,
+    price: numericPrice,
+    isPriceNotSet: isPriceNotSet,
+    duration: durationMin,
+    durationLabel: durationLabel,
+    description: item.description || '',
+    status: isActive ? 'Active' : 'Inactive',
+    is_active: isActive ? 1 : 0,
+    icon: icon
+  };
+}
+
+function computeSummaryMetrics() {
+  summaryMetrics.total = servicesData.length;
+  summaryMetrics.active = servicesData.filter(s => s.status === 'Active').length;
+  summaryMetrics.inactive = servicesData.filter(s => s.status === 'Inactive').length;
+}
+
+// ================= RENDER SUMMARY CARDS =================
+function renderSummaryCards() {
+  const totalEl = document.getElementById('statTotalServices');
+  const activeEl = document.getElementById('statActiveServices');
+  const inactiveEl = document.getElementById('statInactiveServices');
+  const sidebarBadge = document.getElementById('sidebarServicesBadge');
+
+  if (totalEl) totalEl.textContent = summaryMetrics.total;
+  if (activeEl) activeEl.textContent = summaryMetrics.active;
+  if (inactiveEl) inactiveEl.textContent = summaryMetrics.inactive;
+  if (sidebarBadge) sidebarBadge.textContent = summaryMetrics.total;
+}
+
+// ================= SETUP EVENT LISTENERS =================
 function setupEventListeners() {
   // Search input
   const searchInput = document.getElementById('serviceSearchInput');
   if (searchInput) {
     searchInput.addEventListener('input', (e) => {
-      currentSearch = e.target.value.trim().toLowerCase();
+      filterState.search = e.target.value.trim().toLowerCase();
       applyFiltersAndRender();
     });
   }
@@ -225,7 +237,7 @@ function setupEventListeners() {
   const catFilter = document.getElementById('categoryFilter');
   if (catFilter) {
     catFilter.addEventListener('change', (e) => {
-      currentCategoryFilter = e.target.value;
+      filterState.category = e.target.value;
       applyFiltersAndRender();
     });
   }
@@ -234,7 +246,7 @@ function setupEventListeners() {
   const statFilter = document.getElementById('statusFilter');
   if (statFilter) {
     statFilter.addEventListener('change', (e) => {
-      currentStatusFilter = e.target.value;
+      filterState.status = e.target.value;
       applyFiltersAndRender();
     });
   }
@@ -243,7 +255,7 @@ function setupEventListeners() {
   const sortSelect = document.getElementById('sortSelect');
   if (sortSelect) {
     sortSelect.addEventListener('change', (e) => {
-      currentSort = e.target.value;
+      filterState.sortBy = e.target.value;
       applyFiltersAndRender();
     });
   }
@@ -264,69 +276,64 @@ function setupEventListeners() {
       }
     });
   }
-
-  // Close modals on Escape key
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      closeAllModals();
-    }
-  });
-}
-
-// ================= RENDER SUMMARY CARDS =================
-function renderSummaryCards() {
-  const total = services.length;
-  const active = services.filter(s => s.status === 'Active').length;
-  const inactive = services.filter(s => s.status === 'Inactive').length;
-
-  const totalEl = document.getElementById('statTotalServices');
-  const activeEl = document.getElementById('statActiveServices');
-  const inactiveEl = document.getElementById('statInactiveServices');
-
-  if (totalEl) totalEl.textContent = total;
-  if (activeEl) activeEl.textContent = active;
-  if (inactiveEl) inactiveEl.textContent = inactive;
 }
 
 // ================= FILTER & RENDER LOGIC =================
 function applyFiltersAndRender() {
-  let filtered = [...services];
+  let filtered = [...servicesData];
 
   // 1. Search (Name, Description, Category)
-  if (currentSearch) {
+  if (filterState.search) {
     filtered = filtered.filter(s => 
-      s.name.toLowerCase().includes(currentSearch) ||
-      (s.description && s.description.toLowerCase().includes(currentSearch)) ||
-      s.categoryLabel.toLowerCase().includes(currentSearch)
+      s.name.toLowerCase().includes(filterState.search) ||
+      (s.description && s.description.toLowerCase().includes(filterState.search)) ||
+      s.categoryLabel.toLowerCase().includes(filterState.search) ||
+      (s.code && s.code.toLowerCase().includes(filterState.search))
     );
   }
 
   // 2. Category
-  if (currentCategoryFilter !== 'all') {
-    filtered = filtered.filter(s => s.category.toLowerCase() === currentCategoryFilter.toLowerCase());
+  if (filterState.category !== 'all') {
+    const targetCat = filterState.category.toLowerCase();
+    filtered = filtered.filter(s => {
+      const sCat = s.category.toLowerCase();
+      if (targetCat === 'hair' || targetCat.includes('hair')) {
+        return sCat.includes('hair');
+      }
+      if (targetCat === 'nails' || targetCat.includes('nail')) {
+        return sCat.includes('nail') || sCat.includes('mani') || sCat.includes('pedi');
+      }
+      if (targetCat === 'foot-care' || targetCat.includes('foot')) {
+        return sCat.includes('foot') || sCat.includes('spa');
+      }
+      if (targetCat.includes('spa')) {
+        return sCat.includes('spa');
+      }
+      return sCat === targetCat;
+    });
   }
 
   // 3. Status
-  if (currentStatusFilter !== 'all') {
-    filtered = filtered.filter(s => s.status.toLowerCase() === currentStatusFilter.toLowerCase());
+  if (filterState.status !== 'all') {
+    filtered = filtered.filter(s => s.status.toLowerCase() === filterState.status.toLowerCase());
   }
 
   // 4. Sort
-  if (currentSort === 'price_asc') {
+  if (filterState.sortBy === 'price_asc') {
     filtered.sort((a, b) => {
       const pA = a.price === null ? 999999 : a.price;
       const pB = b.price === null ? 999999 : b.price;
       return pA - pB;
     });
-  } else if (currentSort === 'price_desc') {
+  } else if (filterState.sortBy === 'price_desc') {
     filtered.sort((a, b) => {
       const pA = a.price === null ? -1 : a.price;
       const pB = b.price === null ? -1 : b.price;
       return pB - pA;
     });
-  } else if (currentSort === 'name_asc') {
+  } else if (filterState.sortBy === 'name_asc') {
     filtered.sort((a, b) => a.name.localeCompare(b.name));
-  } else if (currentSort === 'duration') {
+  } else if (filterState.sortBy === 'duration') {
     filtered.sort((a, b) => (b.duration || 0) - (a.duration || 0));
   }
 
@@ -335,10 +342,10 @@ function applyFiltersAndRender() {
 
 // Reset filters
 function resetFilters() {
-  currentSearch = '';
-  currentCategoryFilter = 'all';
-  currentStatusFilter = 'all';
-  currentSort = 'default';
+  filterState.search = '';
+  filterState.category = 'all';
+  filterState.status = 'all';
+  filterState.sortBy = 'default';
 
   const sInput = document.getElementById('serviceSearchInput');
   if (sInput) sInput.value = '';
@@ -359,15 +366,15 @@ function resetFilters() {
 // Quick filter by summary card
 function filterBySummaryCard(filterType) {
   if (filterType === 'all') {
-    currentStatusFilter = 'all';
+    filterState.status = 'all';
     const stFilter = document.getElementById('statusFilter');
     if (stFilter) stFilter.value = 'all';
   } else if (filterType === 'active') {
-    currentStatusFilter = 'Active';
+    filterState.status = 'Active';
     const stFilter = document.getElementById('statusFilter');
     if (stFilter) stFilter.value = 'Active';
   } else if (filterType === 'inactive') {
-    currentStatusFilter = 'Inactive';
+    filterState.status = 'Inactive';
     const stFilter = document.getElementById('statusFilter');
     if (stFilter) stFilter.value = 'Inactive';
   }
@@ -397,15 +404,14 @@ function renderServiceCards(items) {
   container.classList.remove('hidden');
 
   container.innerHTML = items.map(s => {
-    // Pricing display logic: If Rebonding or price is null, display "Price not set"
-    const isPriceNotSet = s.price === null || s.price === undefined || s.price === '';
-    const priceDisplay = isPriceNotSet
+    // Pricing display logic: If price is null / not set, display "Price not set" badge
+    const priceDisplay = s.isPriceNotSet || s.price === null
       ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200">
            <i class="fa-solid fa-clock text-[10px] text-amber-500"></i>
            Price not set
          </span>`
       : `<span class="font-serif text-2xl font-bold text-[#810B38] tracking-tight">
-           ₱${s.price.toLocaleString()}
+           ₱${parseFloat(s.price).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
          </span>`;
 
     // Status Badge & toggle state
@@ -421,9 +427,10 @@ function renderServiceCards(items) {
          </span>`;
 
     // Category styling
-    const categoryBadge = s.category === 'hair'
+    const catLower = s.category.toLowerCase();
+    const categoryBadge = catLower.includes('hair')
       ? 'bg-rose-50 text-rose-800 border-rose-200'
-      : s.category === 'nails'
+      : (catLower.includes('nail') || catLower.includes('mani') || catLower.includes('pedi'))
       ? 'bg-pink-50 text-pink-800 border-pink-200'
       : 'bg-emerald-50 text-emerald-800 border-emerald-200';
 
@@ -435,15 +442,15 @@ function renderServiceCards(items) {
           <div class="flex items-center justify-between gap-2 mb-4">
             <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${categoryBadge}">
               <i class="fa-solid ${s.icon || 'fa-sparkles'} text-[9px]"></i>
-              ${s.categoryLabel}
+              ${escapeHtml(s.categoryLabel)}
             </span>
             ${statusBadge}
           </div>
 
-          <!-- Service Name & Price (Matching User Specification) -->
+          <!-- Service Name & Price -->
           <div class="mb-3">
             <h3 class="font-serif text-xl font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors leading-tight">
-              ${s.name}
+              ${escapeHtml(s.name)}
             </h3>
             <div class="mt-2 flex items-baseline gap-2">
               ${priceDisplay}
@@ -452,13 +459,13 @@ function renderServiceCards(items) {
 
           <!-- Description -->
           <p class="text-xs text-stone-500 line-clamp-2 leading-relaxed mb-4">
-            ${s.description || 'Professional beauty treatment at Nely’s Salon.'}
+            ${escapeHtml(s.description || 'Professional beauty treatment at Nely’s Salon.')}
           </p>
 
           <!-- Duration Pill -->
           <div class="inline-flex items-center gap-1.5 text-xs text-stone-600 font-medium px-3 py-1 bg-[#FAF6F0] rounded-xl border border-[#DCC3AA]/50 mb-4">
             <i class="fa-regular fa-clock text-[#810B38] text-[11px]"></i>
-            <span>${s.durationLabel || `${s.duration} mins`}</span>
+            <span>${escapeHtml(s.durationLabel || `${s.duration} mins`)}</span>
           </div>
         </div>
 
@@ -468,8 +475,8 @@ function renderServiceCards(items) {
           <!-- Toggle Active/Inactive Quick Action -->
           <button 
             type="button" 
-            onclick="toggleServiceStatus('${s.id}')"
-            class="text-[11px] font-bold ${isActive ? 'text-stone-500 hover:text-stone-800' : 'text-emerald-700 hover:text-emerald-800'} transition-colors flex items-center gap-1">
+            onclick="toggleServiceStatus(${s.id})"
+            class="text-[11px] font-bold ${isActive ? 'text-stone-500 hover:text-stone-800' : 'text-emerald-700 hover:text-emerald-800'} transition-colors flex items-center gap-1 cursor-pointer">
             <i class="fa-solid ${isActive ? 'fa-toggle-on text-emerald-600 text-sm' : 'fa-toggle-off text-stone-400 text-sm'}"></i>
             <span>${isActive ? 'Active' : 'Enable'}</span>
           </button>
@@ -478,15 +485,15 @@ function renderServiceCards(items) {
           <div class="flex items-center gap-1.5">
             <button 
               type="button" 
-              onclick="openEditServiceModal('${s.id}')"
-              class="w-8 h-8 rounded-xl bg-stone-100 hover:bg-[#810B38] hover:text-white text-stone-700 transition-colors flex items-center justify-center text-xs shadow-2xs"
+              onclick="openEditServiceModal(${s.id})"
+              class="w-8 h-8 rounded-xl bg-stone-100 hover:bg-[#810B38] hover:text-white text-stone-700 transition-colors flex items-center justify-center text-xs shadow-2xs cursor-pointer"
               title="Edit Service">
               <i class="fa-solid fa-pen-to-square"></i>
             </button>
             <button 
               type="button" 
-              onclick="openDeleteServiceModal('${s.id}')"
-              class="w-8 h-8 rounded-xl bg-stone-100 hover:bg-rose-600 hover:text-white text-stone-700 transition-colors flex items-center justify-center text-xs shadow-2xs"
+              onclick="openDeleteServiceModal(${s.id})"
+              class="w-8 h-8 rounded-xl bg-stone-100 hover:bg-rose-600 hover:text-white text-stone-700 transition-colors flex items-center justify-center text-xs shadow-2xs cursor-pointer"
               title="Delete Service">
               <i class="fa-solid fa-trash-can"></i>
             </button>
@@ -499,39 +506,54 @@ function renderServiceCards(items) {
   }).join('');
 }
 
-// ================= TOGGLE STATUS =================
-function toggleServiceStatus(serviceId) {
-  const service = services.find(s => s.id === serviceId);
+// ================= TOGGLE STATUS VIA API =================
+async function toggleServiceStatus(serviceId) {
+  const service = servicesData.find(s => s.id === serviceId);
   if (!service) return;
 
-  service.status = service.status === 'Active' ? 'Inactive' : 'Active';
-  saveServices();
-  renderSummaryCards();
-  applyFiltersAndRender();
+  try {
+    const res = await fetch(`../api/services/${serviceId}/toggle`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
 
-  showToast(`${service.name} status updated to ${service.status}`, 'info');
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.message || 'Failed to update service status');
+    }
+
+    const json = await res.json();
+    const updatedStatus = json.data && json.data.is_active ? 'Active' : 'Inactive';
+    
+    // Update local state
+    service.status = updatedStatus;
+    service.is_active = updatedStatus === 'Active' ? 1 : 0;
+    
+    computeSummaryMetrics();
+    renderSummaryCards();
+    applyFiltersAndRender();
+
+    showToast(`${service.name} status updated to ${updatedStatus}`, 'info');
+
+  } catch (err) {
+    console.error('Error toggling service status:', err);
+    showToast(err.message || 'Failed to update service status', 'error');
+  }
 }
 
 // ================= STEADY MODAL SCROLL LOCK SYSTEM =================
-// Completely freezes background scrolling without altering document scroll position,
-// preventing any sidebar shifts or viewport jumps.
-let isModalScrollLocked = false;
-
 function onPreventBackgroundWheel(e) {
-  // Check if target is inside an internally scrollable container within the active modal
   const scrollable = e.target.closest('#serviceForm, .overflow-y-auto');
   if (scrollable) {
     const isScrollingDown = e.deltaY > 0;
     const canScrollDown = scrollable.scrollTop + scrollable.clientHeight < scrollable.scrollHeight - 1;
     const canScrollUp = scrollable.scrollTop > 0;
 
-    // Allow scrolling within the modal if there is remaining scrollable content
     if ((isScrollingDown && canScrollDown) || (!isScrollingDown && canScrollUp)) {
       return;
     }
   }
-
-  // Prevent background scroll bleed
   e.preventDefault();
 }
 
@@ -562,7 +584,7 @@ function lockBodyScroll() {
 }
 
 function unlockBodyScroll() {
-  const anyOpen = document.querySelector('.fixed.inset-0.z-50.flex, dialog[open]');
+  const anyOpen = document.querySelector('.fixed.inset-0.z-50.flex:not(.hidden), dialog[open]');
   if (anyOpen) return;
 
   isModalScrollLocked = false;
@@ -583,11 +605,17 @@ function openAddServiceModal() {
   const subEl = document.getElementById('serviceModalSubtitle');
   const priceInput = document.getElementById('servicePrice');
   const priceNotSetCheckbox = document.getElementById('servicePriceNotSet');
+  const durationInput = document.getElementById('serviceDuration');
+  const statusSelect = document.getElementById('serviceStatus');
 
   if (titleEl) titleEl.textContent = 'Add New Service';
   if (subEl) subEl.textContent = 'Register a new beauty service in the salon catalog';
 
+  if (durationInput) durationInput.value = 60;
+  if (statusSelect) statusSelect.value = 'Active';
+
   if (priceInput) {
+    priceInput.value = '';
     priceInput.disabled = false;
     priceInput.placeholder = 'Enter price (e.g. 499)';
   }
@@ -604,7 +632,7 @@ function openAddServiceModal() {
 }
 
 function openEditServiceModal(serviceId) {
-  const service = services.find(s => s.id === serviceId);
+  const service = servicesData.find(s => s.id === serviceId);
   if (!service) return;
 
   activeService = service;
@@ -623,13 +651,28 @@ function openEditServiceModal(serviceId) {
   if (subEl) subEl.textContent = 'Update salon service pricing, duration, and details';
 
   if (nameInput) nameInput.value = service.name;
-  if (categorySelect) categorySelect.value = service.category;
+  
+  if (categorySelect) {
+    // Select matching category option or default
+    let found = false;
+    for (let opt of categorySelect.options) {
+      if (opt.value.toLowerCase() === service.category.toLowerCase()) {
+        categorySelect.value = opt.value;
+        found = true;
+        break;
+      }
+    }
+    if (!found && categorySelect.options.length > 0) {
+      categorySelect.value = categorySelect.options[0].value;
+    }
+  }
+
   if (durationInput) durationInput.value = service.duration || 60;
   if (descInput) descInput.value = service.description || '';
   if (statusSelect) statusSelect.value = service.status || 'Active';
 
-  // Handle Price not set logic (e.g. Rebonding)
-  if (service.price === null || service.price === undefined || service.price === '') {
+  // Handle Price not set logic
+  if (service.isPriceNotSet || service.price === null || service.price === undefined) {
     if (priceNotSetCheckbox) priceNotSetCheckbox.checked = true;
     if (priceInput) {
       priceInput.value = '';
@@ -663,7 +706,7 @@ function closeServiceModal() {
   activeService = null;
 }
 
-function handleSaveService(event) {
+async function handleSaveService(event) {
   event.preventDefault();
 
   const nameInput = document.getElementById('serviceName');
@@ -680,81 +723,85 @@ function handleSaveService(event) {
   }
 
   const name = nameInput.value.trim();
-  const category = categorySelect ? categorySelect.value : 'hair';
-  const categoryLabels = {
-    'hair': 'Hair Care',
-    'nails': 'Nails',
-    'foot-care': 'Foot Care'
-  };
-  const categoryIcons = {
-    'hair': 'fa-scissors',
-    'nails': 'fa-hand-sparkles',
-    'foot-care': 'fa-spa'
-  };
+  const category = categorySelect ? categorySelect.value : 'Hair Services';
 
   const isPriceNotSet = priceNotSetCheckbox && priceNotSetCheckbox.checked;
   let finalPrice = null;
   if (!isPriceNotSet && priceInput && priceInput.value.trim() !== '') {
-    finalPrice = parseFloat(priceInput.value.trim());
+    const p = parseFloat(priceInput.value.trim());
+    if (isNaN(p) || p < 0) {
+      showToast('Please enter a valid price.', 'error');
+      return;
+    }
+    finalPrice = p;
   }
 
   const duration = durationInput ? parseInt(durationInput.value, 10) : 60;
-  const durationLabel = `${duration} mins`;
   const description = descInput ? descInput.value.trim() : '';
   const status = statusSelect ? statusSelect.value : 'Active';
+  const isActive = status === 'Active' ? 1 : 0;
 
-  if (activeService) {
-    // Edit existing service
-    activeService.name = name;
-    activeService.category = category;
-    activeService.categoryLabel = categoryLabels[category] || 'Hair Care';
-    activeService.price = finalPrice;
-    activeService.duration = duration;
-    activeService.durationLabel = durationLabel;
-    activeService.description = description;
-    activeService.status = status;
+  const payload = {
+    name: name,
+    category: category,
+    price: finalPrice,
+    duration_minutes: duration,
+    description: description,
+    is_active: isActive
+  };
 
-    const idx = services.findIndex(s => s.id === activeService.id);
-    if (idx !== -1) {
-      services[idx] = activeService;
-      saveServices();
-    }
-    showToast(`Service "${name}" updated successfully!`, 'success');
-  } else {
-    // Create new service
-    const newId = 'srv-' + Date.now();
-    const newServiceObj = {
-      id: newId,
-      name: name,
-      category: category,
-      categoryLabel: categoryLabels[category] || 'Hair Care',
-      price: finalPrice,
-      duration: duration,
-      durationLabel: durationLabel,
-      description: description,
-      status: status,
-      icon: categoryIcons[category] || 'fa-sparkles'
-    };
-
-    services.unshift(newServiceObj);
-    saveServices();
-    showToast(`Service "${name}" registered successfully!`, 'success');
+  const submitBtn = event.target.querySelector('button[type="submit"]');
+  const originalText = submitBtn ? submitBtn.textContent : 'Save Service';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Saving...';
   }
 
-  renderSummaryCards();
-  applyFiltersAndRender();
-  closeServiceModal();
+  try {
+    let url = '../api/services';
+    let method = 'POST';
+
+    if (activeService) {
+      url = `../api/services/${activeService.id}`;
+      method = 'PUT';
+    }
+
+    const res = await fetch(url, {
+      method: method,
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+      credentials: 'include'
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || 'Failed to save service.');
+    }
+
+    showToast(activeService ? `Service "${name}" updated successfully!` : `Service "${name}" registered successfully!`, 'success');
+    closeServiceModal();
+    await fetchServicesData();
+
+  } catch (err) {
+    console.error('Error saving service:', err);
+    showToast(err.message || 'Error saving service.', 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = originalText;
+    }
+  }
 }
 
 // ================= DELETE SERVICE MODAL =================
 function openDeleteServiceModal(serviceId) {
-  const service = services.find(s => s.id === serviceId);
+  const service = servicesData.find(s => s.id === serviceId);
   if (!service) return;
 
   activeService = service;
 
   const targetName = document.getElementById('deleteServiceNameTarget');
-  if (targetName) targetName.textContent = service.name;
+  if (targetName) targetName.textContent = `"${service.name}"`;
 
   const modal = document.getElementById('deleteServiceModal');
   if (modal) {
@@ -774,18 +821,32 @@ function closeDeleteServiceModal() {
   activeService = null;
 }
 
-function handleConfirmDeleteService() {
+async function handleConfirmDeleteService() {
   if (!activeService) return;
 
-  const name = activeService.name;
-  services = services.filter(s => s.id !== activeService.id);
-  saveServices();
+  const serviceId = activeService.id;
+  const serviceName = activeService.name;
 
-  renderSummaryCards();
-  applyFiltersAndRender();
-  closeDeleteServiceModal();
+  try {
+    const res = await fetch(`../api/services/${serviceId}`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
 
-  showToast(`Service "${name}" has been removed.`, 'info');
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || 'Failed to delete service.');
+    }
+
+    showToast(`Service "${serviceName}" removed successfully.`, 'info');
+    closeDeleteServiceModal();
+    await fetchServicesData();
+
+  } catch (err) {
+    console.error('Error deleting service:', err);
+    showToast(err.message || 'Failed to delete service.', 'error');
+  }
 }
 
 // ================= MODAL HELPERS =================
@@ -801,7 +862,6 @@ function closeAllModals() {
   unlockBodyScroll();
 }
 
-// Setup backdrop click and escape key to close modals steadily
 function setupModalSteadyListeners() {
   const modals = ['serviceModal', 'deleteServiceModal', 'logoutModal'];
   modals.forEach(id => {
@@ -864,10 +924,12 @@ function closeLogoutModal() {
 }
 
 function handleConfirmLogout() {
+  localStorage.removeItem('nelys_token');
+  localStorage.removeItem('nelys_user');
   window.location.href = '../login.html';
 }
 
-// Toast notification system
+// Toast notification helper
 function showToast(message, type = 'info') {
   let toastContainer = document.getElementById('adminToastContainer');
   if (!toastContainer) {
@@ -893,7 +955,7 @@ function showToast(message, type = 'info') {
   toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 bg-[#541A1A] text-[#F1E2D1] border ${borderColor} rounded-xl shadow-2xl text-xs font-medium animate-fadeIn transition-all duration-300`;
   toast.innerHTML = `
     <i class="fa-solid ${icon} text-base shrink-0"></i>
-    <span class="flex-1">${message}</span>
+    <span class="flex-1 leading-snug">${escapeHtml(message)}</span>
   `;
 
   toastContainer.appendChild(toast);
@@ -915,4 +977,15 @@ function updateTimeBadge() {
   clockEl.textContent = `${dateStr} · ${timeStr}`;
 
   setTimeout(updateTimeBadge, 1000);
+}
+
+// Utility: HTML escaping
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }

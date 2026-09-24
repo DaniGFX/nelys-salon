@@ -12,8 +12,19 @@ require_once dirname(__DIR__) . '/middleware/RoleMiddleware.php';
 
 class ServiceController {
     public function index(): void {
-        $activeOnly = !isset($_GET['all']) || $_GET['all'] !== 'true';
+        $activeOnly = isset($_GET['active_only']) && $_GET['active_only'] === 'true';
         $services = Service::all($activeOnly);
+        $metrics = Service::getSummaryMetrics();
+
+        // If 'structured' or 'all' or 'metrics' is requested
+        if (isset($_GET['all']) || isset($_GET['metrics']) || isset($_GET['stats'])) {
+            Response::success([
+                'services' => $services,
+                'metrics'  => $metrics
+            ]);
+        }
+
+        // Default response for compatibility
         Response::success($services);
     }
 
@@ -32,10 +43,8 @@ class ServiceController {
         $input = Sanitizer::cleanArray($input);
 
         $validator = Validator::make($input, [
-            'code'             => 'required|min:2|max:50',
             'name'             => 'required|min:2|max:150',
             'category'         => 'required',
-            'price'            => 'required|numeric',
             'duration_minutes' => 'required|numeric',
         ]);
 
@@ -43,12 +52,13 @@ class ServiceController {
             Response::error('Validation failed', 422, $validator->errors());
         }
 
-        if (Service::findByCode($input['code'])) {
+        if (!empty($input['code']) && Service::findByCode($input['code'])) {
             Response::error('A service with this code already exists.', 409);
         }
 
         $id = Service::create($input);
-        Response::success(Service::findById($id), 'Service created successfully.', 201);
+        $created = Service::findById($id);
+        Response::success($created, 'Service created successfully.', 201);
     }
 
     public function update(int $id): void {
@@ -65,7 +75,6 @@ class ServiceController {
         $validator = Validator::make($input, [
             'name'             => 'required|min:2|max:150',
             'category'         => 'required',
-            'price'            => 'required|numeric',
             'duration_minutes' => 'required|numeric',
         ]);
 
@@ -89,5 +98,21 @@ class ServiceController {
         $updated = Service::findById($id);
         $state = $updated['is_active'] ? 'activated' : 'deactivated';
         Response::success($updated, "Service has been {$state}.");
+    }
+
+    public function destroy(int $id): void {
+        RoleMiddleware::requireAdmin();
+
+        $service = Service::findById($id);
+        if (!$service) {
+            Response::notFound('Service not found.');
+        }
+
+        $result = Service::delete($id);
+        if (!$result['success']) {
+            Response::error($result['message'], 400);
+        }
+
+        Response::success(null, $result['message']);
     }
 }

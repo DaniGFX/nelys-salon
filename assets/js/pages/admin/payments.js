@@ -1,183 +1,276 @@
 /**
  * Nely's Salon — Admin Payments Controller
- * Manages payment transactions, tracking paid, partial, and unpaid appointments,
- * receipt generator, revenue weekly breakdown chart, and modal CRUD operations.
+ * Directly connected to backend database API (/api/payments, /api/dashboard/stats)
+ * Manages salon payment transactions, revenue overview, receipt generation,
+ * search/filter controls, and complete CRUD & refund modal workflows.
  */
 
-// ================= GLOBAL STATE & STORAGE =================
-const PAYMENTS_STORAGE_KEY = 'nelys_admin_payments_data';
+// ================= GLOBAL STATE =================
+let paymentsList = [];
+let servicesCatalog = [];
+let customersList = [];
+let summaryMetrics = {
+  today_revenue: 0,
+  today_visits: 0,
+  month_revenue: 0,
+  paid_revenue: 0,
+  pending_revenue: 0,
+  weekly_revenue: [
+    { label: 'Monday', day: 'Mon', amount: 0 },
+    { label: 'Tuesday', day: 'Tue', amount: 0 },
+    { label: 'Wednesday', day: 'Wed', amount: 0 },
+    { label: 'Thursday', day: 'Thu', amount: 0 },
+    { label: 'Friday', day: 'Fri', amount: 0 },
+    { label: 'Saturday', day: 'Sat', amount: 0 },
+    { label: 'Sunday', day: 'Sun', amount: 0 }
+  ],
+  weekly_total: 0,
+  highest_day: 'Mon',
+  highest_amount: 0,
+  daily_average: 0,
+  top_payment_method: 'Cash',
+  top_payment_pct: 0
+};
 
-const DEFAULT_PAYMENTS = [
-  {
-    id: 'PAY-0001',
-    customer: 'Maria Santos',
-    customerPhone: '0917 888 9999',
-    service: 'Haircut',
-    amount: 250,
-    method: 'Cash',
-    status: 'Paid', // Paid, Partial, Unpaid, Refunded
-    date: 'Sept 23',
-    fullDate: 'September 23, 2026',
-    transactionTime: '9:42 AM',
-    appointmentSchedule: 'September 23, 2026 — 9:00 AM',
-    notes: 'Walk-in cash settlement completed after styling.'
-  },
-  {
-    id: 'PAY-0002',
-    customer: 'Angela Cruz',
-    customerPhone: '0928 777 6666',
-    service: 'Brazilian',
-    amount: 1999,
-    method: 'GCash',
-    status: 'Paid',
-    date: 'Sept 23',
-    fullDate: 'September 23, 2026',
-    transactionTime: '11:15 AM',
-    appointmentSchedule: 'September 23, 2026 — 10:30 AM',
-    notes: 'GCash Reference: 902837416281. Full payment confirmed.'
-  },
-  {
-    id: 'PAY-0003',
-    customer: 'Jamie Reyes',
-    customerPhone: '0919 555 4433',
-    service: 'Manicure',
-    amount: 149,
-    method: 'Cash',
-    status: 'Partial',
-    date: 'Sept 23',
-    fullDate: 'September 23, 2026',
-    transactionTime: '1:45 PM',
-    appointmentSchedule: 'September 23, 2026 — 1:00 PM',
-    notes: 'Partial deposit paid (₱100); remaining ₱49 balance to settle upon gel polish topcoat.'
-  },
-  {
-    id: 'PAY-0004',
-    customer: 'Carla Dela Cruz',
-    customerPhone: '0995 222 1100',
-    service: 'Hair Dye',
-    amount: 699,
-    method: 'GCash',
-    status: 'Paid',
-    date: 'Sept 22',
-    fullDate: 'September 22, 2026',
-    transactionTime: '4:20 PM',
-    appointmentSchedule: 'September 22, 2026 — 3:00 PM',
-    notes: 'GCash Ref: 483920194821 verified by salon cashier.'
-  },
-  {
-    id: 'PAY-0005',
-    customer: 'Sophia Reyes',
-    customerPhone: '0917 444 3322',
-    service: 'Pedicure',
-    amount: 149,
-    method: '—',
-    status: 'Unpaid',
-    date: 'Sept 22',
-    fullDate: 'September 22, 2026',
-    transactionTime: '2:00 PM',
-    appointmentSchedule: 'September 22, 2026 — 2:00 PM',
-    notes: 'Pending customer settlement via home service or cash counter.'
-  },
-  {
-    id: 'PAY-0006',
-    customer: 'Joshua Garcia',
-    customerPhone: '0933 666 8899',
-    service: 'Trim',
-    amount: 149,
-    method: 'Cash',
-    status: 'Paid',
-    date: 'Sept 23',
-    fullDate: 'September 23, 2026',
-    transactionTime: '10:00 AM',
-    appointmentSchedule: 'September 23, 2026 — 9:30 AM',
-    notes: 'Cash payment settled at salon counter.'
-  },
-  {
-    id: 'PAY-0007',
-    customer: 'Katrina Halili',
-    customerPhone: '0918 999 0011',
-    service: 'Keratine Treatment',
-    amount: 499,
-    method: 'Bank Transfer',
-    status: 'Paid',
-    date: 'Sept 23',
-    fullDate: 'September 23, 2026',
-    transactionTime: '2:30 PM',
-    appointmentSchedule: 'September 23, 2026 — 1:30 PM',
-    notes: 'BDO Online transfer reference 8847291.'
-  },
-  {
-    id: 'PAY-0008',
-    customer: 'Patricia Gomez',
-    customerPhone: '0920 111 4477',
-    service: 'Hair Treatment',
-    amount: 600,
-    method: 'GCash',
-    status: 'Refunded',
-    date: 'Sept 21',
-    fullDate: 'September 21, 2026',
-    transactionTime: '3:00 PM',
-    appointmentSchedule: 'September 21, 2026 — 2:00 PM',
-    notes: 'Client rescheduled appointment due to emergency; deposit reversed via GCash.'
-  }
-];
-
-// Revenue weekly data matching prompt
-const WEEKLY_REVENUE = [
-  { day: 'Mon', amount: 4200, label: 'Monday' },
-  { day: 'Tue', amount: 5100, label: 'Tuesday' },
-  { day: 'Wed', amount: 6800, label: 'Wednesday' },
-  { day: 'Thu', amount: 5600, label: 'Thursday' },
-  { day: 'Fri', amount: 8450, label: 'Friday' },
-  { day: 'Sat', amount: 7200, label: 'Saturday' },
-  { day: 'Sun', amount: 5900, label: 'Sunday' }
-];
-
-// In-memory state
-let payments = [];
+// In-memory active transaction context
 let activePayment = null;
 let activeKebabDropdown = null;
 
-// Filters
+// Filter & search criteria
 let currentSearch = '';
 let currentDateFilter = 'all';
 let currentStatusFilter = 'all';
 let currentMethodFilter = 'all';
+let currentRevenueTimeframe = 'week';
 
-// ================= STORAGE HELPERS =================
-function loadPayments() {
-  try {
-    const raw = localStorage.getItem(PAYMENTS_STORAGE_KEY);
-    if (raw) {
-      payments = JSON.parse(raw);
-    } else {
-      payments = JSON.parse(JSON.stringify(DEFAULT_PAYMENTS));
-      savePayments();
-    }
-  } catch (err) {
-    console.error('Error loading payments:', err);
-    payments = JSON.parse(JSON.stringify(DEFAULT_PAYMENTS));
-  }
-}
-
-function savePayments() {
-  try {
-    localStorage.setItem(PAYMENTS_STORAGE_KEY, JSON.stringify(payments));
-  } catch (err) {
-    console.error('Error saving payments:', err);
-  }
-}
-
-// ================= DOM INITIALIZATION =================
+// ================= INITIALIZATION & AUTH =================
 document.addEventListener('DOMContentLoaded', () => {
-  loadPayments();
-  renderSummaryCards();
-  renderRevenueOverview();
-  applyFiltersAndRender();
+  checkAdminAuth();
   setupEventListeners();
-  updateTimeBadge();
+  fetchPaymentsData();
+  fetchSidebarStats();
 });
 
+function checkAdminAuth() {
+  const token = localStorage.getItem('nelys_token');
+  const userJson = localStorage.getItem('nelys_user');
+
+  if (!token) {
+    window.location.href = '../login.html';
+    return;
+  }
+
+  let displayName = 'Admin';
+  if (userJson) {
+    try {
+      const user = JSON.parse(userJson);
+      let rawName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Admin');
+      rawName = rawName.replace(/atelier\s*/gi, '').trim();
+      if (rawName && rawName.toLowerCase() !== 'admin') {
+        displayName = rawName;
+      }
+    } catch (e) {
+      console.warn('Error reading admin user:', e);
+    }
+  }
+
+  const mobileBadge = document.querySelector('header .bg-\\[\\#541A1A\\]');
+  if (mobileBadge) {
+    const parts = displayName.split(' ').filter(Boolean);
+    const initials = parts.length > 1 
+      ? (parts[0][0] + parts[1][0]).toUpperCase() 
+      : (displayName.substring(0, 2)).toUpperCase();
+    mobileBadge.textContent = initials || 'AD';
+  }
+}
+
+// Helper to get auth headers
+function getAuthHeaders() {
+  const token = localStorage.getItem('nelys_token');
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+// ================= FETCH DATA FROM BACKEND =================
+async function fetchPaymentsData() {
+  try {
+    const res = await fetch('../api/payments', {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      console.warn('Admin session expired or unauthenticated.');
+    }
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: Failed to fetch payments data`);
+    }
+
+    const json = await res.json();
+    if (json.data) {
+      if (json.data.payments && Array.isArray(json.data.payments)) {
+        paymentsList = json.data.payments.map(mapPaymentRecord);
+      } else if (Array.isArray(json.data)) {
+        paymentsList = json.data.map(mapPaymentRecord);
+      }
+
+      if (json.data.metrics) {
+        summaryMetrics = Object.assign(summaryMetrics, json.data.metrics);
+      }
+
+      if (json.data.services && Array.isArray(json.data.services)) {
+        servicesCatalog = json.data.services;
+      }
+
+      if (json.data.customers && Array.isArray(json.data.customers)) {
+        customersList = json.data.customers;
+      }
+    }
+
+    populateRecordModalDropdowns();
+    renderSummaryCards();
+    renderRevenueOverview(currentRevenueTimeframe);
+    applyFiltersAndRender();
+
+  } catch (err) {
+    console.error('Error fetching payments from backend:', err);
+    showToast('Failed to load payment records from server.', 'error');
+  }
+}
+
+// Fetch sidebar badge counts
+async function fetchSidebarStats() {
+  try {
+    const res = await fetch('../api/dashboard/stats', {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data) {
+        const d = json.data;
+        const bAppt = document.getElementById('sidebarAppointmentsBadge');
+        const bCust = document.getElementById('sidebarCustomersBadge');
+        const bSvc = document.getElementById('sidebarServicesBadge');
+        const bStaff = document.getElementById('sidebarStaffBadge');
+        const bNotif = document.getElementById('sidebarNotificationsBadge');
+        const bMsg = document.getElementById('sidebarMessagesBadge');
+
+        if (bAppt && d.total_appointments !== undefined) bAppt.textContent = d.total_appointments;
+        if (bCust && d.total_customers !== undefined) bCust.textContent = d.total_customers;
+        if (bSvc && d.total_services !== undefined) bSvc.textContent = d.total_services;
+        if (bStaff && d.total_staff !== undefined) bStaff.textContent = d.total_staff;
+        if (bNotif && d.unread_notifications !== undefined) bNotif.textContent = d.unread_notifications;
+        if (bMsg && d.unread_messages !== undefined) bMsg.textContent = d.unread_messages;
+      }
+    }
+  } catch (err) {
+    // Non-critical, ignore
+  }
+}
+
+// Map raw backend payment object
+function mapPaymentRecord(p) {
+  const amount = parseFloat(p.amount) || 0;
+  const rawStatus = (p.raw_status || p.status || 'pending').toLowerCase();
+  
+  let status = 'Unpaid';
+  if (rawStatus === 'paid') status = 'Paid';
+  else if (rawStatus === 'partial') status = 'Partial';
+  else if (rawStatus === 'refunded') status = 'Refunded';
+
+  const rawMethod = (p.raw_method || p.payment_method || p.method || 'cash').toLowerCase();
+  let method = 'Cash';
+  if (rawMethod === 'gcash') method = 'GCash';
+  else if (rawMethod === 'bank_transfer') method = 'Bank Transfer';
+  else if (rawMethod === 'other') method = 'Other';
+
+  const createdDate = p.created_at ? new Date(p.created_at) : new Date();
+  const dateFormatted = p.date || createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const fullDate = p.fullDate || createdDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const timeFormatted = p.transactionTime || createdDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+
+  const idCode = p.transaction_code || ('PAY-' + String(p.id).padStart(4, '0'));
+
+  return {
+    id: p.id,
+    displayId: idCode,
+    transaction_code: idCode,
+    booking_id: p.booking_id || null,
+    customer: p.customer || p.customer_name || 'Customer',
+    customerPhone: p.customerPhone || p.customer_phone || '',
+    customerEmail: p.customerEmail || p.customer_email || '',
+    service: p.service || p.service_name || 'Salon Service',
+    amount: amount,
+    method: method,
+    raw_method: rawMethod,
+    status: status,
+    raw_status: rawStatus,
+    date: dateFormatted,
+    fullDate: fullDate,
+    transactionTime: timeFormatted,
+    appointmentSchedule: p.appointmentSchedule || `${fullDate} — 9:00 AM`,
+    notes: p.notes || '',
+    created_at: p.created_at || new Date().toISOString(),
+    paid_at: p.paid_at || null,
+    staff_name: p.staff_name || ''
+  };
+}
+
+// Populate customer and service selects for record payment modal
+function populateRecordModalDropdowns() {
+  const custSelect = document.getElementById('recordCustomerSelect');
+  const srvSelect = document.getElementById('recordServiceSelect');
+
+  if (custSelect) {
+    if (customersList.length === 0) {
+      custSelect.innerHTML = `<option value="">No registered customers found</option>`;
+    } else {
+      custSelect.innerHTML = `<option value="" disabled selected>Select a customer...</option>` +
+        customersList.map(c => {
+          const name = c.name || c.full_name || c.email || 'Customer';
+          const phone = c.phone ? ` (${c.phone})` : '';
+          return `<option value="${c.id || c.user_id}">${name}${phone}</option>`;
+        }).join('');
+    }
+  }
+
+  if (srvSelect) {
+    if (servicesCatalog.length === 0) {
+      srvSelect.innerHTML = `<option value="">No services available</option>`;
+    } else {
+      srvSelect.innerHTML = `<option value="" disabled selected>Select a service...</option>` +
+        servicesCatalog.map(s => {
+          const price = parseFloat(s.price) || 0;
+          return `<option value="${s.id}" data-price="${price}">${s.name} (₱${price.toLocaleString()})</option>`;
+        }).join('');
+    }
+  }
+}
+
+// Handle Service selection in Record Modal to auto-fill amount
+function handleRecordServiceChange(serviceId) {
+  const srvSelect = document.getElementById('recordServiceSelect');
+  const amtInput = document.getElementById('recordAmount');
+  if (!srvSelect || !amtInput) return;
+
+  const selectedOpt = srvSelect.options[srvSelect.selectedIndex];
+  if (selectedOpt && selectedOpt.dataset.price !== undefined) {
+    amtInput.value = selectedOpt.dataset.price;
+  }
+}
+
+// ================= DOM EVENT LISTENERS =================
 function setupEventListeners() {
   // Search input
   const searchInput = document.getElementById('paymentSearchInput');
@@ -232,37 +325,72 @@ function setupEventListeners() {
 
 // ================= RENDER SUMMARY CARDS =================
 function renderSummaryCards() {
-  // Matching user's sample figures:
-  // Today's Revenue: ₱8,450
-  // This Month: ₱52,680
-  // Paid: ₱7,250
-  // Pending: ₱1,200
   const todayRevEl = document.getElementById('statTodayRevenue');
+  const todayVisitsEl = document.getElementById('statTodayVisits');
   const monthRevEl = document.getElementById('statMonthRevenue');
   const paidRevEl = document.getElementById('statPaidRevenue');
   const pendingRevEl = document.getElementById('statPendingRevenue');
 
-  if (todayRevEl) todayRevEl.textContent = '₱8,450';
-  if (monthRevEl) monthRevEl.textContent = '₱52,680';
-  if (paidRevEl) paidRevEl.textContent = '₱7,250';
-  if (pendingRevEl) pendingRevEl.textContent = '₱1,200';
+  if (todayRevEl) todayRevEl.textContent = `₱${summaryMetrics.today_revenue.toLocaleString()}`;
+  if (todayVisitsEl) todayVisitsEl.textContent = `${summaryMetrics.today_visits} visit${summaryMetrics.today_visits === 1 ? '' : 's'}`;
+  if (monthRevEl) monthRevEl.textContent = `₱${summaryMetrics.month_revenue.toLocaleString()}`;
+  if (paidRevEl) paidRevEl.textContent = `₱${summaryMetrics.paid_revenue.toLocaleString()}`;
+  if (pendingRevEl) pendingRevEl.textContent = `₱${summaryMetrics.pending_revenue.toLocaleString()}`;
 }
 
 // ================= RENDER REVENUE OVERVIEW =================
 function renderRevenueOverview(timeframe = 'week') {
+  currentRevenueTimeframe = timeframe;
   const chartContainer = document.getElementById('revenueChartContainer');
   const totalDisplay = document.getElementById('revenueOverviewTotal');
+  const highestDayDisplay = document.getElementById('revenueHighestDay');
+  const dailyAvgDisplay = document.getElementById('revenueDailyAvg');
+  const topMethodDisplay = document.getElementById('revenueTopMethod');
+
   if (!chartContainer) return;
 
-  const total = WEEKLY_REVENUE.reduce((sum, item) => sum + item.amount, 0);
-  if (totalDisplay) totalDisplay.textContent = `₱${total.toLocaleString()}`;
+  const weeklyData = summaryMetrics.weekly_revenue || [
+    { label: 'Monday', day: 'Mon', amount: 0 },
+    { label: 'Tuesday', day: 'Tue', amount: 0 },
+    { label: 'Wednesday', day: 'Wed', amount: 0 },
+    { label: 'Thursday', day: 'Thu', amount: 0 },
+    { label: 'Friday', day: 'Fri', amount: 0 },
+    { label: 'Saturday', day: 'Sat', amount: 0 },
+    { label: 'Sunday', day: 'Sun', amount: 0 }
+  ];
 
-  const maxVal = Math.max(...WEEKLY_REVENUE.map(d => d.amount));
+  if (timeframe === 'week') {
+    if (totalDisplay) totalDisplay.textContent = `₱${summaryMetrics.weekly_total.toLocaleString()}`;
+    if (highestDayDisplay) {
+      highestDayDisplay.textContent = summaryMetrics.highest_amount > 0 
+        ? `${summaryMetrics.highest_day} (₱${summaryMetrics.highest_amount.toLocaleString()})`
+        : '—';
+    }
+    if (dailyAvgDisplay) dailyAvgDisplay.textContent = `₱${summaryMetrics.daily_average.toLocaleString()}`;
+  } else if (timeframe === 'today') {
+    if (totalDisplay) totalDisplay.textContent = `₱${summaryMetrics.today_revenue.toLocaleString()}`;
+    if (highestDayDisplay) highestDayDisplay.textContent = `Today (₱${summaryMetrics.today_revenue.toLocaleString()})`;
+    if (dailyAvgDisplay) dailyAvgDisplay.textContent = `₱${summaryMetrics.today_revenue.toLocaleString()}`;
+  } else if (timeframe === 'month') {
+    if (totalDisplay) totalDisplay.textContent = `₱${summaryMetrics.month_revenue.toLocaleString()}`;
+    if (highestDayDisplay) highestDayDisplay.textContent = `Month (₱${summaryMetrics.month_revenue.toLocaleString()})`;
+    if (dailyAvgDisplay) dailyAvgDisplay.textContent = `₱${Math.round(summaryMetrics.month_revenue / 30).toLocaleString()}`;
+  }
 
-  chartContainer.innerHTML = WEEKLY_REVENUE.map(d => {
-    const heightPercent = Math.round((d.amount / maxVal) * 100);
-    const isPeak = d.amount === maxVal;
-    const barBg = isPeak ? 'bg-[#810B38]' : 'bg-[#DCC3AA] group-hover:bg-[#810B38]/80';
+  if (topMethodDisplay) {
+    topMethodDisplay.textContent = summaryMetrics.top_payment_pct > 0 
+      ? `${summaryMetrics.top_payment_method} (${summaryMetrics.top_payment_pct}%)`
+      : `${summaryMetrics.top_payment_method || 'Cash'}`;
+  }
+
+  const maxVal = Math.max(...weeklyData.map(d => d.amount), 1);
+
+  chartContainer.innerHTML = weeklyData.map(d => {
+    const heightPercent = d.amount > 0 ? Math.max(Math.round((d.amount / maxVal) * 100), 8) : 4;
+    const isPeak = d.amount > 0 && d.amount === summaryMetrics.highest_amount;
+    const barBg = isPeak 
+      ? 'bg-[#810B38]' 
+      : (d.amount > 0 ? 'bg-[#DCC3AA] group-hover:bg-[#810B38]/80' : 'bg-stone-200');
 
     return `
       <div class="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
@@ -291,12 +419,6 @@ function renderRevenueOverview(timeframe = 'week') {
 
 // Switch Revenue timeframe
 function changeRevenueTimeframe(timeframe) {
-  const labelEl = document.getElementById('revenueTimeframeLabel');
-  if (labelEl) {
-    if (timeframe === 'today') labelEl.textContent = 'Today (₱8,450)';
-    else if (timeframe === 'month') labelEl.textContent = 'This Month (₱52,680)';
-    else labelEl.textContent = 'This Week (₱43,250)';
-  }
   renderRevenueOverview(timeframe);
 }
 
@@ -304,25 +426,39 @@ function changeRevenueTimeframe(timeframe) {
 function applyFiltersAndRender() {
   closeAllKebabMenus();
 
-  let filtered = [...payments];
+  let filtered = [...paymentsList];
 
-  // 1. Search (Customer, Service, ID, Notes)
+  // 1. Search (Customer, Service, ID, Notes, Staff)
   if (currentSearch) {
     filtered = filtered.filter(p => 
-      p.customer.toLowerCase().includes(currentSearch) ||
-      p.service.toLowerCase().includes(currentSearch) ||
-      p.id.toLowerCase().includes(currentSearch) ||
-      p.method.toLowerCase().includes(currentSearch) ||
-      (p.notes && p.notes.toLowerCase().includes(currentSearch))
+      (p.customer && p.customer.toLowerCase().includes(currentSearch)) ||
+      (p.service && p.service.toLowerCase().includes(currentSearch)) ||
+      (p.displayId && p.displayId.toLowerCase().includes(currentSearch)) ||
+      (p.method && p.method.toLowerCase().includes(currentSearch)) ||
+      (p.notes && p.notes.toLowerCase().includes(currentSearch)) ||
+      (p.staff_name && p.staff_name.toLowerCase().includes(currentSearch))
     );
   }
 
   // 2. Date Filter
   if (currentDateFilter !== 'all') {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().slice(0, 10);
+
     if (currentDateFilter === 'today') {
-      filtered = filtered.filter(p => p.date === 'Sept 23');
+      filtered = filtered.filter(p => {
+        const pDate = p.created_at ? p.created_at.slice(0, 10) : '';
+        const paidDate = p.paid_at ? p.paid_at.slice(0, 10) : '';
+        return pDate === todayStr || paidDate === todayStr;
+      });
     } else if (currentDateFilter === 'yesterday') {
-      filtered = filtered.filter(p => p.date === 'Sept 22');
+      filtered = filtered.filter(p => {
+        const pDate = p.created_at ? p.created_at.slice(0, 10) : '';
+        const paidDate = p.paid_at ? p.paid_at.slice(0, 10) : '';
+        return pDate === yesterdayStr || paidDate === yesterdayStr;
+      });
     }
   }
 
@@ -440,7 +576,7 @@ function renderPaymentsTable(items) {
     } else if (p.method === 'Bank Transfer') {
       methodBadge = `<span class="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-700"><i class="fa-solid fa-building-columns text-indigo-600"></i> Bank Transfer</span>`;
     } else {
-      methodBadge = `<span class="text-xs text-stone-400 font-medium">${p.method}</span>`;
+      methodBadge = `<span class="text-xs text-stone-500 font-medium">${p.method}</span>`;
     }
 
     return `
@@ -451,14 +587,14 @@ function renderPaymentsTable(items) {
             <i class="fa-regular fa-calendar text-[11px] text-[#810B38]"></i>
             ${p.date}
           </div>
-          <div class="text-[10px] text-stone-400 font-mono mt-0.5">${p.id}</div>
+          <div class="text-[10px] text-stone-400 font-mono mt-0.5">${p.displayId}</div>
         </td>
 
         <!-- Customer -->
         <td class="px-5 py-4">
           <button 
             type="button" 
-            onclick="openPaymentDetailsModal('${p.id}')"
+            onclick="openPaymentDetailsModal(${p.id})"
             class="font-serif font-bold text-sm text-[#541A1A] hover:text-[#810B38] transition-colors text-left group-hover:underline block">
             ${p.customer}
           </button>
@@ -493,9 +629,9 @@ function renderPaymentsTable(items) {
           <div class="relative inline-block text-left kebab-menu-container">
             <button 
               type="button" 
-              onclick="toggleKebabMenu(event, '${p.id}')"
+              onclick="toggleKebabMenu(event, ${p.id})"
               class="w-8 h-8 rounded-lg bg-stone-100 hover:bg-[#810B38] hover:text-white text-stone-600 transition-colors flex items-center justify-center text-sm shadow-xs focus:outline-none"
-              aria-label="Actions for payment ${p.id}">
+              aria-label="Actions for payment ${p.displayId}">
               <i class="fa-solid fa-ellipsis-vertical"></i>
             </button>
 
@@ -508,7 +644,7 @@ function renderPaymentsTable(items) {
                 <!-- View Payment -->
                 <button 
                   type="button" 
-                  onclick="openPaymentDetailsModal('${p.id}')"
+                  onclick="openPaymentDetailsModal(${p.id})"
                   class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-[#810B38] font-medium flex items-center gap-2.5 transition-colors">
                   <i class="fa-solid fa-eye text-[#810B38] w-4 text-center"></i>
                   <span>View Payment</span>
@@ -517,7 +653,7 @@ function renderPaymentsTable(items) {
                 <!-- Edit Payment -->
                 <button 
                   type="button" 
-                  onclick="openEditPaymentModal('${p.id}')"
+                  onclick="openEditPaymentModal(${p.id})"
                   class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-[#810B38] font-medium flex items-center gap-2.5 transition-colors">
                   <i class="fa-solid fa-pen-to-square text-[#810B38] w-4 text-center"></i>
                   <span>Edit Payment</span>
@@ -528,16 +664,16 @@ function renderPaymentsTable(items) {
                 <!-- Record Payment / Mark Paid -->
                 <button 
                   type="button" 
-                  onclick="quickMarkPaid('${p.id}')"
+                  onclick="quickMarkPaid(${p.id})"
                   class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-emerald-700 font-medium flex items-center gap-2.5 transition-colors">
                   <i class="fa-solid fa-money-bill-wave text-emerald-600 w-4 text-center"></i>
-                  <span>${p.status === 'Paid' ? 'Re-record Payment' : 'Mark as Paid'}</span>
+                  <span>${p.status === 'Paid' ? 'Re-confirm Paid' : 'Mark as Paid'}</span>
                 </button>
 
                 <!-- View Receipt -->
                 <button 
                   type="button" 
-                  onclick="openReceiptModal('${p.id}')"
+                  onclick="openReceiptModal(${p.id})"
                   class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-indigo-700 font-medium flex items-center gap-2.5 transition-colors">
                   <i class="fa-solid fa-receipt text-indigo-600 w-4 text-center"></i>
                   <span>View Receipt</span>
@@ -548,7 +684,7 @@ function renderPaymentsTable(items) {
                 <!-- Refund -->
                 <button 
                   type="button" 
-                  onclick="openRefundModal('${p.id}')"
+                  onclick="openRefundModal(${p.id})"
                   class="w-full px-3.5 py-2 text-rose-600 hover:bg-rose-50 font-medium flex items-center gap-2.5 transition-colors">
                   <i class="fa-solid fa-arrow-rotate-left text-rose-600 w-4 text-center"></i>
                   <span>Refund</span>
@@ -588,7 +724,7 @@ function closeAllKebabMenus() {
 // ================= PAYMENT DETAILS MODAL =================
 function openPaymentDetailsModal(paymentId) {
   closeAllKebabMenus();
-  const p = payments.find(item => item.id === paymentId);
+  const p = paymentsList.find(item => item.id === paymentId || item.displayId === paymentId);
   if (!p) return;
 
   activePayment = p;
@@ -603,13 +739,13 @@ function openPaymentDetailsModal(paymentId) {
   const dateEl = document.getElementById('detailsTransactionDate');
   const notesEl = document.getElementById('detailsNotes');
 
-  if (idEl) idEl.textContent = `Payment #${p.id}`;
+  if (idEl) idEl.textContent = `Payment #${p.displayId}`;
   if (custEl) custEl.textContent = p.customer;
-  if (apptEl) apptEl.textContent = p.appointmentSchedule || `${p.fullDate} — 9:00 AM`;
+  if (apptEl) apptEl.textContent = p.appointmentSchedule;
   if (srvEl) srvEl.textContent = p.service;
   if (amtEl) amtEl.textContent = `₱${p.amount.toLocaleString()}`;
-  if (methodEl) methodEl.textContent = p.method === '—' ? 'Not recorded yet' : p.method;
-  if (dateEl) dateEl.textContent = `${p.fullDate} — ${p.transactionTime || '9:42 AM'}`;
+  if (methodEl) methodEl.textContent = p.method;
+  if (dateEl) dateEl.textContent = `${p.fullDate} — ${p.transactionTime}`;
   if (notesEl) notesEl.textContent = p.notes || 'No additional payment notes recorded.';
 
   if (statusEl) {
@@ -644,7 +780,7 @@ function openReceiptModal(paymentId) {
   closeAllKebabMenus();
   closePaymentDetailsModal();
 
-  const p = payments.find(item => item.id === paymentId) || activePayment;
+  const p = (paymentId ? paymentsList.find(item => item.id === paymentId || item.displayId === paymentId) : null) || activePayment;
   if (!p) return;
 
   activePayment = p;
@@ -660,10 +796,10 @@ function openReceiptModal(paymentId) {
   if (rCust) rCust.textContent = p.customer;
   if (rSrv) rSrv.textContent = p.service;
   if (rAmt) rAmt.textContent = `₱${p.amount.toLocaleString()}`;
-  if (rMethod) rMethod.textContent = p.method === '—' ? 'Cash' : p.method;
+  if (rMethod) rMethod.textContent = p.method;
   if (rStatus) rStatus.textContent = p.status.toUpperCase();
   if (rDate) rDate.textContent = p.fullDate;
-  if (rTx) rTx.textContent = p.id;
+  if (rTx) rTx.textContent = p.displayId;
 
   const modal = document.getElementById('receiptModal');
   if (modal) {
@@ -692,6 +828,11 @@ function openRecordPaymentModal() {
   const form = document.getElementById('recordPaymentForm');
   if (form) form.reset();
 
+  populateRecordModalDropdowns();
+
+  const amtInput = document.getElementById('recordAmount');
+  if (amtInput) amtInput.value = '0';
+
   const modal = document.getElementById('recordPaymentModal');
   if (modal) {
     modal.classList.remove('hidden');
@@ -708,7 +849,7 @@ function closeRecordPaymentModal() {
   activePayment = null;
 }
 
-function handleSaveRecordPayment(event) {
+async function handleSaveRecordPayment(event) {
   event.preventDefault();
 
   const custSelect = document.getElementById('recordCustomerSelect');
@@ -718,49 +859,79 @@ function handleSaveRecordPayment(event) {
   const statusSelect = document.getElementById('recordStatus');
   const notesInput = document.getElementById('recordNotes');
 
-  const customer = custSelect ? custSelect.value : 'Maria Santos';
-  const service = srvSelect ? srvSelect.value : 'Haircut';
-  const amount = amtInput ? parseFloat(amtInput.value) || 250 : 250;
+  const customerId = custSelect && custSelect.value ? parseInt(custSelect.value) : null;
+  const serviceId = srvSelect && srvSelect.value ? parseInt(srvSelect.value) : null;
+  const amount = amtInput ? parseFloat(amtInput.value) || 0 : 0;
   const method = methodSelect ? methodSelect.value : 'Cash';
   const status = statusSelect ? statusSelect.value : 'Paid';
   const notes = notesInput ? notesInput.value.trim() : '';
 
-  const newId = 'PAY-000' + (payments.length + 1);
+  if (amount <= 0) {
+    showToast('Please enter a valid payment amount.', 'warning');
+    return;
+  }
 
-  const newPayment = {
-    id: newId,
-    customer: customer,
-    customerPhone: '0917 888 9999',
-    service: service,
+  const payload = {
+    customer_id: customerId,
+    service_id: serviceId,
     amount: amount,
-    method: method,
-    status: status,
-    date: 'Sept 23',
-    fullDate: 'September 23, 2026',
-    transactionTime: '9:45 AM',
-    appointmentSchedule: 'September 23, 2026 — 9:00 AM',
-    notes: notes || `Payment recorded via ${method} by Admin.`
+    payment_method: method.toLowerCase().replace(' ', '_'),
+    status: status.toLowerCase(),
+    notes: notes
   };
 
-  payments.unshift(newPayment);
-  savePayments();
-  applyFiltersAndRender();
-  closeRecordPaymentModal();
+  try {
+    const res = await fetch('../api/payments', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload)
+    });
 
-  showToast(`Payment ${newId} (₱${amount.toLocaleString()}) recorded successfully!`, 'success');
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || 'Failed to record payment');
+    }
+
+    showToast(`Payment of ₱${amount.toLocaleString()} recorded successfully!`, 'success');
+    closeRecordPaymentModal();
+    await fetchPaymentsData();
+    await fetchSidebarStats();
+
+  } catch (err) {
+    console.error('Error saving payment:', err);
+    showToast(err.message || 'Failed to record payment.', 'error');
+  }
 }
 
 // Quick action to mark a transaction paid
-function quickMarkPaid(paymentId) {
+async function quickMarkPaid(paymentId) {
   closeAllKebabMenus();
-  const p = payments.find(item => item.id === paymentId);
+  const p = paymentsList.find(item => item.id === paymentId);
   if (!p) return;
 
-  p.status = 'Paid';
-  if (p.method === '—') p.method = 'Cash';
-  savePayments();
-  applyFiltersAndRender();
-  showToast(`Transaction ${p.id} marked as PAID.`, 'success');
+  try {
+    const res = await fetch(`../api/payments/${p.id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        status: 'paid',
+        payment_method: p.raw_method === '—' ? 'cash' : p.raw_method
+      })
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || 'Failed to update payment status');
+    }
+
+    showToast(`Transaction ${p.displayId} marked as PAID.`, 'success');
+    await fetchPaymentsData();
+    await fetchSidebarStats();
+
+  } catch (err) {
+    console.error('Error updating payment:', err);
+    showToast(err.message || 'Failed to mark payment as paid.', 'error');
+  }
 }
 
 // ================= EDIT PAYMENT MODAL =================
@@ -768,7 +939,7 @@ function openEditPaymentModal(paymentId) {
   closeAllKebabMenus();
   closePaymentDetailsModal();
 
-  const p = payments.find(item => item.id === paymentId);
+  const p = (paymentId ? paymentsList.find(item => item.id === paymentId || item.displayId === paymentId) : null) || activePayment;
   if (!p) return;
 
   activePayment = p;
@@ -802,46 +973,69 @@ function closeEditPaymentModal() {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
   }
-  activePayment = null;
 }
 
-function handleSaveEditPayment(event) {
+async function handleSaveEditPayment(event) {
   event.preventDefault();
-  if (!activePayment) return;
 
+  const idInput = document.getElementById('editPaymentId');
   const amtInput = document.getElementById('editAmount');
   const methodSelect = document.getElementById('editMethod');
   const statusSelect = document.getElementById('editStatus');
   const notesInput = document.getElementById('editNotes');
 
-  activePayment.amount = amtInput ? parseFloat(amtInput.value) || activePayment.amount : activePayment.amount;
-  activePayment.method = methodSelect ? methodSelect.value : activePayment.method;
-  activePayment.status = statusSelect ? statusSelect.value : activePayment.status;
-  activePayment.notes = notesInput ? notesInput.value.trim() : activePayment.notes;
+  const id = idInput ? parseInt(idInput.value) : (activePayment ? activePayment.id : null);
+  if (!id) return;
 
-  const idx = payments.findIndex(item => item.id === activePayment.id);
-  if (idx !== -1) {
-    payments[idx] = activePayment;
-    savePayments();
+  const amount = amtInput ? parseFloat(amtInput.value) || 0 : 0;
+  const method = methodSelect ? methodSelect.value : 'Cash';
+  const status = statusSelect ? statusSelect.value : 'Paid';
+  const notes = notesInput ? notesInput.value.trim() : '';
+
+  const payload = {
+    amount: amount,
+    payment_method: method.toLowerCase().replace(' ', '_'),
+    status: status.toLowerCase(),
+    notes: notes
+  };
+
+  try {
+    const res = await fetch(`../api/payments/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload)
+    });
+
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || 'Failed to update payment');
+    }
+
+    showToast(`Payment #${activePayment ? activePayment.displayId : id} updated successfully!`, 'success');
+    closeEditPaymentModal();
+    await fetchPaymentsData();
+    await fetchSidebarStats();
+
+  } catch (err) {
+    console.error('Error editing payment:', err);
+    showToast(err.message || 'Failed to update payment.', 'error');
   }
-
-  applyFiltersAndRender();
-  closeEditPaymentModal();
-  showToast(`Transaction ${activePayment.id} updated successfully!`, 'success');
 }
 
 // ================= REFUND MODAL =================
 function openRefundModal(paymentId) {
   closeAllKebabMenus();
-  const p = payments.find(item => item.id === paymentId);
+  closePaymentDetailsModal();
+
+  const p = (paymentId ? paymentsList.find(item => item.id === paymentId || item.displayId === paymentId) : null) || activePayment;
   if (!p) return;
 
   activePayment = p;
 
-  const targetName = document.getElementById('refundCustomerTarget');
+  const targetCust = document.getElementById('refundCustomerTarget');
   const targetAmt = document.getElementById('refundAmountTarget');
 
-  if (targetName) targetName.textContent = p.customer;
+  if (targetCust) targetCust.textContent = p.customer;
   if (targetAmt) targetAmt.textContent = `₱${p.amount.toLocaleString()}`;
 
   const modal = document.getElementById('refundModal');
@@ -857,68 +1051,46 @@ function closeRefundModal() {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
   }
-  activePayment = null;
 }
 
-function handleConfirmRefund() {
+async function handleConfirmRefund() {
   if (!activePayment) return;
 
-  activePayment.status = 'Refunded';
-  activePayment.notes = `Refund of ₱${activePayment.amount} processed on Sept 23. ` + (activePayment.notes || '');
+  try {
+    const res = await fetch(`../api/payments/${activePayment.id}/refund`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
 
-  const idx = payments.findIndex(item => item.id === activePayment.id);
-  if (idx !== -1) {
-    payments[idx] = activePayment;
-    savePayments();
-  }
-
-  applyFiltersAndRender();
-  closeRefundModal();
-  showToast(`Transaction ${activePayment.id} has been marked as REFUNDED.`, 'info');
-}
-
-// ================= MODAL HELPERS =================
-function closeAllModals() {
-  const modalIds = [
-    'paymentDetailsModal',
-    'receiptModal',
-    'recordPaymentModal',
-    'editPaymentModal',
-    'refundModal',
-    'logoutModal'
-  ];
-  modalIds.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.classList.add('hidden');
-      el.classList.remove('flex');
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.message || 'Failed to refund payment');
     }
-  });
-  closeAllKebabMenus();
-}
 
-// Mobile sidebar toggle
-function toggleMobileSidebar(show) {
-  const sidebar = document.getElementById('sidebar');
-  const backdrop = document.getElementById('mobileSidebarBackdrop');
-  if (!sidebar || !backdrop) return;
+    showToast(`Payment ${activePayment.displayId} has been marked as REFUNDED.`, 'success');
+    closeRefundModal();
+    await fetchPaymentsData();
+    await fetchSidebarStats();
 
-  const isClosed = sidebar.classList.contains('-translate-x-full');
-  const shouldOpen = typeof show === 'boolean' ? show : isClosed;
-
-  if (shouldOpen) {
-    sidebar.classList.remove('-translate-x-full');
-    backdrop.classList.remove('pointer-events-none', 'opacity-0');
-    backdrop.classList.add('opacity-100');
-  } else {
-    sidebar.classList.add('-translate-x-full');
-    backdrop.classList.add('pointer-events-none', 'opacity-0');
-    backdrop.classList.remove('opacity-100');
+  } catch (err) {
+    console.error('Error refunding payment:', err);
+    showToast(err.message || 'Failed to process refund.', 'error');
   }
 }
 
-// Logout Modal
+// ================= CLOSE ALL MODALS =================
+function closeAllModals() {
+  closePaymentDetailsModal();
+  closeReceiptModal();
+  closeRecordPaymentModal();
+  closeEditPaymentModal();
+  closeRefundModal();
+  closeLogoutModal();
+}
+
+// ================= LOGOUT MODAL =================
 function openLogoutModal() {
+  closeAllModals();
   const modal = document.getElementById('logoutModal');
   if (modal) {
     modal.classList.remove('hidden');
@@ -934,56 +1106,85 @@ function closeLogoutModal() {
   }
 }
 
-function handleConfirmLogout() {
+async function handleConfirmLogout() {
+  try {
+    await fetch('../api/auth/logout', {
+      method: 'POST',
+      headers: getAuthHeaders()
+    });
+  } catch (e) {
+    // Proceed with local logout regardless
+  }
+  localStorage.removeItem('nelys_token');
+  localStorage.removeItem('nelys_user');
+  sessionStorage.clear();
   window.location.href = '../login.html';
 }
 
-// Toast notification
+// ================= MOBILE NAVIGATION =================
+function toggleMobileSidebar(open) {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('mobileSidebarBackdrop');
+
+  const shouldOpen = open !== undefined ? open : (sidebar && sidebar.classList.contains('-translate-x-full'));
+
+  if (sidebar && backdrop) {
+    if (shouldOpen) {
+      sidebar.classList.remove('-translate-x-full');
+      backdrop.classList.remove('opacity-0', 'pointer-events-none');
+      backdrop.classList.add('opacity-100', 'pointer-events-auto');
+    } else {
+      sidebar.classList.add('-translate-x-full');
+      backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
+    }
+  }
+}
+
+// ================= TOAST NOTIFICATIONS =================
 function showToast(message, type = 'info') {
-  let toastContainer = document.getElementById('adminToastContainer');
-  if (!toastContainer) {
-    toastContainer = document.createElement('div');
-    toastContainer.id = 'adminToastContainer';
-    toastContainer.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none';
-    document.body.appendChild(toastContainer);
+  let container = document.getElementById('adminToastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'adminToastContainer';
+    container.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none';
+    document.body.appendChild(container);
   }
 
   const toast = document.createElement('div');
-  const icon = type === 'success' 
-    ? 'fa-circle-check text-emerald-400' 
-    : type === 'error' 
-    ? 'fa-circle-exclamation text-rose-400' 
-    : 'fa-circle-info text-[#DCC3AA]';
+  let bg = 'bg-[#541A1A] text-white border border-[#DCC3AA]/50';
+  let icon = '<i class="fa-solid fa-circle-info text-[#DCC3AA]"></i>';
 
-  const borderColor = type === 'success'
-    ? 'border-emerald-500/50'
-    : type === 'error'
-    ? 'border-rose-500/50'
-    : 'border-[#DCC3AA]/50';
+  if (type === 'success') {
+    bg = 'bg-emerald-900 text-emerald-50 border border-emerald-500/50';
+    icon = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+  } else if (type === 'error') {
+    bg = 'bg-rose-900 text-rose-50 border border-rose-500/50';
+    icon = '<i class="fa-solid fa-triangle-exclamation text-rose-400"></i>';
+  } else if (type === 'warning') {
+    bg = 'bg-amber-900 text-amber-50 border border-amber-500/50';
+    icon = '<i class="fa-solid fa-circle-exclamation text-amber-400"></i>';
+  }
 
-  toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 bg-[#541A1A] text-[#F1E2D1] border ${borderColor} rounded-xl shadow-2xl text-xs font-medium animate-fadeIn transition-all duration-300`;
+  toast.className = `${bg} pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl text-xs font-medium max-w-sm transform translate-y-3 opacity-0 transition-all duration-300`;
   toast.innerHTML = `
-    <i class="fa-solid ${icon} text-base shrink-0"></i>
-    <span class="flex-1">${message}</span>
+    <div class="text-sm shrink-0">${icon}</div>
+    <div class="flex-1">${message}</div>
+    <button type="button" class="text-white/60 hover:text-white shrink-0 ml-1 text-xs" onclick="this.parentElement.remove()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
   `;
 
-  toastContainer.appendChild(toast);
+  container.appendChild(toast);
 
+  // Trigger animation
+  setTimeout(() => {
+    toast.classList.remove('translate-y-3', 'opacity-0');
+  }, 10);
+
+  // Auto dismiss
   setTimeout(() => {
     toast.classList.add('opacity-0', 'translate-y-2');
     setTimeout(() => toast.remove(), 300);
-  }, 3500);
-}
-
-// Real-time clock badge
-function updateTimeBadge() {
-  const clockEl = document.getElementById('topClockDisplay');
-  if (!clockEl) return;
-
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  clockEl.textContent = `${dateStr} · ${timeStr}`;
-
-  setTimeout(updateTimeBadge, 1000);
+  }, 4000);
 }

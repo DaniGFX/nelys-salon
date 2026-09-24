@@ -134,7 +134,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Appointments</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">12</span>
+        <span id="sidebarAppointmentsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Customers -->
@@ -142,7 +142,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Customers</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">248</span>
+        <span id="sidebarCustomersBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Services -->
@@ -150,7 +150,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Services</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">13</span>
+        <span id="sidebarServicesBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Staff -->
@@ -158,7 +158,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Staff</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">5</span>
+        <span id="sidebarStaffBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Payments (Active) -->
@@ -181,7 +181,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">6</span>
+        <span id="sidebarNotificationsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Messages -->
@@ -189,7 +189,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">2</span>
+        <span id="sidebarMessagesBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">0</span>
       </a>
 
       <!-- Settings -->
@@ -273,8 +273,8 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statTodayRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#810B38]">₱8,450</h3>
-          <span class="text-xs font-bold text-stone-400">12 visits</span>
+          <h3 id="statTodayRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#810B38]">₱0</h3>
+          <span id="statTodayVisits" class="text-xs font-bold text-stone-400">0 visits</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
           <i class="fa-solid fa-money-bill-wave text-emerald-600 text-[10px]"></i>
@@ -291,12 +291,12 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statMonthRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">₱52,680</h3>
-          <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">+14.2%</span>
+          <h3 id="statMonthRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">₱0</h3>
+          <span id="statMonthGross" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Gross</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
           <i class="fa-solid fa-arrow-trend-up text-emerald-600 text-[10px]"></i>
-          <span>September gross billing</span>
+          <span>Current month gross billing</span>
         </p>
       </article>
 
@@ -309,12 +309,12 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statPaidRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">₱7,250</h3>
+          <h3 id="statPaidRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">₱0</h3>
           <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Settled</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
           <i class="fa-solid fa-check text-emerald-600 text-[10px]"></i>
-          <span>Fully settled today</span>
+          <span>Fully settled payments</span>
         </p>
       </article>
 
@@ -327,7 +327,7 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statPendingRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-amber-700">₱1,200</h3>
+          <h3 id="statPendingRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-amber-700">₱0</h3>
           <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Balance</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
@@ -366,8 +366,8 @@
                 id="dateFilter" 
                 class="bg-transparent text-stone-800 font-semibold focus:outline-none cursor-pointer">
                 <option value="all">All Dates</option>
-                <option value="today">Today (Sept 23)</option>
-                <option value="yesterday">Yesterday (Sept 22)</option>
+                <option value="today">Today</option>
+                <option value="yesterday">Yesterday</option>
               </select>
             </div>
 
@@ -413,7 +413,7 @@
         </div>
 
         <div class="flex items-center justify-between text-xs text-stone-500 mt-3 pt-3 border-t border-stone-100">
-          <span id="paymentsResultCount">Showing 8 transactions</span>
+          <span id="paymentsResultCount">Showing 0 transactions</span>
           <span class="text-[11px] text-stone-400">Click transaction or ⋮ to view payment details & official receipt</span>
         </div>
       </section>
@@ -499,26 +499,26 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 my-6">
           <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/50">
             <span class="text-[10px] text-stone-500 font-bold uppercase block">Weekly Total</span>
-            <span id="revenueOverviewTotal" class="font-serif text-2xl font-bold text-[#541A1A]">₱43,250</span>
+            <span id="revenueOverviewTotal" class="font-serif text-2xl font-bold text-[#541A1A]">₱0</span>
           </div>
 
           <div class="p-4 bg-emerald-50/60 rounded-2xl border border-emerald-200/60">
             <span class="text-[10px] text-emerald-700 font-bold uppercase block">Highest Day</span>
-            <span class="font-serif text-2xl font-bold text-emerald-800">Fri (₱8,450)</span>
+            <span id="revenueHighestDay" class="font-serif text-2xl font-bold text-emerald-800">—</span>
           </div>
 
           <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/50">
             <span class="text-[10px] text-stone-500 font-bold uppercase block">Daily Average</span>
-            <span class="font-serif text-2xl font-bold text-[#810B38]">₱6,178</span>
+            <span id="revenueDailyAvg" class="font-serif text-2xl font-bold text-[#810B38]">₱0</span>
           </div>
 
           <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/50">
             <span class="text-[10px] text-stone-500 font-bold uppercase block">Top Method</span>
-            <span class="font-serif text-2xl font-bold text-stone-800">GCash (58%)</span>
+            <span id="revenueTopMethod" class="font-serif text-2xl font-bold text-stone-800">—</span>
           </div>
         </div>
 
-        <!-- Interactive Bar Chart (Prompt Data: Mon: 4,200, Tue: 5,100, Wed: 6,800, Thu: 5,600, Fri: 8,450, Sat: 7,200, Sun: 5,900) -->
+        <!-- Interactive Bar Chart -->
         <div class="pt-4">
           <div id="revenueChartContainer" class="flex items-end justify-between gap-3 h-48 pt-6 px-2 sm:px-6">
             <!-- Dynamically populated by payments.js -->
@@ -561,11 +561,11 @@
         <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/60 flex items-center justify-between">
           <div>
             <span class="text-stone-400 block text-[10px] uppercase font-bold">Customer</span>
-            <span id="detailsCustomerName" class="font-serif font-bold text-base text-[#541A1A]">Maria Santos</span>
+            <span id="detailsCustomerName" class="font-serif font-bold text-base text-[#541A1A]">—</span>
           </div>
           <div class="text-right">
             <span class="text-stone-400 block text-[10px] uppercase font-bold">Amount</span>
-            <span id="detailsAmount" class="font-serif font-bold text-xl text-[#810B38]">₱250</span>
+            <span id="detailsAmount" class="font-serif font-bold text-xl text-[#810B38]">₱0</span>
           </div>
         </div>
 
@@ -573,15 +573,15 @@
         <div class="p-3.5 bg-stone-50 rounded-xl border border-stone-200/70 space-y-2">
           <div class="flex items-center justify-between">
             <span class="text-stone-500 font-medium">Appointment:</span>
-            <span id="detailsAppointmentSchedule" class="font-semibold text-stone-800">September 23, 2026 — 9:00 AM</span>
+            <span id="detailsAppointmentSchedule" class="font-semibold text-stone-800">—</span>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-stone-500 font-medium">Service:</span>
-            <span id="detailsServiceName" class="font-semibold text-[#810B38]">Haircut</span>
+            <span id="detailsServiceName" class="font-semibold text-[#810B38]">—</span>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-stone-500 font-medium">Payment Method:</span>
-            <span id="detailsPaymentMethod" class="font-semibold text-stone-800">Cash</span>
+            <span id="detailsPaymentMethod" class="font-semibold text-stone-800">—</span>
           </div>
           <div class="flex items-center justify-between">
             <span class="text-stone-500 font-medium">Payment Status:</span>
@@ -591,7 +591,7 @@
           </div>
           <div class="flex items-center justify-between">
             <span class="text-stone-500 font-medium">Transaction Date:</span>
-            <span id="detailsTransactionDate" class="font-mono text-stone-700">September 23, 2026 — 9:42 AM</span>
+            <span id="detailsTransactionDate" class="font-mono text-stone-700">—</span>
           </div>
         </div>
 
@@ -599,7 +599,7 @@
         <div>
           <span class="block text-[11px] font-bold text-stone-600 mb-1">Notes:</span>
           <p id="detailsNotes" class="p-3 bg-white border border-[#DCC3AA]/50 rounded-xl text-stone-700 text-xs italic">
-            Walk-in cash settlement completed after styling.
+            —
           </p>
         </div>
 
@@ -671,22 +671,22 @@
         <div class="border-b border-dashed border-stone-300 pb-3 space-y-1">
           <div class="flex justify-between">
             <span class="text-stone-500">Customer:</span>
-            <span id="receiptCustomer" class="font-bold text-stone-900">Maria Santos</span>
+            <span id="receiptCustomer" class="font-bold text-stone-900">—</span>
           </div>
           <div class="flex justify-between">
             <span class="text-stone-500">Service:</span>
-            <span id="receiptService" class="font-bold text-[#810B38]">Haircut</span>
+            <span id="receiptService" class="font-bold text-[#810B38]">—</span>
           </div>
         </div>
 
         <div class="border-b border-dashed border-stone-300 pb-3 space-y-1.5">
           <div class="flex justify-between text-sm">
             <span class="font-bold">Amount:</span>
-            <span id="receiptAmount" class="font-bold text-base text-[#541A1A]">₱250</span>
+            <span id="receiptAmount" class="font-bold text-base text-[#541A1A]">₱0</span>
           </div>
           <div class="flex justify-between">
             <span class="text-stone-500">Payment Method:</span>
-            <span id="receiptMethod" class="font-bold">Cash</span>
+            <span id="receiptMethod" class="font-bold">—</span>
           </div>
           <div class="flex justify-between">
             <span class="text-stone-500">Status:</span>
@@ -697,11 +697,11 @@
         <div class="space-y-1 text-[11px] text-stone-500">
           <div class="flex justify-between">
             <span>Date:</span>
-            <span id="receiptDate">September 23, 2026</span>
+            <span id="receiptDate">—</span>
           </div>
           <div class="flex justify-between">
             <span>Transaction:</span>
-            <span id="receiptTransaction" class="font-bold text-stone-800">PAY-0001</span>
+            <span id="receiptTransaction" class="font-bold text-stone-800">—</span>
           </div>
         </div>
 
@@ -775,12 +775,7 @@
             id="recordCustomerSelect" 
             required
             class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
-            <option value="Maria Santos">Maria Santos (0917 888 9999)</option>
-            <option value="Angela Cruz">Angela Cruz (0928 777 6666)</option>
-            <option value="Jamie Reyes">Jamie Reyes (0919 555 4433)</option>
-            <option value="Carla Dela Cruz">Carla Dela Cruz (0995 222 1100)</option>
-            <option value="Sophia Reyes">Sophia Reyes (0917 444 3322)</option>
-            <option value="Joshua Garcia">Joshua Garcia (0933 666 8899)</option>
+            <option value="">Loading customers...</option>
           </select>
         </div>
 
@@ -792,13 +787,9 @@
           <select 
             id="recordServiceSelect" 
             required
+            onchange="handleRecordServiceChange(this.value)"
             class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
-            <option value="Haircut">Sept 23, 9:00 AM — Haircut (₱250)</option>
-            <option value="Brazilian">Sept 23, 10:30 AM — Brazilian (₱1,999)</option>
-            <option value="Hair Dye">Sept 23, 1:00 PM — Hair Dye (₱699)</option>
-            <option value="Manicure">Sept 23, 2:30 PM — Manicure (₱149)</option>
-            <option value="Pedicure">Sept 23, 4:00 PM — Pedicure (₱149)</option>
-            <option value="Footspa">Sept 23, 5:00 PM — Footspa (₱199)</option>
+            <option value="">Loading services...</option>
           </select>
         </div>
 
@@ -816,7 +807,7 @@
               id="recordAmount" 
               step="1"
               min="0"
-              value="250"
+              value="0"
               required
               class="w-full pl-8 pr-4 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
           </div>
@@ -1057,7 +1048,7 @@
   </div>
 
   <!-- Payments Page JavaScript Controller -->
-  <script src="../assets/js/pages/admin/payments.js"></script>
+  <script src="../assets/js/pages/admin/payments.js?v=2.0"></script>
 
 </body>
 </html>

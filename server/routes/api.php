@@ -28,6 +28,8 @@ require_once dirname(__DIR__) . '/controllers/NotificationController.php';
 require_once dirname(__DIR__) . '/controllers/SettingsController.php';
 require_once dirname(__DIR__) . '/controllers/MessageController.php';
 require_once dirname(__DIR__) . '/controllers/DashboardController.php';
+require_once dirname(__DIR__) . '/controllers/StaffController.php';
+require_once dirname(__DIR__) . '/controllers/PaymentController.php';
 
 class Router {
     public static function dispatch(string $method, string $uri): void {
@@ -69,9 +71,10 @@ class Router {
                         if ($method === 'GET') $svcCtrl->index();
                         if ($method === 'POST') $svcCtrl->store();
                     } elseif (is_numeric($id)) {
+                        if ($subaction === 'toggle' && ($method === 'POST' || $method === 'PATCH')) $svcCtrl->toggle((int)$id);
                         if ($method === 'GET') $svcCtrl->show((int)$id);
                         if ($method === 'PUT' || $method === 'PATCH') $svcCtrl->update((int)$id);
-                        if ($subaction === 'toggle' && $method === 'POST') $svcCtrl->toggle((int)$id);
+                        if ($method === 'DELETE') $svcCtrl->destroy((int)$id);
                     }
                     Response::notFound('Service endpoint not found.');
                     break;
@@ -116,6 +119,39 @@ class Router {
                         if ($method === 'DELETE') $custCtrl->destroy((int)$id);
                     }
                     Response::notFound('Customer endpoint not found.');
+                    break;
+
+                // Staff Management Routes
+                case 'staff':
+                    $staffCtrl = new StaffController();
+                    if ($id === null) {
+                        if ($method === 'GET') $staffCtrl->index();
+                        if ($method === 'POST') $staffCtrl->store();
+                    } elseif (is_numeric($id)) {
+                        if ($subaction === 'availability' && ($method === 'POST' || $method === 'PATCH' || $method === 'PUT')) {
+                            $staffCtrl->updateAvailability((int)$id);
+                        }
+                        if ($method === 'GET') $staffCtrl->show((int)$id);
+                        if ($method === 'PUT' || $method === 'PATCH') $staffCtrl->update((int)$id);
+                        if ($method === 'DELETE') $staffCtrl->destroy((int)$id);
+                    }
+                    Response::notFound('Staff endpoint not found.');
+                    break;
+
+                // Payments & Billing Routes
+                case 'payments':
+                    $paymentCtrl = new PaymentController();
+                    if ($id === null) {
+                        if ($method === 'GET') $paymentCtrl->index();
+                        if ($method === 'POST') $paymentCtrl->store();
+                    } elseif (is_numeric($id)) {
+                        if ($subaction === 'refund' && ($method === 'POST' || $method === 'PATCH')) {
+                            $paymentCtrl->refund((int)$id);
+                        }
+                        if ($method === 'GET') $paymentCtrl->show((int)$id);
+                        if ($method === 'PUT' || $method === 'PATCH') $paymentCtrl->update((int)$id);
+                    }
+                    Response::notFound('Payment endpoint not found.');
                     break;
 
                 // Inventory & Stock Routes
