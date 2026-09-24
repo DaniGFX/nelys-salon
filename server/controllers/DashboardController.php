@@ -22,14 +22,15 @@ class DashboardController {
         $today = date('Y-m-d');
         $currentMonthStart = date('Y-m-01');
 
-        // 1. Sidebar Badges
+        // 1. Sidebar Badges (Only Appointments, Notifications, Messages)
+        $pendingApptsCount = (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'pending'")->fetchColumn();
+        $unreadNotifsCount = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE is_read = 0 OR is_read IS NULL")->fetchColumn();
+        $unreadMsgsCount   = (int)$pdo->query("SELECT COUNT(*) FROM messages WHERE sender = 'customer' AND status != 'read'")->fetchColumn();
+
         $counts = [
-            'appointments' => (int)$pdo->query("SELECT COUNT(*) FROM bookings")->fetchColumn(),
-            'customers'    => (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'customer'")->fetchColumn(),
-            'services'     => (int)$pdo->query("SELECT COUNT(*) FROM services WHERE is_active = 1")->fetchColumn(),
-            'staff'        => (int)$pdo->query("SELECT COUNT(*) FROM staff WHERE is_active = 1")->fetchColumn(),
-            'notifications'=> (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE status = 'sent'")->fetchColumn(),
-            'messages'     => (int)$pdo->query("SELECT COUNT(*) FROM messages WHERE sender = 'customer' AND status = 'unread'")->fetchColumn(),
+            'appointments'  => $pendingApptsCount,
+            'notifications' => $unreadNotifsCount,
+            'messages'      => $unreadMsgsCount,
         ];
 
         // 2. Summary Cards
@@ -277,7 +278,7 @@ class DashboardController {
         $staffList = $pdo->query("SELECT id, name, role FROM staff WHERE is_active = 1 ORDER BY name ASC")->fetchAll();
 
         // Recent Notifications for the Modal
-        $notifications = Notification::all(10);
+        $notifications = Notification::allWithDetails(['category' => 'all']);
 
         Response::success([
             'date' => [
@@ -285,7 +286,15 @@ class DashboardController {
                 'formatted' => date('F j, Y'),
                 'is_actual_today_data' => $isActualToday,
             ],
-            'badges' => $counts,
+            'badges'               => $counts,
+            'new_appointments'     => $pendingApptsCount,
+            'pending_appointments' => $pendingApptsCount,
+            'total_appointments'   => (int)$pdo->query("SELECT COUNT(*) FROM bookings")->fetchColumn(),
+            'total_customers'      => $totalCustomers,
+            'total_services'       => (int)$pdo->query("SELECT COUNT(*) FROM services WHERE is_active = 1")->fetchColumn(),
+            'total_staff'          => (int)$pdo->query("SELECT COUNT(*) FROM staff WHERE is_active = 1")->fetchColumn(),
+            'unread_notifications' => $unreadNotifsCount,
+            'unread_messages'      => $unreadMsgsCount,
             'summary' => [
                 'today_appointments' => $todayApptsCount,
                 'morning_count'      => $morningCount,

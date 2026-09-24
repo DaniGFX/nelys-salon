@@ -167,19 +167,60 @@ function renderSummaryCards() {
   if (statReturning) statReturning.textContent = summaryMetrics.returning !== undefined ? summaryMetrics.returning : 0;
 }
 
-function updateSidebarBadges() {
-  const custBadge = document.getElementById('sidebarCustomersBadge');
-  if (custBadge) {
-    custBadge.textContent = customersData.length;
-  }
-  const svcBadge = document.getElementById('sidebarServicesBadge');
-  if (svcBadge && servicesList.length) {
-    svcBadge.textContent = servicesList.length;
-  }
-  const staffBadge = document.getElementById('sidebarStaffBadge');
-  if (staffBadge && staffList.length) {
-    staffBadge.textContent = staffList.length;
-  }
+async function updateSidebarBadges() {
+  try {
+    const res = await fetch('../api/dashboard/stats', {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data) {
+        const d = json.data;
+        const bAppt = document.getElementById('sidebarAppointmentsBadge');
+        const bNotif = document.getElementById('sidebarNotificationsBadge');
+        const bMsg = document.getElementById('sidebarMessagesBadge');
+        const apptCount = parseInt(d.new_appointments ?? d.pending_appointments ?? d.badges?.appointments ?? 0, 10);
+        const notifCount = parseInt(d.unread_notifications ?? d.badges?.notifications ?? 0, 10);
+        const msgCount = parseInt(d.unread_messages ?? d.badges?.messages ?? 0, 10);
+
+        if (bAppt) {
+          if (apptCount > 0) {
+            bAppt.textContent = apptCount;
+            bAppt.classList.remove('hidden');
+            bAppt.style.display = '';
+          } else {
+            bAppt.textContent = '0';
+            bAppt.classList.add('hidden');
+            bAppt.style.display = 'none';
+          }
+        }
+        if (bNotif) {
+          if (notifCount > 0) {
+            bNotif.textContent = notifCount;
+            bNotif.classList.remove('hidden');
+            bNotif.style.display = '';
+          } else {
+            bNotif.textContent = '0';
+            bNotif.classList.add('hidden');
+            bNotif.style.display = 'none';
+          }
+        }
+        if (bMsg) {
+          if (msgCount > 0) {
+            bMsg.textContent = msgCount;
+            bMsg.classList.remove('hidden');
+            bMsg.style.display = '';
+          } else {
+            bMsg.textContent = '0';
+            bMsg.classList.add('hidden');
+            bMsg.style.display = 'none';
+          }
+        }
+      }
+    }
+  } catch (e) {}
 }
 
 function populateBookingDropdowns() {

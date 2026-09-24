@@ -194,9 +194,11 @@ function renderDashboardUpcoming(bookings) {
   if (dateEl) dateEl.textContent = formatDisplayDate(nextBooking.booking_date);
   if (timeEl) timeEl.textContent = formatDisplayTime(nextBooking.booking_time);
   if (locEl) {
-    locEl.textContent = nextBooking.visit_type === 'home' 
+    const locText = nextBooking.visit_type === 'home' 
       ? 'Home Service' 
       : "Nely's Salon (Lagro)";
+    locEl.textContent = locText;
+    locEl.title = locText;
   }
 
   if (paymentEl) {

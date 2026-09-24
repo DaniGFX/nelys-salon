@@ -133,7 +133,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Appointments</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">12</span>
+        <span id="sidebarAppointmentsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1] hidden">0</span>
       </a>
 
       <!-- Customers -->
@@ -141,7 +141,6 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Customers</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">248</span>
       </a>
 
       <!-- Services -->
@@ -149,7 +148,6 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Services</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">13</span>
       </a>
 
       <!-- Staff -->
@@ -157,7 +155,6 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Staff</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">5</span>
       </a>
 
       <!-- Payments -->
@@ -179,7 +176,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">6</span>
+        <span id="sidebarNotificationsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1] hidden">0</span>
       </a>
 
       <!-- Messages -->
@@ -187,7 +184,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1]">2</span>
+        <span id="sidebarMessagesBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1] hidden">0</span>
       </a>
 
       <!-- Settings (Active) -->
@@ -1166,7 +1163,7 @@
   <div id="adminToastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
   <!-- Admin Settings Controller Script -->
-  <script src="../assets/js/pages/admin/settings.js"></script>
+  <script src="../assets/js/pages/admin/settings.js?v=2.0"></script>
 </body>
 
 </html>

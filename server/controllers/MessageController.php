@@ -2,23 +2,48 @@
 /**
  * Nely's Salon Management System
  * Customer Support Messages Controller
+ * Supports both Admin inbox management and Customer direct concierge chat.
  */
 
 require_once dirname(__DIR__) . '/helpers/Response.php';
 require_once dirname(__DIR__) . '/helpers/Validator.php';
 require_once dirname(__DIR__) . '/helpers/Sanitizer.php';
 require_once dirname(__DIR__) . '/middleware/AuthMiddleware.php';
+require_once dirname(__DIR__) . '/middleware/RoleMiddleware.php';
 require_once dirname(__DIR__) . '/models/Message.php';
 require_once dirname(__DIR__) . '/models/CustomerProfile.php';
 
 class MessageController {
     /**
-     * Get chat message history for the authenticated customer
+     * Get chat message history
+     * If Admin: Returns list of all conversations with metrics, appointments, and message histories.
+     * If Customer: Returns message stream for the authenticated customer.
      */
     public function index(): void {
         $user = AuthMiddleware::check();
-        $userId = (int)$user['id'];
 
+        if ($user['role'] === 'admin') {
+            $search = $_GET['search'] ?? '';
+            $filter = $_GET['filter'] ?? 'all';
+
+            $conversations = Message::getAdminConversations($search, $filter);
+            $unreadTotal = Message::getAdminUnreadCount();
+
+            // If a specific user_id was requested to view & mark as read
+            if (!empty($_GET['user_id'])) {
+                $targetUserId = (int)$_GET['user_id'];
+                Message::markAllReadByAdmin($targetUserId);
+            }
+
+            Response::success([
+                'conversations' => $conversations,
+                'unread_total'  => $unreadTotal
+            ]);
+            return;
+        }
+
+        // Customer Flow
+        $userId = (int)$user['id'];
         $messages = Message::findByUser($userId);
 
         // If fresh conversation with no messages yet, seed personalized welcome greeting
@@ -39,7 +64,7 @@ class MessageController {
 
             $messages = Message::findByUser($userId);
         } else {
-            // Mark salon messages as read when fetched
+            // Mark salon messages as read when fetched by customer
             Message::markAllReadForUser($userId);
         }
 
@@ -47,12 +72,12 @@ class MessageController {
     }
 
     /**
-     * Send a customer message and receive automated concierge response
+     * Send a message
+     * If Admin: Sends message to target user_id (sender = 'salon').
+     * If Customer: Sends message and receives automated concierge response.
      */
     public function send(): void {
         $user = AuthMiddleware::check();
-        $userId = (int)$user['id'];
-
         $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
         $input = Sanitizer::cleanArray($input);
 
@@ -64,6 +89,46 @@ class MessageController {
             Response::error('Message text or attachment is required.', 422);
         }
 
+        // Admin sending message to a customer
+        if ($user['role'] === 'admin') {
+            $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : 0;
+            if (!$targetUserId) {
+                Response::error('Target customer user_id is required.', 422);
+            }
+
+            $adminName = !empty($input['sender_name']) ? trim($input['sender_name']) : "Nely's Salon Concierge";
+
+            $msgId = Message::create([
+                'user_id'         => $targetUserId,
+                'sender'          => 'salon',
+                'sender_name'     => $adminName,
+                'text'            => $text ?: "Shared attachment: {$attachmentName}",
+                'attachment_name' => $attachmentName,
+                'attachment_url'  => $attachmentUrl,
+                'status'          => 'sent',
+            ]);
+
+            $saved = Message::findById($msgId);
+            $timeTs = strtotime($saved['created_at']);
+
+            Response::success([
+                'id'         => (int)$saved['id'],
+                'sender'     => 'admin',
+                'senderName' => $saved['sender_name'],
+                'text'       => $saved['text'],
+                'time'       => date('g:i A', $timeTs),
+                'date'       => date('M j, Y', $timeTs),
+                'status'     => $saved['status'],
+                'attachment' => $saved['attachment_name'] ? [
+                    'name' => $saved['attachment_name'],
+                    'url'  => $saved['attachment_url']
+                ] : null
+            ], 'Message sent successfully.', 201);
+            return;
+        }
+
+        // Customer sending message to Salon
+        $userId = (int)$user['id'];
         $profile = CustomerProfile::findByUserId($userId);
         $customerName = $profile['full_name'] ?? 'Client';
 
@@ -100,28 +165,63 @@ class MessageController {
     }
 
     /**
-     * Delete a single message belonging to the customer
+     * Mark a conversation as read
+     */
+    public function markRead(): void {
+        $user = AuthMiddleware::check();
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : (!empty($_GET['user_id']) ? (int)$_GET['user_id'] : 0);
+
+        if ($user['role'] === 'admin') {
+            if ($targetUserId) {
+                Message::markAllReadByAdmin($targetUserId);
+            }
+        } else {
+            Message::markAllReadForUser((int)$user['id']);
+        }
+
+        Response::success(null, 'Messages marked as read.');
+    }
+
+    /**
+     * Delete a single message
      */
     public function delete(int $id): void {
         $user = AuthMiddleware::check();
-        $userId = (int)$user['id'];
 
         $message = Message::findById($id);
-        if (!$message || (int)$message['user_id'] !== $userId) {
+        if (!$message) {
             Response::notFound('Message not found.');
         }
 
-        Message::deleteForUser($id, $userId);
+        if ($user['role'] !== 'admin' && (int)$message['user_id'] !== (int)$user['id']) {
+            Response::forbidden('You do not have permission to delete this message.');
+        }
+
+        Message::delete($id);
         Response::success(null, 'Message deleted successfully.');
     }
 
     /**
-     * Clear entire chat stream for the customer
+     * Clear entire chat stream for a customer
      */
     public function clear(): void {
         $user = AuthMiddleware::check();
-        $userId = (int)$user['id'];
 
+        if ($user['role'] === 'admin') {
+            $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : (!empty($_GET['user_id']) ? (int)$_GET['user_id'] : 0);
+
+            if (!$targetUserId) {
+                Response::error('Target user_id is required.', 422);
+            }
+
+            Message::clearAllForUser($targetUserId);
+            Response::success(null, 'Conversation cleared successfully.');
+            return;
+        }
+
+        $userId = (int)$user['id'];
         Message::clearAllForUser($userId);
         Response::success(null, 'Chat history cleared successfully.');
     }
@@ -131,9 +231,13 @@ class MessageController {
      */
     public function unreadCount(): void {
         $user = AuthMiddleware::check();
-        $userId = (int)$user['id'];
 
-        $count = Message::getUnreadCount($userId);
+        if ($user['role'] === 'admin') {
+            $count = Message::getAdminUnreadCount();
+        } else {
+            $count = Message::getUnreadCount((int)$user['id']);
+        }
+
         Response::success(['unread_count' => $count]);
     }
 
@@ -174,4 +278,3 @@ class MessageController {
         return "Thank you for reaching out to Nely's Salon! Our front desk staff has received your message and will assist you shortly.";
     }
 }
-

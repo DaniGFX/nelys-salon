@@ -1,298 +1,207 @@
 /**
  * Admin Messages Page Controller
  * Nely's Salon Management System
+ * Directly connected to backend REST API (/api/messages, /api/dashboard/stats)
  */
 
-// Initial Mock Conversation Data
-const conversationsData = [
-  {
-    id: 'maria-santos',
-    name: 'Maria Santos',
-    avatar: 'MS',
-    phone: '0917 123 4567',
-    email: 'maria@email.com',
-    location: 'Lagro, Quezon City',
-    memberSince: 'Member since 2024',
-    status: 'online',
-    isUnread: true,
-    unreadCount: 1,
-    isMuted: false,
-    hasAppointment: true,
-    lastTime: '10:32 AM',
-    upcomingAppointment: {
-      id: 'NS-20260924-0814',
-      service: 'Haircut & Blowdry',
-      date: 'Sept. 24, 2026',
-      time: '2:00 PM',
-      stylist: 'Ana Marie (Senior Stylist)',
-      status: 'Confirmed',
-      price: '₱250.00'
-    },
-    history: {
-      totalVisits: 15,
-      totalSpent: '₱8,450',
-      lastVisit: 'Aug 15, 2026 (Brazilian Blowout)',
-      notes: 'Prefers warm water rinse and Ana as primary stylist.'
-    },
-    messages: [
-      {
-        id: 1,
-        sender: 'customer',
-        text: 'Hi po! Can I move my appointment to tomorrow afternoon?',
-        time: '10:28 AM',
-        date: 'Today',
-        status: 'read'
-      },
-      {
-        id: 2,
-        sender: 'admin',
-        text: 'Hello Maria! Yes po. We have an available slot at 2:00 PM tomorrow.',
-        time: '10:30 AM',
-        date: 'Today',
-        status: 'read'
-      },
-      {
-        id: 3,
-        sender: 'customer',
-        text: 'Yes po, 2 PM is okay. Thank you!',
-        time: '10:32 AM',
-        date: 'Today',
-        status: 'received'
-      }
-    ]
-  },
-  {
-    id: 'angela-cruz',
-    name: 'Angela Cruz',
-    avatar: 'AC',
-    phone: '0918 555 1234',
-    email: 'angela.cruz@email.com',
-    location: 'Fairview, Quezon City',
-    memberSince: 'Member since 2025',
-    status: 'online',
-    isUnread: false,
-    unreadCount: 0,
-    isMuted: false,
-    hasAppointment: true,
-    lastTime: '9:45 AM',
-    upcomingAppointment: {
-      id: 'NS-20260925-1030',
-      service: 'Brazilian Blowout',
-      date: 'Sept. 25, 2026',
-      time: '10:30 AM',
-      stylist: 'Nely (Master Director)',
-      status: 'Confirmed',
-      price: '₱1,200.00'
-    },
-    history: {
-      totalVisits: 6,
-      totalSpent: '₱6,300',
-      lastVisit: 'Jul 20, 2026 (Hair Dye)',
-      notes: 'Sensitive scalp; use gentle developer formula.'
-    },
-    messages: [
-      {
-        id: 1,
-        sender: 'admin',
-        text: 'Hello Ms. Angela, your Brazilian Blowout booking has been confirmed for Friday 10:30 AM with Ma’am Nely.',
-        time: '9:40 AM',
-        date: 'Today',
-        status: 'read'
-      },
-      {
-        id: 2,
-        sender: 'customer',
-        text: 'Thank you po!',
-        time: '9:45 AM',
-        date: 'Today',
-        status: 'read'
-      }
-    ]
-  },
-  {
-    id: 'jamie-reyes',
-    name: 'Jamie Reyes',
-    avatar: 'JR',
-    phone: '0920 987 6543',
-    email: 'jamie.reyes@email.com',
-    location: 'Novaliches, Quezon City',
-    memberSince: 'Member since 2023',
-    status: 'offline',
-    isUnread: true,
-    unreadCount: 1,
-    isMuted: false,
-    hasAppointment: false,
-    lastTime: 'Yesterday',
-    upcomingAppointment: null,
-    history: {
-      totalVisits: 11,
-      totalSpent: '₱5,200',
-      lastVisit: 'Aug 30, 2026 (Footspa Deluxe)',
-      notes: 'Loves aromatherapy foot scrub and gel manicure combos.'
-    },
-    messages: [
-      {
-        id: 1,
-        sender: 'customer',
-        text: 'Good afternoon po! Is Brazilian blowout still discounted this weekend?',
-        time: '3:15 PM',
-        date: 'Yesterday',
-        status: 'received'
-      }
-    ]
-  },
-  {
-    id: 'carla-dela-cruz',
-    name: 'Carla Dela Cruz',
-    avatar: 'CD',
-    phone: '0922 345 6789',
-    email: 'carla.delacruz@email.com',
-    location: 'Lagro, Quezon City',
-    memberSince: 'Member since 2024',
-    status: 'offline',
-    isUnread: false,
-    unreadCount: 0,
-    isMuted: false,
-    hasAppointment: true,
-    lastTime: 'Yesterday',
-    upcomingAppointment: {
-      id: 'NS-20260924-1500',
-      service: 'Hair Dye & Treatment',
-      date: 'Sept. 24, 2026',
-      time: '3:00 PM',
-      stylist: 'Elena (Colorist)',
-      status: 'Confirmed',
-      price: '₱750.00'
-    },
-    history: {
-      totalVisits: 9,
-      totalSpent: '₱4,100',
-      lastVisit: 'Aug 02, 2026 (Hair Trim)',
-      notes: 'Requested ash brown highlights.'
-    },
-    messages: [
-      {
-        id: 1,
-        sender: 'customer',
-        text: 'Hello po! Rescheduled my hair dye to tomorrow 3 PM.',
-        time: '5:10 PM',
-        date: 'Yesterday',
-        status: 'read'
-      },
-      {
-        id: 2,
-        sender: 'admin',
-        text: 'Confirmed po Carla! We prepared your ash brown color mix.',
-        time: '5:14 PM',
-        date: 'Yesterday',
-        status: 'read'
-      },
-      {
-        id: 3,
-        sender: 'customer',
-        text: 'See you tomorrow!',
-        time: '5:18 PM',
-        date: 'Yesterday',
-        status: 'read'
-      }
-    ]
-  },
-  {
-    id: 'bea-alonzo',
-    name: 'Bea Alonzo',
-    avatar: 'BA',
-    phone: '0915 678 1234',
-    email: 'bea.alonzo@email.com',
-    location: 'Batasan Hills, Quezon City',
-    memberSince: 'Member since 2025',
-    status: 'offline',
-    isUnread: false,
-    unreadCount: 0,
-    isMuted: false,
-    hasAppointment: true,
-    lastTime: 'Sep 20',
-    upcomingAppointment: {
-      id: 'NS-20260926-1100',
-      service: 'Power Dose & Keratine',
-      date: 'Sept. 26, 2026',
-      time: '11:00 AM',
-      stylist: 'Ana Marie',
-      status: 'Confirmed',
-      price: '₱850.00'
-    },
-    history: {
-      totalVisits: 4,
-      totalSpent: '₱2,800',
-      lastVisit: 'Jul 10, 2026 (Manicure & Pedicure)',
-      notes: 'Requires weekend morning slots only.'
-    },
-    messages: [
-      {
-        id: 1,
-        sender: 'customer',
-        text: 'Confirmed po, see you on Friday.',
-        time: '2:15 PM',
-        date: 'Sep 20',
-        status: 'read'
-      }
-    ]
-  },
-  {
-    id: 'sofia-andres',
-    name: 'Sofia Andres',
-    avatar: 'SA',
-    phone: '0933 111 2233',
-    email: 'sofia.andres@email.com',
-    location: 'Tandang Sora, Quezon City',
-    memberSince: 'Member since 2026',
-    status: 'offline',
-    isUnread: false,
-    unreadCount: 0,
-    isMuted: false,
-    hasAppointment: false,
-    lastTime: 'Sep 18',
-    upcomingAppointment: null,
-    history: {
-      totalVisits: 2,
-      totalSpent: '₱1,100',
-      lastVisit: 'Aug 22, 2026 (Haircut)',
-      notes: 'New client inquiring about Bonacure German treatment.'
-    },
-    messages: [
-      {
-        id: 1,
-        sender: 'customer',
-        text: 'How much is the Bonacure Hair Treatment?',
-        time: '11:05 AM',
-        date: 'Sep 18',
-        status: 'read'
-      },
-      {
-        id: 2,
-        sender: 'admin',
-        text: 'Hello Sofia! Bonacure treatment starts at ₱500 depending on hair volume po. Would you like to book a consultation?',
-        time: '11:20 AM',
-        date: 'Sep 18',
-        status: 'read'
-      }
-    ]
-  }
-];
-
-// Active State
-let currentConversationId = 'maria-santos';
+// ================= GLOBAL STATE =================
+let conversationsData = [];
+let currentConversationId = null;
 let currentFilter = 'all';
 let searchQuery = '';
 let attachedFile = null;
+let totalUnreadCount = 0;
 
-// Initialize on DOM Ready
+// ================= DOM INITIALIZATION & AUTH =================
 document.addEventListener('DOMContentLoaded', () => {
-  renderConversationsList();
-  renderActiveConversation();
+  checkAdminAuth();
   setupEventListeners();
+  fetchConversationsData();
+  fetchSidebarStats();
 });
 
-// Setup Listeners
+function checkAdminAuth() {
+  const token = localStorage.getItem('nelys_token');
+  const userJson = localStorage.getItem('nelys_user');
+
+  if (!token) {
+    window.location.href = '../login.html';
+    return;
+  }
+
+  let displayName = 'Admin';
+  if (userJson) {
+    try {
+      const user = JSON.parse(userJson);
+      let rawName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Admin');
+      rawName = rawName.replace(/atelier\s*/gi, '').trim();
+      if (rawName && rawName.toLowerCase() !== 'admin') {
+        displayName = rawName;
+      }
+    } catch (e) {
+      console.warn('Error reading admin user:', e);
+    }
+  }
+
+  const mobileBadge = document.querySelector('header .bg-\\[\\#541A1A\\]');
+  if (mobileBadge) {
+    const parts = displayName.split(' ').filter(Boolean);
+    const initials = parts.length > 1
+      ? (parts[0][0] + parts[1][0]).toUpperCase()
+      : (displayName.substring(0, 2)).toUpperCase();
+    mobileBadge.textContent = initials || 'AD';
+  }
+}
+
+// Helper to get auth headers
+function getAuthHeaders() {
+  const token = localStorage.getItem('nelys_token');
+  const headers = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+// ================= FETCH DATA FROM BACKEND =================
+async function fetchConversationsData() {
+  try {
+    const res = await fetch(`../api/messages?search=${encodeURIComponent(searchQuery)}&filter=${encodeURIComponent(currentFilter)}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (res.status === 401 || res.status === 403) {
+      console.warn('Admin session unauthenticated or expired.');
+      window.location.href = '../login.html';
+      return;
+    }
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: Failed to fetch messages`);
+    }
+
+    const json = await res.json();
+    if (json.data) {
+      if (Array.isArray(json.data.conversations)) {
+        conversationsData = json.data.conversations;
+      } else if (Array.isArray(json.data)) {
+        conversationsData = json.data;
+      }
+
+      if (json.data.unread_total !== undefined) {
+        totalUnreadCount = json.data.unread_total;
+      } else {
+        totalUnreadCount = conversationsData.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+      }
+    }
+
+    // Update unread badge in column header & sidebar
+    updateUnreadBadges();
+
+    // Select first conversation if none selected
+    if (conversationsData.length > 0) {
+      if (!currentConversationId || !conversationsData.some(c => c.id == currentConversationId)) {
+        currentConversationId = conversationsData[0].id;
+      }
+    } else {
+      currentConversationId = null;
+    }
+
+    renderConversationsList();
+    renderActiveConversation();
+
+  } catch (err) {
+    console.error('Error fetching conversations from backend:', err);
+    showToast('Failed to load conversations from server.', 'error');
+  }
+}
+
+// Fetch sidebar badge counts
+async function fetchSidebarStats() {
+  try {
+    const res = await fetch('../api/dashboard/stats', {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data) {
+        const d = json.data;
+        const bAppt = document.getElementById('sidebarAppointmentsBadge');
+        const bNotif = document.getElementById('sidebarNotificationsBadge');
+        const bMsg = document.getElementById('sidebarMessagesBadge');
+        const apptCount = parseInt(d.new_appointments ?? d.pending_appointments ?? d.badges?.appointments ?? 0, 10);
+        const notifCount = parseInt(d.unread_notifications ?? d.badges?.notifications ?? 0, 10);
+        const msgCount = parseInt(d.unread_messages ?? d.badges?.messages ?? 0, 10);
+
+        if (bAppt) {
+          if (apptCount > 0) {
+            bAppt.textContent = apptCount;
+            bAppt.classList.remove('hidden');
+            bAppt.style.display = '';
+          } else {
+            bAppt.textContent = '0';
+            bAppt.classList.add('hidden');
+            bAppt.style.display = 'none';
+          }
+        }
+        if (bNotif) {
+          if (notifCount > 0) {
+            bNotif.textContent = notifCount;
+            bNotif.classList.remove('hidden');
+            bNotif.style.display = '';
+          } else {
+            bNotif.textContent = '0';
+            bNotif.classList.add('hidden');
+            bNotif.style.display = 'none';
+          }
+        }
+        if (bMsg) {
+          if (msgCount > 0) {
+            bMsg.textContent = msgCount;
+            bMsg.classList.remove('hidden');
+            bMsg.style.display = '';
+          } else {
+            bMsg.textContent = '0';
+            bMsg.classList.add('hidden');
+            bMsg.style.display = 'none';
+          }
+        }
+      }
+    }
+  } catch (err) {
+    // Non-critical, ignore
+  }
+}
+
+function updateUnreadBadges() {
+  const totalUnreadBadge = document.getElementById('totalUnreadBadge');
+  if (totalUnreadBadge) {
+    totalUnreadBadge.textContent = `${totalUnreadCount} Unread`;
+  }
+
+  const sidebarMsgBadge = document.getElementById('sidebarMessagesBadge');
+  if (sidebarMsgBadge) {
+    if (totalUnreadCount > 0) {
+      sidebarMsgBadge.textContent = totalUnreadCount;
+      sidebarMsgBadge.classList.remove('hidden');
+      sidebarMsgBadge.style.display = '';
+    } else {
+      sidebarMsgBadge.textContent = '0';
+      sidebarMsgBadge.classList.add('hidden');
+      sidebarMsgBadge.style.display = 'none';
+    }
+  }
+}
+
+// Setup Event Listeners
 function setupEventListeners() {
   // Search input
   const searchInput = document.getElementById('searchConversations');
@@ -308,10 +217,10 @@ function setupEventListeners() {
   filterBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       filterBtns.forEach(b => {
-        b.classList.remove('bg-[#810B38]', 'text-white', 'shadow-sm');
+        b.classList.remove('bg-[#810B38]', 'text-white', 'shadow-xs');
         b.classList.add('bg-white', 'text-[#735e5e]', 'hover:bg-[#FAF6F0]');
       });
-      btn.classList.add('bg-[#810B38]', 'text-white', 'shadow-sm');
+      btn.classList.add('bg-[#810B38]', 'text-white', 'shadow-xs');
       btn.classList.remove('bg-white', 'text-[#735e5e]', 'hover:bg-[#FAF6F0]');
 
       currentFilter = btn.dataset.filter;
@@ -367,7 +276,7 @@ function renderConversationsList() {
   const filtered = conversationsData.filter(conv => {
     // Search match
     const matchesSearch = conv.name.toLowerCase().includes(searchQuery) ||
-      conv.messages.some(m => m.text.toLowerCase().includes(searchQuery));
+      (conv.messages && conv.messages.some(m => (m.text || '').toLowerCase().includes(searchQuery)));
 
     // Filter match
     if (!matchesSearch) return false;
@@ -390,9 +299,11 @@ function renderConversationsList() {
   }
 
   container.innerHTML = filtered.map(conv => {
-    const isActive = conv.id === currentConversationId;
-    const lastMsg = conv.messages[conv.messages.length - 1];
-    const previewText = lastMsg ? (lastMsg.sender === 'admin' ? `You: ${lastMsg.text}` : lastMsg.text) : 'No messages yet';
+    const isActive = conv.id == currentConversationId;
+    const lastMsg = conv.messages && conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
+    const previewText = lastMsg 
+      ? (lastMsg.sender === 'admin' ? `You: ${lastMsg.text}` : lastMsg.text) 
+      : 'No messages yet';
 
     return `
       <div 
@@ -404,7 +315,7 @@ function renderConversationsList() {
         <!-- Avatar -->
         <div class="relative shrink-0">
           <div class="w-11 h-11 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-sm flex items-center justify-center border border-[#DCC3AA] shadow-sm">
-            ${conv.avatar}
+            ${escapeHtml(conv.avatar)}
           </div>
           ${conv.status === 'online'
         ? '<span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>'
@@ -416,14 +327,14 @@ function renderConversationsList() {
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between gap-1 mb-1">
             <h4 class="text-sm font-bold text-[#541A1A] truncate flex items-center gap-1.5">
-              <span>${conv.name}</span>
+              <span>${escapeHtml(conv.name)}</span>
               ${conv.isMuted ? '<i class="fa-solid fa-bell-slash text-[10px] text-[#735e5e]/60" title="Muted"></i>' : ''}
             </h4>
-            <span class="text-[11px] font-semibold text-[#735e5e]/70 shrink-0">${conv.lastTime}</span>
+            <span class="text-[11px] font-semibold text-[#735e5e]/70 shrink-0">${escapeHtml(conv.lastTime || '')}</span>
           </div>
 
           <p class="text-xs truncate ${conv.isUnread ? 'font-bold text-[#2b1d1d]' : 'text-[#735e5e]'}">
-            ${previewText}
+            ${escapeHtml(previewText)}
           </p>
         </div>
 
@@ -438,13 +349,30 @@ function renderConversationsList() {
 }
 
 // Select Conversation
-function selectConversation(id) {
+async function selectConversation(id) {
   currentConversationId = id;
-  const conv = conversationsData.find(c => c.id === id);
+  const conv = conversationsData.find(c => c.id == id);
   if (conv && conv.isUnread) {
+    const unreadCount = conv.unreadCount || 1;
     conv.isUnread = false;
     conv.unreadCount = 0;
+    totalUnreadCount = Math.max(0, totalUnreadCount - unreadCount);
+    updateUnreadBadges();
+
+    // Notify backend to mark messages as read
+    try {
+      await fetch(`../api/messages/read`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        credentials: 'include',
+        body: JSON.stringify({ user_id: conv.userId })
+      });
+      fetchSidebarStats();
+    } catch (err) {
+      console.warn('Failed to mark conversation read on server:', err);
+    }
   }
+
   renderConversationsList();
   renderActiveConversation();
 
@@ -462,7 +390,6 @@ function openMobileChat() {
     convCol.classList.add('hidden');
     chatCol.classList.remove('hidden');
     chatCol.classList.add('flex');
-    // Scroll chat stream to bottom
     const container = document.getElementById('messagesStream');
     if (container) container.scrollTop = container.scrollHeight;
   }
@@ -481,8 +408,15 @@ function backToConversationList() {
 
 // Render Active Conversation (Center + Right Columns)
 function renderActiveConversation() {
-  const conv = conversationsData.find(c => c.id === currentConversationId);
-  if (!conv) return;
+  const conv = conversationsData.find(c => c.id == currentConversationId);
+  if (!conv) {
+    // If no active conversation, clear view
+    const headerName = document.getElementById('chatHeaderName');
+    if (headerName) headerName.textContent = 'No Conversation Selected';
+    const stream = document.getElementById('messagesStream');
+    if (stream) stream.innerHTML = `<div class="p-8 text-center text-[#735e5e] text-xs">Select a customer conversation from the list to start messaging.</div>`;
+    return;
+  }
 
   // 1. Update Center Header
   const headerName = document.getElementById('chatHeaderName');
@@ -493,7 +427,7 @@ function renderActiveConversation() {
 
   if (headerName) headerName.textContent = conv.name;
   if (headerAvatar) headerAvatar.textContent = conv.avatar;
-  if (headerMeta) headerMeta.textContent = `Customer · ${conv.memberSince}`;
+  if (headerMeta) headerMeta.textContent = `Customer · ${conv.memberSince || 'Member'}`;
   if (headerStatus) {
     if (conv.status === 'online') {
       headerStatus.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span><span class="text-emerald-700 font-semibold">Online</span>';
@@ -527,15 +461,30 @@ function renderMessageStream(conv) {
   const container = document.getElementById('messagesStream');
   if (!container) return;
 
+  if (!conv.messages || conv.messages.length === 0) {
+    container.innerHTML = `
+      <div class="p-8 text-center text-[#735e5e]">
+        <div class="w-12 h-12 rounded-full bg-white border border-[#DCC3AA]/50 flex items-center justify-center mx-auto mb-2 text-[#810B38]">
+          <i class="fa-solid fa-hand-wave text-base"></i>
+        </div>
+        <p class="text-xs font-bold text-[#541A1A]">No message history yet</p>
+        <p class="text-[11px] text-[#735e5e] mt-1">Start a conversation with ${escapeHtml(conv.name)} below.</p>
+      </div>
+    `;
+    return;
+  }
+
+  const dateHeading = conv.messages[0]?.date || 'Today';
+
   container.innerHTML = `
     <!-- Date Header Pill -->
     <div class="flex items-center justify-center my-4">
       <span class="px-3.5 py-1 rounded-full bg-[#FAF6F0] border border-[#DCC3AA]/70 text-[11px] font-semibold text-[#735e5e] shadow-xs">
-        Today, September 23, 2026
+        ${escapeHtml(dateHeading)}
       </span>
     </div>
   ` + conv.messages.map(msg => {
-    const isAdmin = msg.sender === 'admin';
+    const isAdmin = msg.sender === 'admin' || msg.sender === 'salon';
 
     if (isAdmin) {
       return `
@@ -552,7 +501,7 @@ function renderMessageStream(conv) {
               ` : ''}
             </div>
             <div class="flex items-center justify-end gap-1.5 mt-1 text-[10px] text-[#735e5e]">
-              <span>${msg.time}</span>
+              <span>${escapeHtml(msg.time)}</span>
               <span title="Read">
                 <i class="fa-solid fa-check-double text-emerald-600 text-[10px]"></i>
               </span>
@@ -565,10 +514,10 @@ function renderMessageStream(conv) {
         <!-- Customer Incoming Bubble -->
         <div class="flex items-start gap-2.5 mb-3.5 group">
           <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xs flex items-center justify-center shrink-0 border border-[#DCC3AA] mt-1 shadow-xs">
-            ${conv.avatar}
+            ${escapeHtml(conv.avatar)}
           </div>
           <div class="max-w-[78%] sm:max-w-[70%]">
-            <div class="text-[11px] font-bold text-[#541A1A] mb-1 pl-1">${conv.name}</div>
+            <div class="text-[11px] font-bold text-[#541A1A] mb-1 pl-1">${escapeHtml(conv.name)}</div>
             <div class="bg-white border border-[#DCC3AA]/70 text-[#2b1d1d] px-4 py-3 rounded-2xl rounded-tl-xs shadow-sm space-y-1">
               <p class="text-xs sm:text-sm leading-relaxed">${escapeHtml(msg.text)}</p>
               ${msg.attachment ? `
@@ -579,7 +528,7 @@ function renderMessageStream(conv) {
               ` : ''}
             </div>
             <div class="flex items-center gap-1.5 mt-1 text-[10px] text-[#735e5e] pl-1">
-              <span>${msg.time}</span>
+              <span>${escapeHtml(msg.time)}</span>
             </div>
           </div>
         </div>
@@ -620,9 +569,9 @@ function renderCustomerInfo(conv) {
     infoEmail.href = `mailto:${conv.email}`;
   }
   if (infoLocation) infoLocation.textContent = conv.location;
-  if (infoVisits) infoVisits.textContent = `${conv.history.totalVisits} visits`;
-  if (infoSpent) infoSpent.textContent = conv.history.totalSpent;
-  if (infoNotes) infoNotes.textContent = conv.history.notes;
+  if (infoVisits) infoVisits.textContent = `${conv.history?.totalVisits || 0} visits`;
+  if (infoSpent) infoSpent.textContent = conv.history?.totalSpent || '₱0';
+  if (infoNotes) infoNotes.textContent = conv.history?.notes || 'No notes.';
 
   if (apptWidget) {
     if (conv.upcomingAppointment) {
@@ -631,26 +580,26 @@ function renderCustomerInfo(conv) {
         <div class="bg-gradient-to-br from-[#FAF6F0] to-white p-4 rounded-2xl border-2 border-[#DCC3AA] shadow-sm relative overflow-hidden">
           <div class="flex items-center justify-between mb-2">
             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#810B38]/10 text-[#810B38] uppercase tracking-wider">
-              ${appt.service}
+              ${escapeHtml(appt.service)}
             </span>
             <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold">
               <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              ${appt.status}
+              ${escapeHtml(appt.status)}
             </span>
           </div>
 
           <div class="space-y-1.5 my-3">
             <div class="flex items-center gap-2 text-xs font-semibold text-[#541A1A]">
               <i class="fa-solid fa-calendar text-[#810B38] w-4 text-center"></i>
-              <span>${appt.date} · ${appt.time}</span>
+              <span>${escapeHtml(appt.date)} · ${escapeHtml(appt.time)}</span>
             </div>
             <div class="flex items-center gap-2 text-xs text-[#735e5e]">
               <i class="fa-solid fa-user-tie text-[#DCC3AA] w-4 text-center"></i>
-              <span>${appt.stylist}</span>
+              <span>${escapeHtml(appt.stylist)}</span>
             </div>
             <div class="flex items-center gap-2 text-xs text-[#735e5e]">
               <i class="fa-solid fa-receipt text-[#DCC3AA] w-4 text-center"></i>
-              <span class="font-bold text-[#541A1A]">${appt.price}</span>
+              <span class="font-bold text-[#541A1A]">${escapeHtml(appt.price)}</span>
             </div>
           </div>
 
@@ -675,46 +624,57 @@ function renderCustomerInfo(conv) {
 }
 
 // Send Message
-function sendMessage() {
+async function sendMessage() {
   const input = document.getElementById('messageInput');
   if (!input) return;
 
   const text = input.value.trim();
   if (!text && !attachedFile) return;
 
-  const conv = conversationsData.find(c => c.id === currentConversationId);
+  const conv = conversationsData.find(c => c.id == currentConversationId);
   if (!conv) return;
 
-  const now = new Date();
-  let hours = now.getHours();
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12;
-  hours = hours ? hours : 12;
-  const minutes = now.getMinutes().toString().padStart(2, '0');
-  const timeString = `${hours}:${minutes} ${ampm}`;
-
-  const newMsg = {
-    id: Date.now(),
-    sender: 'admin',
-    text: text || 'Sent an attachment',
-    time: timeString,
-    date: 'Today',
-    status: 'sent',
-    attachment: attachedFile ? { name: attachedFile.name, size: attachedFile.size } : null
+  const payload = {
+    user_id: conv.userId,
+    sender_name: "Nely's Salon Concierge",
+    text: text,
+    attachment_name: attachedFile ? attachedFile.name : null,
+    attachment_url: null
   };
 
-  conv.messages.push(newMsg);
-  conv.lastTime = timeString;
+  try {
+    const res = await fetch('../api/messages', {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
 
-  // Clear input & attachment
-  input.value = '';
-  clearAttachment();
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}: Failed to send message`);
+    }
 
-  // Re-render
-  renderMessageStream(conv);
-  renderConversationsList();
+    const json = await res.json();
+    const sentMsg = json.data;
 
-  showToast('Message sent to ' + conv.name, 'success');
+    // Append to local state
+    if (!conv.messages) conv.messages = [];
+    conv.messages.push(sentMsg);
+    conv.lastTime = sentMsg.time;
+
+    // Clear input & attachment
+    input.value = '';
+    clearAttachment();
+
+    // Re-render
+    renderMessageStream(conv);
+    renderConversationsList();
+
+    showToast('Message sent to ' + conv.name, 'success');
+  } catch (err) {
+    console.error('Error sending message:', err);
+    showToast('Failed to send message to customer.', 'error');
+  }
 }
 
 // Quick Reply selection
@@ -724,7 +684,6 @@ function selectQuickReply(text) {
     input.value = text;
     input.focus();
   }
-  // close dropdown if open
   const dropdown = document.getElementById('quickReplyDropdown');
   if (dropdown) dropdown.classList.add('hidden');
 }
@@ -764,7 +723,7 @@ function clearAttachment() {
 
 // Toggle Mute
 function toggleMuteCurrent() {
-  const conv = conversationsData.find(c => c.id === currentConversationId);
+  const conv = conversationsData.find(c => c.id == currentConversationId);
   if (!conv) return;
 
   conv.isMuted = !conv.isMuted;
@@ -781,7 +740,7 @@ function toggleMuteCurrent() {
 function openDeleteModal() {
   const modal = document.getElementById('deleteConversationModal');
   const modalTarget = document.getElementById('deleteModalTargetName');
-  const conv = conversationsData.find(c => c.id === currentConversationId);
+  const conv = conversationsData.find(c => c.id == currentConversationId);
 
   if (modalTarget && conv) {
     modalTarget.textContent = conv.name;
@@ -794,10 +753,23 @@ function closeDeleteModal() {
   if (modal) modal.classList.add('hidden');
 }
 
-function confirmDeleteConversation() {
-  const index = conversationsData.findIndex(c => c.id === currentConversationId);
-  if (index > -1) {
-    const deletedName = conversationsData[index].name;
+async function confirmDeleteConversation() {
+  const index = conversationsData.findIndex(c => c.id == currentConversationId);
+  if (index === -1) return;
+
+  const targetConv = conversationsData[index];
+  const deletedName = targetConv.name;
+
+  try {
+    const res = await fetch(`../api/messages/clear`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      body: JSON.stringify({ user_id: targetConv.userId })
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
     conversationsData.splice(index, 1);
     closeDeleteModal();
 
@@ -809,7 +781,12 @@ function confirmDeleteConversation() {
 
     renderConversationsList();
     renderActiveConversation();
+    fetchSidebarStats();
+
     showToast(`Conversation with ${deletedName} deleted`, 'success');
+  } catch (err) {
+    console.error('Error deleting conversation:', err);
+    showToast('Failed to delete conversation from database.', 'error');
   }
 }
 
@@ -822,7 +799,7 @@ function toggleCustomerInfoPanel(show) {
   const shouldOpen = show !== undefined ? show : isHidden;
 
   if (shouldOpen) {
-    const conv = conversationsData.find(c => c.id === currentConversationId);
+    const conv = conversationsData.find(c => c.id == currentConversationId);
     if (conv) renderMobileCustomerInfo(conv);
     drawer.classList.remove('hidden');
     drawer.classList.add('flex');
@@ -900,7 +877,7 @@ function renderMobileCustomerInfo(conv) {
     <div class="space-y-2 bg-[#FAF6F0] p-3.5 rounded-2xl border border-[#DCC3AA]/50 text-xs">
       <div class="flex items-center gap-2.5 text-[#735e5e]">
         <i class="fa-solid fa-phone text-[#810B38] w-4 text-center"></i>
-        <a href="tel:${escapeHtml(conv.phone.replace(/\\s+/g, ''))}" class="font-semibold text-[#541A1A] hover:underline">${escapeHtml(conv.phone)}</a>
+        <a href="tel:${escapeHtml(conv.phone.replace(/\s+/g, ''))}" class="font-semibold text-[#541A1A] hover:underline">${escapeHtml(conv.phone)}</a>
       </div>
       <div class="flex items-center gap-2.5 text-[#735e5e]">
         <i class="fa-solid fa-envelope text-[#810B38] w-4 text-center"></i>
@@ -929,17 +906,17 @@ function renderMobileCustomerInfo(conv) {
       <div class="grid grid-cols-2 gap-2 text-xs">
         <div class="bg-[#FAF6F0] p-2.5 rounded-xl border border-[#DCC3AA]/40 text-center">
           <span class="text-[10px] text-[#735e5e] block">Total Visits</span>
-          <span class="font-bold text-[#541A1A] text-sm">${escapeHtml(String(conv.history.totalVisits))} visits</span>
+          <span class="font-bold text-[#541A1A] text-sm">${escapeHtml(String(conv.history?.totalVisits || 0))} visits</span>
         </div>
         <div class="bg-[#FAF6F0] p-2.5 rounded-xl border border-[#DCC3AA]/40 text-center">
           <span class="text-[10px] text-[#735e5e] block">Total Spent</span>
-          <span class="font-bold text-[#541A1A] text-sm">${escapeHtml(conv.history.totalSpent)}</span>
+          <span class="font-bold text-[#541A1A] text-sm">${escapeHtml(conv.history?.totalSpent || '₱0')}</span>
         </div>
       </div>
       <div class="bg-[#FAF6F0]/40 p-3 rounded-xl border border-[#DCC3AA]/40 text-xs space-y-1">
         <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e]">Admin Notes</span>
         <p class="text-[11px] text-[#2b1d1d] leading-relaxed">
-          ${escapeHtml(conv.history.notes)}
+          ${escapeHtml(conv.history?.notes || 'No notes.')}
         </p>
       </div>
     </div>
@@ -948,8 +925,13 @@ function renderMobileCustomerInfo(conv) {
 
 // Toast Helper
 function showToast(message, type = 'info') {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none';
+    document.body.appendChild(container);
+  }
 
   const toast = document.createElement('div');
   const bgClass = type === 'success' ? 'bg-[#541A1A] border-[#DCC3AA]' : 'bg-[#810B38] border-[#DCC3AA]';
@@ -971,6 +953,7 @@ function showToast(message, type = 'info') {
 
 // Security Helper: Escape HTML
 function escapeHtml(string) {
+  if (string === null || string === undefined) return '';
   const str = String(string);
   return str.replace(/[&<>"']/g, function (m) {
     return {

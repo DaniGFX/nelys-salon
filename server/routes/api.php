@@ -210,8 +210,18 @@ class Router {
                 // Business Settings Routes
                 case 'settings':
                     $settingCtrl = new SettingsController();
-                    if ($method === 'GET') $settingCtrl->index();
-                    if ($method === 'PUT' || $method === 'POST') $settingCtrl->update();
+                    if ($id === null) {
+                        if ($method === 'GET') $settingCtrl->index();
+                        if ($method === 'PUT' || $method === 'POST') $settingCtrl->update();
+                    } elseif ($id === 'password') {
+                        if ($method === 'POST' || $method === 'PUT') $settingCtrl->updatePassword();
+                    } elseif ($id === 'deactivate') {
+                        if ($method === 'POST' || $method === 'PUT') $settingCtrl->deactivate();
+                    } elseif ($id === 'reactivate') {
+                        if ($method === 'POST' || $method === 'PUT') $settingCtrl->reactivate();
+                    } elseif ($id === 'delete-account') {
+                        if ($method === 'POST' || $method === 'DELETE') $settingCtrl->deleteAccount();
+                    }
                     Response::notFound('Settings endpoint not found.');
                     break;
 
@@ -222,8 +232,10 @@ class Router {
                         if ($method === 'GET') $msgCtrl->index();
                         if ($method === 'POST') $msgCtrl->send();
                         if ($method === 'DELETE') $msgCtrl->clear();
-                    } elseif ($id === 'clear' && $method === 'POST') {
+                    } elseif (($id === 'clear' || $id === 'clear-all') && ($method === 'POST' || $method === 'DELETE')) {
                         $msgCtrl->clear();
+                    } elseif (($id === 'read' || $id === 'mark-read' || $id === 'read-all') && ($method === 'POST' || $method === 'PUT' || $method === 'PATCH')) {
+                        $msgCtrl->markRead();
                     } elseif ($id === 'unread-count' && $method === 'GET') {
                         $msgCtrl->unreadCount();
                     } elseif (is_numeric($id) && $method === 'DELETE') {

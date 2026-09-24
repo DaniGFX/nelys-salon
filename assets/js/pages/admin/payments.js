@@ -160,18 +160,45 @@ async function fetchSidebarStats() {
       if (json.data) {
         const d = json.data;
         const bAppt = document.getElementById('sidebarAppointmentsBadge');
-        const bCust = document.getElementById('sidebarCustomersBadge');
-        const bSvc = document.getElementById('sidebarServicesBadge');
-        const bStaff = document.getElementById('sidebarStaffBadge');
         const bNotif = document.getElementById('sidebarNotificationsBadge');
         const bMsg = document.getElementById('sidebarMessagesBadge');
+        const apptCount = parseInt(d.new_appointments ?? d.pending_appointments ?? d.badges?.appointments ?? 0, 10);
+        const notifCount = parseInt(d.unread_notifications ?? d.badges?.notifications ?? 0, 10);
+        const msgCount = parseInt(d.unread_messages ?? d.badges?.messages ?? 0, 10);
 
-        if (bAppt && d.total_appointments !== undefined) bAppt.textContent = d.total_appointments;
-        if (bCust && d.total_customers !== undefined) bCust.textContent = d.total_customers;
-        if (bSvc && d.total_services !== undefined) bSvc.textContent = d.total_services;
-        if (bStaff && d.total_staff !== undefined) bStaff.textContent = d.total_staff;
-        if (bNotif && d.unread_notifications !== undefined) bNotif.textContent = d.unread_notifications;
-        if (bMsg && d.unread_messages !== undefined) bMsg.textContent = d.unread_messages;
+        if (bAppt) {
+          if (apptCount > 0) {
+            bAppt.textContent = apptCount;
+            bAppt.classList.remove('hidden');
+            bAppt.style.display = '';
+          } else {
+            bAppt.textContent = '0';
+            bAppt.classList.add('hidden');
+            bAppt.style.display = 'none';
+          }
+        }
+        if (bNotif) {
+          if (notifCount > 0) {
+            bNotif.textContent = notifCount;
+            bNotif.classList.remove('hidden');
+            bNotif.style.display = '';
+          } else {
+            bNotif.textContent = '0';
+            bNotif.classList.add('hidden');
+            bNotif.style.display = 'none';
+          }
+        }
+        if (bMsg) {
+          if (msgCount > 0) {
+            bMsg.textContent = msgCount;
+            bMsg.classList.remove('hidden');
+            bMsg.style.display = '';
+          } else {
+            bMsg.textContent = '0';
+            bMsg.classList.add('hidden');
+            bMsg.style.display = 'none';
+          }
+        }
       }
     }
   } catch (err) {

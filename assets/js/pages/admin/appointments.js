@@ -314,23 +314,61 @@ function renderSummaryCounters() {
   if (countCancelledEl) countCancelledEl.textContent = summaryMetrics.cancelled !== undefined ? summaryMetrics.cancelled : cancelledCount;
 }
 
-function updateSidebarBadges() {
+async function updateSidebarBadges() {
+  const pendingCount = appointmentsData.filter(a => a.status === 'pending').length;
   const apptBadge = document.getElementById('sidebarAppointmentsBadge');
   if (apptBadge) {
-    apptBadge.textContent = appointmentsData.length;
+    if (pendingCount > 0) {
+      apptBadge.textContent = pendingCount;
+      apptBadge.classList.remove('hidden');
+      apptBadge.style.display = '';
+    } else {
+      apptBadge.textContent = '0';
+      apptBadge.classList.add('hidden');
+      apptBadge.style.display = 'none';
+    }
   }
-  const custBadge = document.getElementById('sidebarCustomersBadge');
-  if (custBadge && customersList.length) {
-    custBadge.textContent = customersList.length;
-  }
-  const svcBadge = document.getElementById('sidebarServicesBadge');
-  if (svcBadge && servicesList.length) {
-    svcBadge.textContent = servicesList.length;
-  }
-  const staffBadge = document.getElementById('sidebarStaffBadge');
-  if (staffBadge && staffList.length) {
-    staffBadge.textContent = staffList.length;
-  }
+
+  try {
+    const res = await fetch('../api/dashboard/stats', {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include'
+    });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data) {
+        const d = json.data;
+        const bNotif = document.getElementById('sidebarNotificationsBadge');
+        const bMsg = document.getElementById('sidebarMessagesBadge');
+        const notifCount = parseInt(d.unread_notifications ?? 0, 10);
+        const msgCount = parseInt(d.unread_messages ?? 0, 10);
+
+        if (bNotif) {
+          if (notifCount > 0) {
+            bNotif.textContent = notifCount;
+            bNotif.classList.remove('hidden');
+            bNotif.style.display = '';
+          } else {
+            bNotif.textContent = '0';
+            bNotif.classList.add('hidden');
+            bNotif.style.display = 'none';
+          }
+        }
+        if (bMsg) {
+          if (msgCount > 0) {
+            bMsg.textContent = msgCount;
+            bMsg.classList.remove('hidden');
+            bMsg.style.display = '';
+          } else {
+            bMsg.textContent = '0';
+            bMsg.classList.add('hidden');
+            bMsg.style.display = 'none';
+          }
+        }
+      }
+    }
+  } catch (e) {}
 }
 
 // ================= FILTER AND SEARCH LOGIC =================

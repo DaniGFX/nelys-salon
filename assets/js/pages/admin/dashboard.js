@@ -147,12 +147,9 @@ function renderAllDashboardComponents(data) {
 function renderSidebarBadges(badges) {
   if (!badges) return;
   const map = {
-    sidebarAppointmentsBadge: badges.appointments ?? 0,
-    sidebarCustomersBadge: badges.customers ?? 0,
-    sidebarServicesBadge: badges.services ?? 0,
-    sidebarStaffBadge: badges.staff ?? 0,
-    sidebarNotificationsBadge: badges.notifications ?? 0,
-    sidebarMessagesBadge: badges.messages ?? 0
+    sidebarAppointmentsBadge: parseInt(badges.appointments ?? 0, 10) || 0,
+    sidebarNotificationsBadge: parseInt(badges.notifications ?? 0, 10) || 0,
+    sidebarMessagesBadge: parseInt(badges.messages ?? 0, 10) || 0
   };
 
   for (const [id, val] of Object.entries(map)) {
@@ -161,8 +158,10 @@ function renderSidebarBadges(badges) {
       el.textContent = val;
       if (val > 0) {
         el.classList.remove('hidden');
+        el.style.display = '';
       } else {
         el.classList.add('hidden');
+        el.style.display = 'none';
       }
     }
   }
