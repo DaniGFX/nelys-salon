@@ -541,7 +541,8 @@ async function handleQuickRebookSubmit(event) {
     booking_date: dateVal,
     booking_time: formattedTime,
     visit_type: currentRebookAppointment.visitType === 'Home Service' ? 'home' : 'salon',
-    payment_method: currentRebookAppointment.paymentMethod.toLowerCase().includes('gcash') ? 'gcash' : 'cash'
+    payment_method: currentRebookAppointment.paymentMethod.toLowerCase().includes('gcash') ? 'gcash' : 'cash',
+    notes: currentRebookAppointment.id ? `Re-booked from Ref: ${currentRebookAppointment.id}` : 'Re-booked appointment'
   };
 
   try {

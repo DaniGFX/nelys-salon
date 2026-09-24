@@ -595,8 +595,8 @@
   <!-- ================= DELETE CONVERSATION MODAL ================= -->
   <div 
     id="deleteConversationModal" 
-    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
-    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-sm w-full shadow-2xl p-6 text-center space-y-4">
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-sm w-full shadow-2xl p-6 text-center space-y-4 m-auto">
       <div class="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto text-xl shadow-xs">
         <i class="fa-solid fa-trash-can"></i>
       </div>
@@ -626,14 +626,14 @@
   <!-- ================= LOGOUT CONFIRMATION MODAL ================= -->
   <div 
     id="logoutModal" 
-    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
-    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-sm w-full shadow-2xl p-6 text-center space-y-4">
+    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-sm w-full shadow-2xl p-6 text-center space-y-4 m-auto">
       <div class="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto text-xl shadow-xs">
         <i class="fa-solid fa-arrow-right-from-bracket"></i>
       </div>
       <div>
         <h3 class="font-serif text-lg font-bold text-[#541A1A]">Confirm Logout</h3>
-        <p class="text-xs text-stone-500 mt-1">Are you sure you want to end your administrative session?</p>
+        <p class="text-xs text-stone-500 mt-1">Are you sure you want to log out of your administrative session at Nely’s Salon?</p>
       </div>
       <div class="flex items-center justify-center gap-3 pt-2">
         <button 
@@ -678,15 +678,23 @@
     // Logout Modal Handlers
     function openLogoutModal() {
       const modal = document.getElementById('logoutModal');
-      if (modal) modal.classList.remove('hidden');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
     }
 
     function closeLogoutModal() {
       const modal = document.getElementById('logoutModal');
-      if (modal) modal.classList.add('hidden');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
     }
 
     function handleConfirmLogout() {
+      localStorage.removeItem('nelys_token');
+      localStorage.removeItem('nelys_user');
       window.location.href = '../login.html';
     }
   </script>

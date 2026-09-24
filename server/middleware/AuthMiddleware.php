@@ -31,9 +31,15 @@ class AuthMiddleware {
             ];
         }
 
-        // 2. Check Authorization Bearer header
-        $headers = self::getRequestHeaders();
-        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+        // 2. Check Authorization Bearer header from all possible sources
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] 
+            ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] 
+            ?? '';
+
+        if (empty($authHeader)) {
+            $headers = self::getRequestHeaders();
+            $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+        }
 
         if (str_starts_with($authHeader, 'Bearer ')) {
             $token = trim(substr($authHeader, 7));

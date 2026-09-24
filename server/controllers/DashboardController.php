@@ -50,7 +50,7 @@ class DashboardController {
         $afternoonCount = (int)($todayApptsData['afternoon_count'] ?? 0);
 
         // Total Customers and Month Growth
-        $totalCustomers = $counts['customers'];
+        $totalCustomers = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'customer'")->fetchColumn();
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role = 'customer' AND created_at >= :month_start");
         $stmt->execute(['month_start' => $currentMonthStart]);
         $newCustomersThisMonth = (int)$stmt->fetchColumn();

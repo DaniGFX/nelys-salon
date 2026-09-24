@@ -143,13 +143,26 @@ class BookingController {
             'paid_at'          => $paymentStatus === 'paid' ? date('Y-m-d H:i:s') : null,
         ]);
 
-        // Create alert notification
+        // Create alert notification for customer
         NotificationService::create(
             $customerId,
             'Booking Received',
             "Your appointment for {$service['name']} on {$bookingDate} at {$bookingTime} has been registered.",
             $bookingId
         );
+
+        // Also create notification entry for admin panel
+        $isRebook = !empty($input['notes']) && str_contains(strtolower($input['notes']), 're-book');
+        Notification::create([
+            'user_id'    => $customerId,
+            'booking_id' => $bookingId,
+            'category'   => 'appointments',
+            'title'      => $isRebook ? 'Appointment Re-booked' : 'New Appointment Booked',
+            'message'    => "Appointment Ref: {$referenceNo} for {$service['name']} on {$bookingDate} at {$bookingTime} requires review/confirmation.",
+            'action_url' => 'admin-appointments.html',
+            'channel'    => 'email',
+            'status'     => 'sent'
+        ]);
 
         $booking = Booking::findById($bookingId);
         Response::success($booking, 'Appointment booked successfully.', 201);
