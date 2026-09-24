@@ -1,168 +1,412 @@
 /**
  * Nely's Salon — Customer Notifications Script
- * Handles notification filtering by category (All, Appointments, Payments, Updates),
- * mark all as read, unread status management, and contextual detail modals.
+ * Handles live database notification synchronization, appointment/payment alerts,
+ * category filtering (All, Appointments, Payments, Updates), mark all as read,
+ * unread status management, and contextual detail modals.
  */
 
-let notificationsData = [
-  {
-    id: "NOTIF-001",
-    category: "appointments",
-    title: "Appointment Reminder",
-    message: "Your Brazilian Treatment appointment is tomorrow at 10:00 AM.",
-    time: "Today, 9:00 AM",
-    isRead: false,
-    icon: "fa-solid fa-bell",
-    iconBg: "bg-[#810B38] text-white",
-    dotColor: "bg-[#810B38]",
-    payload: {
-      type: "appointment",
-      bookingId: "NS-20260925-0814",
-      service: "Brazilian Treatment",
-      dateTime: "September 25, 2026 at 10:00 AM",
-      location: "Nely's Salon Atelier (Lagro, QC)",
-      status: "Confirmed",
-      amount: "₱1,999"
-    }
-  },
-  {
-    id: "NOTIF-002",
-    category: "payments",
-    title: "Payment Verified",
-    message: "Your GCash payment of ₱1,999 for Brazilian Treatment has been verified.",
-    time: "Today, 8:45 AM",
-    isRead: false,
-    icon: "fa-solid fa-circle-check",
-    iconBg: "bg-emerald-100 text-emerald-700",
-    dotColor: "bg-[#810B38]",
-    payload: {
-      type: "payment",
-      paymentId: "PAY-20260925-0814",
-      service: "Brazilian Treatment",
-      amount: "₱1,999",
-      method: "GCash",
-      referenceNo: "GC-92817401",
-      status: "Verified & Settled",
-      date: "September 24, 2026 at 8:45 AM"
-    }
-  },
-  {
-    id: "NOTIF-003",
-    category: "payments",
-    title: "Payment Verification",
-    message: "Your uploaded payment receipt is currently being reviewed by our salon cashier.",
-    time: "Yesterday, 4:15 PM",
-    isRead: false,
-    icon: "fa-solid fa-clock",
-    iconBg: "bg-amber-100 text-amber-700",
-    dotColor: "bg-[#810B38]",
-    payload: {
-      type: "payment",
-      paymentId: "PAY-20260928-1420",
-      service: "Hair Dye Treatment",
-      amount: "₱699",
-      method: "GCash Receipt Upload",
-      referenceNo: "GC-77401928",
-      status: "Under Cashier Review",
-      date: "September 23, 2026 at 4:15 PM"
-    }
-  },
-  {
-    id: "NOTIF-004",
-    category: "appointments",
-    title: "Booking Confirmed",
-    message: "Your appointment for September 25, 2026 at 10:00 AM has been confirmed.",
-    time: "Yesterday, 3:30 PM",
-    isRead: true,
-    icon: "fa-solid fa-calendar-check",
-    iconBg: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    dotColor: null,
-    payload: {
-      type: "appointment",
-      bookingId: "NS-20260925-0814",
-      service: "Brazilian Treatment",
-      dateTime: "September 25, 2026 at 10:00 AM",
-      location: "Nely's Salon Atelier (Lagro, QC)",
-      status: "Confirmed",
-      amount: "₱1,999"
-    }
-  },
-  {
-    id: "NOTIF-005",
-    category: "appointments",
-    title: "Appointment Cancelled",
-    message: "Your appointment on September 28 has been cancelled as requested.",
-    time: "September 20, 2026",
-    isRead: true,
-    icon: "fa-solid fa-circle-xmark",
-    iconBg: "bg-rose-50 text-rose-700 border border-rose-200",
-    dotColor: null,
-    payload: {
-      type: "appointment",
-      bookingId: "NS-20260920-0419",
-      service: "Cold Wave & Trim",
-      dateTime: "September 28, 2026 at 2:00 PM",
-      location: "Nely's Salon Atelier (Lagro, QC)",
-      status: "Cancelled",
-      reason: "Customer requested cancellation (Change of schedule)",
-      amount: "₱848 (No charge)"
-    }
-  },
-  {
-    id: "NOTIF-006",
-    category: "updates",
-    title: "15-Year Anniversary Treat",
-    message: "Celebrate 15 Years of Beauty Heritage at Nely's Salon! Enjoy a complimentary deep hair consultation and 10% off any premium hair care package this month.",
-    time: "3 days ago",
-    isRead: true,
-    icon: "fa-solid fa-gift",
-    iconBg: "bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA]",
-    dotColor: null,
-    payload: {
-      type: "update",
-      title: "15-Year Anniversary Celebration Treat",
-      announcementId: "ANN-15Y",
-      details: "Thank you for trusting Nely's Salon for 15 wonderful years in Lagro, QC. As our token of gratitude, present code 'NELYS15' at the counter or during online booking to redeem 10% discount on any hair treatment.",
-      promoCode: "NELYS15",
-      validUntil: "October 31, 2026"
-    }
-  }
-];
-
-let activeCategory = 'all';
+let notificationsData = [];
+let currentCategory = 'all';
+let currentUserId = 'guest';
 
 document.addEventListener('DOMContentLoaded', () => {
-  renderNotifications();
-  updateCategoryCounters();
+  initPatronProfile();
+  loadNotifications();
+  setupEventListeners();
 });
 
-// 1. Mobile Sidebar Drawer Controls
-function toggleMobileSidebar(open = null) {
-  const sidebar = document.getElementById('sidebar');
-  const backdrop = document.getElementById('mobileSidebarBackdrop');
-  if (!sidebar || !backdrop) return;
+// 1. Initialize Patron Profile in Sidebar
+function initPatronProfile() {
+  const savedUserJson = localStorage.getItem('nelys_user');
+  if (!savedUserJson) return;
 
-  const isOpen = sidebar.classList.contains('translate-x-0');
-  const shouldOpen = open !== null ? open : !isOpen;
+  try {
+    const user = JSON.parse(savedUserJson);
+    currentUserId = user.id || user.email || 'guest';
+    const displayName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Client');
 
-  if (shouldOpen) {
-    sidebar.classList.remove('-translate-x-full');
-    sidebar.classList.add('translate-x-0');
-    backdrop.classList.remove('opacity-0', 'pointer-events-none');
-    backdrop.classList.add('opacity-100');
-    document.body.style.overflow = 'hidden';
-  } else {
-    sidebar.classList.remove('translate-x-0');
-    sidebar.classList.add('-translate-x-full');
-    backdrop.classList.remove('opacity-100');
-    backdrop.classList.add('opacity-0', 'pointer-events-none');
-    document.body.style.overflow = '';
+    const sidebarName = document.getElementById('customerSidebarName') || document.querySelector('aside .truncate');
+    if (sidebarName) {
+      sidebarName.textContent = displayName;
+    }
+
+    const avatarEl = document.getElementById('customerAvatarInitials') || document.querySelector('aside .w-10.h-10.rounded-full');
+    if (avatarEl) {
+      const initials = displayName
+        .split(' ')
+        .filter(Boolean)
+        .map(w => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase();
+      if (initials) avatarEl.textContent = initials;
+    }
+
+    const modalName = document.getElementById('profileModalName');
+    if (modalName) modalName.value = displayName;
+
+    const modalPhone = document.getElementById('profileModalPhone');
+    if (modalPhone) modalPhone.value = user.phone || '';
+
+    const modalAddr = document.getElementById('profileModalAddress');
+    if (modalAddr) modalAddr.value = user.address || user.home_address || 'Lagro, Quezon City';
+  } catch (e) {
+    console.warn('Error reading saved user:', e);
   }
 }
 
-// 2. Switch Category Filter (with zero layout shifting)
+// 2. Fetch Notifications from Live Database & Bookings
+async function loadNotifications() {
+  const token = localStorage.getItem('nelys_token');
+  const headers = {
+    'Accept': 'application/json',
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  };
+
+  const readSet = getReadSet();
+  let fetchedNotifs = [];
+
+  try {
+    // 1. Fetch DB notifications
+    const res = await fetch('../api/notifications', { headers });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.status === 'success' && Array.isArray(json.data) && json.data.length > 0) {
+        fetchedNotifs = json.data.map(item => mapDbNotification(item, readSet));
+      }
+    }
+  } catch (err) {
+    console.warn('Notifications endpoint notice:', err);
+  }
+
+  // 2. Fetch Bookings to provide rich live updates
+  try {
+    const bRes = await fetch('../api/bookings', { headers });
+    if (bRes.ok) {
+      const bJson = await bRes.json();
+      if (bJson.status === 'success' && Array.isArray(bJson.data)) {
+        const bookingNotifs = bJson.data.map(b => mapBookingToNotification(b, readSet));
+        // Merge without duplicates by ID
+        const existingIds = new Set(fetchedNotifs.map(n => n.id));
+        bookingNotifs.forEach(bn => {
+          if (!existingIds.has(bn.id)) {
+            fetchedNotifs.push(bn);
+            existingIds.add(bn.id);
+          }
+        });
+      }
+    }
+  } catch (err) {
+    console.warn('Bookings endpoint notice:', err);
+  }
+
+  // 3. Fallback only if both returned empty
+  if (fetchedNotifs.length === 0) {
+    fetchedNotifs = getDefaultFallbackNotifications(readSet);
+  }
+
+  // Sort by date / recency
+  fetchedNotifs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+  notificationsData = fetchedNotifs;
+  updateCountsAndBadges();
+  renderNotifications();
+}
+
+function getReadSet() {
+  try {
+    const raw = localStorage.getItem(`nelys_read_notifications_${currentUserId}`);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch (e) {
+    return new Set();
+  }
+}
+
+function saveReadSet(set) {
+  try {
+    localStorage.setItem(`nelys_read_notifications_${currentUserId}`, JSON.stringify(Array.from(set)));
+  } catch (e) {
+    console.warn('Error saving read notifications:', e);
+  }
+}
+
+// Map from DB `notifications` table
+function mapDbNotification(dbNotif, readSet) {
+  const id = `NOTIF-DB-${dbNotif.id}`;
+  const isRead = readSet.has(id);
+  const title = dbNotif.title || 'Salon Notification';
+  const category = title.toLowerCase().includes('payment') ? 'payments' : 'appointments';
+
+  return {
+    id,
+    category,
+    title,
+    message: dbNotif.message || '',
+    time: formatDateLabel(dbNotif.created_at),
+    timestamp: new Date(dbNotif.created_at).getTime() || Date.now(),
+    isRead,
+    icon: category === 'payments' ? 'fa-solid fa-receipt' : 'fa-solid fa-bell',
+    iconBg: category === 'payments' ? 'bg-emerald-100 text-emerald-700' : 'bg-[#810B38] text-white',
+    dotColor: isRead ? null : 'bg-[#810B38]',
+    payload: {
+      type: category === 'payments' ? 'payment' : 'appointment',
+      bookingId: dbNotif.booking_id ? `NS-${dbNotif.booking_id}` : 'N/A',
+      service: title,
+      dateTime: dbNotif.created_at || 'Recently',
+      status: dbNotif.status === 'sent' ? 'Delivered' : 'Pending'
+    }
+  };
+}
+
+// Map customer bookings into rich contextual notifications
+function mapBookingToNotification(b, readSet) {
+  const id = `NOTIF-BOOK-${b.id}-${b.status}`;
+  const isRead = readSet.has(id);
+  const status = (b.status || 'pending').toLowerCase();
+  const serviceName = b.service_name || 'Beauty Treatment';
+  const refNo = b.reference_no || `NS-${b.id}`;
+  const dateFormatted = `${b.booking_date} at ${b.booking_time ? b.booking_time.substring(0, 5) : 'Scheduled Time'}`;
+  const priceFormatted = b.total_price ? `₱${parseFloat(b.total_price).toLocaleString('en-PH')}` : '₱0';
+
+  let title = 'Booking Update';
+  let message = `Your appointment for ${serviceName} is currently ${status}.`;
+  let category = 'appointments';
+  let icon = 'fa-solid fa-calendar-check';
+  let iconBg = 'bg-[#810B38] text-white';
+
+  if (status === 'confirmed') {
+    title = 'Booking Confirmed';
+    message = `Your appointment for ${serviceName} on ${b.booking_date} has been confirmed.`;
+    icon = 'fa-solid fa-calendar-check';
+    iconBg = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+  } else if (status === 'completed') {
+    title = 'Service Completed';
+    message = `Thank you for visiting! Your ${serviceName} session is marked completed.`;
+    icon = 'fa-solid fa-circle-check';
+    iconBg = 'bg-emerald-100 text-emerald-700';
+  } else if (status === 'cancelled') {
+    title = 'Appointment Cancelled';
+    message = `Your appointment for ${serviceName} on ${b.booking_date} was cancelled.`;
+    icon = 'fa-solid fa-circle-xmark';
+    iconBg = 'bg-rose-50 text-rose-700 border border-rose-200';
+  }
+
+  // Payment verified notification
+  if (b.payment_status === 'paid') {
+    category = 'payments';
+    icon = 'fa-solid fa-receipt';
+    iconBg = 'bg-emerald-100 text-emerald-700';
+  }
+
+  return {
+    id,
+    category,
+    title,
+    message,
+    time: formatDateLabel(b.created_at || b.booking_date),
+    timestamp: new Date(b.created_at || b.booking_date).getTime() || Date.now(),
+    isRead,
+    icon,
+    iconBg,
+    dotColor: isRead ? null : 'bg-[#810B38]',
+    payload: {
+      type: category === 'payments' ? 'payment' : 'appointment',
+      bookingId: refNo,
+      service: serviceName,
+      dateTime: dateFormatted,
+      location: b.visit_type === 'home' ? (b.home_address || 'Home Service') : "Nely's Salon Atelier (Lagro, QC)",
+      status: b.status ? b.status.toUpperCase() : 'PENDING',
+      reason: b.cancel_reason || '',
+      amount: priceFormatted
+    }
+  };
+}
+
+// Fallback items if fresh database has no bookings yet
+function getDefaultFallbackNotifications(readSet) {
+  const items = [
+    {
+      id: "NOTIF-WELCOME",
+      category: "updates",
+      title: "Welcome to Nely's Salon Patron Portal",
+      message: "Manage your bookings, explore beauty treatments, and track hair care history effortlessly.",
+      time: "Today",
+      timestamp: Date.now(),
+      isRead: readSet.has("NOTIF-WELCOME"),
+      icon: "fa-solid fa-sparkles",
+      iconBg: "bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA]",
+      dotColor: readSet.has("NOTIF-WELCOME") ? null : "bg-[#810B38]",
+      payload: {
+        type: "update",
+        title: "Welcome to Nely's Salon",
+        message: "We are delighted to have you! Book your favorite hair, nail, and foot spa appointments anytime.",
+        promoCode: "NELYS15"
+      }
+    },
+    {
+      id: "NOTIF-ANNIV",
+      category: "updates",
+      title: "15-Year Anniversary Celebration",
+      message: "Enjoy 10% off any premium hair care package and complimentary consultation this month at our Lagro atelier.",
+      time: "This Week",
+      timestamp: Date.now() - 86400000,
+      isRead: readSet.has("NOTIF-ANNIV"),
+      icon: "fa-solid fa-gift",
+      iconBg: "bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA]",
+      dotColor: readSet.has("NOTIF-ANNIV") ? null : "bg-[#810B38]",
+      payload: {
+        type: "update",
+        title: "15 Years of Beauty Heritage",
+        message: "Thank you for being part of our journey! Show promo code NELYS15 upon appointment arrival.",
+        promoCode: "NELYS15"
+      }
+    }
+  ];
+
+  return items;
+}
+
+// 3. Update Dynamic Category Counts and Header Badges
+function updateCountsAndBadges() {
+  const countAll = notificationsData.length;
+  const countAppt = notificationsData.filter(n => n.category === 'appointments').length;
+  const countPay = notificationsData.filter(n => n.category === 'payments').length;
+  const countUpd = notificationsData.filter(n => n.category === 'updates').length;
+  const unreadCount = notificationsData.filter(n => !n.isRead).length;
+
+  const elAll = document.getElementById('count-all');
+  const elAppt = document.getElementById('count-appointments');
+  const elPay = document.getElementById('count-payments');
+  const elUpd = document.getElementById('count-updates');
+  const elBadge = document.getElementById('headerUnreadBadge');
+
+  if (elAll) elAll.textContent = countAll;
+  if (elAppt) elAppt.textContent = countAppt;
+  if (elPay) elPay.textContent = countPay;
+  if (elUpd) elUpd.textContent = countUpd;
+
+  if (elBadge) {
+    elBadge.textContent = unreadCount > 0 ? `${unreadCount} Unread` : 'All Caught Up';
+  }
+
+  // Update sidebar counter for notifications
+  const asideBadge = document.querySelector('a[href="notifications.html"] span.ml-auto');
+  if (asideBadge) {
+    asideBadge.textContent = unreadCount;
+  }
+}
+
+// 4. Render Notifications Cards
+function renderNotifications() {
+  const container = document.getElementById('notificationsContainer');
+  const emptyState = document.getElementById('emptyNotificationsState');
+  if (!container) return;
+
+  const filtered = notificationsData.filter(n => {
+    if (currentCategory === 'all') return true;
+    return n.category === currentCategory;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = '';
+    container.classList.add('hidden');
+    if (emptyState) emptyState.classList.remove('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+  if (emptyState) emptyState.classList.add('hidden');
+
+  let html = '';
+  filtered.forEach(notif => {
+    const isUnread = !notif.isRead;
+    const cardBg = isUnread ? 'bg-[#FFFDF9] border-[#810B38]/30 shadow-sm' : 'bg-white border-[#E8D9CA] opacity-90';
+
+    html += `
+      <article 
+        onclick="handleNotificationClick('${escapeHtml(notif.id)}')"
+        class="${cardBg} hover:border-[#810B38] rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
+        
+        <!-- Icon Avatar -->
+        <div class="w-11 h-11 rounded-2xl ${notif.iconBg} flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
+          <i class="${notif.icon}"></i>
+        </div>
+
+        <!-- Body Content -->
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between gap-2 mb-1">
+            <div class="flex items-center gap-2 min-w-0">
+              <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
+                ${escapeHtml(notif.title)}
+              </h3>
+              ${isUnread ? `
+                <span class="w-2.5 h-2.5 rounded-full bg-[#810B38] shrink-0 animate-pulse shadow-sm" title="Unread notification"></span>
+              ` : ''}
+            </div>
+            <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">${escapeHtml(notif.time)}</span>
+          </div>
+
+          <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
+            ${escapeHtml(notif.message)}
+          </p>
+
+          <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
+            <span>View details</span>
+            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          </div>
+        </div>
+
+      </article>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// 5. Handle Click on Notification Card
+function handleNotificationClick(id) {
+  const notif = notificationsData.find(n => n.id === id);
+  if (!notif) return;
+
+  // Mark as read
+  if (!notif.isRead) {
+    notif.isRead = true;
+    notif.dotColor = null;
+    const readSet = getReadSet();
+    readSet.add(id);
+    saveReadSet(readSet);
+    updateCountsAndBadges();
+    renderNotifications();
+  }
+
+  // Open Contextual Modal
+  if (notif.payload && notif.payload.type === 'payment') {
+    openPaymentModal(notif);
+  } else if (notif.payload && notif.payload.type === 'update') {
+    openUpdateModal(notif);
+  } else {
+    openAppointmentModal(notif);
+  }
+}
+
+// 6. Mark All As Read
+function markAllAsRead() {
+  const readSet = getReadSet();
+  notificationsData.forEach(n => {
+    n.isRead = true;
+    n.dotColor = null;
+    readSet.add(n.id);
+  });
+
+  saveReadSet(readSet);
+  updateCountsAndBadges();
+  renderNotifications();
+  showToast('All notifications marked as read.');
+}
+
+// 7. Category Filter Switcher
 function switchCategory(cat) {
-  activeCategory = cat;
+  currentCategory = cat;
 
   const categories = ['all', 'appointments', 'payments', 'updates'];
   categories.forEach(c => {
@@ -187,180 +431,37 @@ function switchCategory(cat) {
   renderNotifications();
 }
 
-// 3. Update Category Badge Counters
-function updateCategoryCounters() {
-  const counts = {
-    all: notificationsData.length,
-    appointments: notificationsData.filter(n => n.category === 'appointments').length,
-    payments: notificationsData.filter(n => n.category === 'payments').length,
-    updates: notificationsData.filter(n => n.category === 'updates').length
-  };
+// 8. Contextual Modal 1: Appointment Notification
+function openAppointmentModal(notif) {
+  const p = notif.payload || {};
 
-  const unreadCount = notificationsData.filter(n => !n.isRead).length;
-
-  for (const [key, val] of Object.entries(counts)) {
-    const el = document.getElementById(`count-${key}`);
-    if (el) el.textContent = val;
-  }
-
-  // Header unread status badge
-  const unreadBadgeEl = document.getElementById('headerUnreadBadge');
-  if (unreadBadgeEl) {
-    if (unreadCount > 0) {
-      unreadBadgeEl.classList.remove('hidden');
-      unreadBadgeEl.textContent = `${unreadCount} Unread`;
-    } else {
-      unreadBadgeEl.classList.add('hidden');
-    }
-  }
-
-  // Sidebar badge
-  const sidebarBadge = document.getElementById('sidebarNotifCount');
-  if (sidebarBadge) {
-    sidebarBadge.textContent = unreadCount;
-    if (unreadCount === 0) {
-      sidebarBadge.classList.add('opacity-40');
-    } else {
-      sidebarBadge.classList.remove('opacity-40');
-    }
-  }
-}
-
-// 4. Mark All as Read
-function markAllAsRead() {
-  const unreadCount = notificationsData.filter(n => !n.isRead).length;
-  if (unreadCount === 0) {
-    showToast("All notifications are already marked as read.", "info");
-    return;
-  }
-
-  notificationsData.forEach(n => {
-    n.isRead = true;
-    n.dotColor = null;
-  });
-
-  renderNotifications();
-  updateCategoryCounters();
-  showToast("All notifications marked as read.", "success");
-}
-
-// 5. Render Notifications
-function renderNotifications() {
-  const container = document.getElementById('notificationsContainer');
-  const emptyState = document.getElementById('emptyNotificationsState');
-  if (!container || !emptyState) return;
-
-  const filtered = activeCategory === 'all' 
-    ? notificationsData 
-    : notificationsData.filter(n => n.category === activeCategory);
-
-  if (filtered.length === 0) {
-    container.classList.add('hidden');
-    emptyState.classList.remove('hidden');
-    return;
-  }
-
-  container.classList.remove('hidden');
-  emptyState.classList.add('hidden');
-
-  let html = '';
-  filtered.forEach(item => {
-    const unreadPill = !item.isRead 
-      ? `<span class="w-2.5 h-2.5 rounded-full bg-[#810B38] shrink-0 animate-pulse shadow-sm" title="Unread notification"></span>` 
-      : '';
-
-    const cardBg = !item.isRead 
-      ? `bg-[#FFFDF9] border-[#810B38]/30 shadow-sm hover:border-[#810B38]` 
-      : `bg-white border-[#E8D9CA] hover:border-[#DCC3AA] opacity-90`;
-
-    html += `
-      <article 
-        onclick="handleNotificationClick('${item.id}')"
-        class="${cardBg} rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
-        
-        <!-- Icon Container -->
-        <div class="w-11 h-11 rounded-2xl ${item.iconBg} flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
-          <i class="${item.icon}"></i>
-        </div>
-
-        <!-- Notification Content -->
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center justify-between gap-2 mb-1">
-            <div class="flex items-center gap-2 min-w-0">
-              <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
-                ${escapeHtml(item.title)}
-              </h3>
-              ${unreadPill}
-            </div>
-            <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">
-              ${escapeHtml(item.time)}
-            </span>
-          </div>
-
-          <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
-            ${escapeHtml(item.message)}
-          </p>
-
-          <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
-            <span>View details</span>
-            <i class="fa-solid fa-arrow-right text-[10px]"></i>
-          </div>
-        </div>
-
-      </article>
-    `;
-  });
-
-  container.innerHTML = html;
-}
-
-// 6. Handle Notification Click
-function handleNotificationClick(notifId) {
-  const item = notificationsData.find(n => n.id === notifId);
-  if (!item) return;
-
-  // Mark as read
-  if (!item.isRead) {
-    item.isRead = true;
-    item.dotColor = null;
-    renderNotifications();
-    updateCategoryCounters();
-  }
-
-  // Open contextual modal based on type
-  if (item.payload.type === 'appointment') {
-    openAppointmentModal(item);
-  } else if (item.payload.type === 'payment') {
-    openPaymentModal(item);
-  } else if (item.payload.type === 'update') {
-    openAnnouncementModal(item);
-  }
-}
-
-// 7. Contextual Modal 1: Appointment Notification
-function openAppointmentModal(item) {
-  const p = item.payload;
-  document.getElementById('apptNotifTitle').textContent = item.title;
-  document.getElementById('apptNotifService').textContent = p.service;
-  document.getElementById('apptNotifDateTime').textContent = p.dateTime;
-  document.getElementById('apptNotifLocation').textContent = p.location;
-  document.getElementById('apptNotifBookingId').textContent = p.bookingId;
-  document.getElementById('apptNotifStatus').textContent = p.status;
-  document.getElementById('apptNotifAmount').textContent = p.amount;
-
+  const titleEl = document.getElementById('apptNotifTitle');
+  const serviceEl = document.getElementById('apptNotifService');
+  const dtEl = document.getElementById('apptNotifDateTime');
+  const locEl = document.getElementById('apptNotifLocation');
+  const statusEl = document.getElementById('apptNotifStatus');
+  const amtEl = document.getElementById('apptNotifAmount');
   const reasonRow = document.getElementById('apptNotifReasonRow');
-  const reasonText = document.getElementById('apptNotifReason');
-  if (p.reason) {
-    reasonRow.classList.remove('hidden');
-    reasonText.textContent = p.reason;
-  } else {
-    reasonRow.classList.add('hidden');
+  const reasonEl = document.getElementById('apptNotifReason');
+
+  if (titleEl) titleEl.textContent = notif.title;
+  if (serviceEl) serviceEl.textContent = p.service || notif.title;
+  if (dtEl) dtEl.textContent = p.dateTime || notif.time;
+  if (locEl) locEl.textContent = p.location || "Nely's Salon Atelier (Lagro, QC)";
+  if (statusEl) statusEl.textContent = p.status || 'CONFIRMED';
+  if (amtEl) amtEl.textContent = p.amount || '₱0.00';
+
+  if (reasonRow && reasonEl) {
+    if (p.reason) {
+      reasonEl.textContent = p.reason;
+      reasonRow.classList.remove('hidden');
+    } else {
+      reasonRow.classList.add('hidden');
+    }
   }
 
   const modal = document.getElementById('appointmentNotifModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-  }
+  if (modal && typeof modal.showModal === 'function') modal.showModal();
 }
 
 function closeAppointmentModal() {
@@ -368,22 +469,30 @@ function closeAppointmentModal() {
   if (modal) modal.close();
 }
 
-// 8. Contextual Modal 2: Payment Notification
-function openPaymentModal(item) {
-  const p = item.payload;
-  document.getElementById('payNotifTitle').textContent = item.title;
-  document.getElementById('payNotifPaymentId').textContent = p.paymentId;
-  document.getElementById('payNotifService').textContent = p.service;
-  document.getElementById('payNotifAmount').textContent = p.amount;
-  document.getElementById('payNotifMethod').textContent = p.method;
-  document.getElementById('payNotifRef').textContent = p.referenceNo;
-  document.getElementById('payNotifStatus').textContent = p.status;
-  document.getElementById('payNotifDate').textContent = p.date;
+// 9. Contextual Modal 2: Payment Notification
+function openPaymentModal(notif) {
+  const p = notif.payload || {};
+
+  const titleEl = document.getElementById('payNotifTitle');
+  const idEl = document.getElementById('payNotifPaymentId');
+  const serviceEl = document.getElementById('payNotifService');
+  const methodEl = document.getElementById('payNotifMethod');
+  const refEl = document.getElementById('payNotifRef');
+  const statusEl = document.getElementById('payNotifStatus');
+  const dtEl = document.getElementById('payNotifDate');
+  const amtEl = document.getElementById('payNotifAmount');
+
+  if (titleEl) titleEl.textContent = notif.title;
+  if (idEl) idEl.textContent = p.bookingId || notif.id;
+  if (serviceEl) serviceEl.textContent = p.service || 'Salon Service';
+  if (methodEl) methodEl.textContent = p.method || 'GCash / Cash';
+  if (refEl) refEl.textContent = p.referenceNo || 'Verified';
+  if (statusEl) statusEl.textContent = p.status || 'Settled';
+  if (dtEl) dtEl.textContent = p.dateTime || notif.time;
+  if (amtEl) amtEl.textContent = p.amount || '₱0.00';
 
   const modal = document.getElementById('paymentNotifModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-  }
+  if (modal && typeof modal.showModal === 'function') modal.showModal();
 }
 
 function closePaymentModal() {
@@ -391,78 +500,79 @@ function closePaymentModal() {
   if (modal) modal.close();
 }
 
-// 9. Contextual Modal 3: Announcement / Update Notification
-function openAnnouncementModal(item) {
-  const p = item.payload;
-  document.getElementById('annNotifTitle').textContent = p.title;
-  document.getElementById('annNotifDetails').textContent = p.details;
-  document.getElementById('annNotifPromoCode').textContent = p.promoCode;
-  document.getElementById('annNotifValidUntil').textContent = p.validUntil;
+// 10. Contextual Modal 3: Update / Promo Notification
+function openUpdateModal(notif) {
+  const p = notif.payload || {};
 
-  const modal = document.getElementById('announcementNotifModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-  }
+  const titleEl = document.getElementById('updateNotifTitle');
+  const msgEl = document.getElementById('updateNotifMessage');
+  const promoEl = document.getElementById('updateNotifPromoCode');
+
+  if (titleEl) titleEl.textContent = notif.title;
+  if (msgEl) msgEl.textContent = notif.message;
+  if (promoEl && p.promoCode) promoEl.textContent = p.promoCode;
+
+  const modal = document.getElementById('updateNotifModal');
+  if (modal && typeof modal.showModal === 'function') modal.showModal();
 }
 
-function closeAnnouncementModal() {
-  const modal = document.getElementById('announcementNotifModal');
+function closeUpdateModal() {
+  const modal = document.getElementById('updateNotifModal');
   if (modal) modal.close();
 }
 
-// 10. Copy Text Helper
-function copyPromoCode(code) {
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(code).then(() => {
-      showToast(`Promo code '${code}' copied to clipboard!`, 'success');
-    });
+// 11. Copy Promo Code helper
+function copyPromoCode() {
+  const codeEl = document.getElementById('updateNotifPromoCode');
+  const code = codeEl ? codeEl.textContent : 'NELYS15';
+  navigator.clipboard.writeText(code).then(() => {
+    showToast('Promo code copied to clipboard!');
+  }).catch(() => {
+    showToast(`Code: ${code}`);
+  });
+}
+
+// 12. Setup General Event Listeners
+function setupEventListeners() {
+  // Mobile sidebar controls if needed
+}
+
+// Utility: Format Date Label
+function formatDateLabel(dateStr) {
+  if (!dateStr) return 'Recently';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+
+  const now = new Date();
+  const diffDays = Math.floor((now - d) / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) {
+    return `Today, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  } else if (diffDays === 1) {
+    return `Yesterday, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
   } else {
-    showToast(`Code: ${code}`, 'info');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }
 }
 
-// 11. Toast System
-function showToast(message, type = 'info') {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
-
+// Toast Helper
+function showToast(msg) {
+  const container = document.getElementById('toastContainer') || document.body;
   const toast = document.createElement('div');
-  const colors = {
-    info: 'bg-[#541A1A] text-[#F1E2D1] border-[#810B38]',
-    success: 'bg-emerald-800 text-white border-emerald-500',
-    warning: 'bg-amber-800 text-white border-amber-500',
-    error: 'bg-rose-900 text-white border-rose-500'
-  };
-
-  const icons = {
-    info: 'fa-solid fa-circle-info text-[#DCC3AA]',
-    success: 'fa-solid fa-circle-check text-emerald-300',
-    warning: 'fa-solid fa-triangle-exclamation text-amber-300',
-    error: 'fa-solid fa-circle-xmark text-rose-300'
-  };
-
-  toast.className = `p-4 rounded-2xl shadow-2xl border text-xs font-medium flex items-center gap-3 transition-all duration-300 transform translate-y-3 opacity-0 pointer-events-auto max-w-sm ${colors[type] || colors.info}`;
+  toast.className = 'fixed bottom-5 right-5 z-50 bg-[#541A1A] border border-[#DCC3AA] text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-xs pointer-events-auto animate-slide-up';
   toast.innerHTML = `
-    <i class="${icons[type] || icons.info} text-base shrink-0"></i>
-    <span class="flex-1">${escapeHtml(message)}</span>
-    <button type="button" onclick="this.parentElement.remove()" class="w-5 h-5 rounded-md hover:bg-white/20 flex items-center justify-center text-xs opacity-75 hover:opacity-100">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span class="font-medium">${escapeHtml(msg)}</span>
   `;
-
   container.appendChild(toast);
 
-  requestAnimationFrame(() => {
-    toast.classList.remove('translate-y-3', 'opacity-0');
-  });
-
   setTimeout(() => {
-    toast.classList.add('opacity-0', 'translate-y-2');
+    toast.classList.add('opacity-0', 'transition-opacity', 'duration-300');
     setTimeout(() => toast.remove(), 300);
-  }, 4000);
+  }, 3000);
 }
 
-// Helper: Escape HTML
+// Escape HTML
 function escapeHtml(str) {
   if (!str) return '';
   return String(str)

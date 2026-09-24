@@ -26,6 +26,7 @@ require_once dirname(__DIR__) . '/controllers/InventoryController.php';
 require_once dirname(__DIR__) . '/controllers/SalesController.php';
 require_once dirname(__DIR__) . '/controllers/NotificationController.php';
 require_once dirname(__DIR__) . '/controllers/SettingsController.php';
+require_once dirname(__DIR__) . '/controllers/MessageController.php';
 
 class Router {
     public static function dispatch(string $method, string $uri): void {
@@ -53,6 +54,8 @@ class Router {
                         $authCtrl->me();
                     } elseif ($id === 'logout' && $method === 'POST') {
                         $authCtrl->logout();
+                    } elseif (($id === 'password' || $id === 'change-password') && $method === 'POST') {
+                        $authCtrl->changePassword();
                     } else {
                         Response::notFound('Auth endpoint not found.');
                     }
@@ -100,6 +103,7 @@ class Router {
                 case 'customers':
                     $custCtrl = new CustomerController();
                     if ($id === null && $method === 'GET') $custCtrl->index();
+                    if ($id === 'profile' && $method === 'GET') $custCtrl->getProfile();
                     if ($id === 'profile' && ($method === 'PUT' || $method === 'PATCH')) $custCtrl->updateProfile();
                     if (is_numeric($id) && $method === 'GET') $custCtrl->show((int)$id);
                     Response::notFound('Customer endpoint not found.');
@@ -139,6 +143,23 @@ class Router {
                     if ($method === 'GET') $settingCtrl->index();
                     if ($method === 'PUT' || $method === 'POST') $settingCtrl->update();
                     Response::notFound('Settings endpoint not found.');
+                    break;
+
+                // Customer Support Messages Routes
+                case 'messages':
+                    $msgCtrl = new MessageController();
+                    if ($id === null) {
+                        if ($method === 'GET') $msgCtrl->index();
+                        if ($method === 'POST') $msgCtrl->send();
+                        if ($method === 'DELETE') $msgCtrl->clear();
+                    } elseif ($id === 'clear' && $method === 'POST') {
+                        $msgCtrl->clear();
+                    } elseif ($id === 'unread-count' && $method === 'GET') {
+                        $msgCtrl->unreadCount();
+                    } elseif (is_numeric($id) && $method === 'DELETE') {
+                        $msgCtrl->delete((int)$id);
+                    }
+                    Response::notFound('Message endpoint not found.');
                     break;
 
                 // Health check

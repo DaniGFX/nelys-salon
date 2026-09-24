@@ -29,3 +29,4 @@ class NotificationController {
         Response::success(null, 'Notification resent successfully.');
     }
 }
+

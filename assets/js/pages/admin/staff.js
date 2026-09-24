@@ -276,7 +276,7 @@ function applyFiltersAndRender() {
 
   // 1. Search (Name, Full name, Position, Specializations)
   if (currentSearch) {
-    filtered = filtered.filter(s => 
+    filtered = filtered.filter(s =>
       s.name.toLowerCase().includes(currentSearch) ||
       (s.fullName && s.fullName.toLowerCase().includes(currentSearch)) ||
       s.position.toLowerCase().includes(currentSearch) ||
@@ -387,11 +387,11 @@ function renderStaffCards(items) {
            Active
          </span>`
       : s.status === 'On Leave'
-      ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
+        ? `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">
            <i class="fa-solid fa-circle text-[7px] text-amber-500"></i>
            On Leave
          </span>`
-      : `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-stone-100 text-stone-600 border border-stone-300">
+        : `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-stone-100 text-stone-600 border border-stone-300">
            <i class="fa-solid fa-circle text-[7px] text-stone-400"></i>
            Inactive
          </span>`;
@@ -871,17 +871,17 @@ function showToast(message, type = 'info') {
   }
 
   const toast = document.createElement('div');
-  const icon = type === 'success' 
-    ? 'fa-circle-check text-emerald-400' 
-    : type === 'error' 
-    ? 'fa-circle-exclamation text-rose-400' 
-    : 'fa-circle-info text-[#DCC3AA]';
+  const icon = type === 'success'
+    ? 'fa-circle-check text-emerald-400'
+    : type === 'error'
+      ? 'fa-circle-exclamation text-rose-400'
+      : 'fa-circle-info text-[#DCC3AA]';
 
   const borderColor = type === 'success'
     ? 'border-emerald-500/50'
     : type === 'error'
-    ? 'border-rose-500/50'
-    : 'border-[#DCC3AA]/50';
+      ? 'border-rose-500/50'
+      : 'border-[#DCC3AA]/50';
 
   toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 bg-[#541A1A] text-[#F1E2D1] border ${borderColor} rounded-xl shadow-2xl text-xs font-medium animate-fadeIn transition-all duration-300`;
   toast.innerHTML = `

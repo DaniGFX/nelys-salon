@@ -779,17 +779,17 @@ function showToast(message, type = 'info') {
   }
 
   const toast = document.createElement('div');
-  const icon = type === 'success' 
-    ? 'fa-circle-check text-emerald-400' 
-    : type === 'error' 
-    ? 'fa-circle-exclamation text-rose-400' 
-    : 'fa-circle-info text-[#DCC3AA]';
+  const icon = type === 'success'
+    ? 'fa-circle-check text-emerald-400'
+    : type === 'error'
+      ? 'fa-circle-exclamation text-rose-400'
+      : 'fa-circle-info text-[#DCC3AA]';
 
   const borderColor = type === 'success'
     ? 'border-emerald-500/50'
     : type === 'error'
-    ? 'border-rose-500/50'
-    : 'border-[#DCC3AA]/50';
+      ? 'border-rose-500/50'
+      : 'border-[#DCC3AA]/50';
 
   toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 bg-[#541A1A] text-[#F1E2D1] border ${borderColor} rounded-xl shadow-2xl text-xs font-medium animate-fadeIn transition-all duration-300`;
   toast.innerHTML = `

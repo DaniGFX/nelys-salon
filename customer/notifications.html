@@ -119,11 +119,9 @@
 
     <!-- Customer Profile Quick Pill -->
     <div class="px-5 py-4 mx-4 my-3 rounded-2xl bg-[#6e1335]/40 border border-[#810B38]/50 flex items-center gap-3">
-      <div class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
-        MS
-      </div>
+      <div id="customerAvatarInitials" class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">--</div>
       <div class="min-w-0 flex-1">
-        <span class="block text-sm font-semibold text-[#F1E2D1] truncate">Maria Santos</span>
+        <span id="customerSidebarName" class="block text-sm font-semibold text-[#F1E2D1] truncate">Client</span>
         <span class="inline-flex items-center gap-1.5 text-[11px] text-[#DCC3AA]">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
           Verified Client
@@ -211,7 +209,7 @@
       <div class="space-y-1.5 relative z-10">
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#810B38]/10 text-[#810B38] text-xs font-bold uppercase tracking-wider">
           <i class="fa-solid fa-bell text-[#810B38]"></i>
-          <span id="headerUnreadBadge">3 Unread</span>
+          <span id="headerUnreadBadge">0 Unread</span>
         </div>
 
         <h2 class="font-serif text-3xl sm:text-4xl lg:text-5xl font-bold text-[#541A1A] leading-tight">
@@ -248,7 +246,7 @@
           onclick="switchCategory('all')"
           class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#810B38] bg-[#810B38] text-white shadow-sm focus:outline-none">
           <span>All</span>
-          <span id="count-all" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA] bg-[#DCC3AA] text-[#541A1A] min-w-[20px] text-center inline-block">6</span>
+          <span id="count-all" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA] bg-[#DCC3AA] text-[#541A1A] min-w-[20px] text-center inline-block">0</span>
         </button>
 
         <!-- Tab 2: Appointments -->
@@ -258,7 +256,7 @@
           onclick="switchCategory('appointments')"
           class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
           <span>Appointments</span>
-          <span id="count-appointments" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">3</span>
+          <span id="count-appointments" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">0</span>
         </button>
 
         <!-- Tab 3: Payments -->
@@ -268,7 +266,7 @@
           onclick="switchCategory('payments')"
           class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
           <span>Payments</span>
-          <span id="count-payments" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">2</span>
+          <span id="count-payments" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">0</span>
         </button>
 
         <!-- Tab 4: Updates -->
@@ -278,168 +276,18 @@
           onclick="switchCategory('updates')"
           class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
           <span>Updates</span>
-          <span id="count-updates" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">1</span>
+          <span id="count-updates" class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">0</span>
         </button>
 
       </div>
 
       <!-- ================= 3, 4, 5. NOTIFICATION CARDS CONTAINER ================= -->
       <div id="notificationsContainer" class="space-y-3.5">
-        
-        <!-- Pre-rendered initial notifications for instant display and searchability -->
-        <!-- Card 1: Appointment Reminder (Unread) -->
-        <article 
-          onclick="handleNotificationClick('NOTIF-001')"
-          class="bg-[#FFFDF9] border-[#810B38]/30 shadow-sm hover:border-[#810B38] rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
-          <div class="w-11 h-11 rounded-2xl bg-[#810B38] text-white flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
-            <i class="fa-solid fa-bell"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between gap-2 mb-1">
-              <div class="flex items-center gap-2 min-w-0">
-                <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
-                  Appointment Reminder
-                </h3>
-                <span class="w-2.5 h-2.5 rounded-full bg-[#810B38] shrink-0 animate-pulse shadow-sm" title="Unread notification"></span>
-              </div>
-              <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">Today, 9:00 AM</span>
-            </div>
-            <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
-              Your Brazilian Treatment appointment is tomorrow at 10:00 AM.
-            </p>
-            <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
-              <span>View details</span>
-              <i class="fa-solid fa-arrow-right text-[10px]"></i>
-            </div>
-          </div>
-        </article>
-
-        <!-- Card 2: Payment Verified (Unread) -->
-        <article 
-          onclick="handleNotificationClick('NOTIF-002')"
-          class="bg-[#FFFDF9] border-[#810B38]/30 shadow-sm hover:border-[#810B38] rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
-          <div class="w-11 h-11 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
-            <i class="fa-solid fa-circle-check"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between gap-2 mb-1">
-              <div class="flex items-center gap-2 min-w-0">
-                <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
-                  Payment Verified
-                </h3>
-                <span class="w-2.5 h-2.5 rounded-full bg-[#810B38] shrink-0 animate-pulse shadow-sm" title="Unread notification"></span>
-              </div>
-              <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">Today, 8:45 AM</span>
-            </div>
-            <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
-              Your GCash payment of ₱1,999 for Brazilian Treatment has been verified.
-            </p>
-            <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
-              <span>View details</span>
-              <i class="fa-solid fa-arrow-right text-[10px]"></i>
-            </div>
-          </div>
-        </article>
-
-        <!-- Card 3: Payment Verification (Unread) -->
-        <article 
-          onclick="handleNotificationClick('NOTIF-003')"
-          class="bg-[#FFFDF9] border-[#810B38]/30 shadow-sm hover:border-[#810B38] rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
-          <div class="w-11 h-11 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
-            <i class="fa-solid fa-clock"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between gap-2 mb-1">
-              <div class="flex items-center gap-2 min-w-0">
-                <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
-                  Payment Verification
-                </h3>
-                <span class="w-2.5 h-2.5 rounded-full bg-[#810B38] shrink-0 animate-pulse shadow-sm" title="Unread notification"></span>
-              </div>
-              <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">Yesterday, 4:15 PM</span>
-            </div>
-            <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
-              Your uploaded payment receipt is currently being reviewed by our salon cashier.
-            </p>
-            <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
-              <span>View details</span>
-              <i class="fa-solid fa-arrow-right text-[10px]"></i>
-            </div>
-          </div>
-        </article>
-
-        <!-- Card 4: Booking Confirmed (Read) -->
-        <article 
-          onclick="handleNotificationClick('NOTIF-004')"
-          class="bg-white border-[#E8D9CA] hover:border-[#DCC3AA] opacity-90 rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
-          <div class="w-11 h-11 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
-            <i class="fa-solid fa-calendar-check"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between gap-2 mb-1">
-              <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
-                Booking Confirmed
-              </h3>
-              <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">Yesterday, 3:30 PM</span>
-            </div>
-            <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
-              Your appointment for September 25, 2026 at 10:00 AM has been confirmed.
-            </p>
-            <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
-              <span>View details</span>
-              <i class="fa-solid fa-arrow-right text-[10px]"></i>
-            </div>
-          </div>
-        </article>
-
-        <!-- Card 5: Appointment Cancelled (Read) -->
-        <article 
-          onclick="handleNotificationClick('NOTIF-005')"
-          class="bg-white border-[#E8D9CA] hover:border-[#DCC3AA] opacity-90 rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
-          <div class="w-11 h-11 rounded-2xl bg-rose-50 text-rose-700 border border-rose-200 flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
-            <i class="fa-solid fa-circle-xmark"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between gap-2 mb-1">
-              <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
-                Appointment Cancelled
-              </h3>
-              <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">September 20, 2026</span>
-            </div>
-            <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
-              Your appointment on September 28 has been cancelled as requested.
-            </p>
-            <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
-              <span>View details</span>
-              <i class="fa-solid fa-arrow-right text-[10px]"></i>
-            </div>
-          </div>
-        </article>
-
-        <!-- Card 6: Salon Anniversary Treat (Read) -->
-        <article 
-          onclick="handleNotificationClick('NOTIF-006')"
-          class="bg-white border-[#E8D9CA] hover:border-[#DCC3AA] opacity-90 rounded-3xl border p-5 sm:p-6 transition-all duration-200 cursor-pointer hover:shadow-md group relative flex items-start gap-4">
-          <div class="w-11 h-11 rounded-2xl bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA] flex items-center justify-center text-lg shrink-0 shadow-sm transition-transform group-hover:scale-105">
-            <i class="fa-solid fa-gift"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between gap-2 mb-1">
-              <h3 class="font-bold text-sm sm:text-base text-[#541A1A] group-hover:text-[#810B38] transition-colors truncate">
-                15-Year Anniversary Treat
-              </h3>
-              <span class="text-[11px] text-[#735e5e] shrink-0 font-medium">3 days ago</span>
-            </div>
-            <p class="text-xs sm:text-sm text-[#2b1d1d] leading-relaxed">
-              Celebrate 15 Years of Beauty Heritage at Nely's Salon! Enjoy a complimentary deep hair consultation and 10% off any premium hair care package this month.
-            </p>
-            <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
-              <span>View promo code</span>
-              <i class="fa-solid fa-arrow-right text-[10px]"></i>
-            </div>
-          </div>
-        </article>
-
+        <!-- Dynamic notification cards rendered by notifications.js -->
+        <div class="py-12 text-center text-[#735e5e] flex flex-col items-center justify-center gap-3">
+          <i class="fa-solid fa-circle-notch fa-spin text-2xl text-[#810B38]"></i>
+          <p class="text-xs font-semibold uppercase tracking-wider text-[#541A1A]">Loading your notifications...</p>
+        </div>
       </div>
 
       <!-- EMPTY NOTIFICATIONS STATE (Hidden when notifications exist) -->
@@ -713,8 +561,7 @@
           <label class="block font-bold text-[#541A1A] mb-1">Full Name</label>
           <input 
             type="text" 
-            value="Maria Santos" 
-            readonly
+            id="profileModalName" value="" readonly
             class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
         </div>
 
@@ -722,8 +569,7 @@
           <label class="block font-bold text-[#541A1A] mb-1">Mobile Number</label>
           <input 
             type="tel" 
-            value="0917 888 9999" 
-            readonly
+            id="profileModalPhone" value="" readonly
             class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
         </div>
 
@@ -731,8 +577,7 @@
           <label class="block font-bold text-[#541A1A] mb-1">Default Address</label>
           <input 
             type="text" 
-            value="BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City" 
-            readonly
+            id="profileModalAddress" value="" readonly
             class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-xs">
         </div>
       </div>

@@ -39,6 +39,24 @@ class CustomerController {
         ]);
     }
 
+    public function getProfile(): void {
+        $auth = AuthMiddleware::check();
+
+        $profile = CustomerProfile::findByUserId($auth['id']);
+        if (!$profile) {
+            $user = User::findById($auth['id']);
+            $profile = [
+                'user_id' => $auth['id'],
+                'full_name' => $user['email'] ? explode('@', $user['email'])[0] : 'Client',
+                'email' => $user['email'] ?? '',
+                'phone' => $user['phone'] ?? '',
+                'home_address' => '',
+            ];
+        }
+
+        Response::success($profile);
+    }
+
     public function updateProfile(): void {
         $auth = AuthMiddleware::check();
 
@@ -54,6 +72,14 @@ class CustomerController {
         }
 
         CustomerProfile::update($auth['id'], $input);
+
+        // Update phone in users table if provided
+        if (isset($input['phone'])) {
+            $pdo = Database::getConnection();
+            $stmt = $pdo->prepare("UPDATE users SET phone = :phone WHERE id = :id");
+            $stmt->execute(['phone' => $input['phone'], 'id' => $auth['id']]);
+        }
+
         $updated = CustomerProfile::findByUserId($auth['id']);
         Response::success($updated, 'Profile updated successfully.');
     }

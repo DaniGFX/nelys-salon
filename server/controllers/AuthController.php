@@ -12,11 +12,11 @@ require_once dirname(__DIR__) . '/models/CustomerProfile.php';
 
 class AuthController {
     public function login(): void {
-        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-        $input = Sanitizer::cleanArray($input);
+        $raw = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $password = (string)($raw['password'] ?? '');
+        $input = Sanitizer::cleanArray($raw);
 
         $identifier = trim($input['email'] ?? $input['identifier'] ?? '');
-        $password = $input['password'] ?? '';
 
         if (empty($identifier) || empty($password)) {
             Response::error('Please enter your email or phone number and password.', 422);
@@ -66,8 +66,10 @@ class AuthController {
     }
 
     public function register(): void {
-        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-        $input = Sanitizer::cleanArray($input);
+        $raw = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $password = (string)($raw['password'] ?? '');
+        $input = Sanitizer::cleanArray($raw);
+        $input['password'] = $password;
 
         $validator = Validator::make($input, [
             'full_name' => 'required|min:2|max:150',
@@ -89,7 +91,7 @@ class AuthController {
             Response::error('An account with this phone number already exists.', 409);
         }
 
-        $passwordHash = password_hash($input['password'], PASSWORD_BCRYPT);
+        $passwordHash = password_hash($password, PASSWORD_BCRYPT);
         $userId = User::create($input['email'], $cleanPhone, $passwordHash, 'customer');
 
         CustomerProfile::create($userId, $input['full_name'], $input['address'] ?? null);
@@ -141,6 +143,38 @@ class AuthController {
         session_destroy();
 
         Response::success(null, 'Signed out successfully');
+    }
+
+    public function changePassword(): void {
+        require_once dirname(__DIR__) . '/middleware/AuthMiddleware.php';
+        $auth = AuthMiddleware::check();
+
+        $raw = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $currentPassword = (string)($raw['current_password'] ?? '');
+        $newPassword = (string)($raw['new_password'] ?? '');
+        $input = [
+            'current_password' => $currentPassword,
+            'new_password'     => $newPassword
+        ];
+
+        $validator = Validator::make($input, [
+            'current_password' => 'required',
+            'new_password'     => 'required|min:6',
+        ]);
+
+        if ($validator->fails()) {
+            Response::error('Validation failed', 422, $validator->errors());
+        }
+
+        $user = User::findByEmail($auth['email']);
+        if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
+            Response::error('Current password is incorrect.', 401);
+        }
+
+        $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
+        User::updatePassword($auth['id'], $newHash);
+
+        Response::success(null, 'Password updated successfully.');
     }
 
     private static function generateToken(array $user): string {

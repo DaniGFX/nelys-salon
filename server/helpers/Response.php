@@ -16,6 +16,7 @@ class Response {
 
         $payload = [
             'success'   => $statusCode >= 200 && $statusCode < 300,
+            'status'    => ($statusCode >= 200 && $statusCode < 300) ? 'success' : 'error',
             'message'   => $message,
             'data'      => $data,
             'timestamp' => date('c'),
@@ -37,6 +38,7 @@ class Response {
 
         $payload = [
             'success'   => false,
+            'status'    => 'error',
             'message'   => $message,
             'errors'    => $errors,
             'timestamp' => date('c'),

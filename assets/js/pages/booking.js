@@ -380,18 +380,18 @@ function selectVisitType(type) {
   if (type === 'salon') {
     cardSalon.className = 'p-5 rounded-2xl border-2 border-[#810B38] bg-[#FAF6F0] shadow-sm transition-all cursor-pointer space-y-3';
     badgeSalon.className = 'w-5 h-5 rounded-full bg-[#810B38] text-white flex items-center justify-center text-[10px]';
-    
+
     cardHome.className = 'p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm transition-all cursor-pointer space-y-3';
     badgeHome.className = 'w-5 h-5 rounded-full bg-gray-200 text-transparent flex items-center justify-center text-[10px]';
-    
+
     homeForm?.classList.add('hidden');
   } else {
     cardHome.className = 'p-5 rounded-2xl border-2 border-[#810B38] bg-[#FAF6F0] shadow-sm transition-all cursor-pointer space-y-3';
     badgeHome.className = 'w-5 h-5 rounded-full bg-[#810B38] text-white flex items-center justify-center text-[10px]';
-    
+
     cardSalon.className = 'p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm transition-all cursor-pointer space-y-3';
     badgeSalon.className = 'w-5 h-5 rounded-full bg-gray-200 text-transparent flex items-center justify-center text-[10px]';
-    
+
     homeForm?.classList.remove('hidden');
   }
 
@@ -485,10 +485,10 @@ function updateSummary() {
   document.getElementById('sumDuration').textContent = bookingState.service.duration;
   document.getElementById('sumDate').textContent = bookingState.date;
   document.getElementById('sumTime').textContent = bookingState.time;
-  
+
   const visitEl = document.getElementById('sumVisitType');
   if (visitEl) {
-    visitEl.innerHTML = bookingState.visitType === 'salon' 
+    visitEl.innerHTML = bookingState.visitType === 'salon'
       ? '<i class="fa-solid fa-store text-[#810B38] text-[10px]"></i> Salon Visit'
       : '<i class="fa-solid fa-house text-[#810B38] text-[10px]"></i> Home Service';
   }
@@ -518,7 +518,7 @@ function openConfirmModal() {
   document.getElementById('modalDate').textContent = bookingState.date;
   document.getElementById('modalTime').textContent = bookingState.time;
   document.getElementById('modalVisit').textContent = bookingState.visitType === 'salon' ? 'Salon Visit' : 'Home Service';
-  
+
   const payMap = {
     'cash': 'Cash',
     'gcash': 'GCash',
@@ -628,7 +628,7 @@ async function finalizeBooking() {
     document.getElementById('succDate').textContent = bookingState.date;
     document.getElementById('succTime').textContent = bookingState.time;
     document.getElementById('succVisit').textContent = bookingData.visit_type === 'home' ? 'Home Service' : 'Salon Visit';
-    
+
     const notifConfirmedEl = document.getElementById('succNotifConfirmed');
     if (notifConfirmedEl) {
       notifConfirmedEl.innerHTML = `<strong>Appointment Confirmed:</strong> Your ${bookingData.service_name || bookingState.service.name} appointment is scheduled for ${bookingState.date} at ${bookingState.time}.`;
@@ -640,8 +640,8 @@ async function finalizeBooking() {
       'bank_transfer': 'Bank Transfer'
     };
     document.getElementById('succPayment').textContent = payMap[bookingData.payment_method || bookingState.payment.method] || 'GCash';
-    document.getElementById('succTotal').textContent = bookingData.total_price 
-      ? `₱${parseFloat(bookingData.total_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` 
+    document.getElementById('succTotal').textContent = bookingData.total_price
+      ? `₱${parseFloat(bookingData.total_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
       : bookingState.service.priceFormatted;
 
     const badgeEl = document.getElementById('succPaymentBadge');
@@ -692,17 +692,17 @@ function showToast(message, type = 'info') {
   if (!container) return;
 
   const toast = document.createElement('div');
-  const bgStyle = type === 'success' 
-    ? 'bg-[#541A1A] text-[#F1E2D1] border border-[#810B38]' 
+  const bgStyle = type === 'success'
+    ? 'bg-[#541A1A] text-[#F1E2D1] border border-[#810B38]'
     : type === 'error'
-    ? 'bg-[#810B38] text-white border border-[#DCC3AA]'
-    : 'bg-[#541A1A] text-white border border-[#810B38]';
+      ? 'bg-[#810B38] text-white border border-[#DCC3AA]'
+      : 'bg-[#541A1A] text-white border border-[#810B38]';
 
-  const iconClass = type === 'success' 
-    ? 'fa-solid fa-circle-check text-[#DCC3AA]' 
-    : type === 'error' 
-    ? 'fa-solid fa-circle-exclamation text-[#F1E2D1]' 
-    : 'fa-solid fa-circle-info text-[#DCC3AA]';
+  const iconClass = type === 'success'
+    ? 'fa-solid fa-circle-check text-[#DCC3AA]'
+    : type === 'error'
+      ? 'fa-solid fa-circle-exclamation text-[#F1E2D1]'
+      : 'fa-solid fa-circle-info text-[#DCC3AA]';
 
   toast.className = `pointer-events-auto px-5 py-3.5 rounded-xl shadow-xl text-xs sm:text-sm font-medium flex items-center justify-between gap-3 transition-all duration-300 transform translate-y-2 opacity-0 ${bgStyle}`;
   toast.innerHTML = `

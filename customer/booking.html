@@ -1,42 +1,44 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Book Appointment — Nely’s Salon | "Your Beauty Is Our Duty"</title>
-  <meta name="description" content="Easy 5-step online booking for salon visits and home services at Nely's Salon Lagro, Quezon City.">
+  <meta name="description"
+    content="Easy 5-step online booking for salon visits and home services at Nely's Salon Lagro, Quezon City.">
 
   <!-- Google Fonts: Cormorant Garamond & Plus Jakarta Sans -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,400;1,600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
 
   <!-- Font Awesome 6 (Free Icons - Zero Emoji Rule) -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+    integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
+    crossorigin="anonymous" referrerpolicy="no-referrer" />
 
   <!-- Compiled Tailwind CSS -->
   <link rel="stylesheet" href="../assets/css/output.css">
 </head>
-<body class="min-h-full bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
+
+<body
+  class="min-h-full bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
 
   <!-- ================= MOBILE TOP NAVIGATION BAR (< lg) ================= -->
-  <header class="lg:hidden sticky top-0 z-40 bg-[#541A1A] text-[#F1E2D1] border-b border-[#810B38]/40 px-4 py-3 flex items-center justify-between shadow-md">
+  <header
+    class="lg:hidden sticky top-0 z-40 bg-[#541A1A] text-[#F1E2D1] border-b border-[#810B38]/40 px-4 py-3 flex items-center justify-between shadow-md">
     <div class="flex items-center gap-3">
-      <button 
-        type="button" 
-        id="mobileMenuBtn" 
-        onclick="toggleMobileSidebar()" 
-        aria-label="Open navigation menu"
+      <button type="button" id="mobileMenuBtn" onclick="toggleMobileSidebar()" aria-label="Open navigation menu"
         class="w-10 h-10 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors focus:outline-none focus:ring-2 focus:ring-[#DCC3AA]">
         <i class="fa-solid fa-bars text-lg"></i>
       </button>
 
       <div class="flex items-center gap-2.5">
-        <img 
-          src="../assets/images/logo.jfif" 
-          alt="Nely's Salon Logo" 
-          class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover"
-        >
+        <img src="../assets/images/logo.jfif" alt="Nely's Salon Logo"
+          class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover">
         <div>
           <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
             Nely’s Salon
@@ -50,16 +52,13 @@
 
     <!-- Mobile Top Right Icons -->
     <div class="flex items-center gap-2">
-      <a 
-        href="notifications.html" 
-        aria-label="Notifications"
+      <a href="notifications.html" aria-label="Notifications"
         class="relative w-9 h-9 rounded-xl bg-[#6e1335] text-[#F1E2D1] flex items-center justify-center hover:bg-[#810B38] transition-colors">
         <i class="fa-solid fa-bell text-sm"></i>
         <span class="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-[#DCC3AA]"></span>
       </a>
 
-      <a 
-        href="profile.html" 
+      <a href="profile.html"
         class="w-9 h-9 rounded-xl bg-[#6e1335] text-white border border-[#DCC3AA]/50 flex items-center justify-center font-bold text-xs uppercase hover:bg-[#810B38] transition-colors"
         title="My Profile">
         <i class="fa-solid fa-user text-xs"></i>
@@ -68,25 +67,20 @@
   </header>
 
   <!-- ================= MOBILE SIDEBAR BACKDROP & DRAWER ================= -->
-  <div 
-    id="mobileSidebarBackdrop" 
-    onclick="toggleMobileSidebar(false)" 
+  <div id="mobileSidebarBackdrop" onclick="toggleMobileSidebar(false)"
     class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 lg:hidden">
   </div>
 
   <!-- ================= DESKTOP & MOBILE SIDEBAR ================= -->
-    <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
-  <aside 
-    id="sidebar"
+  <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+  <aside id="sidebar"
     class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
 
     <!-- Sidebar Header (Branding) -->
     <div class="p-6 border-b border-[#810B38]/40">
       <div class="flex items-center justify-between mb-4">
         <div class="flex items-center gap-3">
-          <img 
-            src="../assets/images/logo.jfif" 
-            alt="Nely's Salon Logo"
+          <img src="../assets/images/logo.jfif" alt="Nely's Salon Logo"
             class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
           <div>
             <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
@@ -99,9 +93,7 @@
         </div>
 
         <!-- Mobile Close Button -->
-        <button 
-          type="button" 
-          onclick="toggleMobileSidebar(false)"
+        <button type="button" onclick="toggleMobileSidebar(false)"
           class="lg:hidden w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors"
           aria-label="Close menu">
           <i class="fa-solid fa-xmark text-sm"></i>
@@ -119,7 +111,8 @@
 
     <!-- Customer Profile Quick Pill -->
     <div class="px-5 py-4 mx-4 my-3 rounded-2xl bg-[#6e1335]/40 border border-[#810B38]/50 flex items-center gap-3">
-      <div id="customerAvatarInitials" class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
+      <div id="customerAvatarInitials"
+        class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
         --
       </div>
       <div class="min-w-0 flex-1">
@@ -151,7 +144,8 @@
       <!-- My Appointments -->
       <a href="appointments.html"
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
-        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
+        <i
+          class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>My Appointments</span>
         <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
       </a>
@@ -189,9 +183,7 @@
 
     <!-- Sidebar Footer / Logout -->
     <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
-      <a 
-        href="../login.html"
-        onclick="confirmLogout()"
+      <a href="../login.html" onclick="confirmLogout()"
         class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
         <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
         <span>Log Out</span>
@@ -210,17 +202,15 @@
     <!-- ================= STEPPER PROGRESS BAR ================= -->
     <div class="bg-white p-4 sm:p-6 rounded-3xl border border-[#DCC3AA] shadow-sm">
       <div class="max-w-4xl mx-auto">
-        
+
         <!-- Step Titles Container -->
         <div class="grid grid-cols-5 text-center gap-1 sm:gap-2">
-          
+
           <!-- Step 1 -->
-          <button 
-            type="button" 
-            id="stepNav-1" 
-            onclick="goToStep(1)" 
+          <button type="button" id="stepNav-1" onclick="goToStep(1)"
             class="flex flex-col items-center group focus:outline-none cursor-pointer">
-            <div id="stepCircle-1" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-md transition-all border-2 border-[#DCC3AA]">
+            <div id="stepCircle-1"
+              class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-xs sm:text-sm shadow-md transition-all border-2 border-[#DCC3AA]">
               <span>1</span>
             </div>
             <span class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#810B38] mt-1.5 block">
@@ -229,12 +219,10 @@
           </button>
 
           <!-- Step 2 -->
-          <button 
-            type="button" 
-            id="stepNav-2" 
-            onclick="goToStep(2)" 
+          <button type="button" id="stepNav-2" onclick="goToStep(2)"
             class="flex flex-col items-center group focus:outline-none cursor-pointer">
-            <div id="stepCircle-2" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FAF6F0] text-[#735e5e] flex items-center justify-center font-bold text-xs sm:text-sm border border-[#DCC3AA] transition-all">
+            <div id="stepCircle-2"
+              class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FAF6F0] text-[#735e5e] flex items-center justify-center font-bold text-xs sm:text-sm border border-[#DCC3AA] transition-all">
               <span>2</span>
             </div>
             <span class="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-[#735e5e] mt-1.5 block">
@@ -243,12 +231,10 @@
           </button>
 
           <!-- Step 3 -->
-          <button 
-            type="button" 
-            id="stepNav-3" 
-            onclick="goToStep(3)" 
+          <button type="button" id="stepNav-3" onclick="goToStep(3)"
             class="flex flex-col items-center group focus:outline-none cursor-pointer">
-            <div id="stepCircle-3" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FAF6F0] text-[#735e5e] flex items-center justify-center font-bold text-xs sm:text-sm border border-[#DCC3AA] transition-all">
+            <div id="stepCircle-3"
+              class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FAF6F0] text-[#735e5e] flex items-center justify-center font-bold text-xs sm:text-sm border border-[#DCC3AA] transition-all">
               <span>3</span>
             </div>
             <span class="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-[#735e5e] mt-1.5 block">
@@ -257,12 +243,10 @@
           </button>
 
           <!-- Step 4 -->
-          <button 
-            type="button" 
-            id="stepNav-4" 
-            onclick="goToStep(4)" 
+          <button type="button" id="stepNav-4" onclick="goToStep(4)"
             class="flex flex-col items-center group focus:outline-none cursor-pointer">
-            <div id="stepCircle-4" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FAF6F0] text-[#735e5e] flex items-center justify-center font-bold text-xs sm:text-sm border border-[#DCC3AA] transition-all">
+            <div id="stepCircle-4"
+              class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FAF6F0] text-[#735e5e] flex items-center justify-center font-bold text-xs sm:text-sm border border-[#DCC3AA] transition-all">
               <span>4</span>
             </div>
             <span class="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-[#735e5e] mt-1.5 block">
@@ -271,12 +255,10 @@
           </button>
 
           <!-- Step 5 -->
-          <button 
-            type="button" 
-            id="stepNav-5" 
-            onclick="goToStep(5)" 
+          <button type="button" id="stepNav-5" onclick="goToStep(5)"
             class="flex flex-col items-center group focus:outline-none cursor-pointer">
-            <div id="stepCircle-5" class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FAF6F0] text-[#735e5e] flex items-center justify-center font-bold text-xs sm:text-sm border border-[#DCC3AA] transition-all">
+            <div id="stepCircle-5"
+              class="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#FAF6F0] text-[#735e5e] flex items-center justify-center font-bold text-xs sm:text-sm border border-[#DCC3AA] transition-all">
               <span>5</span>
             </div>
             <span class="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-[#735e5e] mt-1.5 block">
@@ -291,13 +273,13 @@
 
     <!-- ================= WIZARD TWO-COLUMN LAYOUT ================= -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-      
+
       <!-- ================= LEFT COLUMN: STEP CONTENT (lg:col-span-8) ================= -->
       <div class="lg:col-span-8 space-y-6">
 
         <!-- ================= STEP 1: CHOOSE SERVICE ================= -->
         <section id="stepSection-1" class="space-y-6">
-          
+
           <div class="bg-white p-6 sm:p-8 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-6">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#F1E2D1] pb-5">
               <div>
@@ -313,25 +295,17 @@
               </div>
 
               <!-- Category filter pill tabs -->
-              <div class="flex items-center gap-1.5 p-1 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/60 shrink-0 text-xs">
-                <button 
-                  type="button" 
-                  onclick="filterServiceCategory('all')" 
-                  id="tabBtn-all" 
+              <div
+                class="flex items-center gap-1.5 p-1 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/60 shrink-0 text-xs">
+                <button type="button" onclick="filterServiceCategory('all')" id="tabBtn-all"
                   class="px-3 py-1.5 rounded-xl font-bold bg-[#810B38] text-white transition-all">
                   All
                 </button>
-                <button 
-                  type="button" 
-                  onclick="filterServiceCategory('hair')" 
-                  id="tabBtn-hair" 
+                <button type="button" onclick="filterServiceCategory('hair')" id="tabBtn-hair"
                   class="px-3 py-1.5 rounded-xl font-medium text-[#735e5e] hover:text-[#541A1A] transition-all">
                   Hair
                 </button>
-                <button 
-                  type="button" 
-                  onclick="filterServiceCategory('nail_foot')" 
-                  id="tabBtn-nail_foot" 
+                <button type="button" onclick="filterServiceCategory('nail_foot')" id="tabBtn-nail_foot"
                   class="px-3 py-1.5 rounded-xl font-medium text-[#735e5e] hover:text-[#541A1A] transition-all">
                   Nail & Foot
                 </button>
@@ -346,22 +320,23 @@
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                
+
                 <!-- Brazilian -->
-                <div 
-                  onclick="selectService('brazilian', 'Brazilian', 1999, 'Hair Services', '120 mins')" 
-                  id="svcCard-brazilian" 
+                <div onclick="selectService('brazilian', 'Brazilian', 1999, 'Hair Services', '120 mins')"
+                  id="svcCard-brazilian"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         Signature Care
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 120 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Brazilian
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -370,27 +345,29 @@
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
                     <span class="font-serif text-xl font-bold text-[#810B38]">₱1,999</span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
                 </div>
 
                 <!-- Hair Dye -->
-                <div 
-                  onclick="selectService('hair-dye', 'Hair Dye', 699, 'Hair Services', '90 mins')" 
-                  id="svcCard-hair-dye" 
+                <div onclick="selectService('hair-dye', 'Hair Dye', 699, 'Hair Services', '90 mins')"
+                  id="svcCard-hair-dye"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         Custom Blend
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 90 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Hair Dye
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -399,27 +376,29 @@
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
                     <span class="font-serif text-xl font-bold text-[#810B38]">₱699</span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
                 </div>
 
                 <!-- Power Dose -->
-                <div 
-                  onclick="selectService('power-dose', 'Power Dose', 499, 'Hair Services', '45 mins')" 
-                  id="svcCard-power-dose" 
+                <div onclick="selectService('power-dose', 'Power Dose', 499, 'Hair Services', '45 mins')"
+                  id="svcCard-power-dose"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         Intensive Shot
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 45 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Power Dose
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -428,27 +407,29 @@
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
                     <span class="font-serif text-xl font-bold text-[#810B38]">₱499</span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
                 </div>
 
                 <!-- Cold Wave -->
-                <div 
-                  onclick="selectService('cold-wave', 'Cold Wave', 699, 'Hair Services', '120 mins')" 
-                  id="svcCard-cold-wave" 
+                <div onclick="selectService('cold-wave', 'Cold Wave', 699, 'Hair Services', '120 mins')"
+                  id="svcCard-cold-wave"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         Natural Bounce
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 120 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Cold Wave
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -457,27 +438,29 @@
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
                     <span class="font-serif text-xl font-bold text-[#810B38]">₱699</span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
                 </div>
 
                 <!-- Bonacure -->
-                <div 
-                  onclick="selectService('bonacure', 'Bonacure', 499, 'Hair Services', '50 mins')" 
-                  id="svcCard-bonacure" 
+                <div onclick="selectService('bonacure', 'Bonacure', 499, 'Hair Services', '50 mins')"
+                  id="svcCard-bonacure"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         Deep Moisture
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 50 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Bonacure
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -486,27 +469,30 @@
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
                     <span class="font-serif text-xl font-bold text-[#810B38]">₱499</span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
                 </div>
 
                 <!-- Keratine Treatment -->
-                <div 
-                  onclick="selectService('keratine-treatment', 'Keratine Treatment', 499, 'Hair Services', '60 mins')" 
-                  id="svcCard-keratine-treatment" 
+                <div
+                  onclick="selectService('keratine-treatment', 'Keratine Treatment', 499, 'Hair Services', '60 mins')"
+                  id="svcCard-keratine-treatment"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         Protein Therapy
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 60 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Keratine Treatment
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -515,27 +501,28 @@
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
                     <span class="font-serif text-xl font-bold text-[#810B38]">₱499</span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
                 </div>
 
                 <!-- Trim -->
-                <div 
-                  onclick="selectService('trim', 'Trim', 149, 'Hair Services', '30 mins')" 
-                  id="svcCard-trim" 
+                <div onclick="selectService('trim', 'Trim', 149, 'Hair Services', '30 mins')" id="svcCard-trim"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         Essential Trim
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 30 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Trim
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -544,27 +531,29 @@
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
                     <span class="font-serif text-xl font-bold text-[#810B38]">₱149</span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
                 </div>
 
                 <!-- Rebonding -->
-                <div 
-                  onclick="selectService('rebonding', 'Rebonding', 1999, 'Hair Services', '180 mins')" 
-                  id="svcCard-rebonding" 
+                <div onclick="selectService('rebonding', 'Rebonding', 1999, 'Hair Services', '180 mins')"
+                  id="svcCard-rebonding"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         Straightening
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 180 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Rebonding
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -572,10 +561,12 @@
                     </p>
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
-                    <span class="text-xs font-bold text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-lg border border-[#DCC3AA]/50">
+                    <span
+                      class="text-xs font-bold text-[#810B38] bg-[#FAF6F0] px-2.5 py-1 rounded-lg border border-[#DCC3AA]/50">
                       Price to be confirmed
                     </span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
@@ -592,22 +583,23 @@
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                
+
                 <!-- Footspa -->
-                <div 
-                  onclick="selectService('footspa', 'Footspa', 199, 'Nail & Foot Care', '45 mins')" 
-                  id="svcCard-footspa" 
+                <div onclick="selectService('footspa', 'Footspa', 199, 'Nail & Foot Care', '45 mins')"
+                  id="svcCard-footspa"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         Relaxation
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 45 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Footspa
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -616,27 +608,29 @@
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
                     <span class="font-serif text-xl font-bold text-[#810B38]">₱199</span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
                 </div>
 
                 <!-- Manicure -->
-                <div 
-                  onclick="selectService('manicure', 'Manicure', 149, 'Nail & Foot Care', '35 mins')" 
-                  id="svcCard-manicure" 
+                <div onclick="selectService('manicure', 'Manicure', 149, 'Nail & Foot Care', '35 mins')"
+                  id="svcCard-manicure"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         Classic Nails
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 35 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Manicure
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -645,27 +639,29 @@
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
                     <span class="font-serif text-xl font-bold text-[#810B38]">₱149</span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
                 </div>
 
                 <!-- Pedicure -->
-                <div 
-                  onclick="selectService('pedicure', 'Pedicure', 149, 'Nail & Foot Care', '40 mins')" 
-                  id="svcCard-pedicure" 
+                <div onclick="selectService('pedicure', 'Pedicure', 149, 'Nail & Foot Care', '40 mins')"
+                  id="svcCard-pedicure"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         Foot Grooming
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 40 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Pedicure
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -674,27 +670,29 @@
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
                     <span class="font-serif text-xl font-bold text-[#810B38]">₱149</span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
                 </div>
 
                 <!-- Gel Manicure -->
-                <div 
-                  onclick="selectService('gel-manicure', 'Gel Manicure', 499, 'Nail & Foot Care', '60 mins')" 
-                  id="svcCard-gel-manicure" 
+                <div onclick="selectService('gel-manicure', 'Gel Manicure', 499, 'Nail & Foot Care', '60 mins')"
+                  id="svcCard-gel-manicure"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         High Gloss
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 60 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Gel Manicure
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -703,27 +701,29 @@
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
                     <span class="font-serif text-xl font-bold text-[#810B38]">₱499</span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
                 </div>
 
                 <!-- Gel Pedicure -->
-                <div 
-                  onclick="selectService('gel-pedicure', 'Gel Pedicure', 499, 'Nail & Foot Care', '60 mins')" 
-                  id="svcCard-gel-pedicure" 
+                <div onclick="selectService('gel-pedicure', 'Gel Pedicure', 499, 'Nail & Foot Care', '60 mins')"
+                  id="svcCard-gel-pedicure"
                   class="service-card p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
                   <div>
                     <div class="flex items-start justify-between">
-                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                      <span
+                        class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
                         High Gloss
                       </span>
                       <span class="text-xs text-[#735e5e] flex items-center gap-1">
                         <i class="fa-solid fa-clock text-[10px]"></i> 60 mins
                       </span>
                     </div>
-                    <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                    <h4
+                      class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
                       Gel Pedicure
                     </h4>
                     <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
@@ -732,7 +732,8 @@
                   </div>
                   <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
                     <span class="font-serif text-xl font-bold text-[#810B38]">₱499</span>
-                    <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span
+                      class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
                       Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </span>
                   </div>
@@ -746,9 +747,7 @@
               <span class="text-xs text-[#735e5e]">
                 Selected: <strong id="step1SelectedLabel" class="text-[#810B38]">Brazilian (₱1,999)</strong>
               </span>
-              <button 
-                type="button" 
-                onclick="goToStep(2)" 
+              <button type="button" onclick="goToStep(2)"
                 class="px-6 py-3 rounded-xl bg-[#810B38] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#62082b] transition-all flex items-center gap-2 shadow-md">
                 <span>Continue to Schedule</span>
                 <i class="fa-solid fa-arrow-right text-xs"></i>
@@ -761,7 +760,7 @@
         <!-- ================= STEP 2: SELECT DATE & TIME ================= -->
         <section id="stepSection-2" class="hidden space-y-6">
           <div class="bg-white p-6 sm:p-8 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-6">
-            
+
             <div class="border-b border-[#F1E2D1] pb-4">
               <span class="text-xs font-bold uppercase tracking-widest text-[#810B38] flex items-center gap-1.5">
                 <i class="fa-solid fa-calendar-days"></i> Step 2 of 5
@@ -778,30 +777,23 @@
             <div class="space-y-3">
               <div class="flex items-center justify-between">
                 <div class="flex items-center gap-3">
-                  <h3 id="calendarMonthYear" class="font-serif text-xl sm:text-2xl font-bold text-[#541A1A] flex items-center gap-2">
+                  <h3 id="calendarMonthYear"
+                    class="font-serif text-xl sm:text-2xl font-bold text-[#541A1A] flex items-center gap-2">
                     <i class="fa-solid fa-calendar text-[#810B38] text-base"></i>
                     <span>September 2026</span>
                   </h3>
                 </div>
-                
+
                 <!-- Month navigation controls -->
                 <div class="flex items-center gap-1.5">
-                  <button 
-                    type="button" 
-                    id="prevMonthBtn"
-                    onclick="changeCalendarMonth(-1)" 
+                  <button type="button" id="prevMonthBtn" onclick="changeCalendarMonth(-1)"
                     class="w-9 h-9 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] flex items-center justify-center transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                    title="Previous Month"
-                    aria-label="Previous Month">
+                    title="Previous Month" aria-label="Previous Month">
                     <i class="fa-solid fa-chevron-left text-xs"></i>
                   </button>
-                  <button 
-                    type="button" 
-                    id="nextMonthBtn"
-                    onclick="changeCalendarMonth(1)" 
+                  <button type="button" id="nextMonthBtn" onclick="changeCalendarMonth(1)"
                     class="w-9 h-9 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] flex items-center justify-center transition-colors"
-                    title="Next Month"
-                    aria-label="Next Month">
+                    title="Next Month" aria-label="Next Month">
                     <i class="fa-solid fa-chevron-right text-xs"></i>
                   </button>
                 </div>
@@ -810,7 +802,8 @@
               <!-- Interactive Days Grid -->
               <div class="p-4 sm:p-5 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA]/60 shadow-sm">
                 <!-- Day names -->
-                <div class="grid grid-cols-7 text-center font-bold text-[11px] text-[#735e5e] pb-2.5 border-b border-[#DCC3AA]/40 mb-3 uppercase tracking-wider">
+                <div
+                  class="grid grid-cols-7 text-center font-bold text-[11px] text-[#735e5e] pb-2.5 border-b border-[#DCC3AA]/40 mb-3 uppercase tracking-wider">
                   <span>Sun</span>
                   <span>Mon</span>
                   <span>Tue</span>
@@ -834,56 +827,41 @@
                   <i class="fa-solid fa-clock text-[#810B38] text-sm"></i>
                   <span>Available Time</span>
                 </h3>
-                <span class="text-xs text-[#735e5e]">Selected: <strong id="step2SelectedTimeLabel" class="text-[#810B38]">10:00 AM</strong></span>
+                <span class="text-xs text-[#735e5e]">Selected: <strong id="step2SelectedTimeLabel"
+                    class="text-[#810B38]">10:00 AM</strong></span>
               </div>
 
               <!-- Time Pills Grid -->
               <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                <button 
-                  type="button" 
-                  onclick="selectTime('9:00 AM', this)" 
+                <button type="button" onclick="selectTime('9:00 AM', this)"
                   class="time-btn py-3 px-3 rounded-xl bg-white border border-[#DCC3AA] text-xs font-bold text-[#2b1d1d] hover:border-[#810B38] transition-all">
                   9:00 AM
                 </button>
-                <button 
-                  type="button" 
-                  onclick="selectTime('10:00 AM', this)" 
+                <button type="button" onclick="selectTime('10:00 AM', this)"
                   class="time-btn py-3 px-3 rounded-xl bg-[#810B38] text-white border border-[#810B38] text-xs font-bold shadow-md transition-all">
                   10:00 AM
                 </button>
-                <button 
-                  type="button" 
-                  onclick="selectTime('11:00 AM', this)" 
+                <button type="button" onclick="selectTime('11:00 AM', this)"
                   class="time-btn py-3 px-3 rounded-xl bg-white border border-[#DCC3AA] text-xs font-bold text-[#2b1d1d] hover:border-[#810B38] transition-all">
                   11:00 AM
                 </button>
-                <button 
-                  type="button" 
-                  onclick="selectTime('1:00 PM', this)" 
+                <button type="button" onclick="selectTime('1:00 PM', this)"
                   class="time-btn py-3 px-3 rounded-xl bg-white border border-[#DCC3AA] text-xs font-bold text-[#2b1d1d] hover:border-[#810B38] transition-all">
                   1:00 PM
                 </button>
-                <button 
-                  type="button" 
-                  onclick="selectTime('2:00 PM', this)" 
+                <button type="button" onclick="selectTime('2:00 PM', this)"
                   class="time-btn py-3 px-3 rounded-xl bg-white border border-[#DCC3AA] text-xs font-bold text-[#2b1d1d] hover:border-[#810B38] transition-all">
                   2:00 PM
                 </button>
-                <button 
-                  type="button" 
-                  onclick="selectTime('3:00 PM', this)" 
+                <button type="button" onclick="selectTime('3:00 PM', this)"
                   class="time-btn py-3 px-3 rounded-xl bg-white border border-[#DCC3AA] text-xs font-bold text-[#2b1d1d] hover:border-[#810B38] transition-all">
                   3:00 PM
                 </button>
-                <button 
-                  type="button" 
-                  onclick="selectTime('4:00 PM', this)" 
+                <button type="button" onclick="selectTime('4:00 PM', this)"
                   class="time-btn py-3 px-3 rounded-xl bg-white border border-[#DCC3AA] text-xs font-bold text-[#2b1d1d] hover:border-[#810B38] transition-all">
                   4:00 PM
                 </button>
-                <button 
-                  type="button" 
-                  onclick="selectTime('5:00 PM', this)" 
+                <button type="button" onclick="selectTime('5:00 PM', this)"
                   class="time-btn py-3 px-3 rounded-xl bg-white border border-[#DCC3AA] text-xs font-bold text-[#2b1d1d] hover:border-[#810B38] transition-all">
                   5:00 PM
                 </button>
@@ -892,16 +870,12 @@
 
             <!-- Navigation Buttons -->
             <div class="pt-4 flex items-center justify-between border-t border-[#F1E2D1]">
-              <button 
-                type="button" 
-                onclick="goToStep(1)" 
+              <button type="button" onclick="goToStep(1)"
                 class="px-5 py-2.5 rounded-xl bg-[#FAF6F0] text-[#541A1A] text-xs font-bold hover:bg-[#F1E2D1] transition-all flex items-center gap-2">
                 <i class="fa-solid fa-arrow-left text-xs"></i>
                 <span>Back</span>
               </button>
-              <button 
-                type="button" 
-                onclick="goToStep(3)" 
+              <button type="button" onclick="goToStep(3)"
                 class="px-6 py-3 rounded-xl bg-[#810B38] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#62082b] transition-all flex items-center gap-2 shadow-md">
                 <span>Continue to Visit Type</span>
                 <i class="fa-solid fa-arrow-right text-xs"></i>
@@ -914,7 +888,7 @@
         <!-- ================= STEP 3: CHOOSE VISIT TYPE & CUSTOMER DETAILS ================= -->
         <section id="stepSection-3" class="hidden space-y-6">
           <div class="bg-white p-6 sm:p-8 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-6">
-            
+
             <div class="border-b border-[#F1E2D1] pb-4">
               <span class="text-xs font-bold uppercase tracking-widest text-[#810B38] flex items-center gap-1.5">
                 <i class="fa-solid fa-location-dot"></i> Step 3 of 5
@@ -929,17 +903,17 @@
 
             <!-- Visit Type Cards (2 Cards) -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              
+
               <!-- Option 1: Salon Visit (Default selected) -->
-              <div 
-                onclick="selectVisitType('salon')" 
-                id="visitCard-salon" 
+              <div onclick="selectVisitType('salon')" id="visitCard-salon"
                 class="p-5 rounded-2xl border-2 border-[#810B38] bg-[#FAF6F0] shadow-sm transition-all cursor-pointer space-y-3">
                 <div class="flex items-center justify-between">
-                  <div class="w-12 h-12 rounded-xl bg-[#810B38] text-white flex items-center justify-center text-xl shadow-sm">
+                  <div
+                    class="w-12 h-12 rounded-xl bg-[#810B38] text-white flex items-center justify-center text-xl shadow-sm">
                     <i class="fa-solid fa-store"></i>
                   </div>
-                  <span id="visitBadge-salon" class="w-5 h-5 rounded-full bg-[#810B38] text-white flex items-center justify-center text-[10px]">
+                  <span id="visitBadge-salon"
+                    class="w-5 h-5 rounded-full bg-[#810B38] text-white flex items-center justify-center text-[10px]">
                     <i class="fa-solid fa-check"></i>
                   </span>
                 </div>
@@ -956,15 +930,15 @@
               </div>
 
               <!-- Option 2: Home Service -->
-              <div 
-                onclick="selectVisitType('home')" 
-                id="visitCard-home" 
+              <div onclick="selectVisitType('home')" id="visitCard-home"
                 class="p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm transition-all cursor-pointer space-y-3">
                 <div class="flex items-center justify-between">
-                  <div class="w-12 h-12 rounded-xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl border border-[#DCC3AA]/50">
+                  <div
+                    class="w-12 h-12 rounded-xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl border border-[#DCC3AA]/50">
                     <i class="fa-solid fa-house"></i>
                   </div>
-                  <span id="visitBadge-home" class="w-5 h-5 rounded-full bg-gray-200 text-transparent flex items-center justify-center text-[10px]">
+                  <span id="visitBadge-home"
+                    class="w-5 h-5 rounded-full bg-gray-200 text-transparent flex items-center justify-center text-[10px]">
                     <i class="fa-solid fa-check"></i>
                   </span>
                 </div>
@@ -995,23 +969,28 @@
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                 <div>
                   <label class="block font-bold text-[#541A1A] mb-1">House / Building No.</label>
-                  <input type="text" id="homeBuilding" placeholder="e.g. Blk 12 Lot 4" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
+                  <input type="text" id="homeBuilding" placeholder="e.g. Blk 12 Lot 4"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
                 </div>
                 <div>
                   <label class="block font-bold text-[#541A1A] mb-1">Street</label>
-                  <input type="text" id="homeStreet" placeholder="e.g. Evergreen St." class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
+                  <input type="text" id="homeStreet" placeholder="e.g. Evergreen St."
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
                 </div>
                 <div>
                   <label class="block font-bold text-[#541A1A] mb-1">Barangay</label>
-                  <input type="text" id="homeBarangay" placeholder="e.g. Greater Lagro" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
+                  <input type="text" id="homeBarangay" placeholder="e.g. Greater Lagro"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
                 </div>
                 <div>
                   <label class="block font-bold text-[#541A1A] mb-1">City</label>
-                  <input type="text" id="homeCity" placeholder="Quezon City" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
+                  <input type="text" id="homeCity" placeholder="Quezon City"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
                 </div>
                 <div class="sm:col-span-2">
                   <label class="block font-bold text-[#541A1A] mb-1">Landmark</label>
-                  <input type="text" id="homeLandmark" placeholder="e.g. Near Lagro Elementary School gate" class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
+                  <input type="text" id="homeLandmark" placeholder="e.g. Near Lagro Elementary School gate"
+                    class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs focus:outline-none focus:border-[#810B38]">
                 </div>
               </div>
 
@@ -1028,10 +1007,7 @@
                   <i class="fa-solid fa-id-card text-[#810B38]"></i>
                   <span>Customer Details</span>
                 </h4>
-                <button 
-                  type="button" 
-                  onclick="toggleCustomerEdit()" 
-                  id="editCustomerBtn"
+                <button type="button" onclick="toggleCustomerEdit()" id="editCustomerBtn"
                   class="text-xs text-[#810B38] font-bold hover:underline flex items-center gap-1">
                   <i class="fa-solid fa-pen-to-square text-[11px]"></i>
                   <span>Edit Details</span>
@@ -1041,29 +1017,17 @@
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
                 <div>
                   <label class="block text-[#735e5e] font-semibold mb-1">Full Name</label>
-                  <input 
-                    type="text" 
-                    id="clientNameInput" 
-                    placeholder="Your Full Name" 
-                    readonly 
+                  <input type="text" id="clientNameInput" placeholder="Your Full Name" readonly
                     class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/60 font-medium text-[#2b1d1d] focus:outline-none focus:border-[#810B38]">
                 </div>
                 <div>
                   <label class="block text-[#735e5e] font-semibold mb-1">Email</label>
-                  <input 
-                    type="email" 
-                    id="clientEmailInput" 
-                    placeholder="your.email@example.com" 
-                    readonly 
+                  <input type="email" id="clientEmailInput" placeholder="your.email@example.com" readonly
                     class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/60 font-medium text-[#2b1d1d] focus:outline-none focus:border-[#810B38]">
                 </div>
                 <div>
                   <label class="block text-[#735e5e] font-semibold mb-1">Contact Number</label>
-                  <input 
-                    type="tel" 
-                    id="clientPhoneInput" 
-                    placeholder="0917XXXXXXX" 
-                    readonly 
+                  <input type="tel" id="clientPhoneInput" placeholder="0917XXXXXXX" readonly
                     class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/60 font-medium text-[#2b1d1d] focus:outline-none focus:border-[#810B38]">
                 </div>
               </div>
@@ -1071,16 +1035,12 @@
 
             <!-- Navigation Buttons -->
             <div class="pt-4 flex items-center justify-between border-t border-[#F1E2D1]">
-              <button 
-                type="button" 
-                onclick="goToStep(2)" 
+              <button type="button" onclick="goToStep(2)"
                 class="px-5 py-2.5 rounded-xl bg-[#FAF6F0] text-[#541A1A] text-xs font-bold hover:bg-[#F1E2D1] transition-all flex items-center gap-2">
                 <i class="fa-solid fa-arrow-left text-xs"></i>
                 <span>Back</span>
               </button>
-              <button 
-                type="button" 
-                onclick="goToStep(4)" 
+              <button type="button" onclick="goToStep(4)"
                 class="px-6 py-3 rounded-xl bg-[#810B38] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#62082b] transition-all flex items-center gap-2 shadow-md">
                 <span>Continue to Payment</span>
                 <i class="fa-solid fa-arrow-right text-xs"></i>
@@ -1093,7 +1053,7 @@
         <!-- ================= STEP 4: PAYMENT ================= -->
         <section id="stepSection-4" class="hidden space-y-6">
           <div class="bg-white p-6 sm:p-8 rounded-3xl border border-[#DCC3AA] shadow-sm space-y-6">
-            
+
             <div class="border-b border-[#F1E2D1] pb-4">
               <span class="text-xs font-bold uppercase tracking-widest text-[#810B38] flex items-center gap-1.5">
                 <i class="fa-solid fa-credit-card"></i> Step 4 of 5
@@ -1108,13 +1068,12 @@
 
             <!-- Payment Method Cards (3 Cards) -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-              
+
               <!-- Option 1: Cash -->
-              <div 
-                onclick="selectPaymentMethod('cash')" 
-                id="payCard-cash" 
+              <div onclick="selectPaymentMethod('cash')" id="payCard-cash"
                 class="p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm transition-all cursor-pointer text-center space-y-2 group">
-                <div class="w-12 h-12 rounded-full bg-[#FAF6F0] group-hover:bg-[#810B38] text-[#810B38] group-hover:text-white flex items-center justify-center text-xl mx-auto transition-colors border border-[#DCC3AA]/50">
+                <div
+                  class="w-12 h-12 rounded-full bg-[#FAF6F0] group-hover:bg-[#810B38] text-[#810B38] group-hover:text-white flex items-center justify-center text-xl mx-auto transition-colors border border-[#DCC3AA]/50">
                   <i class="fa-solid fa-money-bill-wave"></i>
                 </div>
                 <div>
@@ -1124,11 +1083,10 @@
               </div>
 
               <!-- Option 2: GCash (Default selected) -->
-              <div 
-                onclick="selectPaymentMethod('gcash')" 
-                id="payCard-gcash" 
+              <div onclick="selectPaymentMethod('gcash')" id="payCard-gcash"
                 class="p-5 rounded-2xl border-2 border-[#810B38] bg-[#FAF6F0] shadow-sm transition-all cursor-pointer text-center space-y-2 group">
-                <div class="w-12 h-12 rounded-full bg-[#810B38] text-white flex items-center justify-center text-xl mx-auto shadow-sm">
+                <div
+                  class="w-12 h-12 rounded-full bg-[#810B38] text-white flex items-center justify-center text-xl mx-auto shadow-sm">
                   <i class="fa-solid fa-mobile-screen-button"></i>
                 </div>
                 <div>
@@ -1138,11 +1096,10 @@
               </div>
 
               <!-- Option 3: Bank Transfer -->
-              <div 
-                onclick="selectPaymentMethod('bank_transfer')" 
-                id="payCard-bank_transfer" 
+              <div onclick="selectPaymentMethod('bank_transfer')" id="payCard-bank_transfer"
                 class="p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm transition-all cursor-pointer text-center space-y-2 group">
-                <div class="w-12 h-12 rounded-full bg-[#FAF6F0] group-hover:bg-[#810B38] text-[#810B38] group-hover:text-white flex items-center justify-center text-xl mx-auto transition-colors border border-[#DCC3AA]/50">
+                <div
+                  class="w-12 h-12 rounded-full bg-[#FAF6F0] group-hover:bg-[#810B38] text-[#810B38] group-hover:text-white flex items-center justify-center text-xl mx-auto transition-colors border border-[#DCC3AA]/50">
                   <i class="fa-solid fa-building-columns"></i>
                 </div>
                 <div>
@@ -1155,15 +1112,18 @@
 
             <!-- Online Payment Details Box (Shown for GCash & Bank Transfer) -->
             <div id="onlinePaymentBox" class="p-5 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA] space-y-4">
-              
-              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#DCC3AA]/40 pb-3">
+
+              <div
+                class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#DCC3AA]/40 pb-3">
                 <div>
                   <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38]">Payment Recipient</span>
-                  <h4 id="onlinePaymentTitle" class="font-serif text-xl font-bold text-[#541A1A]">Nely’s Salon GCash</h4>
+                  <h4 id="onlinePaymentTitle" class="font-serif text-xl font-bold text-[#541A1A]">Nely’s Salon GCash
+                  </h4>
                 </div>
                 <div class="text-left sm:text-right">
                   <span class="text-xs text-[#735e5e] block">Account Number / Mobile:</span>
-                  <span id="onlinePaymentNumber" class="font-mono text-sm sm:text-base font-bold text-[#810B38]">0917 123 4567</span>
+                  <span id="onlinePaymentNumber" class="font-mono text-sm sm:text-base font-bold text-[#810B38]">0917
+                    123 4567</span>
                 </div>
               </div>
 
@@ -1172,14 +1132,14 @@
                 <label class="block text-xs font-bold text-[#541A1A]">
                   Upload Payment Proof
                 </label>
-                
-                <div 
-                  id="dropzoneArea" 
-                  onclick="document.getElementById('receiptFileInput').click()"
+
+                <div id="dropzoneArea" onclick="document.getElementById('receiptFileInput').click()"
                   class="p-6 rounded-2xl border-2 border-dashed border-[#DCC3AA] hover:border-[#810B38] bg-white text-center cursor-pointer transition-colors space-y-2">
-                  <input type="file" id="receiptFileInput" accept="image/*" class="hidden" onchange="handleReceiptUpload(event)">
-                  
-                  <div class="w-10 h-10 rounded-full bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-lg mx-auto">
+                  <input type="file" id="receiptFileInput" accept="image/*" class="hidden"
+                    onchange="handleReceiptUpload(event)">
+
+                  <div
+                    class="w-10 h-10 rounded-full bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-lg mx-auto">
                     <i class="fa-solid fa-paperclip"></i>
                   </div>
                   <div>
@@ -1188,7 +1148,8 @@
                   </div>
                   <!-- Preview container if uploaded -->
                   <div id="receiptPreviewBox" class="hidden pt-2">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
+                    <span
+                      class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
                       <i class="fa-solid fa-circle-check"></i>
                       <span id="receiptFileName">receipt.jpg</span>
                     </span>
@@ -1201,38 +1162,33 @@
                 <label for="referenceNumberInput" class="block text-xs font-bold text-[#541A1A]">
                   Reference Number
                 </label>
-                <input 
-                  type="text" 
-                  id="referenceNumberInput" 
-                  placeholder="e.g. 1029 3847 5612" 
+                <input type="text" id="referenceNumberInput" placeholder="e.g. 1029 3847 5612"
                   class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs font-mono tracking-wider text-[#2b1d1d] focus:outline-none focus:border-[#810B38]">
               </div>
 
             </div>
 
             <!-- Cash Notice (Shown when Cash selected) -->
-            <div id="cashNoticeBox" class="hidden p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
+            <div id="cashNoticeBox"
+              class="hidden p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-1">
               <span class="font-bold flex items-center gap-1.5">
                 <i class="fa-solid fa-circle-info text-amber-700"></i>
                 Cash Payment Policy
               </span>
               <p class="text-[11px] text-amber-800">
-                No advance deposit is needed. Simply present your booking reference number and pay in cash at the counter upon service completion.
+                No advance deposit is needed. Simply present your booking reference number and pay in cash at the
+                counter upon service completion.
               </p>
             </div>
 
             <!-- Navigation Buttons -->
             <div class="pt-4 flex items-center justify-between border-t border-[#F1E2D1]">
-              <button 
-                type="button" 
-                onclick="goToStep(3)" 
+              <button type="button" onclick="goToStep(3)"
                 class="px-5 py-2.5 rounded-xl bg-[#FAF6F0] text-[#541A1A] text-xs font-bold hover:bg-[#F1E2D1] transition-all flex items-center gap-2">
                 <i class="fa-solid fa-arrow-left text-xs"></i>
                 <span>Back</span>
               </button>
-              <button 
-                type="button" 
-                onclick="openConfirmModal()" 
+              <button type="button" onclick="openConfirmModal()"
                 class="px-6 py-3 rounded-xl bg-[#810B38] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#62082b] transition-all flex items-center gap-2 shadow-md">
                 <span>Review & Confirm</span>
                 <i class="fa-solid fa-check text-xs"></i>
@@ -1246,22 +1202,23 @@
 
       <!-- ================= RIGHT COLUMN: BOOKING SUMMARY (lg:col-span-4) ================= -->
       <aside class="lg:col-span-4 sticky top-24 space-y-4">
-        
+
         <div class="bg-white p-6 rounded-3xl border-2 border-[#DCC3AA] shadow-lg space-y-5">
-          
+
           <!-- Header -->
           <div class="border-b border-[#F1E2D1] pb-3 flex items-center justify-between">
             <h3 class="font-serif text-xl font-bold text-[#541A1A]">
               Appointment Summary
             </h3>
-            <span class="text-[10px] uppercase font-bold text-[#810B38] bg-[#FAF6F0] px-2.5 py-0.5 rounded-full border border-[#DCC3AA]/50">
+            <span
+              class="text-[10px] uppercase font-bold text-[#810B38] bg-[#FAF6F0] px-2.5 py-0.5 rounded-full border border-[#DCC3AA]/50">
               Preview
             </span>
           </div>
 
           <!-- Summary list items -->
           <div class="space-y-3 text-xs">
-            
+
             <div class="flex items-center justify-between">
               <span class="text-[#735e5e]">Service:</span>
               <span id="sumService" class="font-bold text-[#541A1A]">Brazilian</span>
@@ -1304,10 +1261,7 @@
 
           <!-- Primary CTA Button in Summary -->
           <div class="pt-2">
-            <button 
-              type="button" 
-              id="summaryNextBtn" 
-              onclick="handleSummaryClick()" 
+            <button type="button" id="summaryNextBtn" onclick="handleSummaryClick()"
               class="w-full py-3.5 px-4 rounded-xl bg-[#810B38] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#62082b] transition-all flex items-center justify-center gap-2 shadow-md">
               <span id="summaryBtnText">Confirm Appointment</span>
               <i class="fa-solid fa-arrow-right text-xs"></i>
@@ -1341,14 +1295,16 @@
     <!-- ================= 8. BOOKING SUCCESSFUL SCREEN (HIDDEN BY DEFAULT) ================= -->
     <section id="successScreen" class="hidden max-w-2xl mx-auto py-8">
       <div class="bg-white p-8 sm:p-12 rounded-3xl border-2 border-[#DCC3AA] shadow-2xl text-center space-y-6">
-        
+
         <!-- Steady Success Circle -->
-        <div class="w-20 h-20 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-4xl border-2 border-emerald-300 mx-auto shadow-inner">
+        <div
+          class="w-20 h-20 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-4xl border-2 border-emerald-300 mx-auto shadow-inner">
           <i class="fa-solid fa-circle-check"></i>
         </div>
 
         <div class="space-y-2">
-          <span class="text-xs font-extrabold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+          <span
+            class="text-xs font-extrabold uppercase tracking-widest text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
             Booking Confirmed
           </span>
           <h2 class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">
@@ -1361,7 +1317,7 @@
 
         <!-- Booking Receipt Box -->
         <div class="p-6 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA] text-xs space-y-3 text-left">
-          
+
           <div class="flex justify-between border-b border-[#DCC3AA]/50 pb-2">
             <span class="text-[#735e5e]">Booking ID:</span>
             <span id="succBookingId" class="font-mono font-bold text-[#810B38]">--</span>
@@ -1394,7 +1350,8 @@
 
           <div class="flex justify-between items-center">
             <span class="text-[#735e5e]">Payment Status:</span>
-            <span id="succPaymentBadge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-300">
+            <span id="succPaymentBadge"
+              class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-300">
               <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
               Payment Verification Pending
             </span>
@@ -1429,14 +1386,12 @@
 
         <!-- Action Buttons -->
         <div class="flex flex-col sm:flex-row items-center gap-3 pt-2">
-          <a 
-            href="appointments.html" 
+          <a href="appointments.html"
             class="w-full sm:flex-1 py-3.5 rounded-xl bg-[#810B38] text-white text-xs font-bold uppercase tracking-wider hover:bg-[#62082b] transition-colors shadow-md flex items-center justify-center gap-2">
             <i class="fa-solid fa-eye text-xs"></i>
             <span>View My Appointment</span>
           </a>
-          <a 
-            href="booking.html" 
+          <a href="booking.html"
             class="w-full sm:flex-1 py-3.5 rounded-xl bg-[#FAF6F0] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold uppercase tracking-wider hover:bg-[#F1E2D1] transition-colors flex items-center justify-center gap-2">
             <i class="fa-solid fa-rotate-right text-xs"></i>
             <span>Book Again</span>
@@ -1449,10 +1404,12 @@
   </main>
 
   <!-- ================= 7. CONFIRMATION MODAL BEFORE BOOKING ================= -->
-  <dialog id="confirmModal" class="fixed inset-0 m-auto rounded-3xl p-0 max-w-md w-[calc(100%-2rem)] sm:w-full bg-white border border-[#DCC3AA] shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm max-h-[90vh] overflow-y-auto">
+  <dialog id="confirmModal"
+    class="fixed inset-0 m-auto rounded-3xl p-0 max-w-md w-[calc(100%-2rem)] sm:w-full bg-white border border-[#DCC3AA] shadow-2xl backdrop:bg-black/60 backdrop:backdrop-blur-sm max-h-[90vh] overflow-y-auto">
     <div class="p-6 sm:p-8 space-y-5">
-      
-      <div class="w-12 h-12 rounded-2xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl border border-[#DCC3AA] mx-auto">
+
+      <div
+        class="w-12 h-12 rounded-2xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl border border-[#DCC3AA] mx-auto">
         <i class="fa-solid fa-calendar-check"></i>
       </div>
 
@@ -1493,15 +1450,11 @@
 
       <!-- Modal Footer -->
       <div class="flex items-center gap-3 pt-2">
-        <button 
-          type="button" 
-          onclick="closeConfirmModal()" 
+        <button type="button" onclick="closeConfirmModal()"
           class="flex-1 py-3 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
           ← Go Back
         </button>
-        <button 
-          type="button" 
-          onclick="finalizeBooking()" 
+        <button type="button" onclick="finalizeBooking()"
           class="flex-1 py-3 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold transition-colors shadow-md">
           Confirm Booking
         </button>
@@ -1513,25 +1466,23 @@
   <!-- ================= MODAL: LOGOUT CONFIRMATION ================= -->
   <dialog id="logoutModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d]">
     <div class="p-6 sm:p-7 space-y-5 text-center">
-      <div class="w-12 h-12 rounded-2xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl border border-[#DCC3AA] mx-auto">
+      <div
+        class="w-12 h-12 rounded-2xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl border border-[#DCC3AA] mx-auto">
         <i class="fa-solid fa-door-open"></i>
       </div>
 
       <div class="space-y-1">
         <h4 class="font-serif text-2xl font-bold text-[#541A1A]">Are you sure you want to log out?</h4>
-        <p class="text-xs text-[#735e5e]">You will need to sign in again to access your appointments and saved addresses.</p>
+        <p class="text-xs text-[#735e5e]">You will need to sign in again to access your appointments and saved
+          addresses.</p>
       </div>
 
       <div class="flex items-center gap-3 pt-2">
-        <button 
-          type="button" 
-          onclick="closeLogoutModal()" 
+        <button type="button" onclick="closeLogoutModal()"
           class="flex-1 py-3 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
           Cancel
         </button>
-        <button 
-          type="button" 
-          onclick="confirmLogout()" 
+        <button type="button" onclick="confirmLogout()"
           class="flex-1 py-3 rounded-xl bg-[#541A1A] hover:bg-[#810B38] text-white text-xs font-bold transition-colors shadow-md">
           Logout
         </button>
@@ -1545,4 +1496,5 @@
   <!-- Page JavaScript -->
   <script src="../assets/js/pages/booking.js"></script>
 </body>
+
 </html>

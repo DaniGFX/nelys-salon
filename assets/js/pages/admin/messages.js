@@ -368,7 +368,7 @@ function renderConversationsList() {
     // Search match
     const matchesSearch = conv.name.toLowerCase().includes(searchQuery) ||
       conv.messages.some(m => m.text.toLowerCase().includes(searchQuery));
-    
+
     // Filter match
     if (!matchesSearch) return false;
     if (currentFilter === 'unread') return conv.isUnread;
@@ -397,20 +397,19 @@ function renderConversationsList() {
     return `
       <div 
         onclick="selectConversation('${conv.id}')"
-        class="px-4 py-3.5 border-b border-[#DCC3AA]/30 cursor-pointer transition-all flex items-start gap-3 relative ${
-          isActive 
-            ? 'bg-[#FAF6F0] border-l-4 border-l-[#810B38]' 
-            : 'hover:bg-white/80 bg-white/40'
-        }">
+        class="px-4 py-3.5 border-b border-[#DCC3AA]/30 cursor-pointer transition-all flex items-start gap-3 relative ${isActive
+        ? 'bg-[#FAF6F0] border-l-4 border-l-[#810B38]'
+        : 'hover:bg-white/80 bg-white/40'
+      }">
         <!-- Avatar -->
         <div class="relative shrink-0">
           <div class="w-11 h-11 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-sm flex items-center justify-center border border-[#DCC3AA] shadow-sm">
             ${conv.avatar}
           </div>
-          ${conv.status === 'online' 
-            ? '<span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>' 
-            : ''
-          }
+          ${conv.status === 'online'
+        ? '<span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>'
+        : ''
+      }
         </div>
 
         <!-- Details -->
@@ -429,10 +428,10 @@ function renderConversationsList() {
         </div>
 
         <!-- Unread Badge / Dot -->
-        ${conv.isUnread 
-          ? `<span class="shrink-0 self-center w-2.5 h-2.5 rounded-full bg-[#810B38] shadow-sm" title="Unread Message"></span>` 
-          : ''
-        }
+        ${conv.isUnread
+        ? `<span class="shrink-0 self-center w-2.5 h-2.5 rounded-full bg-[#810B38] shadow-sm" title="Unread Message"></span>`
+        : ''
+      }
       </div>
     `;
   }).join('');

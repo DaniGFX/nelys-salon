@@ -119,11 +119,9 @@
 
     <!-- Customer Profile Quick Pill -->
     <div class="px-5 py-4 mx-4 my-3 rounded-2xl bg-[#6e1335]/40 border border-[#810B38]/50 flex items-center gap-3">
-      <div class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
-        MS
-      </div>
+      <div id="customerAvatarInitials" class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">--</div>
       <div class="min-w-0 flex-1">
-        <span class="block text-sm font-semibold text-[#F1E2D1] truncate">Maria Santos</span>
+        <span id="customerSidebarName" class="block text-sm font-semibold text-[#F1E2D1] truncate">Client</span>
         <span class="inline-flex items-center gap-1.5 text-[11px] text-[#DCC3AA]">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
           Verified Client
@@ -211,15 +209,11 @@
       
       <!-- Profile Identity Block -->
       <div class="flex items-center gap-5 relative z-10">
-        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-[#810B38] to-[#541A1A] text-white flex items-center justify-center font-serif text-2xl sm:text-3xl font-bold border-2 border-[#DCC3AA] shadow-md profile-avatar-initials shrink-0">
-          MS
-        </div>
+        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-br from-[#810B38] to-[#541A1A] text-white flex items-center justify-center font-serif text-2xl sm:text-3xl font-bold border-2 border-[#DCC3AA] shadow-md profile-avatar-initials shrink-0">--</div>
 
         <div class="space-y-1">
           <div class="flex items-center gap-2">
-            <h2 class="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-[#541A1A] profile-display-name">
-              Maria Santos
-            </h2>
+            <h2 class="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-[#541A1A] profile-display-name">--</h2>
           </div>
           
           <div class="flex flex-wrap items-center gap-2">
@@ -282,25 +276,25 @@
           <!-- Full Name -->
           <div class="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] space-y-1">
             <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] block">Full Name</span>
-            <strong class="text-sm font-bold text-[#541A1A] block profile-display-name">Maria Santos</strong>
+            <strong class="text-sm font-bold text-[#541A1A] block profile-display-name">--</strong>
           </div>
 
           <!-- Email Address -->
           <div class="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] space-y-1">
             <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] block">Email Address</span>
-            <strong class="text-sm font-semibold text-[#541A1A] block profile-display-email truncate">maria@email.com</strong>
+            <strong class="text-sm font-semibold text-[#541A1A] block profile-display-email truncate">--</strong>
           </div>
 
           <!-- Contact Number -->
           <div class="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] space-y-1">
             <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] block">Contact Number</span>
-            <strong class="text-sm font-mono font-bold text-[#810B38] block profile-display-phone">0917 888 9999</strong>
+            <strong class="text-sm font-mono font-bold text-[#810B38] block profile-display-phone">--</strong>
           </div>
 
           <!-- City Address -->
           <div class="p-4 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] space-y-1">
             <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] block">Address</span>
-            <strong class="text-sm font-semibold text-[#541A1A] block profile-display-address">Lagro, Quezon City</strong>
+            <strong class="text-sm font-semibold text-[#541A1A] block profile-display-address">--</strong>
           </div>
         </div>
 
@@ -456,19 +450,19 @@
           <!-- Appointments -->
           <div class="p-3.5 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA]">
             <span class="text-[10px] uppercase font-bold text-[#735e5e] block">Appointments</span>
-            <span class="font-serif text-2xl sm:text-3xl font-extrabold text-[#541A1A] block mt-1">12</span>
+            <span id="profileStatAppointments" class="font-serif text-2xl sm:text-3xl font-extrabold text-[#541A1A] block mt-1">0</span>
           </div>
 
           <!-- Completed -->
           <div class="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200">
             <span class="text-[10px] uppercase font-bold text-emerald-800 block">Completed</span>
-            <span class="font-serif text-2xl sm:text-3xl font-extrabold text-emerald-700 block mt-1">9</span>
+            <span id="profileStatCompleted" class="font-serif text-2xl sm:text-3xl font-extrabold text-emerald-700 block mt-1">0</span>
           </div>
 
           <!-- Cancelled -->
           <div class="p-3.5 rounded-2xl bg-rose-50 border border-rose-200">
             <span class="text-[10px] uppercase font-bold text-rose-800 block">Cancelled</span>
-            <span class="font-serif text-2xl sm:text-3xl font-extrabold text-rose-700 block mt-1">3</span>
+            <span id="profileStatCancelled" class="font-serif text-2xl sm:text-3xl font-extrabold text-rose-700 block mt-1">0</span>
           </div>
         </div>
 
@@ -476,9 +470,9 @@
         <div class="p-4 rounded-2xl bg-gradient-to-r from-[#FAF6F0] to-white border border-[#DCC3AA] flex items-center justify-between">
           <div>
             <span class="text-[10px] uppercase tracking-wider font-bold text-[#735e5e] block">Total Spent</span>
-            <span class="font-serif text-2xl font-extrabold text-[#810B38]">₱6,490</span>
+            <span id="profileStatSpent" class="font-serif text-2xl font-extrabold text-[#810B38]">₱0</span>
           </div>
-          <span class="text-xs text-[#735e5e] font-medium">9 Beauty sessions</span>
+          <span id="profileStatSessions" class="text-xs text-[#735e5e] font-medium">0 Beauty sessions</span>
         </div>
       </section>
 
@@ -489,47 +483,11 @@
           <p class="text-xs text-[#735e5e] mt-0.5">Timeline of recent booking milestones and payments</p>
         </div>
 
-        <div class="space-y-4">
-          <!-- Activity 1 -->
-          <div class="flex items-start gap-4 p-3.5 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA]">
-            <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-sm shrink-0">
-              <i class="fa-solid fa-check"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between gap-2">
-                <h4 class="font-bold text-xs sm:text-sm text-[#541A1A]">Completed Brazilian Treatment</h4>
-                <span class="text-[11px] text-[#735e5e]">September 10, 2026</span>
-              </div>
-              <p class="text-xs text-[#735e5e] mt-0.5">Service completed at salon atelier by Stylist Elena.</p>
-            </div>
-          </div>
-
-          <!-- Activity 2 -->
-          <div class="flex items-start gap-4 p-3.5 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA]">
-            <div class="w-9 h-9 rounded-xl bg-[#810B38] text-white flex items-center justify-center text-sm shrink-0">
-              <i class="fa-solid fa-calendar-plus"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between gap-2">
-                <h4 class="font-bold text-xs sm:text-sm text-[#541A1A]">Booked Gel Manicure</h4>
-                <span class="text-[11px] text-[#735e5e]">September 18, 2026</span>
-              </div>
-              <p class="text-xs text-[#735e5e] mt-0.5">Scheduled for 11:00 AM · Booking ID: NS-20260918-024.</p>
-            </div>
-          </div>
-
-          <!-- Activity 3 -->
-          <div class="flex items-start gap-4 p-3.5 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA]">
-            <div class="w-9 h-9 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-sm shrink-0">
-              <i class="fa-solid fa-credit-card"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center justify-between gap-2">
-                <h4 class="font-bold text-xs sm:text-sm text-[#541A1A]">Payment verified</h4>
-                <span class="text-[11px] text-[#735e5e]">September 18, 2026</span>
-              </div>
-              <p class="text-xs text-[#735e5e] mt-0.5">GCash transaction reference verified by salon cashier.</p>
-            </div>
+        <div id="profileActivityTimeline" class="space-y-4">
+          <!-- Dynamic timeline items rendered by profile.js -->
+          <div class="py-8 text-center text-[#735e5e] text-xs">
+            <i class="fa-solid fa-circle-notch fa-spin text-lg text-[#810B38] mb-2"></i>
+            <p>Loading your activity timeline...</p>
           </div>
         </div>
       </section>
