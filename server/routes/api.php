@@ -27,6 +27,7 @@ require_once dirname(__DIR__) . '/controllers/SalesController.php';
 require_once dirname(__DIR__) . '/controllers/NotificationController.php';
 require_once dirname(__DIR__) . '/controllers/SettingsController.php';
 require_once dirname(__DIR__) . '/controllers/MessageController.php';
+require_once dirname(__DIR__) . '/controllers/DashboardController.php';
 
 class Router {
     public static function dispatch(string $method, string $uri): void {
@@ -160,6 +161,15 @@ class Router {
                         $msgCtrl->delete((int)$id);
                     }
                     Response::notFound('Message endpoint not found.');
+                    break;
+
+                // Admin Dashboard Routes
+                case 'dashboard':
+                    $dashCtrl = new DashboardController();
+                    if (($id === null || $id === 'stats' || $id === 'overview') && $method === 'GET') {
+                        $dashCtrl->stats();
+                    }
+                    Response::notFound('Dashboard endpoint not found.');
                     break;
 
                 // Health check

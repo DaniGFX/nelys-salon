@@ -60,7 +60,7 @@ class AuthController {
                 'email'     => $user['email'],
                 'phone'     => $user['phone'],
                 'role'      => $user['role'],
-                'full_name' => $profile['full_name'] ?? ($user['role'] === 'admin' ? 'Atelier Admin' : 'Valued Patron'),
+                'full_name' => $profile['full_name'] ?? ($user['role'] === 'admin' ? 'Admin' : 'Valued Patron'),
             ]
         ], 'Login successful');
     }
