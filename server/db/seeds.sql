@@ -3,9 +3,9 @@
 
 USE `nelys_salon_db`;
 
--- 1. Default Users (Admin: admin@gmail.com / admin123, Customer: maria@email.com / password123)
+-- 1. Default Users (Admin: admin@gmail.com / Admin123, Customer: maria@email.com / password123)
 INSERT INTO `users` (`id`, `role`, `email`, `phone`, `password_hash`) VALUES
-(1, 'admin', 'admin@gmail.com', '09171234567', '$2y$10$g3IfXvphKzMtGFww.PhwkuMqRJ5fvFSwdIhWeG493jsmxZW5Bsucu'),
+(1, 'admin', 'admin@gmail.com', '09171234567', '$2y$10$08ATlRbtlfhqHL6HA4ywz.yLMFnKw7FQ2jZ6PyOQYdIIdH88USdNS'),
 (2, 'customer', 'maria@email.com', '09178889999', '$2y$10$RsV0QKdMFYQmHQC8su9L..YYEC9Q3L2Y.3pdDymk28EfK4ZWPfSkK')
 ON DUPLICATE KEY UPDATE `role` = VALUES(`role`), `email` = VALUES(`email`), `password_hash` = VALUES(`password_hash`);
 

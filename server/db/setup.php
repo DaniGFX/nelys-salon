@@ -22,9 +22,9 @@ try {
     echo "[OK] Connected to database successfully.\n";
 
     $adminEmail = 'admin@gmail.com';
-    $adminPass  = 'admin123';
-    // BCrypt hash for 'admin123'
-    $adminHash  = '$2y$10$g3IfXvphKzMtGFww.PhwkuMqRJ5fvFSwdIhWeG493jsmxZW5Bsucu';
+    $adminPass  = 'Admin123';
+    // BCrypt hash for 'Admin123'
+    $adminHash  = '$2y$10$08ATlRbtlfhqHL6HA4ywz.yLMFnKw7FQ2jZ6PyOQYdIIdH88USdNS';
 
     // Check if tables already exist
     $checkStmt = $pdo->query("SHOW TABLES LIKE 'users'");
