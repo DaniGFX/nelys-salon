@@ -1,0 +1,11 @@
+# Nixpacks configuration for Railway deployment (No Docker)
+providers = ["php"]
+
+[phases.setup]
+nixPkgs = ["php82", "php82Extensions.pdo_mysql"]
+
+[phases.build]
+cmds = []
+
+[start]
+cmd = "sh -c 'php server/db/setup.php || true; exec php -S 0.0.0.0:${PORT:-8080} router.php'"

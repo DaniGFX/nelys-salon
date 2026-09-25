@@ -6,6 +6,6 @@
   "scripts": {
     "build:css": "tailwindcss -i ./assets/css/input.css -o ./assets/css/output.css --minify",
     "watch:css": "tailwindcss -i ./assets/css/input.css -o ./assets/css/output.css --watch",
-    "build": "npx @tailwindcss/cli -i ./assets/css/input.css -o ./assets/css/output.css --watch "
+    "build": "npm run build:css"
   }
 }
