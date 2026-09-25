@@ -1,0 +1,14 @@
+.git
+.github
+node_modules
+scratch
+.env
+.env.local
+.env.production
+error_log
+*.log
+php_errors.log
+.vscode
+.idea
+Thumbs.db
+.DS_Store
