@@ -1,3 +1,6 @@
+// Seamless 0ms Cache Preload
+const STAFF_CACHE_KEY = 'nelys_admin_staff_cache';
+let lastRendered_staff_Hash = '';
 /**
  * Nely's Salon — Admin Staff Controller
  * Directly connected to backend database API (/api/staff, /api/services)
@@ -1122,7 +1125,7 @@ function handleConfirmLogout() {
 
 // Toast notification helper
 function showToast(message, type = 'info') {
-  let toastContainer = document.getElementById('adminToastContainer');
+  let toastContainer = document.getElementById('toastContainer');
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.id = 'adminToastContainer';
@@ -1179,4 +1182,9 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function safeSetText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }

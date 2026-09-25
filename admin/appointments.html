@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Appointments — Nely’s Salon | Admin Management</title>
+  <title>Appointments — Nely's Salon | Admin Management</title>
   <meta name="description"
     content="Manage, schedule, confirm, reschedule, and monitor all customer salon appointments at Nely's Salon.">
 
@@ -22,6 +22,32 @@
 
   <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
   <link rel="stylesheet" href="../assets/css/output.css">
+
+    <!-- Instant Synchronous Auth Guard & 0ms Pre-Hydrator -->
+  <script>
+    (function() {
+      try {
+        var token = localStorage.getItem('nelys_token');
+        var userJson = localStorage.getItem('nelys_user');
+        if (!token || !userJson) {
+          window.location.replace('../login.html');
+          return;
+        }
+        var user = JSON.parse(userJson);
+        if (user.role !== 'admin') {
+          window.location.replace('../customer/booking.html');
+          return;
+        }
+        var cached = localStorage.getItem('nelys_admin_appointments_cache');
+        if (cached) {
+          window.__PRELOADED_APPOINTMENTS__ = JSON.parse(cached);
+        }
+      } catch (e) {
+        window.location.replace('../login.html');
+      }
+    })();
+  </script>
+
 </head>
 
 <body
@@ -47,7 +73,7 @@
           class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover">
         <div>
           <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
-            Nely’s Salon
+            Nely's Salon
           </span>
           <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
             Admin Panel
@@ -93,7 +119,7 @@
             class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
           <div>
             <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
-              Nely’s Salon
+              Nely's Salon
             </h1>
             <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
               Admin Panel
@@ -441,7 +467,7 @@
 
       <!-- Active Filter Status & Reset Action -->
       <div class="flex items-center justify-between text-[11px] text-[#735e5e] pt-1">
-        <span id="tableResultsCount">Showing 12 appointments</span>
+        <span id="tableResultsCount">Showing appointments</span>
         <button 
           type="button" 
           onclick="resetAllFilters()" 
@@ -497,7 +523,7 @@
       <div id="appointmentsPaginationContainer" class="pt-4 border-t border-[#F1E2D1] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
         <!-- Results Counter Info -->
         <div class="text-[#735e5e] font-medium text-center sm:text-left">
-          Showing <span id="paginationStartCount" class="font-bold text-[#541A1A]">1</span> to <span id="paginationEndCount" class="font-bold text-[#541A1A]">10</span> of <span id="paginationTotalCount" class="font-bold text-[#541A1A]">34</span> appointments
+          Showing <span id="paginationStartCount" class="font-bold text-[#541A1A]">1</span> to <span id="paginationEndCount" class="font-bold text-[#541A1A]">10</span> of <span id="paginationTotalCount" class="font-bold text-[#541A1A]">0</span> appointments
         </div>
 
         <!-- Pagination Page Buttons -->
@@ -537,7 +563,7 @@
         <div class="flex justify-between items-center pb-2.5 border-b border-[#DCC3AA]/50">
           <div>
             <span class="text-[10px] uppercase font-bold text-[#735e5e] block">Customer</span>
-            <span id="detailCustomerName" class="font-bold text-sm text-[#541A1A]">Maria Santos</span>
+            <span id="detailCustomerName" class="font-bold text-sm text-[#541A1A]">—</span>
           </div>
           <div class="text-right">
             <span class="text-[10px] uppercase font-bold text-[#735e5e] block">Contact</span>
@@ -565,7 +591,7 @@
           </div>
           <div class="text-right">
             <span class="text-[10px] uppercase font-bold text-[#735e5e] block">Price</span>
-            <strong id="detailPrice" class="font-serif text-lg font-extrabold text-[#810B38]">₱250</strong>
+            <strong id="detailPrice" class="font-serif text-lg font-extrabold text-[#810B38]">—</strong>
           </div>
         </div>
 
@@ -577,16 +603,14 @@
           </div>
           <div class="text-right">
             <span class="text-[10px] uppercase font-bold text-[#735e5e] block">Payment</span>
-            <span id="detailPayment" class="font-semibold text-xs text-[#541A1A]">Paid (GCash)</span>
+            <span id="detailPayment" class="font-semibold text-xs text-[#541A1A]">—</span>
           </div>
         </div>
 
         <!-- Notes -->
         <div>
           <span class="text-[10px] uppercase font-bold text-[#735e5e] block">Notes</span>
-          <p id="detailNotes" class="text-xs text-[#2b1d1d] mt-0.5 italic">
-            Customer requested shoulder-length haircut.
-          </p>
+          <p id="detailNotes" class="text-xs text-[#2b1d1d] mt-0.5 italic">—</p>
         </div>
 
       </div>

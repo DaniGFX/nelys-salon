@@ -1,50 +1,67 @@
 /**
  * Nely's Salon — Admin Dashboard Script
- * Fully connected to the backend API (/api/dashboard/stats)
- * Zero hardcoded data: metrics, badges, schedule, status progress,
- * popular services, customers, notifications, and modals load dynamically.
+ * Fully Connected to Database API (/api/dashboard/stats)
+ * Zero Hardcoded Data — 100% Dynamic Database Binding
+ * Instant 0ms Synchronous Hydration + Smart Diffing (Zero Flicker, Zero Glitch)
  */
 
-// State
-let dashboardData = null;
-let currentPeriod = 'week';
-let isDashboardModalScrollLocked = false;
+// Cache Key
+const DASHBOARD_CACHE_KEY = 'nelys_admin_dashboard_cache';
+
+// Global State
+let dashboardData = window.__PRELOADED_DASHBOARD__ || null;
+let currentRevenuePeriod = 'week';
 let recentCustomersList = [];
 let currentCustPage = 1;
-const CUST_PAGE_SIZE = 10;
+const CUST_PAGE_SIZE = 5;
+let lastRenderedHash = '';
 
-document.addEventListener('DOMContentLoaded', () => {
+// Initialize immediately (synchronously if DOM is ready, or on DOMContentLoaded)
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDashboard);
+} else {
+  initDashboard();
+}
+
+function initDashboard() {
   checkAdminAuth();
-  initAdminProfileHeader();
-  fetchDashboardData();
-  setupClickOutside();
-  setupDialogSteadyListeners();
-});
+  initAdminHeaderProfile();
 
-// 1. Auth Guard
+  // 1. Instant Synchronous Cache Hydration (0ms render, no flicker)
+  hydrateFromCache();
+
+  // 2. Fetch fresh live data from database backend in background
+  fetchDashboardData();
+
+  // 3. Setup global listeners
+  setupOutsideClickListeners();
+  setupDialogAccessibilityListeners();
+}
+
+// ==========================================
+// 1. AUTHENTICATION & PROFILE
+// ==========================================
 function checkAdminAuth() {
   const token = localStorage.getItem('nelys_token');
   const userJson = localStorage.getItem('nelys_user');
 
   if (!token || !userJson) {
-    // If not logged in, redirect to login
-    window.location.href = '../login.html';
+    window.location.replace('../login.html');
     return;
   }
 
   try {
     const user = JSON.parse(userJson);
     if (user.role !== 'admin') {
-      window.location.href = '../customer/booking.html';
+      window.location.replace('../customer/booking.html');
       return;
     }
   } catch (e) {
-    window.location.href = '../login.html';
+    window.location.replace('../login.html');
   }
 }
 
-// 2. Init Admin Profile Header & Avatar
-function initAdminProfileHeader() {
+function initAdminHeaderProfile() {
   const userJson = localStorage.getItem('nelys_user');
   let displayName = 'Admin';
 
@@ -52,19 +69,15 @@ function initAdminProfileHeader() {
     try {
       const user = JSON.parse(userJson);
       let rawName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Admin');
-      // Strip any "Atelier" from the display name
       rawName = rawName.replace(/atelier\s*/gi, '').trim();
       if (rawName && rawName.toLowerCase() !== 'admin') {
         displayName = rawName;
-      } else {
-        displayName = 'Admin';
       }
     } catch (err) {
       console.warn('Error reading admin profile:', err);
     }
   }
 
-  // Greeting: "Good morning, Admin!" (without "Atelier")
   const greetingEl = document.getElementById('dashboardGreeting');
   if (greetingEl) {
     const hour = new Date().getHours();
@@ -74,30 +87,26 @@ function initAdminProfileHeader() {
     greetingEl.textContent = `${timeGreeting}, ${displayName}!`;
   }
 
-  // Header Admin Name & Initials
-  const nameEl = document.getElementById('adminDisplayName');
-  if (nameEl) nameEl.textContent = displayName;
-
-  const initialsBadge = document.getElementById('adminInitialsBadge');
-  if (initialsBadge) {
-    const parts = displayName.split(' ').filter(Boolean);
-    const initials = parts.length > 1 
-      ? (parts[0][0] + parts[1][0]).toUpperCase() 
-      : (displayName.substring(0, 2)).toUpperCase();
-    initialsBadge.textContent = initials || 'AD';
-  }
-
+  const initials = getInitials(displayName);
   const mobileBadge = document.getElementById('mobileAdminBadge');
-  if (mobileBadge) {
-    const parts = displayName.split(' ').filter(Boolean);
-    const initials = parts.length > 1 
-      ? (parts[0][0] + parts[1][0]).toUpperCase() 
-      : (displayName.substring(0, 2)).toUpperCase();
-    mobileBadge.textContent = initials || 'AD';
+  if (mobileBadge) mobileBadge.textContent = initials;
+}
+
+// ==========================================
+// 2. CACHE & LIVE DATA FETCHING
+// ==========================================
+function hydrateFromCache() {
+  try {
+    const data = window.__PRELOADED_DASHBOARD__ || JSON.parse(localStorage.getItem(DASHBOARD_CACHE_KEY) || 'null');
+    if (data && typeof data === 'object') {
+      dashboardData = data;
+      renderAllDashboardComponents(data);
+    }
+  } catch (err) {
+    console.warn('Could not hydrate dashboard from cache:', err);
   }
 }
 
-// 3. Fetch Real Database Data
 async function fetchDashboardData() {
   const token = localStorage.getItem('nelys_token');
   if (!token) return;
@@ -112,210 +121,213 @@ async function fetchDashboardData() {
     });
 
     if (res.status === 401 || res.status === 403) {
-      showToast('Session expired. Please log in again.', 'warning');
-      setTimeout(() => { window.location.href = '../login.html'; }, 1000);
+      showToast('Session expired. Redirecting to login...', 'warning');
+      setTimeout(() => { window.location.replace('../login.html'); }, 1200);
       return;
     }
 
     const result = await res.json();
     if (result.success && result.data) {
+      const freshHash = JSON.stringify(result.data);
+      // If data is identical to cache, do not re-render (prevents glitch / double blink!)
+      if (freshHash === lastRenderedHash) {
+        return;
+      }
+
       dashboardData = result.data;
+      try {
+        localStorage.setItem(DASHBOARD_CACHE_KEY, freshHash);
+      } catch (cacheErr) {
+        console.warn('Failed to save dashboard cache:', cacheErr);
+      }
       renderAllDashboardComponents(result.data);
     } else {
-      showToast(result.message || 'Could not load dashboard statistics.', 'error');
+      if (!dashboardData) {
+        showToast(result.message || 'Could not load dashboard metrics.', 'error');
+      }
     }
   } catch (error) {
     console.error('Failed to fetch dashboard data:', error);
-    showToast('Failed to connect to backend server. Please verify MySQL/Apache are active.', 'error');
-  }
-}
-
-// 4. Render All Components
-function renderAllDashboardComponents(data) {
-  renderSidebarBadges(data.badges);
-  renderSummaryCards(data);
-  renderAppointmentsTable(data.today_appointments, data.date);
-  renderRecentCustomersTable(data.recent_customers);
-  renderAppointmentStatusSection(data.status_breakdown);
-  renderPopularServicesSection(data.popular_services);
-  renderRevenueChartFromBackend(data.revenue_summary);
-  renderNotificationsModalList(data.notifications);
-  populateModalDropdowns(data.form_options);
-}
-
-// 4.1 Sidebar Badges
-function renderSidebarBadges(badges) {
-  if (!badges) return;
-  const map = {
-    sidebarAppointmentsBadge: parseInt(badges.appointments ?? 0, 10) || 0,
-    sidebarNotificationsBadge: parseInt(badges.notifications ?? 0, 10) || 0,
-    sidebarMessagesBadge: parseInt(badges.messages ?? 0, 10) || 0
-  };
-
-  for (const [id, val] of Object.entries(map)) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.textContent = val;
-      if (val > 0) {
-        el.classList.remove('hidden');
-        el.style.display = '';
-      } else {
-        el.classList.add('hidden');
-        el.style.display = 'none';
-      }
+    if (!dashboardData) {
+      showToast('Backend server connection error. Please verify Apache/MySQL are running.', 'error');
     }
   }
 }
 
-// 4.2 Top Summary KPI Cards
-function renderSummaryCards(data) {
-  const summary = data.summary || {};
-  const dateInfo = data.date || {};
+// ==========================================
+// 3. COMPONENT RENDERING
+// ==========================================
+function renderAllDashboardComponents(data) {
+  if (!data) return;
+  lastRenderedHash = JSON.stringify(data);
 
-  // Header Date
-  const dateDisplay = document.getElementById('dashboardDateDisplay');
-  if (dateDisplay) {
-    const formatted = dateInfo.formatted || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-    dateDisplay.textContent = `Today is ${formatted}. Here's what's happening at Nely's Salon.`;
+  renderDateDisplay(data.date);
+  renderSidebarBadges(data.badges);
+  renderSummaryCards(data);
+  renderTodayScheduleTable(data.today_appointments, data.date);
+  renderRevenueSection(data.revenue_summary);
+  renderRecentCustomersSection(data.recent_customers);
+  renderAppointmentStatusSection(data.status_breakdown);
+  renderPopularServicesSection(data.popular_services);
+  renderNotificationsList(data.notifications);
+  populateModalDropdowns(data.form_options);
+}
+
+// Date display
+function renderDateDisplay(dateStr) {
+  const dateEl = document.getElementById('dashboardDateDisplay');
+  if (dateEl && dateStr) {
+    dateEl.textContent = `Today is ${dateStr}. Here's what's happening at Nely's Salon.`;
   }
+}
+
+// Sidebar Badges
+function renderSidebarBadges(badges) {
+  if (!badges) return;
+
+  const apptBadge = document.getElementById('sidebarAppointmentsBadge');
+  if (apptBadge) {
+    const count = badges.pending_appointments || badges.appointments || 0;
+    if (count > 0) {
+      apptBadge.textContent = count;
+      apptBadge.classList.remove('hidden');
+    } else {
+      apptBadge.classList.add('hidden');
+    }
+  }
+
+  const notifBadge = document.getElementById('sidebarNotificationsBadge');
+  if (notifBadge) {
+    const count = badges.unread_notifications || badges.notifications || 0;
+    if (count > 0) {
+      notifBadge.textContent = count;
+      notifBadge.classList.remove('hidden');
+    } else {
+      notifBadge.classList.add('hidden');
+    }
+  }
+
+  const msgBadge = document.getElementById('sidebarMessagesBadge');
+  if (msgBadge) {
+    const count = badges.unread_messages || badges.messages || 0;
+    if (count > 0) {
+      msgBadge.textContent = count;
+      msgBadge.classList.remove('hidden');
+    } else {
+      msgBadge.classList.add('hidden');
+    }
+  }
+}
+
+// Summary KPI Cards
+function renderSummaryCards(data) {
+  const cards = data.cards || data.summary || {};
 
   // Card 1: Today's Appointments
-  const todayApptsEl = document.getElementById('dashboardTodayAppts');
-  if (todayApptsEl) todayApptsEl.textContent = summary.today_appointments ?? 0;
+  setElText('dashboardTodayAppts', cards.today_appointments_count ?? cards.today_appointments ?? 0);
 
-  const apptsBreakdownEl = document.getElementById('dashboardApptsBreakdown');
-  if (apptsBreakdownEl) {
-    const m = summary.morning_count ?? 0;
-    const a = summary.afternoon_count ?? 0;
-    apptsBreakdownEl.textContent = `${m} Morning · ${a} Afternoon`;
-  }
+  const morning = cards.today_morning_count ?? cards.morning_count ?? 0;
+  const afternoon = cards.today_afternoon_count ?? cards.afternoon_count ?? 0;
+  setElText('dashboardApptsBreakdown', `${morning} Morning • ${afternoon} Afternoon`);
 
   // Card 2: Total Customers
-  const totalCustEl = document.getElementById('dashboardTotalCustomers');
-  if (totalCustEl) totalCustEl.textContent = summary.total_customers ?? 0;
+  setElText('dashboardTotalCustomers', cards.total_customers_count ?? cards.total_customers ?? 0);
 
-  const custGrowthBadge = document.getElementById('dashboardCustGrowthBadge');
-  if (custGrowthBadge) {
-    const newCount = summary.new_customers_month ?? 0;
-    custGrowthBadge.textContent = `+${newCount} This Month`;
-  }
+  const newThisMonth = cards.new_customers_this_month ?? cards.new_customers_month ?? 0;
+  setElText('dashboardCustGrowthBadge', `+${newThisMonth} This Month`);
 
   // Card 3: Today's Revenue
-  const todayRevEl = document.getElementById('dashboardTodayRevenue');
-  if (todayRevEl) {
-    todayRevEl.textContent = formatCurrency(summary.today_revenue ?? 0);
-  }
+  const rev = parseFloat(cards.today_revenue || 0);
+  setElText('dashboardTodayRevenue', formatCurrency(rev));
 
-  const revBreakdownEl = document.getElementById('dashboardRevBreakdown');
-  if (revBreakdownEl) {
-    const gcash = formatCurrency(summary.gcash_revenue ?? 0);
-    const cash = formatCurrency(summary.cash_revenue ?? 0);
-    revBreakdownEl.textContent = `${gcash} GCash · ${cash} Cash`;
-  }
+  const gcash = parseFloat(cards.today_gcash_revenue || cards.gcash_revenue || 0);
+  const cash = parseFloat(cards.today_cash_revenue || cards.cash_revenue || 0);
+  setElText('dashboardRevBreakdown', `${formatCurrency(gcash)} GCash • ${formatCurrency(cash)} Cash`);
 
   // Card 4: Pending Appointments
-  const pendingApptsEl = document.getElementById('dashboardPendingAppts');
-  if (pendingApptsEl) pendingApptsEl.textContent = summary.pending_appts ?? 0;
+  const pendingCount = cards.pending_appointments_count ?? cards.pending_appts ?? 0;
+  setElText('dashboardPendingAppts', pendingCount);
 
   const pendingBadge = document.getElementById('dashboardPendingBadge');
   if (pendingBadge) {
-    const pendingCount = summary.pending_appts ?? 0;
     if (pendingCount > 0) {
-      pendingBadge.textContent = `${pendingCount} Need Action`;
+      pendingBadge.textContent = `${pendingCount} Action Needed`;
       pendingBadge.className = 'text-[10px] font-bold uppercase tracking-wider text-amber-900 bg-amber-100 px-2.5 py-1 rounded-full border border-amber-300';
     } else {
-      pendingBadge.textContent = 'All Caught Up';
+      pendingBadge.textContent = 'All Clear';
       pendingBadge.className = 'text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200';
     }
   }
 }
 
-// 4.3 Today's Schedule Table
-function renderAppointmentsTable(appointments, dateInfo) {
+// Today's Appointment Schedule Table
+function renderTodayScheduleTable(appointments, dateStr) {
   const tbody = document.getElementById('dashboardScheduleBody');
-  const subtitle = document.getElementById('dashboardScheduleDateSubtitle');
   if (!tbody) return;
 
-  if (subtitle && dateInfo) {
-    subtitle.textContent = dateInfo.is_actual_today_data 
-      ? `Live timeline for today (${dateInfo.formatted})`
-      : `Latest scheduled appointments from database`;
+  const dateSub = document.getElementById('dashboardScheduleDateSubtitle');
+  if (dateSub && dateStr) {
+    dateSub.textContent = `Live schedule for ${dateStr}`;
   }
 
   if (!appointments || appointments.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" class="py-10 px-4 text-center text-[#735e5e]">
-          <div class="w-12 h-12 rounded-2xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl mx-auto mb-3 border border-[#DCC3AA]">
-            <i class="fa-solid fa-calendar-xmark"></i>
+        <td colspan="6" class="py-12 text-center text-[#735e5e]">
+          <div class="w-12 h-12 rounded-full bg-[#FAF6F0] border border-[#DCC3AA] flex items-center justify-center mx-auto mb-3 text-[#810B38]">
+            <i class="fa-regular fa-calendar-check text-xl"></i>
           </div>
-          <p class="font-bold text-[#541A1A] text-sm">No Appointments Scheduled</p>
-          <p class="text-xs text-[#735e5e] mt-1">There are no client bookings on this schedule right now.</p>
-          <button type="button" onclick="openAddAppointmentModal()" class="mt-4 px-4 py-2 rounded-xl bg-[#810B38] text-white text-xs font-bold hover:bg-[#541A1A] transition-colors shadow-sm">
-            <i class="fa-solid fa-plus mr-1.5"></i>Create Appointment
-          </button>
+          <p class="font-bold text-sm text-[#541A1A]">No appointments scheduled for today.</p>
+          <p class="text-xs text-[#735e5e] mt-1">Use "+ New Appointment" to schedule a client.</p>
         </td>
       </tr>
     `;
     return;
   }
 
-  tbody.innerHTML = appointments.map((appt) => {
-    const timeFormatted = formatTimeSlot(appt.booking_time);
-    const dateFormatted = appt.booking_date;
-    const custName = escapeHtml(appt.customer_name || 'Valued Client');
-    const custInitials = getInitials(custName);
-    const serviceName = escapeHtml(appt.service_name || 'Haircut');
-    const staffName = escapeHtml(appt.staff_name || 'Unassigned');
-    const status = (appt.status || 'pending').toLowerCase();
-    const statusBadge = getStatusBadgeHtml(status);
+  tbody.innerHTML = appointments.map(appt => {
+    const timeFormatted = formatTime12(appt.booking_time || appt.appointment_time);
+    const initials = getInitials(appt.customer_name);
+    const statusBadge = getStatusBadge(appt.status);
+    const priceFormatted = formatCurrency(appt.price || appt.total_price || 0);
 
     return `
-      <tr class="hover:bg-[#FAF6F0]/40 transition-colors">
-        <td class="py-3.5 px-4 font-bold text-[#541A1A] whitespace-nowrap">
-          <div class="flex items-center gap-1.5">
+      <tr class="hover:bg-[#FAF6F0]/60 transition-colors group">
+        <td class="py-4 px-4 whitespace-nowrap">
+          <div class="flex items-center gap-2">
             <i class="fa-regular fa-clock text-[#810B38] text-xs"></i>
-            <span>${timeFormatted}</span>
-          </div>
-          <span class="text-[10px] text-[#735e5e] block font-normal">${dateFormatted}</span>
-        </td>
-        <td class="py-3.5 px-4">
-          <div class="flex items-center gap-2.5">
-            <div class="w-7 h-7 rounded-full bg-[#810B38] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-              ${custInitials}
-            </div>
-            <div class="min-w-0">
-              <span class="font-bold text-[#541A1A] block truncate">${custName}</span>
-              <span class="text-[10px] text-[#735e5e] block truncate">${escapeHtml(appt.customer_phone || '')}</span>
-            </div>
+            <span class="font-bold text-xs text-[#541A1A]">${escapeHtml(timeFormatted)}</span>
           </div>
         </td>
-        <td class="py-3.5 px-4 text-[#2b1d1d] font-medium">
-          <span class="block">${serviceName}</span>
-          <span class="text-[10px] text-[#735e5e]">${formatCurrency(appt.total_price || 0)}</span>
+        <td class="py-4 px-4 whitespace-nowrap">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA] flex items-center justify-center font-bold text-xs shrink-0">
+              ${escapeHtml(initials)}
+            </div>
+            <div>
+              <span class="font-bold text-xs text-[#541A1A] block leading-tight">${escapeHtml(appt.customer_name || 'Customer')}</span>
+              <span class="text-[11px] text-[#735e5e] block">${escapeHtml(appt.customer_phone || appt.customer_email || '—')}</span>
+            </div>
+          </div>
         </td>
-        <td class="py-3.5 px-4 text-[#735e5e]">
-          <span class="inline-flex items-center gap-1.5">
-            <i class="fa-solid fa-user-tie text-[10px] text-[#810B38]"></i>
-            <span>${staffName}</span>
+        <td class="py-4 px-4 whitespace-nowrap">
+          <span class="text-xs font-semibold text-[#541A1A] block">${escapeHtml(appt.service_name || 'Salon Service')}</span>
+          <span class="text-[11px] text-[#735e5e] block font-mono">${priceFormatted}</span>
+        </td>
+        <td class="py-4 px-4 whitespace-nowrap">
+          <span class="text-xs font-medium text-[#735e5e] flex items-center gap-1.5">
+            <i class="fa-solid fa-user-tie text-[#DCC3AA] text-[10px]"></i>
+            ${escapeHtml(appt.staff_name || 'Unassigned')}
           </span>
         </td>
-        <td class="py-3.5 px-4">
+        <td class="py-4 px-4 whitespace-nowrap">
           ${statusBadge}
         </td>
-        <td class="py-3.5 px-4 text-right whitespace-nowrap">
-          ${status === 'pending' ? `
-            <button type="button" onclick="updateAppointmentStatus(${appt.id}, 'confirmed')" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-300 hover:bg-emerald-600 hover:text-white text-[11px] font-bold transition-colors mr-1">
-              Confirm
-            </button>
-          ` : ''}
-          ${status === 'confirmed' ? `
-            <button type="button" onclick="updateAppointmentStatus(${appt.id}, 'completed')" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 border border-blue-300 hover:bg-blue-600 hover:text-white text-[11px] font-bold transition-colors mr-1">
-              Done
-            </button>
-          ` : ''}
-          <a href="appointments.html?id=${appt.id}" class="text-xs font-bold text-[#810B38] hover:text-[#541A1A] hover:underline ml-1">
-            Details
+        <td class="py-4 px-4 whitespace-nowrap text-right">
+          <a href="appointments.html?id=${appt.id}" 
+            class="px-3 py-1.5 rounded-xl bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA] font-semibold text-xs transition-colors inline-flex items-center gap-1.5 shadow-2xs">
+            <span>Details</span>
+            <i class="fa-solid fa-arrow-right text-[10px]"></i>
           </a>
         </td>
       </tr>
@@ -323,523 +335,448 @@ function renderAppointmentsTable(appointments, dateInfo) {
   }).join('');
 }
 
-// 4.4 Recent Customers Table with Pagination (1-10 items per page, links 1, 2, 3, Prev/Next)
-function renderRecentCustomersTable(customers) {
-  recentCustomersList = Array.isArray(customers) ? customers : [];
-  currentCustPage = 1;
+// Revenue Section with Dynamic Bar Chart
+function renderRevenueSection(revenueSummary) {
+  const container = document.getElementById('revenueChartBars');
+  const totalDisplay = document.getElementById('revenueTotalDisplay');
+  const sublabel = document.getElementById('revenueChartSublabel');
+  const periodBtnText = document.getElementById('revenuePeriodBtnText');
+
+  const summary = revenueSummary || (dashboardData && dashboardData.revenue_summary) || {};
+  const periodKey = currentRevenuePeriod === 'today' ? 'day' : currentRevenuePeriod;
+  const activeData = summary[periodKey] || { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], values: [0, 0, 0, 0, 0, 0, 0], total: 0 };
+
+  // Period button text
+  if (periodBtnText) {
+    const titles = { today: 'Today', day: 'Today', week: 'This Week', month: 'This Month', year: 'This Year' };
+    periodBtnText.textContent = titles[currentRevenuePeriod] || 'This Week';
+  }
+
+  // Sublabel
+  if (sublabel) {
+    const subs = {
+      today: "Today's Payment Method Gross",
+      day: "Today's Payment Method Gross",
+      week: "This Week's Daily Revenue",
+      month: "This Month's Weekly Performance",
+      year: "This Year's Quarterly Revenue"
+    };
+    sublabel.textContent = subs[currentRevenuePeriod] || "This Week's Daily Revenue";
+  }
+
+  // Total Display
+  const total = activeData.total ?? (activeData.values || []).reduce((a, b) => a + b, 0);
+  if (totalDisplay) {
+    totalDisplay.textContent = formatCurrency(total);
+  }
+
+  if (!container) return;
+
+  const labels = activeData.labels || [];
+  const values = activeData.values || [];
+  const maxVal = Math.max(...values, 100);
+
+  container.innerHTML = labels.map((label, idx) => {
+    const val = values[idx] || 0;
+    const heightPct = Math.max(Math.round((val / maxVal) * 100), 4);
+
+    return `
+      <div class="flex-1 flex flex-col items-center gap-2 group h-full justify-end">
+        <div class="text-[10px] font-bold text-[#810B38] opacity-0 group-hover:opacity-100 transition-opacity font-mono whitespace-nowrap">
+          ${formatCurrency(val)}
+        </div>
+        <div class="w-full bg-[#FAF6F0] rounded-xl flex items-end justify-center overflow-hidden border border-[#DCC3AA]/40 h-40">
+          <div class="w-full bg-gradient-to-t from-[#810B38] to-[#9b1548] rounded-xl transition-all duration-300 hover:brightness-110" 
+            style="height: ${heightPct}%"></div>
+        </div>
+        <span class="text-[11px] font-semibold text-[#735e5e] truncate max-w-[60px] block text-center">${escapeHtml(label)}</span>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleRevenueDropdown() {
+  const menu = document.getElementById('revenueDropdownMenu');
+  if (menu) menu.classList.toggle('hidden');
+}
+
+function switchRevenuePeriod(period) {
+  currentRevenuePeriod = period;
+  const menu = document.getElementById('revenueDropdownMenu');
+  if (menu) menu.classList.add('hidden');
+
+  if (dashboardData && dashboardData.revenue_summary) {
+    renderRevenueSection(dashboardData.revenue_summary);
+  }
+}
+
+// Recent Customers Section with Pagination
+function renderRecentCustomersSection(customers) {
+  recentCustomersList = customers || [];
   renderRecentCustomersPage();
 }
 
 function renderRecentCustomersPage() {
   const tbody = document.getElementById('dashboardRecentCustomersBody');
-  const paginationContainer = document.getElementById('recentCustPaginationContainer');
-  const pageStartEl = document.getElementById('recentCustPageStart');
-  const pageEndEl = document.getElementById('recentCustPageEnd');
-  const totalEl = document.getElementById('recentCustTotal');
-  const prevBtn = document.getElementById('recentCustPrevBtn');
-  const nextBtn = document.getElementById('recentCustNextBtn');
-  const linksContainer = document.getElementById('recentCustPageLinks');
-
   if (!tbody) return;
 
-  const totalItems = recentCustomersList.length;
-
-  if (totalItems === 0) {
-    tbody.innerHTML = `
-      <tr>
-        <td colspan="5" class="py-8 text-center text-xs text-[#735e5e]">
-          No registered customer accounts yet.
-        </td>
-      </tr>
-    `;
-    if (pageStartEl) pageStartEl.textContent = '0';
-    if (pageEndEl) pageEndEl.textContent = '0';
-    if (totalEl) totalEl.textContent = '0';
-    if (prevBtn) prevBtn.disabled = true;
-    if (nextBtn) nextBtn.disabled = true;
-    if (linksContainer) {
-      linksContainer.innerHTML = `
-        <button type="button" class="w-8 h-8 rounded-xl bg-[#810B38] text-white font-bold text-xs shadow-sm flex items-center justify-center">1</button>
-        <button type="button" disabled class="w-8 h-8 rounded-xl bg-[#FAF6F0]/60 text-[#735e5e]/50 border border-[#DCC3AA]/40 font-bold text-xs flex items-center justify-center cursor-not-allowed">2</button>
-        <button type="button" disabled class="w-8 h-8 rounded-xl bg-[#FAF6F0]/60 text-[#735e5e]/50 border border-[#DCC3AA]/40 font-bold text-xs flex items-center justify-center cursor-not-allowed">3</button>
-      `;
-    }
-    return;
-  }
-
-  const totalPages = Math.max(1, Math.ceil(totalItems / CUST_PAGE_SIZE));
+  const total = recentCustomersList.length;
+  const totalPages = Math.ceil(total / CUST_PAGE_SIZE) || 1;
   if (currentCustPage > totalPages) currentCustPage = totalPages;
   if (currentCustPage < 1) currentCustPage = 1;
 
-  const startIndex = (currentCustPage - 1) * CUST_PAGE_SIZE;
-  const endIndex = Math.min(startIndex + CUST_PAGE_SIZE, totalItems);
-  const pageItems = recentCustomersList.slice(startIndex, endIndex);
+  const startIdx = (currentCustPage - 1) * CUST_PAGE_SIZE;
+  const pageItems = recentCustomersList.slice(startIdx, startIdx + CUST_PAGE_SIZE);
 
-  // Render Table Rows
-  tbody.innerHTML = pageItems.map(cust => {
-    const name = escapeHtml(cust.full_name || cust.email || 'Patron');
-    const initials = getInitials(name);
-    const service = escapeHtml(cust.last_service || 'First Visit');
-    const date = cust.last_visit ? formatDate(cust.last_visit) : formatDate(cust.created_at);
-    const status = (cust.last_status || 'New').toLowerCase();
-    const statusBadge = getCustomerStatusBadgeHtml(status);
-
-    return `
-      <tr class="hover:bg-[#FAF6F0]/40 transition-colors">
-        <td class="py-3.5 px-4 font-bold text-[#541A1A]">
-          <div class="flex items-center gap-2.5">
-            <div class="w-7 h-7 rounded-full bg-[#541A1A] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-              ${initials}
-            </div>
-            <div class="min-w-0">
-              <span class="block truncate">${name}</span>
-              <span class="text-[10px] text-[#735e5e] font-normal block truncate">${escapeHtml(cust.email || cust.phone || '')}</span>
-            </div>
-          </div>
-        </td>
-        <td class="py-3.5 px-4 text-[#2b1d1d] font-medium">${service}</td>
-        <td class="py-3.5 px-4 text-[#735e5e] whitespace-nowrap">${date}</td>
-        <td class="py-3.5 px-4">${statusBadge}</td>
-        <td class="py-3.5 px-4 text-right">
-          <a href="customers.html?id=${cust.user_id}" class="text-xs font-bold text-[#810B38] hover:text-[#541A1A] hover:underline">
-            View
-          </a>
+  if (pageItems.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="5" class="py-8 text-center text-xs text-[#735e5e]">
+          No registered customer records found.
         </td>
       </tr>
     `;
-  }).join('');
+  } else {
+    tbody.innerHTML = pageItems.map(cust => {
+      const initials = getInitials(cust.name);
+      const visits = cust.total_visits ?? cust.appointments_count ?? 0;
+      const spent = parseFloat(cust.total_spent || 0);
 
-  // Update Pagination Info
-  if (pageStartEl) pageStartEl.textContent = startIndex + 1;
-  if (pageEndEl) pageEndEl.textContent = endIndex;
-  if (totalEl) totalEl.textContent = totalItems;
+      return `
+        <tr class="hover:bg-[#FAF6F0]/60 transition-colors">
+          <td class="py-3.5 px-4 whitespace-nowrap">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA] flex items-center justify-center font-bold text-xs shrink-0">
+                ${escapeHtml(initials)}
+              </div>
+              <div>
+                <span class="font-bold text-xs text-[#541A1A] block">${escapeHtml(cust.name || 'Customer')}</span>
+                <span class="text-[11px] text-[#735e5e] block">${escapeHtml(cust.email || '—')}</span>
+              </div>
+            </div>
+          </td>
+          <td class="py-3.5 px-4 whitespace-nowrap text-xs text-[#735e5e]">
+            ${escapeHtml(cust.phone || '—')}
+          </td>
+          <td class="py-3.5 px-4 whitespace-nowrap">
+            <span class="inline-flex items-center gap-1 text-xs font-bold text-[#810B38] bg-[#FAF6F0] px-2.5 py-0.5 rounded-full border border-[#DCC3AA]/50">
+              ${visits} visits
+            </span>
+          </td>
+          <td class="py-3.5 px-4 whitespace-nowrap text-xs font-bold text-[#541A1A]">
+            ${formatCurrency(spent)}
+          </td>
+          <td class="py-3.5 px-4 whitespace-nowrap text-right">
+            <a href="customers.html?search=${encodeURIComponent(cust.email || cust.name)}" class="text-xs font-bold text-[#810B38] hover:underline">
+              View Profile &rarr;
+            </a>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
 
-  // Prev / Next button states
+  // Pagination indicators
+  setElText('recentCustPageStart', total > 0 ? startIdx + 1 : 0);
+  setElText('recentCustPageEnd', Math.min(startIdx + CUST_PAGE_SIZE, total));
+  setElText('recentCustTotal', total);
+
+  const prevBtn = document.getElementById('recentCustPrevBtn');
   if (prevBtn) prevBtn.disabled = currentCustPage <= 1;
+
+  const nextBtn = document.getElementById('recentCustNextBtn');
   if (nextBtn) nextBtn.disabled = currentCustPage >= totalPages;
 
-  // Render Page Links (1, 2, 3...)
+  // Page Links
+  const linksContainer = document.getElementById('recentCustPageLinks');
   if (linksContainer) {
-    const maxDisplayPages = Math.max(3, totalPages);
-    const pagesList = [];
-    for (let p = 1; p <= maxDisplayPages; p++) {
-      pagesList.push(p);
-    }
-
-    linksContainer.innerHTML = pagesList.map(p => {
-      const isActive = p === currentCustPage;
-      const isAvailable = p <= totalPages;
-
-      if (isActive) {
-        return `
-          <button type="button" class="w-8 h-8 rounded-xl bg-[#810B38] text-white font-bold text-xs shadow-sm flex items-center justify-center pointer-events-none">
-            ${p}
-          </button>
-        `;
-      } else if (isAvailable) {
-        return `
-          <button type="button" onclick="changeRecentCustPage(${p})" class="w-8 h-8 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] font-bold text-xs transition-colors flex items-center justify-center">
-            ${p}
-          </button>
-        `;
+    let linksHtml = '';
+    for (let p = 1; p <= totalPages; p++) {
+      if (p === currentCustPage) {
+        linksHtml += `<button type="button" class="w-7 h-7 rounded-lg text-xs font-bold bg-[#810B38] text-white">${p}</button>`;
       } else {
-        return `
-          <button type="button" disabled class="w-8 h-8 rounded-xl bg-[#FAF6F0]/60 text-[#735e5e]/50 border border-[#DCC3AA]/40 font-bold text-xs flex items-center justify-center cursor-not-allowed">
-            ${p}
-          </button>
-        `;
+        linksHtml += `<button type="button" onclick="changeRecentCustPage(${p})" class="w-7 h-7 rounded-lg text-xs font-medium text-[#541A1A] hover:bg-[#F1E2D1] transition-colors">${p}</button>`;
       }
-    }).join('');
+    }
+    linksContainer.innerHTML = linksHtml;
   }
 }
 
 function changeRecentCustPage(page) {
-  const totalPages = Math.max(1, Math.ceil(recentCustomersList.length / CUST_PAGE_SIZE));
-  if (page < 1 || page > totalPages) return;
   currentCustPage = page;
   renderRecentCustomersPage();
 }
 
-// 4.5 Appointment Status Breakdown Section
-function renderAppointmentStatusSection(statusBreakdown) {
-  if (!statusBreakdown) return;
-
-  const total = statusBreakdown.total || 0;
-  const confirmed = statusBreakdown.confirmed || 0;
-  const pending = statusBreakdown.pending || 0;
-  const completed = statusBreakdown.completed || 0;
-  const cancelled = (statusBreakdown.cancelled || 0) + (statusBreakdown.no_show || 0);
-
-  // Sublabel
-  const sublabel = document.getElementById('dashboardStatusSublabel');
-  if (sublabel) {
-    sublabel.textContent = total > 0 
-      ? `Real-time status breakdown for ${total} total database records`
-      : `No booking records found in database yet`;
-  }
-
-  // Count Pills
-  const setVal = (id, val) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = val;
+// Appointment Status Breakdown Progress
+function renderAppointmentStatusSection(breakdown) {
+  const b = breakdown || {
+    confirmed: { count: 0, percentage: 0 },
+    pending: { count: 0, percentage: 0 },
+    completed: { count: 0, percentage: 0 },
+    cancelled: { count: 0, percentage: 0 }
   };
-  setVal('statusCountConfirmed', confirmed);
-  setVal('statusCountPending', pending);
-  setVal('statusCountCompleted', completed);
-  setVal('statusCountCancelled', cancelled);
 
-  // Progress Bar
+  setElText('statusCountConfirmed', `${b.confirmed?.count ?? 0} (${b.confirmed?.percentage ?? 0}%)`);
+  setElText('statusCountPending', `${b.pending?.count ?? 0} (${b.pending?.percentage ?? 0}%)`);
+  setElText('statusCountCompleted', `${b.completed?.count ?? 0} (${b.completed?.percentage ?? 0}%)`);
+  setElText('statusCountCancelled', `${b.cancelled?.count ?? 0} (${b.cancelled?.percentage ?? 0}%)`);
+
   const barContainer = document.getElementById('dashboardStatusBar');
-  const legendContainer = document.getElementById('dashboardStatusLegend');
-
-  if (total === 0) {
-    if (barContainer) {
-      barContainer.innerHTML = `<div style="width: 100%;" class="bg-gray-200 h-full" title="No appointments"></div>`;
-    }
-    if (legendContainer) {
-      legendContainer.innerHTML = `<span>0% Confirmed</span><span>0% Completed</span>`;
-    }
-    return;
-  }
-
-  const pct = (cnt) => Math.round((cnt / total) * 100);
-  const pConf = pct(confirmed);
-  const pPend = pct(pending);
-  const pComp = pct(completed);
-  const pCanc = pct(cancelled);
-
   if (barContainer) {
     barContainer.innerHTML = `
-      <div style="width: ${pConf}%;" class="bg-emerald-500 h-full transition-all duration-500" title="Confirmed: ${confirmed} (${pConf}%)"></div>
-      <div style="width: ${pPend}%;" class="bg-amber-500 h-full transition-all duration-500" title="Pending: ${pending} (${pPend}%)"></div>
-      <div style="width: ${pComp}%;" class="bg-blue-500 h-full transition-all duration-500" title="Completed: ${completed} (${pComp}%)"></div>
-      <div style="width: ${pCanc}%;" class="bg-rose-500 h-full transition-all duration-500" title="Cancelled: ${cancelled} (${pCanc}%)"></div>
-    `;
-  }
-
-  if (legendContainer) {
-    legendContainer.innerHTML = `
-      <span>${confirmed} Confirmed (${pConf}%)</span>
-      <span>${completed} Completed (${pComp}%)</span>
+      <div style="width: ${b.confirmed?.percentage ?? 0}%" class="bg-blue-600 h-full transition-all duration-300" title="Confirmed: ${b.confirmed?.percentage ?? 0}%"></div>
+      <div style="width: ${b.pending?.percentage ?? 0}%" class="bg-amber-500 h-full transition-all duration-300" title="Pending: ${b.pending?.percentage ?? 0}%"></div>
+      <div style="width: ${b.completed?.percentage ?? 0}%" class="bg-emerald-600 h-full transition-all duration-300" title="Completed: ${b.completed?.percentage ?? 0}%"></div>
+      <div style="width: ${b.cancelled?.percentage ?? 0}%" class="bg-rose-500 h-full transition-all duration-300" title="Cancelled: ${b.cancelled?.percentage ?? 0}%"></div>
     `;
   }
 }
 
-// 4.6 Popular Services List
+// Popular Services Breakdown
 function renderPopularServicesSection(services) {
   const container = document.getElementById('dashboardPopularServicesList');
   if (!container) return;
 
   if (!services || services.length === 0) {
     container.innerHTML = `
-      <div class="p-6 text-center text-xs text-[#735e5e] bg-[#FAF6F0] rounded-2xl border border-[#E8D9CA]">
-        <p class="font-bold text-[#541A1A]">No service bookings recorded yet</p>
-        <p class="mt-1">Add bookings or treatments to see popular rankings.</p>
+      <div class="py-6 text-center text-xs text-[#735e5e]">
+        No service booking history available yet.
       </div>
     `;
     return;
   }
 
-  // Find max count for relative bar scaling
-  const maxCount = Math.max(...services.map(s => Number(s.booking_count) || 1), 1);
-
-  const icons = {
-    'Hair': 'fa-scissors',
-    'Nails': 'fa-hand-sparkles',
-    'Spa': 'fa-spa',
-    'Treatment': 'fa-wand-magic-sparkles',
-    'Foot Care': 'fa-socks',
-  };
+  const colors = [
+    { bg: 'bg-[#810B38]', text: 'text-[#810B38]', light: 'bg-[#FAF6F0]' },
+    { bg: 'bg-[#541A1A]', text: 'text-[#541A1A]', light: 'bg-[#FAF6F0]' },
+    { bg: 'bg-emerald-700', text: 'text-emerald-800', light: 'bg-emerald-50' },
+    { bg: 'bg-amber-600', text: 'text-amber-800', light: 'bg-amber-50' }
+  ];
 
   container.innerHTML = services.map((svc, index) => {
-    const rank = index + 1;
-    const name = escapeHtml(svc.name);
-    const count = Number(svc.booking_count) || 0;
-    const price = formatCurrency(svc.price || 0);
-    const percentage = Math.max(Math.round((count / maxCount) * 100), 12);
-    const icon = icons[svc.category] || 'fa-sparkles';
-    const rankBadgeBg = rank === 1 ? 'bg-[#810B38] text-white' : rank <= 3 ? 'bg-[#541A1A] text-white' : 'bg-[#DCC3AA] text-[#541A1A] font-extrabold';
+    const c = colors[index % colors.length];
+    const pct = svc.percentage || 0;
+    const count = svc.bookings_count || 0;
+    const price = parseFloat(svc.price || 0);
 
     return `
-      <div class="p-3 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] space-y-1.5 hover:border-[#810B38] transition-colors">
-        <div class="flex items-center justify-between text-xs">
-          <span class="font-bold text-[#541A1A] flex items-center gap-2">
-            <span class="w-5 h-5 rounded-md ${rankBadgeBg} flex items-center justify-center text-[10px]">${rank}</span>
-            <i class="fa-solid ${icon} text-[#810B38]"></i>
-            <span>${name}</span>
-          </span>
-          <span class="font-extrabold text-[#810B38]">${count} bookings <span class="text-[10px] text-[#735e5e] font-normal">(${price})</span></span>
+      <div>
+        <div class="flex items-center justify-between text-xs mb-1.5">
+          <div class="flex items-center gap-2">
+            <span class="w-5 h-5 rounded-md ${c.light} ${c.text} font-bold text-[10px] flex items-center justify-center border border-[#DCC3AA]">
+              #${index + 1}
+            </span>
+            <span class="font-bold text-[#541A1A]">${escapeHtml(svc.name)}</span>
+          </div>
+          <div class="text-right">
+            <span class="font-bold text-[#541A1A]">${count}</span>
+            <span class="text-[10px] text-[#735e5e] ml-1">(${pct}%)</span>
+          </div>
         </div>
-        <div class="h-2 w-full rounded-full bg-white overflow-hidden">
-          <div style="width: ${percentage}%;" class="h-full bg-[#810B38] rounded-full transition-all duration-500"></div>
+        <div class="w-full bg-[#FAF6F0] rounded-full h-2 overflow-hidden border border-[#DCC3AA]/30">
+          <div class="${c.bg} h-full rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+        </div>
+        <div class="flex justify-between items-center text-[10px] text-[#735e5e] mt-1">
+          <span>Standard rate</span>
+          <span class="font-mono font-semibold text-[#541A1A]">${formatCurrency(price)}</span>
         </div>
       </div>
     `;
   }).join('');
 }
 
-// 4.7 Revenue Overview Chart (Accurate database breakdowns for today, week, month, year)
-function renderRevenueChartFromBackend(revSummary) {
-  const totalDisplay = document.getElementById('revenueTotalDisplay');
-  const labelDisplay = document.getElementById('revenueChartSublabel');
-  const chartContainer = document.getElementById('revenueChartBars');
-  if (!chartContainer) return;
-
-  const summary = revSummary || {};
-  let bars = [];
-  let totalNum = 0;
-  let sublabelText = "This Week's Daily Revenue";
-
-  if (currentPeriod === 'today') {
-    sublabelText = "Today's Revenue Overview";
-    totalNum = Number(summary.today_total) || 0;
-    const todayBarsData = Array.isArray(summary.today_bars) ? summary.today_bars : [];
-
-    if (todayBarsData.length > 0) {
-      const maxAmt = Math.max(...todayBarsData.map(b => Number(b.amount) || 0), 1);
-      bars = todayBarsData.map(b => {
-        const amt = Number(b.amount) || 0;
-        const heightPct = totalNum > 0 ? Math.max(Math.round((amt / maxAmt) * 100), 8) : 8;
-        return {
-          label: b.label || 'Method',
-          amount: formatCurrency(amt),
-          height: `${heightPct}%`
-        };
-      });
-    } else {
-      bars = [
-        { label: "GCash", amount: formatCurrency(0), height: "8%" },
-        { label: "Cash", amount: formatCurrency(0), height: "8%" }
-      ];
-    }
-  } else if (currentPeriod === 'month') {
-    sublabelText = "This Month's Weekly Breakdown";
-    totalNum = Number(summary.month_total) || 0;
-    const monthBarsData = Array.isArray(summary.month_bars) ? summary.month_bars : [];
-
-    if (monthBarsData.length > 0) {
-      const maxAmt = Math.max(...monthBarsData.map(b => Number(b.amount) || 0), 1);
-      bars = monthBarsData.map(b => {
-        const amt = Number(b.amount) || 0;
-        const heightPct = totalNum > 0 ? Math.max(Math.round((amt / maxAmt) * 100), 8) : 8;
-        return {
-          label: b.label,
-          amount: formatCurrency(amt),
-          height: `${heightPct}%`
-        };
-      });
-    } else {
-      bars = [
-        { label: "Wk 1", amount: formatCurrency(0), height: "8%" },
-        { label: "Wk 2", amount: formatCurrency(0), height: "8%" },
-        { label: "Wk 3", amount: formatCurrency(0), height: "8%" },
-        { label: "Wk 4", amount: formatCurrency(0), height: "8%" }
-      ];
-    }
-  } else if (currentPeriod === 'year') {
-    sublabelText = "This Year's Quarterly Breakdown";
-    totalNum = Number(summary.year_total) || 0;
-    const yearBarsData = Array.isArray(summary.year_bars) ? summary.year_bars : [];
-
-    if (yearBarsData.length > 0) {
-      const maxAmt = Math.max(...yearBarsData.map(b => Number(b.amount) || 0), 1);
-      bars = yearBarsData.map(b => {
-        const amt = Number(b.amount) || 0;
-        const heightPct = totalNum > 0 ? Math.max(Math.round((amt / maxAmt) * 100), 8) : 8;
-        return {
-          label: b.label,
-          amount: formatCurrency(amt),
-          height: `${heightPct}%`
-        };
-      });
-    } else {
-      bars = [
-        { label: "Q1", amount: formatCurrency(0), height: "8%" },
-        { label: "Q2", amount: formatCurrency(0), height: "8%" },
-        { label: "Q3", amount: formatCurrency(0), height: "8%" },
-        { label: "Q4", amount: formatCurrency(0), height: "8%" }
-      ];
-    }
-  } else {
-    // Default: 'week'
-    sublabelText = "This Week's Daily Revenue";
-    totalNum = Number(summary.week_total) || 0;
-    const weekBarsData = Array.isArray(summary.week_bars) ? summary.week_bars : [];
-
-    if (weekBarsData.length > 0) {
-      const maxAmt = Math.max(...weekBarsData.map(d => Number(d.amount) || 0), 1);
-      bars = weekBarsData.map(d => {
-        const amt = Number(d.amount) || 0;
-        const heightPct = totalNum > 0 ? Math.max(Math.round((amt / maxAmt) * 100), 8) : 8;
-        return {
-          label: (d.label || 'Day').substring(0, 3),
-          amount: formatCurrency(amt),
-          height: `${heightPct}%`
-        };
-      });
-    } else {
-      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      bars = days.map(day => ({ label: day, amount: formatCurrency(0), height: '8%' }));
-    }
-  }
-
-  if (totalDisplay) totalDisplay.textContent = formatCurrency(totalNum);
-  if (labelDisplay) labelDisplay.textContent = sublabelText;
-
-  chartContainer.innerHTML = bars.map(bar => `
-    <div class="flex-1 flex flex-col items-center justify-end h-full gap-2 group relative">
-      <!-- Hover Tooltip -->
-      <div class="opacity-0 group-hover:opacity-100 transition-opacity absolute -top-8 px-2 py-1 rounded-md bg-[#541A1A] text-white text-[10px] font-bold pointer-events-none whitespace-nowrap shadow-md z-20">
-        ${bar.amount}
-      </div>
-
-      <!-- Bar column -->
-      <div class="w-full max-w-[36px] bg-[#FAF6F0] rounded-t-xl overflow-hidden flex flex-col justify-end border border-[#DCC3AA]/50 group-hover:border-[#810B38] transition-all h-full p-0.5">
-        <div 
-          style="height: ${bar.height};" 
-          class="w-full bg-gradient-to-t from-[#810B38] to-[#9e1449] rounded-t-lg transition-all duration-500 group-hover:brightness-110 shadow-inner">
-        </div>
-      </div>
-
-      <!-- X-axis label -->
-      <span class="text-[11px] font-bold text-[#541A1A] tracking-wider uppercase">${bar.label}</span>
-      <span class="text-[10px] text-[#735e5e] font-semibold">${bar.amount}</span>
-    </div>
-  `).join('');
-}
-
-// 4.8 Notifications Modal List
-function renderNotificationsModalList(notifications) {
-  const container = document.getElementById('dashboardNotificationsList');
-  if (!container) return;
+// Notifications List
+function renderNotificationsList(notifications) {
+  const listEl = document.getElementById('dashboardNotificationsList');
+  if (!listEl) return;
 
   if (!notifications || notifications.length === 0) {
-    container.innerHTML = `
-      <div class="p-8 text-center text-xs text-[#735e5e]">
-        <i class="fa-solid fa-bell-slash text-2xl text-[#810B38] mb-2 block"></i>
-        <p class="font-bold text-[#541A1A]">No notifications at this time</p>
-        <p class="mt-1">All salon alerts and updates will appear here.</p>
+    listEl.innerHTML = `
+      <div class="py-8 text-center text-[#735e5e]">
+        <i class="fa-regular fa-bell-slash text-2xl mb-2 text-[#DCC3AA]"></i>
+        <p class="text-xs font-medium">No recent notifications.</p>
       </div>
     `;
     return;
   }
 
-  container.innerHTML = notifications.map(n => {
-    const title = escapeHtml(n.title || 'System Notification');
-    const msg = escapeHtml(n.message || '');
-    const time = formatDate(n.created_at);
-    const isUnread = n.status === 'sent';
+  listEl.innerHTML = notifications.map(notif => {
+    const isUnread = !notif.is_read;
+    const timeAgo = formatTimeAgo(notif.created_at);
 
     return `
-      <div class="p-3.5 rounded-2xl ${isUnread ? 'bg-[#FAF6F0] border-[#DCC3AA]' : 'bg-white border-[#E8D9CA]'} border flex items-start gap-3">
-        <div class="w-8 h-8 rounded-lg bg-[#810B38] text-white flex items-center justify-center text-xs shrink-0">
-          <i class="fa-solid fa-bell"></i>
-        </div>
-        <div class="min-w-0 flex-1">
-          <div class="flex justify-between items-center">
-            <span class="text-xs font-bold text-[#541A1A] truncate">${title}</span>
-            <span class="text-[10px] text-[#735e5e] whitespace-nowrap ml-2">${time}</span>
+      <div class="p-3.5 rounded-2xl border transition-all ${isUnread ? 'bg-[#FAF6F0]/80 border-[#DCC3AA]' : 'bg-white border-[#FAF6F0]'}">
+        <div class="flex items-start justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full ${isUnread ? 'bg-[#810B38]' : 'bg-transparent'} shrink-0"></span>
+            <h4 class="font-bold text-xs text-[#541A1A]">${escapeHtml(notif.title)}</h4>
           </div>
-          <p class="text-xs text-[#2b1d1d] mt-1 leading-relaxed">
-            ${msg}
-          </p>
+          <span class="text-[10px] text-[#735e5e] shrink-0">${escapeHtml(timeAgo)}</span>
         </div>
+        <p class="text-xs text-[#735e5e] mt-1 pl-4">${escapeHtml(notif.message)}</p>
       </div>
     `;
   }).join('');
 }
 
-// 4.9 Populate Dynamic Form Options in Quick Modals
+// Populate Modal Dropdowns
 function populateModalDropdowns(options) {
   if (!options) return;
 
-  // Services Select
   const serviceSelect = document.getElementById('quickApptService');
-  if (serviceSelect && Array.isArray(options.services)) {
-    serviceSelect.innerHTML = '<option value="">Select Service...</option>' + 
-      options.services.map(s => `
-        <option value="${s.id}">${escapeHtml(s.name)} (₱${Number(s.price).toLocaleString()})</option>
-      `).join('');
+  if (serviceSelect && options.services) {
+    serviceSelect.innerHTML = '<option value="">Select a service...</option>' + 
+      options.services.map(s => `<option value="${s.id}">${escapeHtml(s.name)} — ${formatCurrency(s.price)}</option>`).join('');
   }
 
-  // Staff Select
   const staffSelect = document.getElementById('quickApptStaff');
-  if (staffSelect && Array.isArray(options.staff)) {
-    staffSelect.innerHTML = '<option value="">Select Staff...</option>' + 
-      options.staff.map(st => `
-        <option value="${st.id}">${escapeHtml(st.name)} (${escapeHtml(st.role || 'Stylist')})</option>
-      `).join('');
+  if (staffSelect && options.staff) {
+    staffSelect.innerHTML = '<option value="">Any Available Specialist</option>' + 
+      options.staff.map(st => `<option value="${st.id}">${escapeHtml(st.name)} (${escapeHtml(st.role || st.specialties || 'Stylist')})</option>`).join('');
   }
 }
 
-// 5. Quick Appointment Booking Submit
-async function handleCreateAppointment(e) {
-  e.preventDefault();
-  const token = localStorage.getItem('nelys_token');
-  const customerName = document.getElementById('quickApptCustomer').value.trim();
-  const serviceId = document.getElementById('quickApptService').value;
-  const staffId = document.getElementById('quickApptStaff').value;
-  const date = document.getElementById('quickApptDate').value;
-  const time = document.getElementById('quickApptTime').value;
+// ==========================================
+// 4. MODALS & FORMS
+// ==========================================
+function openAddAppointmentModal() {
+  const modal = document.getElementById('addAppointmentModal');
+  if (!modal) return;
 
-  if (!serviceId) {
-    showToast('Please select a service for the appointment.', 'warning');
+  const dateInput = document.getElementById('quickApptDate');
+  if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+
+  modal.showModal();
+}
+
+function closeAddAppointmentModal() {
+  const modal = document.getElementById('addAppointmentModal');
+  if (modal) modal.close();
+}
+
+async function handleCreateAppointment(e) {
+  if (e) e.preventDefault();
+  const token = localStorage.getItem('nelys_token');
+  if (!token) return;
+
+  const name = document.getElementById('quickApptCustomer')?.value.trim();
+  const serviceId = document.getElementById('quickApptService')?.value;
+  const staffId = document.getElementById('quickApptStaff')?.value;
+  const date = document.getElementById('quickApptDate')?.value;
+  const time = document.getElementById('quickApptTime')?.value;
+
+  if (!name || !serviceId || !date || !time) {
+    showToast('Please fill in customer name, service, date, and time.', 'warning');
     return;
   }
 
-  const payload = {
-    client_name: customerName,
-    client_phone: '09170000000', // Default placeholder for quick admin add
-    service_id: serviceId,
-    staff_id: staffId || null,
-    booking_date: date,
-    booking_time: convertTimeSlotTo24H(time),
-    payment_method: 'cash',
-    visit_type: 'salon'
-  };
-
   try {
-    const res = await fetch('../api/bookings', {
+    const res = await fetch('../api/appointments', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({
+        customer_name: name,
+        service_id: serviceId,
+        staff_id: staffId || null,
+        appointment_date: date,
+        appointment_time: time,
+        source: 'admin'
+      })
     });
 
     const result = await res.json();
     if (result.success) {
+      showToast('Appointment scheduled successfully!', 'success');
       closeAddAppointmentModal();
-      showToast(`Appointment successfully created for ${customerName}!`, 'success');
-      e.target.reset();
-      fetchDashboardData(); // Refresh UI
+      document.querySelector('#addAppointmentModal form')?.reset();
+      fetchDashboardData();
     } else {
-      showToast(result.message || 'Could not save appointment.', 'error');
+      showToast(result.message || 'Failed to book appointment', 'error');
     }
   } catch (err) {
-    console.error('Create appointment error:', err);
-    showToast('Failed to connect to backend server.', 'error');
+    console.error('Error booking appointment:', err);
+    showToast('Network error while creating appointment.', 'error');
   }
 }
 
-// 6. Quick Service Create Submit
-async function handleCreateService(e) {
-  e.preventDefault();
+// Quick Add Customer Modal
+function openAddCustomerModal() {
+  const modal = document.getElementById('addCustomerModal');
+  if (modal) modal.showModal();
+}
+
+function closeAddCustomerModal() {
+  const modal = document.getElementById('addCustomerModal');
+  if (modal) modal.close();
+}
+
+async function handleCreateCustomer(e) {
+  if (e) e.preventDefault();
   const token = localStorage.getItem('nelys_token');
-  const name = document.getElementById('quickServiceName').value.trim();
-  const category = document.getElementById('quickServiceCategory').value;
-  const price = document.getElementById('quickServicePrice').value;
+  const name = document.getElementById('quickCustName')?.value.trim();
+  const phone = document.getElementById('quickCustPhone')?.value.trim();
+  const address = document.getElementById('quickCustAddress')?.value.trim();
 
-  const code = 'SVC-' + name.substring(0, 3).toUpperCase() + '-' + Math.floor(100 + Math.random() * 900);
+  if (!name) {
+    showToast('Customer full name is required.', 'warning');
+    return;
+  }
 
-  const payload = {
-    code: code,
-    name: name,
-    category: category,
-    price: Number(price),
-    duration_minutes: 45
-  };
+  try {
+    const res = await fetch('../api/customers', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        name: name,
+        phone: phone,
+        email: `client_${Date.now()}@nelyssalon.com`,
+        address: address
+      })
+    });
+
+    const result = await res.json();
+    if (result.success) {
+      showToast('Customer registered successfully!', 'success');
+      closeAddCustomerModal();
+      document.querySelector('#addCustomerModal form')?.reset();
+      fetchDashboardData();
+    } else {
+      showToast(result.message || 'Failed to register customer', 'error');
+    }
+  } catch (err) {
+    console.error('Error saving customer:', err);
+    showToast('Network error while registering customer.', 'error');
+  }
+}
+
+// Quick Add Service Modal
+function openAddServiceModal() {
+  const modal = document.getElementById('addServiceModal');
+  if (modal) modal.showModal();
+}
+
+function closeAddServiceModal() {
+  const modal = document.getElementById('addServiceModal');
+  if (modal) modal.close();
+}
+
+async function handleCreateService(e) {
+  if (e) e.preventDefault();
+  const token = localStorage.getItem('nelys_token');
+  const name = document.getElementById('quickServiceName')?.value.trim();
+  const category = document.getElementById('quickServiceCategory')?.value;
+  const price = document.getElementById('quickServicePrice')?.value;
+
+  if (!name || !price) {
+    showToast('Service name and price are required.', 'warning');
+    return;
+  }
 
   try {
     const res = await fetch('../api/services', {
@@ -848,339 +785,241 @@ async function handleCreateService(e) {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify({ name, category, price: parseFloat(price) })
     });
 
     const result = await res.json();
     if (result.success) {
+      showToast('Service added to catalogue!', 'success');
       closeAddServiceModal();
-      showToast(`Service "${name}" created successfully!`, 'success');
-      e.target.reset();
+      document.querySelector('#addServiceModal form')?.reset();
       fetchDashboardData();
     } else {
-      showToast(result.message || 'Could not save service.', 'error');
+      showToast(result.message || 'Failed to add service', 'error');
     }
   } catch (err) {
-    console.error('Create service error:', err);
-    showToast('Failed to create service.', 'error');
+    console.error('Error saving service:', err);
+    showToast('Network error while saving service.', 'error');
   }
 }
 
-// 7. Quick Customer Create
-async function handleCreateCustomer(e) {
-  e.preventDefault();
-  const name = document.getElementById('quickCustName').value.trim();
-  const phone = document.getElementById('quickCustPhone').value.trim();
-
-  // Redirect to full customers page with prefilled parameters or register
-  closeAddCustomerModal();
-  showToast(`Patron "${name}" recorded. Opening customer records...`, 'info');
-  setTimeout(() => {
-    window.location.href = `customers.html?new_name=${encodeURIComponent(name)}&new_phone=${encodeURIComponent(phone)}`;
-  }, 500);
-}
-
-// 8. Quick Staff Add
-function handleCreateStaff(e) {
-  e.preventDefault();
-  const name = document.getElementById('quickStaffName').value.trim();
-  const role = document.getElementById('quickStaffRole').value;
-  closeAddStaffModal();
-  showToast(`Redirecting to Staff Management to complete ${name}'s profile...`, 'info');
-  setTimeout(() => {
-    window.location.href = `staff.html?new_name=${encodeURIComponent(name)}&new_role=${encodeURIComponent(role)}`;
-  }, 500);
-}
-
-// 9. Update Appointment Status Directly
-async function updateAppointmentStatus(bookingId, newStatus) {
-  const token = localStorage.getItem('nelys_token');
-  try {
-    const res = await fetch(`../api/bookings/${bookingId}/status`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ status: newStatus })
-    });
-
-    const result = await res.json();
-    if (result.success) {
-      showToast(`Appointment status changed to ${newStatus.toUpperCase()}.`, 'success');
-      fetchDashboardData();
-    } else {
-      showToast(result.message || 'Could not update status.', 'error');
-    }
-  } catch (err) {
-    console.error('Update status error:', err);
-    showToast('Failed to update status on server.', 'error');
-  }
-}
-
-// 10. Switch Revenue Chart Period
-function switchRevenuePeriod(period) {
-  currentPeriod = period;
-  const selectBtn = document.getElementById('revenuePeriodBtnText');
-  const periodNames = {
-    today: 'Today',
-    week: 'This Week',
-    month: 'This Month',
-    year: 'This Year'
-  };
-
-  if (selectBtn) selectBtn.textContent = periodNames[period] || 'This Week';
-
-  const dropdown = document.getElementById('revenueDropdownMenu');
-  if (dropdown) dropdown.classList.add('hidden');
-
-  if (dashboardData && dashboardData.revenue_summary) {
-    renderRevenueChartFromBackend(dashboardData.revenue_summary);
-  }
-  showToast(`Revenue view switched to ${periodNames[period]}.`, 'info');
-}
-
-function toggleRevenueDropdown() {
-  const dropdown = document.getElementById('revenueDropdownMenu');
-  if (dropdown) dropdown.classList.toggle('hidden');
-}
-
-// 11. Modal Controls
-function openAddAppointmentModal() {
-  const modal = document.getElementById('addAppointmentModal');
-  if (modal && typeof modal.showModal === 'function') {
-    const dateInput = document.getElementById('quickApptDate');
-    if (dateInput) {
-      const today = new Date().toISOString().split('T')[0];
-      dateInput.value = today;
-      dateInput.min = today;
-    }
-    modal.showModal();
-    lockBodyScroll();
-  }
-}
-
-function closeAddAppointmentModal() {
-  const modal = document.getElementById('addAppointmentModal');
-  if (modal) modal.close();
-  unlockBodyScroll();
-}
-
-function openAddCustomerModal() {
-  const modal = document.getElementById('addCustomerModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-    lockBodyScroll();
-  }
-}
-
-function closeAddCustomerModal() {
-  const modal = document.getElementById('addCustomerModal');
-  if (modal) modal.close();
-  unlockBodyScroll();
-}
-
-function openAddServiceModal() {
-  const modal = document.getElementById('addServiceModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-    lockBodyScroll();
-  }
-}
-
-function closeAddServiceModal() {
-  const modal = document.getElementById('addServiceModal');
-  if (modal) modal.close();
-  unlockBodyScroll();
-}
-
+// Quick Add Staff Modal
 function openAddStaffModal() {
   const modal = document.getElementById('addStaffModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-    lockBodyScroll();
-  }
+  if (modal) modal.showModal();
 }
 
 function closeAddStaffModal() {
   const modal = document.getElementById('addStaffModal');
   if (modal) modal.close();
-  unlockBodyScroll();
 }
 
+async function handleCreateStaff(e) {
+  if (e) e.preventDefault();
+  const token = localStorage.getItem('nelys_token');
+  const name = document.getElementById('quickStaffName')?.value.trim();
+  const role = document.getElementById('quickStaffRole')?.value;
+  const phone = document.getElementById('quickStaffPhone')?.value.trim();
+
+  if (!name) {
+    showToast('Specialist name is required.', 'warning');
+    return;
+  }
+
+  try {
+    const res = await fetch('../api/staff', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name, role, phone, is_active: 1 })
+    });
+
+    const result = await res.json();
+    if (result.success) {
+      showToast('Staff member added!', 'success');
+      closeAddStaffModal();
+      document.querySelector('#addStaffModal form')?.reset();
+      fetchDashboardData();
+    } else {
+      showToast(result.message || 'Failed to add staff member', 'error');
+    }
+  } catch (err) {
+    console.error('Error saving staff:', err);
+    showToast('Network error while saving staff.', 'error');
+  }
+}
+
+// Notifications Modal
 function openNotificationsModal() {
   const modal = document.getElementById('adminNotificationsModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-    lockBodyScroll();
-  }
+  if (modal) modal.showModal();
 }
 
 function closeNotificationsModal() {
   const modal = document.getElementById('adminNotificationsModal');
   if (modal) modal.close();
-  unlockBodyScroll();
 }
 
+// Logout Modal
 function openLogoutModal() {
   const modal = document.getElementById('logoutModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-    lockBodyScroll();
-  }
+  if (modal) modal.showModal();
 }
 
 function closeLogoutModal() {
   const modal = document.getElementById('logoutModal');
   if (modal) modal.close();
-  unlockBodyScroll();
 }
 
 function confirmLogout() {
-  closeLogoutModal();
-  showToast('Logging out of admin panel...', 'info');
   localStorage.removeItem('nelys_token');
   localStorage.removeItem('nelys_user');
-  setTimeout(() => {
-    window.location.href = '../login.html';
-  }, 400);
+  localStorage.removeItem(DASHBOARD_CACHE_KEY);
+  window.location.replace('../login.html');
 }
 
-// 12. Mobile Sidebar & Steady Listeners
-function toggleMobileSidebar(open = null) {
-  const sidebar = document.getElementById('sidebar');
-  const backdrop = document.getElementById('mobileSidebarBackdrop');
-  if (!sidebar || !backdrop) return;
-
-  const isOpen = sidebar.classList.contains('translate-x-0');
-  const shouldOpen = open !== null ? open : !isOpen;
-
-  if (shouldOpen) {
-    sidebar.classList.remove('-translate-x-full');
-    sidebar.classList.add('translate-x-0');
-    backdrop.classList.remove('opacity-0', 'pointer-events-none');
-    backdrop.classList.add('opacity-100');
-    lockBodyScroll();
-  } else {
-    sidebar.classList.remove('translate-x-0');
-    sidebar.classList.add('-translate-x-full');
-    backdrop.classList.remove('opacity-100');
-    backdrop.classList.add('opacity-0', 'pointer-events-none');
-    unlockBodyScroll();
+// Table horizontal sliding
+function scrollScheduleTable(dir) {
+  const container = document.getElementById('dashboardScheduleScrollContainer');
+  if (container) {
+    const delta = dir === 'left' ? -280 : 280;
+    container.scrollBy({ left: delta, behavior: 'smooth' });
   }
 }
 
-function setupClickOutside() {
+// Sidebar mobile toggle
+function toggleMobileSidebar(open = null) {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('mobileSidebarBackdrop');
+  if (!sidebar) return;
+
+  const isClosed = sidebar.classList.contains('-translate-x-full');
+  const shouldOpen = open !== null ? open : isClosed;
+
+  if (shouldOpen) {
+    sidebar.classList.remove('-translate-x-full');
+    if (backdrop) {
+      backdrop.classList.remove('opacity-0', 'pointer-events-none');
+      backdrop.classList.add('opacity-100');
+    }
+  } else {
+    sidebar.classList.add('-translate-x-full');
+    if (backdrop) {
+      backdrop.classList.remove('opacity-100');
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
+    }
+  }
+}
+
+// Outside click listeners
+function setupOutsideClickListeners() {
   document.addEventListener('click', (e) => {
-    const revDropdown = document.getElementById('revenueDropdownMenu');
-    const revBtn = e.target.closest('#revenuePeriodBtnText, [onclick*="toggleRevenueDropdown"]');
-    if (revDropdown && !revDropdown.contains(e.target) && !revBtn) {
-      revDropdown.classList.add('hidden');
+    const revMenu = document.getElementById('revenueDropdownMenu');
+    const revBtn = e.target.closest('button[onclick="toggleRevenueDropdown()"]');
+    if (revMenu && !revMenu.classList.contains('hidden') && !revBtn && !revMenu.contains(e.target)) {
+      revMenu.classList.add('hidden');
     }
   });
 }
 
-function setupDialogSteadyListeners() {
+function setupDialogAccessibilityListeners() {
   document.querySelectorAll('dialog').forEach(dlg => {
-    dlg.addEventListener('close', () => unlockBodyScroll());
-    dlg.addEventListener('cancel', () => unlockBodyScroll());
     dlg.addEventListener('click', (e) => {
       const rect = dlg.getBoundingClientRect();
-      const isInDialog = (
+      const inDialog = (
         rect.top <= e.clientY &&
         e.clientY <= rect.top + rect.height &&
         rect.left <= e.clientX &&
         e.clientX <= rect.left + rect.width
       );
-      if (!isInDialog) {
+      if (!inDialog) {
         dlg.close();
-        unlockBodyScroll();
       }
     });
   });
 }
 
-function lockBodyScroll() {
-  // Keeping sidebar steady: Native dialog modal handles top-layer focus & backdrop isolation
-  // without modifying document.body classes or altering vertical page scroll position
+// ==========================================
+// 5. UTILITY FUNCTIONS
+// ==========================================
+function setElText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }
 
-function unlockBodyScroll() {
-  // Preserves layout stability and eliminates upward sidebar shifts
+function formatCurrency(amount) {
+  const val = parseFloat(amount) || 0;
+  return '₱' + val.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// 13. Helpers
-function formatCurrency(val) {
-  const num = Number(val) || 0;
-  return '₱' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-function formatTimeSlot(timeStr) {
-  if (!timeStr) return '--:--';
+function formatTime12(timeStr) {
+  if (!timeStr) return '—';
+  if (timeStr.includes('AM') || timeStr.includes('PM')) return timeStr;
   const parts = timeStr.split(':');
-  let hour = parseInt(parts[0], 10);
-  const min = parts[1] || '00';
-  const ampm = hour >= 12 ? 'PM' : 'AM';
-  hour = hour % 12;
-  hour = hour ? hour : 12;
-  return `${hour}:${min} ${ampm}`;
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  return `${hours}:${minutes} ${ampm}`;
 }
 
-function convertTimeSlotTo24H(time12h) {
-  if (!time12h) return '09:00:00';
-  const [time, modifier] = time12h.split(' ');
-  let [hours, minutes] = time.split(':');
-  if (hours === '12') hours = '00';
-  if (modifier === 'PM') hours = parseInt(hours, 10) + 12;
-  return `${hours.toString().padStart(2, '0')}:${minutes.padStart(2, '0')}:00`;
+function formatTimeAgo(datetimeStr) {
+  if (!datetimeStr) return 'Just now';
+  const diffSec = Math.floor((new Date() - new Date(datetimeStr)) / 1000);
+  if (diffSec < 60) return 'Just now';
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  return `${Math.floor(diffSec / 86400)}d ago`;
 }
 
-function formatDate(dateStr) {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  if (isNaN(d)) return dateStr;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-function getInitials(name) {
-  if (!name) return 'NS';
-  const parts = name.trim().split(' ').filter(Boolean);
-  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-  return name.substring(0, 2).toUpperCase();
-}
-
-function getStatusBadgeHtml(status) {
-  const map = {
-    confirmed: 'bg-emerald-50 text-emerald-800 border-emerald-300',
-    pending: 'bg-amber-50 text-amber-800 border-amber-300',
-    completed: 'bg-blue-50 text-blue-800 border-blue-300',
-    cancelled: 'bg-rose-50 text-rose-800 border-rose-300',
-    no_show: 'bg-gray-100 text-gray-700 border-gray-300'
-  };
-  const cls = map[status] || 'bg-gray-100 text-gray-700 border-gray-300';
-  return `
-    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${cls} uppercase">
-      ${escapeHtml(status)}
-    </span>
-  `;
-}
-
-function getCustomerStatusBadgeHtml(status) {
-  if (status === 'completed') {
-    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-800 border border-blue-200">Completed</span>`;
+function getInitials(nameStr) {
+  if (!nameStr) return 'AD';
+  const clean = nameStr.replace(/atelier\s*/gi, '').trim();
+  const parts = clean.split(' ').filter(Boolean);
+  if (parts.length > 1) {
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   }
-  if (status === 'confirmed') {
-    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">Confirmed</span>`;
+  return clean.substring(0, 2).toUpperCase();
+}
+
+function getStatusBadge(status) {
+  const st = (status || 'pending').toLowerCase();
+  if (st === 'confirmed') {
+    return `<span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-blue-900 bg-blue-50 px-2.5 py-1 rounded-full border border-blue-200">
+      <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+      <span>Confirmed</span>
+    </span>`;
   }
-  if (status === 'pending') {
-    return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">Pending</span>`;
+  if (st === 'completed') {
+    return `<span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+      <span>Completed</span>
+    </span>`;
   }
-  return `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">Active</span>`;
+  if (st === 'cancelled' || st === 'no_show') {
+    return `<span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-rose-900 bg-rose-50 px-2.5 py-1 rounded-full border border-rose-200">
+      <span class="w-1.5 h-1.5 rounded-full bg-rose-600"></span>
+      <span>${st === 'no_show' ? 'No Show' : 'Cancelled'}</span>
+    </span>`;
+  }
+  return `<span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-900 bg-amber-50 px-2.5 py-1 rounded-full border border-amber-300">
+    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+    <span>Pending</span>
+  </span>`;
 }
 
 function showToast(message, type = 'info') {
-  const container = document.getElementById('toastContainer');
-  if (!container) return;
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none';
+    document.body.appendChild(container);
+  }
 
   const toast = document.createElement('div');
   const colors = {
@@ -1219,23 +1058,11 @@ function showToast(message, type = 'info') {
 }
 
 function escapeHtml(str) {
-  if (!str) return '';
+  if (str === null || str === undefined) return '';
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
-}
-
-// 14. Schedule Table Horizontal Scroll Controls
-function scrollScheduleTable(direction) {
-  const container = document.getElementById('dashboardScheduleScrollContainer');
-  if (!container) return;
-  const scrollAmount = 280;
-  if (direction === 'left') {
-    container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-  } else {
-    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-  }
 }

@@ -63,7 +63,7 @@ class CustomerController {
                 'cancelledAppointments' => (int)$c['cancelled_appointments'],
                 'pendingAppointments'   => (int)$c['pending_appointments'],
                 'totalSpent'            => (float)$c['total_spent'],
-                'totalSpentFormatted'   => '₱' . number_format((float)$c['total_spent'], 0),
+                'totalSpentFormatted'   => '₱' . number_format((float)$c['total_spent'], 2),
                 'lastVisit'             => $lastVisitText,
                 'notes'                 => $notesList,
             ];
@@ -71,7 +71,7 @@ class CustomerController {
 
         $pdo = Database::getConnection();
         $services = Service::all(true);
-        $staff = $pdo->query("SELECT id, name, role FROM staff WHERE is_active = 1 ORDER BY name ASC")->fetchAll();
+        $staff = $pdo->query("SELECT id, name, role FROM staff WHERE is_active = 1 ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
         Response::success([
             'customers' => $customers,
@@ -115,12 +115,12 @@ class CustomerController {
                 'service'  => $h['service_name'],
                 'staff'    => $h['staff_name'],
                 'amount'   => (float)$h['amount'],
-                'amountFormatted' => '₱' . number_format((float)$h['amount'], 0),
+                'amountFormatted' => '₱' . number_format((float)$h['amount'], 2),
                 'status'   => ucfirst($h['status']),
             ];
         }, $customer['history'] ?? []);
 
-        $response = [
+        $customerData = [
             'id'                    => 'CUST-' . str_pad((string)$customer['user_id'], 4, '0', STR_PAD_LEFT),
             'userId'                => (int)$customer['user_id'],
             'name'                  => $customer['name'] ?: 'Customer',
@@ -138,178 +138,108 @@ class CustomerController {
             'cancelledAppointments' => (int)$customer['cancelled_appointments'],
             'pendingAppointments'   => (int)$customer['pending_appointments'],
             'totalSpent'            => (float)$customer['total_spent'],
-            'totalSpentFormatted'   => '₱' . number_format((float)$customer['total_spent'], 0),
+            'totalSpentFormatted'   => '₱' . number_format((float)$customer['total_spent'], 2),
+            'lastVisit'             => !empty($customer['history'][0]['booking_date']) ? date('M d, Y', strtotime($customer['history'][0]['booking_date'])) : 'Never',
             'notes'                 => $notesList,
             'history'               => $formattedHistory,
         ];
 
-        Response::success($response);
+        Response::success($customerData);
     }
 
-    public function store(): void {
+    public function create(): void {
         RoleMiddleware::requireAdmin();
 
         $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
         $input = Sanitizer::cleanArray($input);
 
         $validator = Validator::make($input, [
-            'name'  => 'required|min:2|max:150',
-            'phone' => 'required',
+            'name'  => 'required',
+            'email' => 'required|email',
         ]);
 
         if ($validator->fails()) {
             Response::error('Validation failed', 422, $validator->errors());
         }
 
-        $phone = Sanitizer::cleanPhone($input['phone'] ?? '');
-        $email = trim($input['email'] ?? '');
-        if (empty($email)) {
-            $email = 'client_' . time() . '_' . rand(100, 999) . '@nelyssalon.com';
+        $cleanEmail = strtolower(trim($input['email']));
+        $existing = User::findByEmail($cleanEmail);
+        if ($existing) {
+            Response::error('A customer with this email address is already registered.', 422);
         }
 
-        // Check if user with phone/email already exists
-        $existing = User::findByPhone($phone) ?: User::findByEmail($email);
-        if ($existing) {
-            Response::error('A customer with this phone number or email is already registered.', 409);
+        $cleanPhone = !empty($input['phone']) ? Sanitizer::cleanPhone($input['phone']) : null;
+        if ($cleanPhone) {
+            $existingPhone = User::findByPhone($cleanPhone);
+            if ($existingPhone) {
+                Response::error('A customer with this phone number is already registered.', 422);
+            }
         }
 
         $tempPassword = password_hash(bin2hex(random_bytes(8)), PASSWORD_BCRYPT);
-        $userId = User::create($email, $phone, $tempPassword, 'customer');
-
-        $initialNotes = null;
-        if (!empty($input['notes'])) {
-            $initialNotes = json_encode([[
-                'id' => 'n_' . $userId . '_' . time(),
-                'text' => trim($input['notes']),
-                'date' => date('M d, Y'),
-                'author' => 'Admin'
-            ]]);
-        }
+        $userId = User::create($cleanEmail, $cleanPhone, $tempPassword, 'customer');
 
         CustomerProfile::create(
             $userId,
-            trim($input['name'] ?? $input['full_name'] ?? 'Client'),
-            $input['address'] ?? $input['home_address'] ?? null,
-            !empty($input['dob']) ? $input['dob'] : null,
+            trim($input['name']),
+            $input['address'] ?? null,
+            $input['dob'] ?? null,
             $input['gender'] ?? 'Female',
-            $initialNotes,
+            $input['notes'] ?? null,
             $input['status'] ?? 'Active',
             $input['city'] ?? 'Quezon City'
         );
 
         $customer = CustomerProfile::findByUserId($userId);
-        Response::success($customer, 'Customer registered successfully.', 201);
+        Response::success($customer, 'Customer record created successfully.', 201);
     }
 
     public function update(int $id): void {
         RoleMiddleware::requireAdmin();
 
-        $user = User::findById($id);
-        if (!$user || $user['role'] !== 'customer') {
-            Response::notFound('Customer not found.');
-        }
-
         $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
         $input = Sanitizer::cleanArray($input);
-
-        $pdo = Database::getConnection();
-
-        // Update user record (phone, email)
-        if (!empty($input['phone'])) {
-            $cleanPhone = Sanitizer::cleanPhone($input['phone']);
-            $pdo->prepare("UPDATE users SET phone = :phone WHERE id = :id")
-                ->execute(['phone' => $cleanPhone, 'id' => $id]);
-        }
-        if (!empty($input['email'])) {
-            $pdo->prepare("UPDATE users SET email = :email WHERE id = :id")
-                ->execute(['email' => trim($input['email']), 'id' => $id]);
-        }
-
-        // Update profile record
-        $updateData = [];
-        if (isset($input['name']) || isset($input['full_name'])) {
-            $updateData['full_name'] = trim($input['name'] ?? $input['full_name']);
-        }
-        if (isset($input['address']) || isset($input['home_address'])) {
-            $updateData['home_address'] = trim($input['address'] ?? $input['home_address']);
-        }
-        if (isset($input['city'])) {
-            $updateData['city'] = trim($input['city']);
-        }
-        if (isset($input['dob'])) {
-            $updateData['dob'] = !empty($input['dob']) ? $input['dob'] : null;
-        }
-        if (isset($input['gender'])) {
-            $updateData['gender'] = $input['gender'];
-        }
-        if (isset($input['status'])) {
-            $updateData['status'] = $input['status'];
-        }
-
-        // Check if customer profile exists
-        $profile = CustomerProfile::findByUserId($id);
-        if ($profile) {
-            CustomerProfile::update($id, $updateData);
-        } else {
-            CustomerProfile::create(
-                $id,
-                $updateData['full_name'] ?? 'Client',
-                $updateData['home_address'] ?? null,
-                $updateData['dob'] ?? null,
-                $updateData['gender'] ?? 'Female',
-                null,
-                $updateData['status'] ?? 'Active',
-                $updateData['city'] ?? 'Quezon City'
-            );
-        }
-
-        $updated = CustomerProfile::findByUserId($id);
-        Response::success($updated, 'Customer profile updated successfully.');
-    }
-
-    public function addNote(int $id): void {
-        RoleMiddleware::requireAdmin();
-
-        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-        $noteText = trim($input['note'] ?? $input['text'] ?? '');
-
-        if (empty($noteText)) {
-            Response::error('Note text cannot be empty.', 422);
-        }
 
         $profile = CustomerProfile::findByUserId($id);
         if (!$profile) {
             Response::notFound('Customer profile not found.');
         }
 
-        $notesList = [];
-        if (!empty($profile['notes'])) {
-            $decoded = json_decode($profile['notes'], true);
-            if (is_array($decoded)) {
-                $notesList = $decoded;
-            } else {
-                $notesList[] = [
-                    'id' => 'n_' . $id . '_1',
-                    'text' => $profile['notes'],
-                    'date' => date('M d, Y'),
-                    'author' => 'Admin'
-                ];
+        if (!empty($input['email']) || !empty($input['phone'])) {
+            $userUpdates = [];
+            if (!empty($input['email'])) {
+                $cleanEmail = strtolower(trim($input['email']));
+                $existing = User::findByEmail($cleanEmail);
+                if ($existing && (int)$existing['id'] !== $id) {
+                    Response::error('This email is already registered to another account.', 422);
+                }
+                $userUpdates['email'] = $cleanEmail;
+            }
+            if (!empty($input['phone'])) {
+                $cleanPhone = Sanitizer::cleanPhone($input['phone']);
+                $existingPhone = User::findByPhone($cleanPhone);
+                if ($existingPhone && (int)$existingPhone['id'] !== $id) {
+                    Response::error('This phone number is already registered to another account.', 422);
+                }
+                $userUpdates['phone'] = $cleanPhone;
+            }
+            if (!empty($userUpdates)) {
+                User::update($id, $userUpdates);
             }
         }
 
-        $auth = AuthMiddleware::check();
-        $authorName = $auth['email'] ? explode('@', $auth['email'])[0] : 'Admin';
+        $profileData = [];
+        if (isset($input['name'])) $profileData['full_name'] = trim($input['name']);
+        if (isset($input['address'])) $profileData['home_address'] = $input['address'];
+        if (isset($input['city'])) $profileData['city'] = $input['city'];
+        if (isset($input['dob'])) $profileData['dob'] = $input['dob'];
+        if (isset($input['gender'])) $profileData['gender'] = $input['gender'];
+        if (isset($input['status'])) $profileData['status'] = $input['status'];
+        if (isset($input['notes'])) $profileData['notes'] = $input['notes'];
 
-        array_unshift($notesList, [
-            'id'     => 'n_' . $id . '_' . time(),
-            'text'   => $noteText,
-            'date'   => date('M d, Y'),
-            'author' => ucfirst($authorName)
-        ]);
-
-        CustomerProfile::update($id, ['notes' => json_encode($notesList)]);
-
-        Response::success($notesList, 'Note added successfully.');
+        CustomerProfile::update($id, $profileData);
+        $updated = CustomerProfile::findByUserId($id);
+        Response::success($updated, 'Customer profile updated successfully.');
     }
 
     public function destroy(int $id): void {
@@ -317,55 +247,10 @@ class CustomerController {
 
         $user = User::findById($id);
         if (!$user || $user['role'] !== 'customer') {
-            Response::notFound('Customer record not found.');
+            Response::notFound('Customer not found.');
         }
 
         CustomerProfile::delete($id);
-        Response::success(null, 'Customer record and salon history deleted successfully.');
-    }
-
-    public function getProfile(): void {
-        $auth = AuthMiddleware::check();
-
-        $profile = CustomerProfile::findByUserId($auth['id']);
-        if (!$profile) {
-            $user = User::findById($auth['id']);
-            $profile = [
-                'user_id' => $auth['id'],
-                'full_name' => $user['email'] ? explode('@', $user['email'])[0] : 'Client',
-                'email' => $user['email'] ?? '',
-                'phone' => $user['phone'] ?? '',
-                'home_address' => '',
-            ];
-        }
-
-        Response::success($profile);
-    }
-
-    public function updateProfile(): void {
-        $auth = AuthMiddleware::check();
-
-        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-        $input = Sanitizer::cleanArray($input);
-
-        $validator = Validator::make($input, [
-            'full_name' => 'min:2|max:150',
-        ]);
-
-        if ($validator->fails()) {
-            Response::error('Validation failed', 422, $validator->errors());
-        }
-
-        CustomerProfile::update($auth['id'], $input);
-
-        // Update phone in users table if provided
-        if (isset($input['phone'])) {
-            $pdo = Database::getConnection();
-            $stmt = $pdo->prepare("UPDATE users SET phone = :phone WHERE id = :id");
-            $stmt->execute(['phone' => $input['phone'], 'id' => $auth['id']]);
-        }
-
-        $updated = CustomerProfile::findByUserId($auth['id']);
-        Response::success($updated, 'Profile updated successfully.');
+        Response::success([], 'Customer account deleted successfully.');
     }
 }

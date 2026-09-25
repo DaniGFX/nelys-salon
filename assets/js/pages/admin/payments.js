@@ -1,3 +1,6 @@
+// Seamless 0ms Cache Preload
+const PAYMENTS_CACHE_KEY = 'nelys_admin_payments_cache';
+let lastRendered_payments_Hash = '';
 /**
  * Nely's Salon — Admin Payments Controller
  * Directly connected to backend database API (/api/payments, /api/dashboard/stats)
@@ -1170,7 +1173,7 @@ function toggleMobileSidebar(open) {
 
 // ================= TOAST NOTIFICATIONS =================
 function showToast(message, type = 'info') {
-  let container = document.getElementById('adminToastContainer');
+  let container = document.getElementById('toastContainer');
   if (!container) {
     container = document.createElement('div');
     container.id = 'adminToastContainer';
@@ -1214,4 +1217,9 @@ function showToast(message, type = 'info') {
     toast.classList.add('opacity-0', 'translate-y-2');
     setTimeout(() => toast.remove(), 300);
   }, 4000);
+}
+
+function safeSetText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }

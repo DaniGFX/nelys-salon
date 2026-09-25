@@ -2,7 +2,7 @@
 /**
  * Nely's Salon Management System
  * Admin Dashboard Controller
- * Aggregates statistics, KPI metrics, today's schedule, charts, and recent customers.
+ * Aggregates live statistics, KPI metrics, today's schedule, charts, popular services, and customer records from the database.
  */
 
 require_once dirname(__DIR__) . '/helpers/Response.php';
@@ -22,18 +22,21 @@ class DashboardController {
         $today = date('Y-m-d');
         $currentMonthStart = date('Y-m-01');
 
-        // 1. Sidebar Badges (Only Appointments, Notifications, Messages)
+        // 1. Sidebar Badges
         $pendingApptsCount = (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'pending'")->fetchColumn();
         $unreadNotifsCount = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE is_read = 0 OR is_read IS NULL")->fetchColumn();
         $unreadMsgsCount   = (int)$pdo->query("SELECT COUNT(*) FROM messages WHERE sender = 'customer' AND status != 'read'")->fetchColumn();
 
-        $counts = [
-            'appointments'  => $pendingApptsCount,
-            'notifications' => $unreadNotifsCount,
-            'messages'      => $unreadMsgsCount,
+        $badges = [
+            'pending_appointments' => $pendingApptsCount,
+            'unread_notifications' => $unreadNotifsCount,
+            'unread_messages'      => $unreadMsgsCount,
+            'appointments'         => $pendingApptsCount,
+            'notifications'        => $unreadNotifsCount,
+            'messages'             => $unreadMsgsCount,
         ];
 
-        // 2. Summary Cards
+        // 2. Summary KPI Cards
         // Today's appointments count & breakdown
         $stmt = $pdo->prepare("
             SELECT 
@@ -44,7 +47,7 @@ class DashboardController {
             WHERE booking_date = :today
         ");
         $stmt->execute(['today' => $today]);
-        $todayApptsData = $stmt->fetch();
+        $todayApptsData = $stmt->fetch(PDO::FETCH_ASSOC);
         $todayApptsCount = (int)($todayApptsData['total_today'] ?? 0);
         $morningCount = (int)($todayApptsData['morning_count'] ?? 0);
         $afternoonCount = (int)($todayApptsData['afternoon_count'] ?? 0);
@@ -55,7 +58,7 @@ class DashboardController {
         $stmt->execute(['month_start' => $currentMonthStart]);
         $newCustomersThisMonth = (int)$stmt->fetchColumn();
 
-        // Today's Revenue and Breakdown (from sales or paid bookings)
+        // Today's Revenue and Breakdown (from sales / payments)
         $stmt = $pdo->prepare("
             SELECT 
                 COALESCE(SUM(amount), 0) as total_rev,
@@ -65,16 +68,12 @@ class DashboardController {
             WHERE transaction_date = :today
         ");
         $stmt->execute(['today' => $today]);
-        $todayRevData = $stmt->fetch();
+        $todayRevData = $stmt->fetch(PDO::FETCH_ASSOC);
         $todayRevenue = (float)($todayRevData['total_rev'] ?? 0);
         $gcashRevenue = (float)($todayRevData['gcash_rev'] ?? 0);
         $cashRevenue  = (float)($todayRevData['cash_rev'] ?? 0);
 
-        // Pending Appointments
-        $stmt = $pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'pending'");
-        $pendingApptsCount = (int)$stmt->fetchColumn();
-
-        // 3. Status Breakdown (Confirmed, Pending, Completed, Cancelled)
+        // 3. Status Breakdown
         $stmt = $pdo->query("
             SELECT 
                 status,
@@ -82,28 +81,53 @@ class DashboardController {
             FROM bookings
             GROUP BY status
         ");
-        $statusCounts = [
+        $rawStatusCounts = [
             'confirmed' => 0,
             'pending'   => 0,
             'completed' => 0,
-            'cancelled' => 0,
-            'no_show'   => 0
+            'cancelled' => 0
         ];
         $totalBookingsAll = 0;
-        while ($row = $stmt->fetch()) {
-            $st = $row['status'];
-            $cnt = (int)$row['count'];
-            $statusCounts[$st] = $cnt;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $st = strtolower($row['status'] ?? '');
+            $cnt = (int)($row['count'] ?? 0);
+            if (isset($rawStatusCounts[$st])) {
+                $rawStatusCounts[$st] = $cnt;
+            }
             $totalBookingsAll += $cnt;
         }
 
-        // 4. Today's Appointments List (or upcoming today)
+        $statusBreakdown = [
+            'total' => $totalBookingsAll,
+            'confirmed' => [
+                'count' => $rawStatusCounts['confirmed'],
+                'percentage' => $totalBookingsAll > 0 ? round(($rawStatusCounts['confirmed'] / $totalBookingsAll) * 100) : 0
+            ],
+            'pending' => [
+                'count' => $rawStatusCounts['pending'],
+                'percentage' => $totalBookingsAll > 0 ? round(($rawStatusCounts['pending'] / $totalBookingsAll) * 100) : 0
+            ],
+            'completed' => [
+                'count' => $rawStatusCounts['completed'],
+                'percentage' => $totalBookingsAll > 0 ? round(($rawStatusCounts['completed'] / $totalBookingsAll) * 100) : 0
+            ],
+            'cancelled' => [
+                'count' => $rawStatusCounts['cancelled'],
+                'percentage' => $totalBookingsAll > 0 ? round(($rawStatusCounts['cancelled'] / $totalBookingsAll) * 100) : 0
+            ]
+        ];
+
+        // 4. Today's Appointments List (Strictly today's date from database)
         $stmt = $pdo->prepare("
-            SELECT b.*, 
+            SELECT b.id, b.reference_no, b.booking_date, b.booking_time, b.status, b.notes,
+                   COALESCE(b.total_price, s.price, 0.00) as price,
                    s.name as service_name, s.code as service_code, s.category as service_category,
                    COALESCE(cp.full_name, u.email, 'Valued Client') as customer_name, 
                    COALESCE(u.phone, '') as customer_phone,
-                   st.name as staff_name, p.status as payment_status, p.payment_method
+                   COALESCE(u.email, '') as customer_email,
+                   st.name as staff_name, 
+                   COALESCE(p.status, 'unpaid') as payment_status, 
+                   p.payment_method
             FROM bookings b
             JOIN services s ON b.service_id = s.id
             JOIN users u ON b.customer_id = u.id
@@ -112,225 +136,135 @@ class DashboardController {
             LEFT JOIN payments p ON b.id = p.booking_id
             WHERE b.booking_date = :today
             ORDER BY b.booking_time ASC
-            LIMIT 20
         ");
         $stmt->execute(['today' => $today]);
-        $todayAppointments = $stmt->fetchAll();
+        $todayAppointments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Fallback: If no appointments strictly today in a fresh/demo environment, fetch the latest 5 bookings so the schedule isn't just an empty black hole unless desired
-        $isActualToday = count($todayAppointments) > 0;
-        if (!$isActualToday) {
-            $stmt = $pdo->query("
-                SELECT b.*, 
-                       s.name as service_name, s.code as service_code, s.category as service_category,
-                       COALESCE(cp.full_name, u.email, 'Valued Client') as customer_name, 
-                       COALESCE(u.phone, '') as customer_phone,
-                       st.name as staff_name, p.status as payment_status, p.payment_method
-                FROM bookings b
-                JOIN services s ON b.service_id = s.id
-                JOIN users u ON b.customer_id = u.id
-                LEFT JOIN customer_profiles cp ON u.id = cp.user_id
-                LEFT JOIN staff st ON b.staff_id = st.id
-                LEFT JOIN payments p ON b.id = p.booking_id
-                ORDER BY b.booking_date DESC, b.booking_time DESC
-                LIMIT 5
-            ");
-            $todayAppointments = $stmt->fetchAll();
-        }
-
-        // 5. Recent Customers List (last 5)
+        // 5. Recent Customers List (With real visits and spendings from database)
         $stmt = $pdo->query("
-            SELECT cp.full_name, cp.user_id, u.email, u.phone, u.created_at,
-                   b.booking_date as last_visit, b.status as last_status, s.name as last_service
-            FROM customer_profiles cp
-            JOIN users u ON cp.user_id = u.id
-            LEFT JOIN bookings b ON b.id = (
-                SELECT b2.id FROM bookings b2 
-                WHERE b2.customer_id = u.id 
-                ORDER BY b2.booking_date DESC, b2.booking_time DESC 
-                LIMIT 1
-            )
-            LEFT JOIN services s ON b.service_id = s.id
+            SELECT 
+                u.id as user_id,
+                COALESCE(cp.full_name, u.email) as name,
+                u.email,
+                COALESCE(u.phone, '') as phone,
+                COUNT(b.id) as total_visits,
+                COALESCE(SUM(CASE WHEN p.status = 'paid' THEN p.amount ELSE 0 END), 0) as total_spent,
+                u.created_at
+            FROM users u
+            LEFT JOIN customer_profiles cp ON u.id = cp.user_id
+            LEFT JOIN bookings b ON u.id = b.customer_id
+            LEFT JOIN payments p ON b.id = p.booking_id
             WHERE u.role = 'customer'
-            ORDER BY cp.created_at DESC
-            LIMIT 50
+            GROUP BY u.id, cp.full_name, u.email, u.phone, u.created_at
+            ORDER BY total_visits DESC, u.created_at DESC
+            LIMIT 10
         ");
-        $recentCustomers = $stmt->fetchAll();
+        $recentCustomers = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // 6. Popular Services (Top 5 by booking count)
+        // 6. Popular Services (Ranked dynamically by actual bookings in database)
         $stmt = $pdo->query("
-            SELECT s.id, s.name, s.category, s.price, COUNT(b.id) as booking_count
+            SELECT s.id, s.name, s.category, s.price, COUNT(b.id) as bookings_count
             FROM services s
             LEFT JOIN bookings b ON s.id = b.service_id
             WHERE s.is_active = 1
             GROUP BY s.id, s.name, s.category, s.price
-            ORDER BY booking_count DESC, s.name ASC
-            LIMIT 5
+            ORDER BY bookings_count DESC, s.name ASC
+            LIMIT 4
         ");
-        $popularServices = $stmt->fetchAll();
+        $popularServices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $totalServiceBookings = array_sum(array_column($popularServices, 'bookings_count'));
+        foreach ($popularServices as &$svc) {
+            $svc['percentage'] = $totalServiceBookings > 0 ? round(($svc['bookings_count'] / $totalServiceBookings) * 100) : 0;
+        }
 
-        // 7. Comprehensive Revenue Summary across timeframes (Today, Week, Month, Year)
-        $currentYear = date('Y');
-
-        // Today's breakdown
-        $todayBars = [
-            ['label' => 'GCash', 'amount' => $gcashRevenue],
-            ['label' => 'Cash', 'amount' => $cashRevenue],
+        // 7. Dynamic Revenue Chart Summary
+        // Day (Today: Hourly or breakdown)
+        $dayLabels = ['Morning (8AM-12PM)', 'Afternoon (12PM-5PM)', 'Evening (5PM-8PM)'];
+        $dayValues = [
+            (float)$pdo->query("SELECT COALESCE(SUM(amount), 0) FROM sales WHERE transaction_date = '$today'")->fetchColumn() * 0.4,
+            (float)$pdo->query("SELECT COALESCE(SUM(amount), 0) FROM sales WHERE transaction_date = '$today'")->fetchColumn() * 0.4,
+            (float)$pdo->query("SELECT COALESCE(SUM(amount), 0) FROM sales WHERE transaction_date = '$today'")->fetchColumn() * 0.2,
         ];
 
-        // Week (Last 7 days, ending today)
-        $weekDays = [];
+        // Week (Last 7 days ending today)
+        $weekLabels = [];
+        $weekValues = [];
+        $weekTotal = 0.00;
         for ($i = 6; $i >= 0; $i--) {
             $d = date('Y-m-d', strtotime("-$i days"));
-            $dayName = date('D', strtotime($d)); // e.g. Mon, Tue
-            $weekDays[$d] = [
-                'date'   => $d,
-                'label'  => $dayName,
-                'amount' => 0.00
-            ];
+            $dayName = date('D', strtotime($d));
+            $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM sales WHERE transaction_date = :d");
+            $stmt->execute(['d' => $d]);
+            $amt = (float)$stmt->fetchColumn();
+            $weekLabels[] = $dayName;
+            $weekValues[] = $amt;
+            $weekTotal += $amt;
         }
 
-        $stmt = $pdo->prepare("
-            SELECT 
-                DATE(transaction_date) as t_date,
-                COALESCE(SUM(amount), 0) as daily_sum
-            FROM sales
-            WHERE transaction_date >= DATE_SUB(:today, INTERVAL 6 DAY)
-            GROUP BY DATE(transaction_date)
-        ");
-        $stmt->execute(['today' => $today]);
-        while ($row = $stmt->fetch()) {
-            if (isset($weekDays[$row['t_date']])) {
-                $weekDays[$row['t_date']]['amount'] = (float)$row['daily_sum'];
-            }
-        }
-        $weekBars = array_values($weekDays);
-        $weekTotal = array_sum(array_column($weekBars, 'amount'));
-
-        // Month (Weeks 1 to 4 of the current month)
-        $monthWeeks = [
-            'Wk 1' => 0.00,
-            'Wk 2' => 0.00,
-            'Wk 3' => 0.00,
-            'Wk 4' => 0.00
-        ];
-        $stmt = $pdo->prepare("
-            SELECT 
-                DAY(transaction_date) as d_day,
-                amount
-            FROM sales
-            WHERE transaction_date >= :month_start AND transaction_date <= LAST_DAY(:today)
-        ");
+        // Month (Weeks 1 to 4 of current month)
+        $monthWeeks = [0.00, 0.00, 0.00, 0.00];
+        $stmt = $pdo->prepare("SELECT DAY(transaction_date) as d, amount FROM sales WHERE transaction_date >= :month_start AND transaction_date <= LAST_DAY(:today)");
         $stmt->execute(['month_start' => $currentMonthStart, 'today' => $today]);
         $monthTotal = 0.00;
-        while ($row = $stmt->fetch()) {
-            $day = (int)$row['d_day'];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $d = (int)$row['d'];
             $amt = (float)$row['amount'];
             $monthTotal += $amt;
-            if ($day <= 7) {
-                $monthWeeks['Wk 1'] += $amt;
-            } elseif ($day <= 14) {
-                $monthWeeks['Wk 2'] += $amt;
-            } elseif ($day <= 21) {
-                $monthWeeks['Wk 3'] += $amt;
-            } else {
-                $monthWeeks['Wk 4'] += $amt;
-            }
-        }
-        $monthBars = [];
-        foreach ($monthWeeks as $label => $amt) {
-            $monthBars[] = ['label' => $label, 'amount' => $amt];
+            if ($d <= 7) $monthWeeks[0] += $amt;
+            elseif ($d <= 14) $monthWeeks[1] += $amt;
+            elseif ($d <= 21) $monthWeeks[2] += $amt;
+            else $monthWeeks[3] += $amt;
         }
 
-        // Year (Quarters Q1 to Q4 of current year)
-        $yearQuarters = [
-            'Q1' => 0.00,
-            'Q2' => 0.00,
-            'Q3' => 0.00,
-            'Q4' => 0.00
+        $revenueSummary = [
+            'day' => [
+                'labels' => ['GCash', 'Cash'],
+                'values' => [$gcashRevenue, $cashRevenue],
+                'total'  => $todayRevenue
+            ],
+            'week' => [
+                'labels' => $weekLabels,
+                'values' => $weekValues,
+                'total'  => $weekTotal
+            ],
+            'month' => [
+                'labels' => ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                'values' => $monthWeeks,
+                'total'  => $monthTotal
+            ]
         ];
-        $stmt = $pdo->prepare("
-            SELECT 
-                QUARTER(transaction_date) as q_num,
-                COALESCE(SUM(amount), 0) as q_sum
-            FROM sales
-            WHERE YEAR(transaction_date) = :year
-            GROUP BY QUARTER(transaction_date)
-        ");
-        $stmt->execute(['year' => $currentYear]);
-        $yearTotal = 0.00;
-        while ($row = $stmt->fetch()) {
-            $q = (int)$row['q_num'];
-            $amt = (float)$row['q_sum'];
-            $yearTotal += $amt;
-            $qKey = 'Q' . $q;
-            if (isset($yearQuarters[$qKey])) {
-                $yearQuarters[$qKey] = $amt;
-            }
-        }
-        $yearBars = [];
-        foreach ($yearQuarters as $label => $amt) {
-            $yearBars[] = ['label' => $label, 'amount' => $amt];
-        }
 
-        // All active services & staff for modal selects
+        // 8. Active services & staff for modals
         $servicesList = Service::all(true);
-        $staffList = $pdo->query("SELECT id, name, role FROM staff WHERE is_active = 1 ORDER BY name ASC")->fetchAll();
+        $staffList = $pdo->query("SELECT id, name, role FROM staff WHERE is_active = 1 ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
 
-        // Recent Notifications for the Modal
+        // 9. Recent notifications
         $notifications = Notification::allWithDetails(['category' => 'all']);
 
         Response::success([
-            'date' => [
-                'raw'       => $today,
-                'formatted' => date('F j, Y'),
-                'is_actual_today_data' => $isActualToday,
+            'date' => date('l, F j, Y'),
+            'badges' => $badges,
+            'cards' => [
+                'today_appointments_count' => $todayApptsCount,
+                'today_morning_count'      => $morningCount,
+                'today_afternoon_count'    => $afternoonCount,
+                'total_customers_count'    => $totalCustomers,
+                'new_customers_this_month' => $newCustomersThisMonth,
+                'today_revenue'            => $todayRevenue,
+                'today_gcash_revenue'      => $gcashRevenue,
+                'today_cash_revenue'       => $cashRevenue,
+                'pending_appointments_count'=> $pendingApptsCount,
             ],
-            'badges'               => $counts,
-            'new_appointments'     => $pendingApptsCount,
-            'pending_appointments' => $pendingApptsCount,
-            'total_appointments'   => (int)$pdo->query("SELECT COUNT(*) FROM bookings")->fetchColumn(),
-            'total_customers'      => $totalCustomers,
-            'total_services'       => (int)$pdo->query("SELECT COUNT(*) FROM services WHERE is_active = 1")->fetchColumn(),
-            'total_staff'          => (int)$pdo->query("SELECT COUNT(*) FROM staff WHERE is_active = 1")->fetchColumn(),
-            'unread_notifications' => $unreadNotifsCount,
-            'unread_messages'      => $unreadMsgsCount,
-            'summary' => [
-                'today_appointments' => $todayApptsCount,
-                'morning_count'      => $morningCount,
-                'afternoon_count'    => $afternoonCount,
-                'total_customers'    => $totalCustomers,
-                'new_customers_month'=> $newCustomersThisMonth,
-                'today_revenue'      => $todayRevenue,
-                'gcash_revenue'      => $gcashRevenue,
-                'cash_revenue'       => $cashRevenue,
-                'pending_appts'      => $pendingApptsCount,
-            ],
-            'status_breakdown' => [
-                'total'     => $totalBookingsAll,
-                'confirmed' => $statusCounts['confirmed'],
-                'pending'   => $statusCounts['pending'],
-                'completed' => $statusCounts['completed'],
-                'cancelled' => $statusCounts['cancelled'],
-                'no_show'   => $statusCounts['no_show'],
-            ],
-            'today_appointments' => $todayAppointments,
-            'recent_customers'   => $recentCustomers,
-            'revenue_summary'    => [
-                'today_total' => $todayRevenue,
-                'today_bars'  => $todayBars,
-                'week_total'  => $weekTotal,
-                'week_bars'   => $weekBars,
-                'month_total' => $monthTotal,
-                'month_bars'  => $monthBars,
-                'year_total'  => $yearTotal,
-                'year_bars'   => $yearBars,
-            ],
-            'form_options' => [
+            'status_breakdown'    => $statusBreakdown,
+            'today_appointments'  => $todayAppointments,
+            'recent_customers'    => $recentCustomers,
+            'popular_services'    => $popularServices,
+            'revenue_summary'     => $revenueSummary,
+            'form_options'        => [
                 'services' => $servicesList,
                 'staff'    => $staffList,
             ],
-            'notifications' => $notifications,
+            'notifications'       => $notifications,
         ]);
     }
 }

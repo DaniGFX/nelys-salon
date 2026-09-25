@@ -1,3 +1,6 @@
+// Seamless 0ms Cache Preload
+const SETTINGS_CACHE_KEY = 'nelys_admin_settings_cache';
+let lastRendered_settings_Hash = '';
 /**
  * Nely's Salon — Admin Settings Controller
  * Directly connected to backend REST API (/api/settings, /api/dashboard/stats)
@@ -961,7 +964,7 @@ function handleConfirmLogout() {
 }
 
 function showToast(message, type = 'info') {
-  let toastContainer = document.getElementById('adminToastContainer');
+  let toastContainer = document.getElementById('toastContainer');
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.id = 'adminToastContainer';
@@ -1006,4 +1009,9 @@ function updateTimeBadge() {
   clockEl.textContent = `${dateStr} · ${timeStr}`;
 
   setTimeout(updateTimeBadge, 1000);
+}
+
+function safeSetText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }

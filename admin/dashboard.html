@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard — Nely’s Salon | Salon Management System</title>
+  <title>Admin Dashboard — Nely's Salon | Salon Management System</title>
   <meta name="description"
     content="Comprehensive salon management dashboard for Nely's Salon: live appointments, daily revenue, customer records, staff schedules, and quick actions.">
 
@@ -75,6 +75,33 @@
       backdrop-filter: blur(2px);
     }
   </style>
+
+    <!-- Instant Synchronous Auth Guard & 0ms Pre-Hydrator -->
+  <script>
+    (function() {
+      try {
+        var token = localStorage.getItem('nelys_token');
+        var userJson = localStorage.getItem('nelys_user');
+        if (!token || !userJson) {
+          window.location.replace('../login.html');
+          return;
+        }
+        var user = JSON.parse(userJson);
+        if (user.role !== 'admin') {
+          window.location.replace('../customer/booking.html');
+          return;
+        }
+        // Pre-parse cache into window for instant 0ms paint
+        var cached = localStorage.getItem('nelys_admin_dashboard_cache');
+        if (cached) {
+          window.__PRELOADED_DASHBOARD__ = JSON.parse(cached);
+        }
+      } catch (e) {
+        window.location.replace('../login.html');
+      }
+    })();
+  </script>
+
 </head>
 
 <body
@@ -94,7 +121,7 @@
           class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover">
         <div>
           <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
-            Nely’s Salon
+            Nely's Salon
           </span>
           <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
             Admin Panel
@@ -135,7 +162,7 @@
             class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
           <div>
             <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
-              Nely’s Salon
+              Nely's Salon
             </h1>
             <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
               Admin Panel
@@ -308,10 +335,10 @@
         </div>
         <div class="mt-4">
           <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e] block">Today's Appointments</span>
-          <h3 id="dashboardTodayAppts" class="font-serif text-3xl sm:text-4xl font-extrabold text-[#541A1A] mt-1">--</h3>
+          <h3 id="dashboardTodayAppts" class="font-serif text-3xl sm:text-4xl font-extrabold text-[#541A1A] mt-1">0</h3>
           <p class="text-xs text-[#735e5e] mt-1.5 flex items-center gap-1.5">
             <i class="fa-regular fa-clock text-[#810B38]"></i>
-            <span id="dashboardApptsBreakdown">-- Morning · -- Afternoon</span>
+            <span id="dashboardApptsBreakdown">0 Morning • 0 Afternoon</span>
           </p>
         </div>
       </article>
@@ -331,10 +358,10 @@
         </div>
         <div class="mt-4">
           <span class="text-xs font-bold uppercase tracking-wider text-[#735e5e] block">Total Customers</span>
-          <h3 id="dashboardTotalCustomers" class="font-serif text-3xl sm:text-4xl font-extrabold text-[#541A1A] mt-1">--</h3>
+          <h3 id="dashboardTotalCustomers" class="font-serif text-3xl sm:text-4xl font-extrabold text-[#541A1A] mt-1">0</h3>
           <p class="text-xs text-[#735e5e] mt-1.5 flex items-center gap-1.5">
             <i class="fa-solid fa-heart text-[#810B38]"></i>
-            <span>Registered salon patrons club</span>
+            <span>Registered salon patrons</span>
           </p>
         </div>
       </article>

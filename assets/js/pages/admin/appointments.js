@@ -4,10 +4,15 @@
  * Handles real-time search, multi-criteria filtering (Date, Status, Staff, Service),
  * live KPI summary counters, appointment details modal, dynamic customer/service/staff dropdowns,
  * manual booking creation, editing, quick confirmation, rescheduling, cancellation, and deletion.
+ * 100% Dynamic Database Binding — Zero Hardcoded Mocks — Zero Flickering
  */
+
+// Cache Key
+const APPOINTMENTS_CACHE_KEY = 'nelys_admin_appointments_cache';
 
 // Live Global State
 let appointmentsData = [];
+let lastRenderedApptsHash = '';
 let servicesList = [];
 let staffList = [];
 let customersList = [];
@@ -39,8 +44,71 @@ let paginationState = {
 let currentActionAppointmentId = null;
 let isApptModalScrollLocked = false;
 
+// Normalize backend booking item to standard format
+function normalizeBookingItem(b) {
+  if (!b) return null;
+  const rawDate = b.booking_date || '';
+  const rawTime = b.booking_time || '';
+  const rawStatus = (b.status || 'pending').toLowerCase();
+  const rawPaymentStatus = (b.payment_status || 'pending').toLowerCase();
+  const priceNum = parseFloat(b.total_price || b.price || 0);
+
+  return {
+    id: b.id,
+    reference_no: b.reference_no,
+    displayId: b.reference_no || ('APPT-' + String(b.id).padStart(5, '0')),
+    customer_id: b.customer_id,
+    customer: b.customer_name || (b.customer_email ? b.customer_email.split('@')[0] : 'Patron'),
+    phone: b.customer_phone || b.phone || '—',
+    email: b.customer_email || b.email || '',
+    service_id: b.service_id,
+    service: b.service_name || 'Salon Service',
+    price: priceNum,
+    priceFormatted: '₱' + priceNum.toLocaleString('en-PH', { minimumFractionDigits: 2 }),
+    staff_id: b.staff_id,
+    staff: b.staff_name || 'Unassigned',
+    date: rawDate,
+    dateFormatted: formatDateString(rawDate),
+    time: formatTimeString(rawTime),
+    rawTime: rawTime,
+    status: rawStatus,
+    paymentStatus: rawPaymentStatus === 'paid' ? 'Paid' : (rawPaymentStatus === 'partial' ? 'Partial' : 'Unpaid'),
+    paymentMethod: b.payment_method ? (b.payment_method.toUpperCase() === 'GCASH' ? 'GCash' : (b.payment_method.toLowerCase() === 'bank_transfer' ? 'Bank Transfer' : 'Cash')) : 'Cash',
+    notes: b.notes || '',
+    visit_type: b.visit_type || 'salon',
+    home_address: b.home_address || ''
+  };
+}
+
+// Instant SWR Cache Hydration (0ms render, zero layout shift)
+function hydrateAppointmentsFromCache() {
+  try {
+    const data = window.__PRELOADED_APPOINTMENTS__ || JSON.parse(localStorage.getItem(APPOINTMENTS_CACHE_KEY) || 'null');
+    if (cached) {
+      const data = JSON.parse(cached);
+      if (data && typeof data === 'object') {
+        const rawBookings = data.bookings || [];
+        servicesList = data.services || [];
+        staffList = data.staff || [];
+        customersList = data.customers || [];
+        summaryMetrics = data.summary || summaryMetrics;
+
+        appointmentsData = rawBookings.map(normalizeBookingItem).filter(Boolean);
+
+        populateDropdowns();
+        renderSummaryCounters();
+        renderAppointmentsTable();
+        updateSidebarBadges();
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read appointments cache:', err);
+  }
+}
+
 // ================= INITIALIZATION & AUTH =================
 document.addEventListener('DOMContentLoaded', () => {
+  hydrateAppointmentsFromCache();
   checkAdminAuth();
   setupEventListeners();
   setupDialogSteadyListeners();
@@ -52,7 +120,7 @@ function checkAdminAuth() {
   const userJson = localStorage.getItem('nelys_user');
 
   if (!token) {
-    window.location.href = '../login.html';
+    window.location.replace('../login.html');
     return;
   }
 
@@ -60,6 +128,10 @@ function checkAdminAuth() {
   if (userJson) {
     try {
       const user = JSON.parse(userJson);
+      if (user.role !== 'admin') {
+        window.location.replace('../customer/booking.html');
+        return;
+      }
       let rawName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Admin');
       rawName = rawName.replace(/atelier\s*/gi, '').trim();
       if (rawName && rawName.toLowerCase() !== 'admin') {
@@ -92,15 +164,15 @@ function getAuthHeaders() {
 
 // Helper to get local YYYY-MM-DD
 function getLocalDateString(dateObj = new Date()) {
-  const y = dateObj.getFullYear();
-  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-  const d = String(dateObj.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  const year = dateObj.getFullYear();
+  const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const day = String(dateObj.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 // Helper to format date string to human readable (e.g. Sept 25, 2026)
 function formatDateString(dateStr) {
-  if (!dateStr) return 'N/A';
+  if (!dateStr) return '—';
   const parts = dateStr.split('-');
   if (parts.length !== 3) return dateStr;
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
@@ -143,69 +215,50 @@ async function fetchAppointments() {
   try {
     const res = await fetch('../api/bookings', {
       method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include'
+      headers: getAuthHeaders()
     });
 
     if (res.status === 401 || res.status === 403) {
       showToast('Session expired. Redirecting to login...', 'warning');
-      setTimeout(() => { window.location.href = '../login.html'; }, 1200);
+      setTimeout(() => { window.location.replace('../login.html'); }, 1200);
       return;
     }
 
     const result = await res.json();
     if (result.success && result.data) {
-      const rawBookings = result.data.bookings || [];
+      const freshHash = JSON.stringify(result.data);
+      if (freshHash === lastRenderedApptsHash) {
+        return; // Zero-flicker: data is identical, skip DOM re-render
+      }
+      lastRenderedApptsHash = freshHash;
+      try {
+        localStorage.setItem(APPOINTMENTS_CACHE_KEY, JSON.stringify(result.data));
+      } catch (cacheErr) {
+        console.warn('Failed to save appointments cache:', cacheErr);
+      }
+
+      const rawBookings = result.data.bookings || (Array.isArray(result.data) ? result.data : []);
       servicesList = result.data.services || [];
       staffList = result.data.staff || [];
       customersList = result.data.customers || [];
       summaryMetrics = result.data.summary || summaryMetrics;
 
-      // Normalize bookings
-      appointmentsData = rawBookings.map(b => {
-        const rawDate = b.booking_date || '';
-        const rawTime = b.booking_time || '';
-        const rawStatus = (b.status || 'pending').toLowerCase();
-        const rawPaymentStatus = (b.payment_status || 'pending').toLowerCase();
-        const priceNum = parseFloat(b.total_price || 0);
-
-        return {
-          id: b.id,
-          reference_no: b.reference_no,
-          displayId: b.reference_no || `APPT-${String(b.id).padStart(5, '0')}`,
-          customer_id: b.customer_id,
-          customer: b.customer_name || (b.customer_email ? b.customer_email.split('@')[0] : 'Patron'),
-          phone: b.customer_phone || b.phone || 'N/A',
-          email: b.customer_email || b.email || '',
-          service_id: b.service_id,
-          service: b.service_name || 'Salon Service',
-          price: priceNum,
-          priceFormatted: `₱${priceNum.toLocaleString()}`,
-          staff_id: b.staff_id,
-          staff: b.staff_name || 'Unassigned',
-          date: rawDate,
-          dateFormatted: formatDateString(rawDate),
-          time: formatTimeString(rawTime),
-          rawTime: rawTime,
-          status: rawStatus,
-          paymentStatus: rawPaymentStatus === 'paid' ? 'Paid' : (rawPaymentStatus === 'partial' ? 'Partial' : 'Unpaid'),
-          paymentMethod: b.payment_method ? (b.payment_method.toUpperCase() === 'GCASH' ? 'GCash' : (b.payment_method.toLowerCase() === 'bank_transfer' ? 'Bank Transfer' : 'Cash')) : 'Cash',
-          notes: b.notes || '',
-          visit_type: b.visit_type || 'salon',
-          home_address: b.home_address || ''
-        };
-      });
+      appointmentsData = rawBookings.map(normalizeBookingItem).filter(Boolean);
 
       populateDropdowns();
       renderSummaryCounters();
       renderAppointmentsTable();
       updateSidebarBadges();
     } else {
-      showToast(result.message || 'Failed to load appointments.', 'error');
+      if (appointmentsData.length === 0) {
+        showToast(result.message || 'Failed to load appointments.', 'error');
+      }
     }
   } catch (error) {
     console.error('Error fetching appointments:', error);
-    showToast('Failed to connect to backend server. Please verify MySQL/Apache are active.', 'error');
+    if (appointmentsData.length === 0) {
+      showToast('Could not load appointments. Please check backend connection.', 'error');
+    }
   }
 }
 
@@ -231,7 +284,7 @@ function populateDropdowns() {
     const currentVal = filterService.value;
     let opts = '<option value="all">Service: All Services</option>';
     servicesList.forEach(svc => {
-      opts += `<option value="${escapeHtml(svc.name)}">${escapeHtml(svc.name)}</option>`;
+      opts += `<option value="${escapeHtml(svc.name)}">Service: ${escapeHtml(svc.name)}</option>`;
     });
     filterService.innerHTML = opts;
     if (currentVal && filterService.querySelector(`option[value="${currentVal}"]`)) {
@@ -239,29 +292,18 @@ function populateDropdowns() {
     }
   }
 
-  // 3. Add Modal: Customer Select
-  const addCustomerSelect = document.getElementById('addCustomerSelect');
-  if (addCustomerSelect) {
-    let opts = '<option value="" disabled selected>Select a patron...</option>';
-    customersList.forEach(cust => {
-      const name = cust.full_name || cust.email.split('@')[0];
-      const contact = cust.phone || cust.email || '';
-      opts += `<option value="${cust.user_id}" data-name="${escapeHtml(name)}" data-phone="${escapeHtml(cust.phone || '')}">${escapeHtml(name)} ${contact ? `(${escapeHtml(contact)})` : ''}</option>`;
-    });
-    addCustomerSelect.innerHTML = opts;
-  }
-
-  // 4. Add Modal: Service Select
+  // 3. Add Modal: Service Select
   const addServiceSelect = document.getElementById('addServiceSelect');
   if (addServiceSelect) {
     let opts = '<option value="" disabled selected>Select service...</option>';
     servicesList.forEach(svc => {
-      opts += `<option value="${svc.id}" data-price="${svc.price}" data-name="${escapeHtml(svc.name)}">${escapeHtml(svc.name)} (₱${Number(svc.price).toLocaleString()})</option>`;
+      const price = parseFloat(svc.price || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+      opts += `<option value="${svc.id}">${escapeHtml(svc.name)} (₱${price})</option>`;
     });
     addServiceSelect.innerHTML = opts;
   }
 
-  // 5. Add Modal: Staff Select
+  // 4. Add Modal: Staff Select
   const addStaffSelect = document.getElementById('addStaffSelect');
   if (addStaffSelect) {
     let opts = '<option value="">Any Available Staff</option>';
@@ -271,12 +313,25 @@ function populateDropdowns() {
     addStaffSelect.innerHTML = opts;
   }
 
+  // 5. Add Modal: Customer Select
+  const addCustomerSelect = document.getElementById('addCustomerSelect');
+  if (addCustomerSelect) {
+    let opts = '<option value="" disabled selected>Select a patron...</option>';
+    customersList.forEach(c => {
+      const name = c.full_name || c.name || (c.email ? c.email.split('@')[0] : 'Customer');
+      const phone = c.phone ? ` • ${c.phone}` : '';
+      opts += `<option value="${c.user_id || c.id}">${escapeHtml(name)}${escapeHtml(phone)}</option>`;
+    });
+    addCustomerSelect.innerHTML = opts;
+  }
+
   // 6. Edit Modal: Service Select
   const editServiceSelect = document.getElementById('editServiceSelect');
   if (editServiceSelect) {
-    let opts = '<option value="" disabled>Select service...</option>';
+    let opts = '';
     servicesList.forEach(svc => {
-      opts += `<option value="${svc.id}" data-price="${svc.price}" data-name="${escapeHtml(svc.name)}">${escapeHtml(svc.name)} (₱${Number(svc.price).toLocaleString()})</option>`;
+      const price = parseFloat(svc.price || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
+      opts += `<option value="${svc.id}">${escapeHtml(svc.name)} (₱${price})</option>`;
     });
     editServiceSelect.innerHTML = opts;
   }
@@ -292,86 +347,66 @@ function populateDropdowns() {
   }
 }
 
-// ================= RENDER KPI SUMMARY CARDS =================
+// ================= RENDER SUMMARY KPI COUNTERS =================
 function renderSummaryCounters() {
-  const todayStr = getLocalDateString();
-  const todayCount = appointmentsData.filter(a => a.date === todayStr).length;
-  const pendingCount = appointmentsData.filter(a => a.status === 'pending').length;
-  const confirmedCount = appointmentsData.filter(a => a.status === 'confirmed').length;
-  const completedCount = appointmentsData.filter(a => a.status === 'completed').length;
-  const cancelledCount = appointmentsData.filter(a => a.status === 'cancelled' || a.status === 'no_show').length;
+  const todayCountEl = document.getElementById('summaryCountToday');
+  const pendingCountEl = document.getElementById('summaryCountPending');
+  const confirmedCountEl = document.getElementById('summaryCountConfirmed');
+  const completedCountEl = document.getElementById('summaryCountCompleted');
+  const cancelledCountEl = document.getElementById('summaryCountCancelled');
 
-  const countTodayEl = document.getElementById('summaryCountToday');
-  const countPendingEl = document.getElementById('summaryCountPending');
-  const countConfirmedEl = document.getElementById('summaryCountConfirmed');
-  const countCompletedEl = document.getElementById('summaryCountCompleted');
-  const countCancelledEl = document.getElementById('summaryCountCancelled');
-
-  if (countTodayEl) countTodayEl.textContent = summaryMetrics.today !== undefined ? summaryMetrics.today : todayCount;
-  if (countPendingEl) countPendingEl.textContent = summaryMetrics.pending !== undefined ? summaryMetrics.pending : pendingCount;
-  if (countConfirmedEl) countConfirmedEl.textContent = summaryMetrics.confirmed !== undefined ? summaryMetrics.confirmed : confirmedCount;
-  if (countCompletedEl) countCompletedEl.textContent = summaryMetrics.completed !== undefined ? summaryMetrics.completed : completedCount;
-  if (countCancelledEl) countCancelledEl.textContent = summaryMetrics.cancelled !== undefined ? summaryMetrics.cancelled : cancelledCount;
+  if (todayCountEl) todayCountEl.textContent = summaryMetrics.today ?? 0;
+  if (pendingCountEl) pendingCountEl.textContent = summaryMetrics.pending ?? 0;
+  if (confirmedCountEl) confirmedCountEl.textContent = summaryMetrics.confirmed ?? 0;
+  if (completedCountEl) completedCountEl.textContent = summaryMetrics.completed ?? 0;
+  if (cancelledCountEl) cancelledCountEl.textContent = summaryMetrics.cancelled ?? 0;
 }
 
-async function updateSidebarBadges() {
-  const pendingCount = appointmentsData.filter(a => a.status === 'pending').length;
+// Update sidebar badges based on live appointments
+function updateSidebarBadges() {
   const apptBadge = document.getElementById('sidebarAppointmentsBadge');
   if (apptBadge) {
+    const pendingCount = summaryMetrics.pending || 0;
     if (pendingCount > 0) {
       apptBadge.textContent = pendingCount;
       apptBadge.classList.remove('hidden');
-      apptBadge.style.display = '';
     } else {
-      apptBadge.textContent = '0';
       apptBadge.classList.add('hidden');
-      apptBadge.style.display = 'none';
     }
   }
 
-  try {
-    const res = await fetch('../api/dashboard/stats', {
-      method: 'GET',
-      headers: getAuthHeaders(),
-      credentials: 'include'
-    });
-    if (res.ok) {
-      const json = await res.json();
-      if (json.data) {
-        const d = json.data;
-        const bNotif = document.getElementById('sidebarNotificationsBadge');
-        const bMsg = document.getElementById('sidebarMessagesBadge');
-        const notifCount = parseInt(d.unread_notifications ?? 0, 10);
-        const msgCount = parseInt(d.unread_messages ?? 0, 10);
-
-        if (bNotif) {
-          if (notifCount > 0) {
-            bNotif.textContent = notifCount;
-            bNotif.classList.remove('hidden');
-            bNotif.style.display = '';
-          } else {
-            bNotif.textContent = '0';
-            bNotif.classList.add('hidden');
-            bNotif.style.display = 'none';
-          }
+  fetch('../api/dashboard/stats', {
+    method: 'GET',
+    headers: getAuthHeaders()
+  })
+  .then(res => res.json())
+  .then(res => {
+    if (res.success && res.data && res.data.badges) {
+      const badges = res.data.badges;
+      const notifBadge = document.getElementById('sidebarNotificationsBadge');
+      if (notifBadge) {
+        if (badges.unread_notifications > 0) {
+          notifBadge.textContent = badges.unread_notifications;
+          notifBadge.classList.remove('hidden');
+        } else {
+          notifBadge.classList.add('hidden');
         }
-        if (bMsg) {
-          if (msgCount > 0) {
-            bMsg.textContent = msgCount;
-            bMsg.classList.remove('hidden');
-            bMsg.style.display = '';
-          } else {
-            bMsg.textContent = '0';
-            bMsg.classList.add('hidden');
-            bMsg.style.display = 'none';
-          }
+      }
+      const msgBadge = document.getElementById('sidebarMessagesBadge');
+      if (msgBadge) {
+        if (badges.unread_messages > 0) {
+          msgBadge.textContent = badges.unread_messages;
+          msgBadge.classList.remove('hidden');
+        } else {
+          msgBadge.classList.add('hidden');
         }
       }
     }
-  } catch (e) {}
+  })
+  .catch(() => {});
 }
 
-// ================= FILTER AND SEARCH LOGIC =================
+// ================= FILTER & SEARCH LOGIC =================
 function handleSearchInput(e) {
   filterState.search = e.target.value.toLowerCase().trim();
   paginationState.currentPage = 1;
@@ -380,11 +415,14 @@ function handleSearchInput(e) {
 
 function handleDateFilter(val) {
   filterState.date = val;
-  paginationState.currentPage = 1;
-  const customDateContainer = document.getElementById('customDateContainer');
-  if (customDateContainer) {
-    customDateContainer.classList.toggle('hidden', val !== 'custom');
+  const customContainer = document.getElementById('customDateContainer');
+  if (val === 'custom') {
+    if (customContainer) customContainer.classList.remove('hidden');
+  } else {
+    if (customContainer) customContainer.classList.add('hidden');
+    filterState.customDate = "";
   }
+  paginationState.currentPage = 1;
   renderAppointmentsTable();
 }
 
@@ -413,28 +451,27 @@ function handleServiceFilter(val) {
 }
 
 function filterBySummaryCard(statusType) {
-  paginationState.currentPage = 1;
+  const statusSelect = document.getElementById('filterStatus');
+  const dateSelect = document.getElementById('filterDate');
+
   if (statusType === 'today') {
     filterState.date = 'today';
     filterState.status = 'all';
-    const dateSelect = document.getElementById('filterDate');
-    const statusSelect = document.getElementById('filterStatus');
     if (dateSelect) dateSelect.value = 'today';
     if (statusSelect) statusSelect.value = 'all';
   } else {
     filterState.status = statusType;
     filterState.date = 'all';
-    const statusSelect = document.getElementById('filterStatus');
-    const dateSelect = document.getElementById('filterDate');
     if (statusSelect) statusSelect.value = statusType;
     if (dateSelect) dateSelect.value = 'all';
   }
+
+  paginationState.currentPage = 1;
   renderAppointmentsTable();
   showToast(`Filtered table by: ${statusType.toUpperCase()}`, 'info');
 }
 
 function resetAllFilters() {
-  paginationState.currentPage = 1;
   filterState = {
     search: "",
     date: "all",
@@ -443,20 +480,23 @@ function resetAllFilters() {
     service: "all",
     customDate: ""
   };
+  paginationState.currentPage = 1;
 
   const searchInput = document.getElementById('searchAppointmentsInput');
-  const dateSelect = document.getElementById('filterDate');
-  const statusSelect = document.getElementById('filterStatus');
-  const staffSelect = document.getElementById('filterStaff');
-  const serviceSelect = document.getElementById('filterService');
+  const filterDate = document.getElementById('filterDate');
+  const filterStatus = document.getElementById('filterStatus');
+  const filterStaff = document.getElementById('filterStaff');
+  const filterService = document.getElementById('filterService');
   const customDateContainer = document.getElementById('customDateContainer');
+  const customDateInput = document.getElementById('customDateInput');
 
   if (searchInput) searchInput.value = "";
-  if (dateSelect) dateSelect.value = "all";
-  if (statusSelect) statusSelect.value = "all";
-  if (staffSelect) staffSelect.value = "all";
-  if (serviceSelect) serviceSelect.value = "all";
+  if (filterDate) filterDate.value = "all";
+  if (filterStatus) filterStatus.value = "all";
+  if (filterStaff) filterStaff.value = "all";
+  if (filterService) filterService.value = "all";
   if (customDateContainer) customDateContainer.classList.add('hidden');
+  if (customDateInput) customDateInput.value = "";
 
   renderAppointmentsTable();
   showToast("All filters have been reset.", "info");
@@ -466,68 +506,78 @@ function resetAllFilters() {
 function renderAppointmentsTable() {
   const tbody = document.getElementById('appointmentsTableBody');
   const emptyState = document.getElementById('appointmentsEmptyState');
-  const countLabel = document.getElementById('tableResultsCount');
+  const resultsCount = document.getElementById('tableResultsCount');
+  const paginationContainer = document.getElementById('appointmentsPaginationContainer');
+
   if (!tbody) return;
 
-  const todayStr = getLocalDateString();
-  const tomorrowObj = new Date();
-  tomorrowObj.setDate(tomorrowObj.getDate() + 1);
-  const tomorrowStr = getLocalDateString(tomorrowObj);
-  const currentMonthPrefix = todayStr.substring(0, 7);
+  const todayStr = getLocalDateString(new Date());
 
-  const filtered = appointmentsData.filter(item => {
-    // Search filter
+  // Filter the appointments array
+  const filtered = appointmentsData.filter(appt => {
+    // 1. Search Query
     if (filterState.search) {
       const q = filterState.search;
-      const match = (item.customer && item.customer.toLowerCase().includes(q)) ||
-        (item.service && item.service.toLowerCase().includes(q)) ||
-        (item.staff && item.staff.toLowerCase().includes(q)) ||
-        (item.displayId && item.displayId.toLowerCase().includes(q)) ||
-        (item.phone && item.phone.toLowerCase().includes(q)) ||
-        (item.notes && item.notes.toLowerCase().includes(q));
-      if (!match) return false;
+      const matchCustomer = appt.customer.toLowerCase().includes(q);
+      const matchRef = appt.displayId.toLowerCase().includes(q);
+      const matchPhone = (appt.phone || '').toLowerCase().includes(q);
+      const matchService = appt.service.toLowerCase().includes(q);
+      const matchStaff = appt.staff.toLowerCase().includes(q);
+      if (!matchCustomer && !matchRef && !matchPhone && !matchService && !matchStaff) return false;
     }
 
-    // Status filter
-    if (filterState.status !== 'all') {
-      if (filterState.status === 'cancelled') {
-        if (item.status !== 'cancelled' && item.status !== 'no_show') return false;
-      } else if (item.status !== filterState.status) {
-        return false;
-      }
-    }
-
-    // Staff filter
-    if (filterState.staff !== 'all' && item.staff !== filterState.staff) {
-      return false;
-    }
-
-    // Service filter
-    if (filterState.service !== 'all' && item.service !== filterState.service) {
-      return false;
-    }
-
-    // Date filter
+    // 2. Date Filter
     if (filterState.date === 'today') {
-      if (item.date !== todayStr) return false;
+      if (appt.date !== todayStr) return false;
     } else if (filterState.date === 'tomorrow') {
-      if (item.date !== tomorrowStr) return false;
+      const tom = new Date();
+      tom.setDate(tom.getDate() + 1);
+      if (appt.date !== getLocalDateString(tom)) return false;
     } else if (filterState.date === 'this_week') {
-      const itemDate = new Date(item.date);
       const now = new Date();
-      const firstDayOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
-      const lastDayOfWeek = new Date(firstDayOfWeek);
-      lastDayOfWeek.setDate(lastDayOfWeek.getDate() + 6);
-      if (itemDate < firstDayOfWeek || itemDate > lastDayOfWeek) return false;
-    } else if (filterState.date === 'this_month') {
-      if (!item.date || !item.date.startsWith(currentMonthPrefix)) return false;
-    } else if (filterState.date === 'custom' && filterState.customDate) {
-      if (item.date !== filterState.customDate) return false;
+      const firstDay = new Date(now.setDate(now.getDate() - now.getDay() + 1));
+      const lastDay = new Date(now.setDate(now.getDate() - now.getDay() + 7));
+      const apptDate = new Date(appt.date);
+      if (apptDate < firstDay || apptDate > lastDay) return false;
+    } else if (filterState.date === 'custom') {
+      if (filterState.customDate && appt.date !== filterState.customDate) return false;
+    }
+
+    // 3. Status Filter
+    if (filterState.status !== 'all') {
+      if (appt.status !== filterState.status) return false;
+    }
+
+    // 4. Staff Filter
+    if (filterState.staff !== 'all') {
+      if (appt.staff !== filterState.staff) return false;
+    }
+
+    // 5. Service Filter
+    if (filterState.service !== 'all') {
+      if (appt.service !== filterState.service) return false;
     }
 
     return true;
   });
 
+  // Update Results Count
+  if (resultsCount) {
+    resultsCount.textContent = `Showing ${filtered.length} appointment${filtered.length === 1 ? '' : 's'}`;
+  }
+
+  // Handle Empty State
+  if (filtered.length === 0) {
+    tbody.innerHTML = "";
+    if (emptyState) emptyState.classList.remove('hidden');
+    if (paginationContainer) paginationContainer.classList.add('hidden');
+    return;
+  }
+
+  if (emptyState) emptyState.classList.add('hidden');
+  if (paginationContainer) paginationContainer.classList.remove('hidden');
+
+  // Pagination calculation
   const totalItems = filtered.length;
   const totalPages = Math.ceil(totalItems / paginationState.pageSize) || 1;
 
@@ -542,341 +592,295 @@ function renderAppointmentsTable() {
   const endIndex = Math.min(startIndex + paginationState.pageSize, totalItems);
   const pageItems = filtered.slice(startIndex, endIndex);
 
-  const paginationContainer = document.getElementById('appointmentsPaginationContainer');
+  // Render Table Rows
+  tbody.innerHTML = pageItems.map(appt => {
+    // Status Badge Styling
+    let statusClass = "bg-amber-50 text-amber-900 border-amber-300";
+    let statusIcon = "fa-clock";
+    let statusLabel = "Pending";
 
-  if (countLabel) {
-    countLabel.textContent = totalItems === 0
-      ? 'Showing 0 appointments'
-      : `Showing ${startIndex + 1} to ${endIndex} of ${totalItems} appointment${totalItems === 1 ? '' : 's'}`;
-  }
-
-  if (totalItems === 0) {
-    tbody.innerHTML = '';
-    if (emptyState) emptyState.classList.remove('hidden');
-    if (paginationContainer) paginationContainer.classList.add('hidden');
-    return;
-  }
-
-  if (emptyState) emptyState.classList.add('hidden');
-  if (paginationContainer) paginationContainer.classList.remove('hidden');
-
-  tbody.innerHTML = pageItems.map(item => {
-    let statusBadge = '';
-    if (item.status === 'confirmed') {
-      statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300">
-        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-        Confirmed
-      </span>`;
-    } else if (item.status === 'pending') {
-      statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300">
-        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-        Pending
-      </span>`;
-    } else if (item.status === 'completed') {
-      statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200">
-        <i class="fa-solid fa-circle-check text-[11px] text-blue-600"></i>
-        Completed
-      </span>`;
-    } else {
-      statusBadge = `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200">
-        <i class="fa-solid fa-circle-xmark text-[11px] text-rose-600"></i>
-        ${item.status === 'no_show' ? 'No Show' : 'Cancelled'}
-      </span>`;
+    if (appt.status === 'confirmed') {
+      statusClass = "bg-blue-50 text-blue-900 border-blue-300";
+      statusIcon = "fa-circle-check";
+      statusLabel = "Confirmed";
+    } else if (appt.status === 'completed') {
+      statusClass = "bg-emerald-50 text-emerald-900 border-emerald-300";
+      statusIcon = "fa-check-double";
+      statusLabel = "Completed";
+    } else if (appt.status === 'cancelled' || appt.status === 'no_show') {
+      statusClass = "bg-rose-50 text-rose-900 border-rose-300";
+      statusIcon = "fa-ban";
+      statusLabel = appt.status === 'no_show' ? 'No Show' : 'Cancelled';
     }
 
+    // Customer Initials
+    const parts = appt.customer.split(' ').filter(Boolean);
+    const initials = parts.length > 1 
+      ? (parts[0][0] + parts[1][0]).toUpperCase() 
+      : (appt.customer.substring(0, 2)).toUpperCase();
+
     return `
-      <tr class="hover:bg-[#FAF6F0]/40 transition-colors group">
-        <!-- Date & Time -->
+      <tr class="hover:bg-[#FAF6F0]/60 transition-colors group">
+        <!-- Reference & Customer -->
         <td class="py-4 px-4 whitespace-nowrap">
-          <div class="font-bold text-[#541A1A]">${escapeHtml(item.dateFormatted)}, ${escapeHtml(item.time)}</div>
-          <span class="text-[11px] font-mono text-[#735e5e] block">${escapeHtml(item.displayId)}</span>
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA] flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
+              ${escapeHtml(initials)}
+            </div>
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-xs text-[#541A1A]">${escapeHtml(appt.customer)}</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA]/50 font-semibold">${escapeHtml(appt.displayId)}</span>
+              </div>
+              <span class="text-[11px] text-[#735e5e] block font-mono mt-0.5">${escapeHtml(appt.phone)}</span>
+            </div>
+          </div>
         </td>
 
-        <!-- Customer -->
+        <!-- Service & Price -->
         <td class="py-4 px-4 whitespace-nowrap">
-          <div class="font-bold text-[#541A1A]">${escapeHtml(item.customer)}</div>
-          <span class="text-[11px] text-[#735e5e] flex items-center gap-1">
-            <i class="fa-solid fa-phone text-[10px] text-[#810B38]"></i>
-            ${escapeHtml(item.phone)}
+          <span class="text-xs font-bold text-[#541A1A] block">${escapeHtml(appt.service)}</span>
+          <span class="text-[11px] font-bold text-[#810B38] block font-mono mt-0.5">${escapeHtml(appt.priceFormatted)}</span>
+        </td>
+
+        <!-- Schedule Time -->
+        <td class="py-4 px-4 whitespace-nowrap">
+          <div class="flex items-center gap-1.5">
+            <i class="fa-regular fa-calendar text-[#810B38] text-xs"></i>
+            <span class="text-xs font-bold text-[#541A1A]">${escapeHtml(appt.dateFormatted)}</span>
+          </div>
+          <span class="text-[11px] text-[#735e5e] block font-mono pl-4">${escapeHtml(appt.time)}</span>
+        </td>
+
+        <!-- Stylist / Staff -->
+        <td class="py-4 px-4 whitespace-nowrap">
+          <span class="text-xs font-medium text-[#541A1A] flex items-center gap-1.5">
+            <i class="fa-solid fa-user-tie text-[#DCC3AA] text-[11px]"></i>
+            ${escapeHtml(appt.staff)}
           </span>
-        </td>
-
-        <!-- Service -->
-        <td class="py-4 px-4">
-          <span class="font-bold text-[#810B38] block">${escapeHtml(item.service)}</span>
-          <span class="text-[11px] text-[#735e5e] line-clamp-1">${escapeHtml(item.notes || (item.visit_type === 'home' ? 'Home Service Appointment' : 'Salon Visit'))}</span>
-        </td>
-
-        <!-- Staff -->
-        <td class="py-4 px-4 whitespace-nowrap">
-          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#FAF6F0] border border-[#DCC3AA] font-bold text-xs text-[#541A1A]">
-            <i class="fa-solid fa-scissors text-[10px] text-[#810B38]"></i>
-            ${escapeHtml(item.staff)}
-          </span>
-        </td>
-
-        <!-- Price -->
-        <td class="py-4 px-4 whitespace-nowrap">
-          <span class="font-serif text-base font-extrabold text-[#810B38]">${escapeHtml(item.priceFormatted)}</span>
-          <span class="block text-[10px] uppercase font-bold text-[#735e5e]">${escapeHtml(item.paymentStatus)} (${escapeHtml(item.paymentMethod)})</span>
         </td>
 
         <!-- Status -->
         <td class="py-4 px-4 whitespace-nowrap">
-          ${statusBadge}
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusClass}">
+            <i class="fa-solid ${statusIcon} text-[9px]"></i>
+            <span>${statusLabel}</span>
+          </span>
         </td>
 
-        <!-- Action (⋮ Kebab Menu) -->
-        <td class="py-4 px-4 text-right relative whitespace-nowrap">
-          <div class="inline-block text-left">
+        <!-- Payment -->
+        <td class="py-4 px-4 whitespace-nowrap">
+          <span class="text-xs font-semibold ${appt.paymentStatus === 'Paid' ? 'text-emerald-700 font-bold' : 'text-amber-800'} block">
+            ${escapeHtml(appt.paymentStatus)}
+          </span>
+          <span class="text-[10px] text-[#735e5e] block uppercase">${escapeHtml(appt.paymentMethod)}</span>
+        </td>
+
+        <!-- Quick Actions & Kebab Menu -->
+        <td class="py-4 px-4 whitespace-nowrap text-right relative">
+          <div class="flex items-center justify-end gap-1.5">
+            ${appt.status === 'pending' ? `
+              <button 
+                type="button" 
+                onclick="confirmAppointment(${appt.id})"
+                title="Quick Confirm Appointment"
+                class="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold text-[11px] transition-colors inline-flex items-center gap-1">
+                <i class="fa-solid fa-check text-[10px]"></i>
+                <span>Confirm</span>
+              </button>
+            ` : ''}
+
             <button 
               type="button" 
-              onclick="toggleRowKebabMenu(${item.id}, event)"
-              class="w-8 h-8 rounded-xl bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA] flex items-center justify-center transition-colors shadow-sm focus:outline-none"
-              title="Actions for ${escapeHtml(item.customer)}">
-              <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+              onclick="openViewDetailsModal(${appt.id})"
+              class="w-7 h-7 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA] flex items-center justify-center text-xs transition-colors"
+              title="View Full Details">
+              <i class="fa-regular fa-eye"></i>
             </button>
 
-            <!-- Kebab Action Dropdown Menu -->
-            <div 
-              id="kebabMenu-${item.id}" 
-              class="kebab-dropdown-menu hidden absolute right-4 mt-1 w-48 rounded-2xl bg-white border border-[#DCC3AA] shadow-2xl py-1.5 z-30 text-left">
-              
-              <!-- 1. View Details -->
+            <!-- Kebab Dropdown Menu -->
+            <div class="relative inline-block text-left">
               <button 
                 type="button" 
-                onclick="openViewDetailsModal(${item.id})"
-                class="w-full px-4 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
-                <i class="fa-solid fa-eye text-[#810B38] w-4 text-center"></i>
-                <span>View Details</span>
+                onclick="toggleRowKebabMenu(${appt.id}, event)"
+                class="w-7 h-7 rounded-lg bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] flex items-center justify-center text-xs transition-colors"
+                title="More Actions">
+                <i class="fa-solid fa-ellipsis-vertical"></i>
               </button>
 
-              <!-- 2. Edit Appointment -->
-              <button 
-                type="button" 
-                onclick="openEditModal(${item.id})"
-                class="w-full px-4 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
-                <i class="fa-solid fa-pen text-[#810B38] w-4 text-center"></i>
-                <span>Edit Appointment</span>
-              </button>
-
-              <!-- 3. Confirm (If not confirmed/completed) -->
-              ${item.status !== 'confirmed' && item.status !== 'completed' ? `
-                <button 
-                  type="button" 
-                  onclick="confirmAppointment(${item.id})"
-                  class="w-full px-4 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 flex items-center gap-2.5 transition-colors">
-                  <i class="fa-solid fa-circle-check text-emerald-600 w-4 text-center"></i>
-                  <span>Confirm</span>
+              <div id="rowMenu-${appt.id}" class="hidden fixed w-44 rounded-2xl bg-white shadow-xl border border-[#DCC3AA] py-1.5 z-50 text-left text-xs">
+                <button type="button" onclick="openEditModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-[#FAF6F0] text-[#541A1A] flex items-center gap-2 font-medium">
+                  <i class="fa-solid fa-pen text-[11px] text-[#810B38]"></i>
+                  <span>Edit Appointment</span>
                 </button>
-              ` : ''}
-
-              <!-- 4. Reschedule -->
-              <button 
-                type="button" 
-                onclick="openRescheduleModal(${item.id})"
-                class="w-full px-4 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
-                <i class="fa-solid fa-repeat text-[#810B38] w-4 text-center"></i>
-                <span>Reschedule</span>
-              </button>
-
-              <!-- 5. Cancel -->
-              ${item.status !== 'cancelled' && item.status !== 'no_show' ? `
-                <button 
-                  type="button" 
-                  onclick="openCancelModal(${item.id})"
-                  class="w-full px-4 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 flex items-center gap-2.5 transition-colors">
-                  <i class="fa-solid fa-ban text-rose-600 w-4 text-center"></i>
-                  <span>Cancel</span>
+                <button type="button" onclick="openRescheduleModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-[#FAF6F0] text-[#541A1A] flex items-center gap-2 font-medium">
+                  <i class="fa-regular fa-calendar-days text-[11px] text-[#810B38]"></i>
+                  <span>Reschedule</span>
                 </button>
-              ` : ''}
-
-              <div class="border-t border-[#F1E2D1] my-1"></div>
-
-              <!-- 6. Delete -->
-              <button 
-                type="button" 
-                onclick="openDeleteModal(${item.id})"
-                class="w-full px-4 py-2 text-xs font-semibold text-rose-800 hover:bg-rose-50 flex items-center gap-2.5 transition-colors">
-                <i class="fa-solid fa-trash-can text-rose-600 w-4 text-center"></i>
-                <span>Delete</span>
-              </button>
-
+                <div class="my-1 border-t border-[#F1E2D1]"></div>
+                ${appt.status !== 'cancelled' ? `
+                  <button type="button" onclick="openCancelModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-amber-50 text-amber-900 flex items-center gap-2 font-medium">
+                    <i class="fa-solid fa-ban text-[11px] text-amber-700"></i>
+                    <span>Cancel Booking</span>
+                  </button>
+                ` : ''}
+                <button type="button" onclick="openDeleteModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-rose-50 text-rose-800 flex items-center gap-2 font-medium">
+                  <i class="fa-regular fa-trash-can text-[11px] text-rose-600"></i>
+                  <span>Delete Record</span>
+                </button>
+              </div>
             </div>
+
           </div>
         </td>
       </tr>
     `;
   }).join('');
 
+  // Render Pagination Controls
   renderPaginationControls(totalItems, totalPages, startIndex, endIndex);
 }
 
-// ================= RENDER PAGINATION CONTROLS =================
+// ================= PAGINATION CONTROLS =================
 function renderPaginationControls(totalItems, totalPages, startIndex, endIndex) {
   const startEl = document.getElementById('paginationStartCount');
   const endEl = document.getElementById('paginationEndCount');
   const totalEl = document.getElementById('paginationTotalCount');
-  const controls = document.getElementById('paginationControls');
+  const controlsEl = document.getElementById('paginationControls');
 
   if (startEl) startEl.textContent = totalItems > 0 ? startIndex + 1 : 0;
   if (endEl) endEl.textContent = endIndex;
   if (totalEl) totalEl.textContent = totalItems;
 
-  if (!controls) return;
+  if (!controlsEl) return;
 
-  if (totalPages <= 1) {
-    controls.innerHTML = '';
-    return;
-  }
-
-  let html = '';
-
-  // Prev Button
-  const isPrevDisabled = paginationState.currentPage === 1;
-  html += `
+  let btnsHtml = `
     <button 
       type="button" 
       onclick="changePage(${paginationState.currentPage - 1})"
-      ${isPrevDisabled ? 'disabled' : ''}
-      class="px-3 py-1.5 rounded-xl border ${isPrevDisabled ? 'border-[#DCC3AA]/40 text-stone-300 cursor-not-allowed bg-stone-50/50' : 'border-[#DCC3AA] bg-white hover:bg-[#FAF6F0] text-[#541A1A] cursor-pointer shadow-2xs'} font-semibold text-xs transition-colors flex items-center gap-1.5"
-      title="Previous Page">
-      <i class="fa-solid fa-chevron-left text-[10px]"></i>
-      <span class="hidden sm:inline">Prev</span>
+      ${paginationState.currentPage <= 1 ? 'disabled' : ''}
+      class="px-3 py-1.5 rounded-xl border border-[#DCC3AA] bg-white text-xs font-bold text-[#541A1A] hover:bg-[#FAF6F0] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+      &larr; Prev
     </button>
   `;
 
-  // Number Buttons
-  let pages = [];
-  if (totalPages <= 7) {
-    for (let i = 1; i <= totalPages; i++) pages.push(i);
-  } else {
-    pages.push(1);
-    if (paginationState.currentPage > 3) pages.push('...');
-    
-    const start = Math.max(2, paginationState.currentPage - 1);
-    const end = Math.min(totalPages - 1, paginationState.currentPage + 1);
-    
-    for (let i = start; i <= end; i++) {
-      pages.push(i);
-    }
-    
-    if (paginationState.currentPage < totalPages - 2) pages.push('...');
-    pages.push(totalPages);
-  }
-
-  pages.forEach(p => {
-    if (p === '...') {
-      html += `<span class="w-8 h-8 flex items-center justify-center text-[#735e5e] text-xs font-bold select-none">…</span>`;
-    } else {
-      const isActive = p === paginationState.currentPage;
-      html += `
+  for (let p = 1; p <= totalPages; p++) {
+    if (p === 1 || p === totalPages || (p >= paginationState.currentPage - 1 && p <= paginationState.currentPage + 1)) {
+      btnsHtml += `
         <button 
           type="button" 
           onclick="changePage(${p})"
-          class="w-8 h-8 rounded-xl font-bold text-xs transition-all flex items-center justify-center ${
-            isActive 
-              ? 'bg-[#810B38] text-white shadow-xs scale-105 pointer-events-none' 
-              : 'bg-white hover:bg-[#FAF6F0] border border-[#DCC3AA] text-[#541A1A] cursor-pointer shadow-2xs'
-          }">
+          class="w-7 h-7 rounded-xl text-xs font-bold transition-colors ${p === paginationState.currentPage ? 'bg-[#810B38] text-white' : 'bg-white text-[#541A1A] border border-[#DCC3AA] hover:bg-[#FAF6F0]'}">
           ${p}
         </button>
       `;
+    } else if (p === paginationState.currentPage - 2 || p === paginationState.currentPage + 2) {
+      btnsHtml += `<span class="px-1 text-[#735e5e] text-xs">...</span>`;
     }
-  });
+  }
 
-  // Next Button
-  const isNextDisabled = paginationState.currentPage === totalPages;
-  html += `
+  btnsHtml += `
     <button 
       type="button" 
       onclick="changePage(${paginationState.currentPage + 1})"
-      ${isNextDisabled ? 'disabled' : ''}
-      class="px-3 py-1.5 rounded-xl border ${isNextDisabled ? 'border-[#DCC3AA]/40 text-stone-300 cursor-not-allowed bg-stone-50/50' : 'border-[#DCC3AA] bg-white hover:bg-[#FAF6F0] text-[#541A1A] cursor-pointer shadow-2xs'} font-semibold text-xs transition-colors flex items-center gap-1.5"
-      title="Next Page">
-      <span class="hidden sm:inline">Next</span>
-      <i class="fa-solid fa-chevron-right text-[10px]"></i>
+      ${paginationState.currentPage >= totalPages ? 'disabled' : ''}
+      class="px-3 py-1.5 rounded-xl border border-[#DCC3AA] bg-white text-xs font-bold text-[#541A1A] hover:bg-[#FAF6F0] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+      Next &rarr;
     </button>
   `;
 
-  controls.innerHTML = html;
+  controlsEl.innerHTML = btnsHtml;
 }
 
 function changePage(page) {
   paginationState.currentPage = page;
   renderAppointmentsTable();
-
-  const tableSection = document.getElementById('appointmentsTableBody');
-  if (tableSection) {
-    tableSection.closest('section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const tableContainer = document.querySelector('table');
+  if (tableContainer) {
+    tableContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }
 
-// ================= KEBAB MENU HANDLING =================
+// Toggle Row Action Menu
 function toggleRowKebabMenu(id, event) {
-  event.stopPropagation();
-  const allMenus = document.querySelectorAll('.kebab-dropdown-menu');
-  const targetMenu = document.getElementById(`kebabMenu-${id}`);
-
-  allMenus.forEach(menu => {
-    if (menu !== targetMenu) menu.classList.add('hidden');
+  if (event) event.stopPropagation();
+  const currentMenu = document.getElementById(`rowMenu-${id}`);
+  
+  // Close all other open kebab menus
+  document.querySelectorAll('[id^="rowMenu-"]').forEach(menu => {
+    if (menu !== currentMenu) menu.classList.add('hidden');
   });
 
-  if (targetMenu) {
-    targetMenu.classList.toggle('hidden');
-  }
-}
+  if (!currentMenu) return;
 
-function setupEventListeners() {
-  document.addEventListener('click', () => {
-    const allMenus = document.querySelectorAll('.kebab-dropdown-menu');
-    allMenus.forEach(menu => menu.classList.add('hidden'));
-  });
-}
-
-// ================= MODAL 1: VIEW DETAILS =================
-function openViewDetailsModal(id) {
-  currentActionAppointmentId = id;
-  const item = appointmentsData.find(a => a.id === id);
-  if (!item) return;
-
-  document.getElementById('detailCustomerName').textContent = item.customer;
-  document.getElementById('detailCustomerPhone').textContent = item.phone;
-  document.getElementById('detailDateTime').textContent = `${item.dateFormatted} at ${item.time}`;
-  document.getElementById('detailService').textContent = item.service;
-  document.getElementById('detailPrice').textContent = item.priceFormatted;
-  document.getElementById('detailStaff').textContent = item.staff;
-  document.getElementById('detailNotes').textContent = item.notes || "None specified.";
-  document.getElementById('detailPayment').textContent = `${item.paymentStatus} (${item.paymentMethod})`;
-
-  const statusBadge = document.getElementById('detailStatusBadge');
-  if (statusBadge) {
-    if (item.status === 'confirmed') {
-      statusBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-300";
-      statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Confirmed`;
-    } else if (item.status === 'pending') {
-      statusBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-900 border border-amber-300";
-      statusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Pending`;
-    } else if (item.status === 'completed') {
-      statusBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-800 border border-blue-200";
-      statusBadge.innerHTML = `<i class="fa-solid fa-circle-check text-xs text-blue-600"></i> Completed`;
-    } else {
-      statusBadge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200";
-      statusBadge.innerHTML = `<i class="fa-solid fa-circle-xmark text-xs text-rose-600"></i> ${item.status === 'no_show' ? 'No Show' : 'Cancelled'}`;
+  if (currentMenu.classList.contains('hidden')) {
+    currentMenu.classList.remove('hidden');
+    if (event && event.currentTarget) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      currentMenu.style.top = `${rect.bottom + 4}px`;
+      currentMenu.style.left = `${Math.max(10, rect.right - 176)}px`;
     }
+  } else {
+    currentMenu.classList.add('hidden');
+  }
+}
+
+// Close dropdowns on outside click
+function setupEventListeners() {
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('[id^="rowMenu-"]')) {
+      document.querySelectorAll('[id^="rowMenu-"]').forEach(menu => menu.classList.add('hidden'));
+    }
+  });
+
+  window.addEventListener('scroll', () => {
+    document.querySelectorAll('[id^="rowMenu-"]').forEach(menu => menu.classList.add('hidden'));
+  }, { passive: true });
+}
+
+// ================= MODAL 1: VIEW DETAILS MODAL =================
+function openViewDetailsModal(id) {
+  const appt = appointmentsData.find(a => a.id === id);
+  if (!appt) return;
+
+  currentActionAppointmentId = id;
+  const modal = document.getElementById('appointmentDetailsModal');
+  if (!modal) return;
+
+  document.getElementById('detailCustomerName').textContent = appt.customer;
+  document.getElementById('detailCustomerPhone').textContent = appt.phone;
+  document.getElementById('detailDateTime').textContent = `${appt.dateFormatted} at ${appt.time}`;
+  document.getElementById('detailService').textContent = appt.service;
+  document.getElementById('detailPrice').textContent = appt.priceFormatted;
+  document.getElementById('detailStaff').textContent = appt.staff;
+  document.getElementById('detailPayment').textContent = `${appt.paymentStatus} (${appt.paymentMethod})`;
+  document.getElementById('detailNotes').textContent = appt.notes ? appt.notes : "No special notes recorded.";
+
+  // Status Badge in modal
+  const badgeEl = document.getElementById('detailStatusBadge');
+  if (badgeEl) {
+    let statusClass = "bg-amber-100 text-amber-900 border-amber-300";
+    let statusLabel = "Pending";
+    if (appt.status === 'confirmed') {
+      statusClass = "bg-blue-100 text-blue-900 border-blue-300";
+      statusLabel = "Confirmed";
+    } else if (appt.status === 'completed') {
+      statusClass = "bg-emerald-100 text-emerald-900 border-emerald-300";
+      statusLabel = "Completed";
+    } else if (appt.status === 'cancelled' || appt.status === 'no_show') {
+      statusClass = "bg-rose-100 text-rose-900 border-rose-300";
+      statusLabel = appt.status === 'no_show' ? 'No Show' : 'Cancelled';
+    }
+    badgeEl.className = `inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${statusClass}`;
+    badgeEl.textContent = statusLabel;
   }
 
-  const modal = document.getElementById('appointmentDetailsModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-    lockBodyScroll();
-  }
+  modal.showModal();
 }
 
 function closeViewDetailsModal() {
   const modal = document.getElementById('appointmentDetailsModal');
   if (modal) modal.close();
-  unlockBodyScroll();
 }
 
 function openEditFromDetails() {
@@ -888,245 +892,208 @@ function openEditFromDetails() {
 
 // ================= MODAL 2: ADD APPOINTMENT =================
 function openAddAppointmentModal() {
-  const addCustomerSelect = document.getElementById('addCustomerSelect');
-  if (addCustomerSelect && addCustomerSelect.options.length > 1) {
-    addCustomerSelect.selectedIndex = 1;
-  }
-  const addServiceSelect = document.getElementById('addServiceSelect');
-  if (addServiceSelect && addServiceSelect.options.length > 1) {
-    addServiceSelect.selectedIndex = 1;
-  }
-  const addStaffSelect = document.getElementById('addStaffSelect');
-  if (addStaffSelect) addStaffSelect.selectedIndex = 0;
-
-  document.getElementById('addDateInput').value = getLocalDateString();
-  document.getElementById('addTimeSelect').value = "09:00:00";
-  document.getElementById('addNotesInput').value = "";
-  document.getElementById('addPaymentSelect').value = "paid";
-  document.getElementById('newCustomerFields').classList.add('hidden');
-  document.getElementById('newCustomerName').value = "";
-  document.getElementById('newCustomerPhone').value = "";
-  document.getElementById('btnToggleNewCustomer').textContent = "+ Add New Customer";
-
   const modal = document.getElementById('addAppointmentModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-    lockBodyScroll();
+  if (!modal) return;
+
+  const dateInput = document.getElementById('addDateInput');
+  if (dateInput) {
+    dateInput.value = getLocalDateString(new Date());
   }
+
+  const newCustFields = document.getElementById('newCustomerFields');
+  if (newCustFields) newCustFields.classList.add('hidden');
+
+  modal.showModal();
 }
 
 function closeAddAppointmentModal() {
   const modal = document.getElementById('addAppointmentModal');
   if (modal) modal.close();
-  unlockBodyScroll();
 }
 
 function toggleNewCustomerSection() {
   const fields = document.getElementById('newCustomerFields');
   const btn = document.getElementById('btnToggleNewCustomer');
-  const isHidden = fields.classList.contains('hidden');
+  const select = document.getElementById('addCustomerSelect');
 
-  if (isHidden) {
-    fields.classList.remove('hidden');
-    btn.textContent = "- Use Existing Customer";
-  } else {
-    fields.classList.add('hidden');
-    btn.textContent = "+ Add New Customer";
+  if (fields) {
+    fields.classList.toggle('hidden');
+    const isVisible = !fields.classList.contains('hidden');
+    if (btn) btn.textContent = isVisible ? "Use Existing Patron" : "+ Add New Customer";
+    if (select) {
+      if (isVisible) select.value = "";
+    }
   }
 }
 
 async function handleCreateAppointment(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
 
-  const isNewCust = !document.getElementById('newCustomerFields').classList.contains('hidden');
-  let customerId = null;
-  let clientName = null;
-  let clientPhone = null;
+  const isNewCust = !document.getElementById('newCustomerFields')?.classList.contains('hidden');
+  let customerId = document.getElementById('addCustomerSelect')?.value;
+  let newName = document.getElementById('newCustomerName')?.value.trim();
+  let newPhone = document.getElementById('newCustomerPhone')?.value.trim();
+
+  const serviceId = document.getElementById('addServiceSelect')?.value;
+  const staffId = document.getElementById('addStaffSelect')?.value;
+  const dateVal = document.getElementById('addDateInput')?.value;
+  const timeVal = document.getElementById('addTimeSelect')?.value;
+  const notesVal = document.getElementById('addNotesInput')?.value.trim();
+  const paymentStatus = document.getElementById('addPaymentSelect')?.value || 'paid';
 
   if (isNewCust) {
-    clientName = document.getElementById('newCustomerName').value.trim();
-    clientPhone = document.getElementById('newCustomerPhone').value.trim();
-    if (!clientName) {
+    if (!newName) {
       showToast("Please enter customer full name.", "error");
       return;
     }
   } else {
-    const custSelect = document.getElementById('addCustomerSelect');
-    if (!custSelect.value) {
+    if (!customerId) {
       showToast("Please select a customer or add a new patron.", "error");
       return;
     }
-    customerId = parseInt(custSelect.value, 10);
   }
 
-  const serviceId = document.getElementById('addServiceSelect').value;
   if (!serviceId) {
     showToast("Please select a service.", "error");
     return;
   }
 
-  const staffIdVal = document.getElementById('addStaffSelect').value;
-  const staffId = staffIdVal ? parseInt(staffIdVal, 10) : null;
-  const bookingDate = document.getElementById('addDateInput').value;
-  const bookingTime = document.getElementById('addTimeSelect').value;
-  const notes = document.getElementById('addNotesInput').value.trim();
-  const paymentStatus = document.getElementById('addPaymentSelect').value;
-
   const payload = {
+    customer_id: isNewCust ? null : parseInt(customerId, 10),
+    customer_name: isNewCust ? newName : null,
+    customer_phone: isNewCust ? newPhone : null,
     service_id: parseInt(serviceId, 10),
-    staff_id: staffId,
-    booking_date: bookingDate,
-    booking_time: bookingTime,
-    payment_method: paymentStatus === 'paid' ? 'gcash' : 'cash',
+    staff_id: staffId ? parseInt(staffId, 10) : null,
+    booking_date: dateVal,
+    booking_time: timeVal,
+    notes: notesVal,
     payment_status: paymentStatus,
-    status: 'confirmed',
-    notes: notes || 'Booking created by admin.',
-    visit_type: 'salon'
+    payment_method: 'cash',
+    source: 'admin'
   };
-
-  if (isNewCust) {
-    payload.client_name = clientName;
-    payload.client_phone = clientPhone;
-  } else {
-    payload.customer_id = customerId;
-  }
 
   try {
     const res = await fetch('../api/bookings', {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify(payload),
-      credentials: 'include'
+      body: JSON.stringify(payload)
     });
 
     const result = await res.json();
     if (result.success) {
-      closeAddAppointmentModal();
       showToast('Appointment created successfully!', 'success');
+      closeAddAppointmentModal();
+      document.querySelector('#addAppointmentModal form')?.reset();
       fetchAppointments();
     } else {
       showToast(result.message || 'Failed to create appointment.', 'error');
     }
-  } catch (error) {
-    console.error('Error creating appointment:', error);
+  } catch (err) {
+    console.error('Error creating booking:', err);
     showToast('Network error while creating appointment.', 'error');
   }
 }
 
 // ================= MODAL 3: EDIT APPOINTMENT =================
 function openEditModal(id) {
+  const appt = appointmentsData.find(a => a.id === id);
+  if (!appt) return;
+
   currentActionAppointmentId = id;
-  const item = appointmentsData.find(a => a.id === id);
-  if (!item) return;
-
-  document.getElementById('editApptIdDisplay').textContent = item.displayId;
-  document.getElementById('editCustomerName').value = item.customer;
-  document.getElementById('editCustomerPhone').value = item.phone === 'N/A' ? '' : item.phone;
-  
-  const editServiceSelect = document.getElementById('editServiceSelect');
-  if (editServiceSelect) {
-    if (item.service_id) {
-      editServiceSelect.value = item.service_id;
-    } else {
-      // Find service by name
-      const foundSvc = servicesList.find(s => s.name.toLowerCase() === item.service.toLowerCase());
-      if (foundSvc) editServiceSelect.value = foundSvc.id;
-    }
-  }
-
-  const editStaffSelect = document.getElementById('editStaffSelect');
-  if (editStaffSelect) {
-    editStaffSelect.value = item.staff_id || '';
-  }
-
-  document.getElementById('editDateInput').value = item.date;
-
-  const editTimeSelect = document.getElementById('editTimeSelect');
-  if (editTimeSelect) {
-    // Format raw time to HH:MM:00
-    let cleanTime = item.rawTime;
-    if (cleanTime && cleanTime.length === 5) cleanTime += ':00';
-    editTimeSelect.value = cleanTime || '09:00:00';
-  }
-
-  document.getElementById('editStatusSelect').value = item.status;
-  document.getElementById('editPaymentSelect').value = item.paymentStatus.toLowerCase();
-  document.getElementById('editNotesInput').value = item.notes;
-
   const modal = document.getElementById('editAppointmentModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-    lockBodyScroll();
+  if (!modal) return;
+
+  // Fill in form values
+  const idDisplay = document.getElementById('editApptIdDisplay');
+  if (idDisplay) idDisplay.textContent = appt.displayId;
+
+  const nameEl = document.getElementById('editCustomerName');
+  if (nameEl) nameEl.textContent = appt.customer;
+
+  const phoneEl = document.getElementById('editCustomerPhone');
+  if (phoneEl) phoneEl.textContent = appt.phone;
+
+  const serviceSelect = document.getElementById('editServiceSelect');
+  if (serviceSelect && appt.service_id) serviceSelect.value = appt.service_id;
+
+  const staffSelect = document.getElementById('editStaffSelect');
+  if (staffSelect) staffSelect.value = appt.staff_id || "";
+
+  const dateInput = document.getElementById('editDateInput');
+  if (dateInput) dateInput.value = appt.date;
+
+  const timeSelect = document.getElementById('editTimeSelect');
+  if (timeSelect) {
+    timeSelect.value = appt.rawTime || "09:00:00";
   }
+
+  const statusSelect = document.getElementById('editStatusSelect');
+  if (statusSelect) statusSelect.value = appt.status;
+
+  const paymentSelect = document.getElementById('editPaymentSelect');
+  if (paymentSelect) paymentSelect.value = appt.paymentStatus.toLowerCase();
+
+  const notesInput = document.getElementById('editNotesInput');
+  if (notesInput) notesInput.value = appt.notes;
+
+  modal.showModal();
 }
 
 function closeEditModal() {
   const modal = document.getElementById('editAppointmentModal');
   if (modal) modal.close();
-  unlockBodyScroll();
 }
 
 async function handleSaveEdit(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   if (!currentActionAppointmentId) return;
 
-  const customerName = document.getElementById('editCustomerName').value.trim();
-  const customerPhone = document.getElementById('editCustomerPhone').value.trim();
-  const serviceId = document.getElementById('editServiceSelect').value;
-  const staffIdVal = document.getElementById('editStaffSelect').value;
-  const bookingDate = document.getElementById('editDateInput').value;
-  const bookingTime = document.getElementById('editTimeSelect').value;
-  const status = document.getElementById('editStatusSelect').value;
-  const paymentStatus = document.getElementById('editPaymentSelect').value;
-  const notes = document.getElementById('editNotesInput').value.trim();
-
-  // Find price from service list
-  const selectedSvc = servicesList.find(s => String(s.id) === String(serviceId));
-  const totalPrice = selectedSvc ? parseFloat(selectedSvc.price) : undefined;
+  const serviceId = document.getElementById('editServiceSelect')?.value;
+  const staffId = document.getElementById('editStaffSelect')?.value;
+  const dateVal = document.getElementById('editDateInput')?.value;
+  const timeVal = document.getElementById('editTimeSelect')?.value;
+  const statusVal = document.getElementById('editStatusSelect')?.value;
+  const paymentVal = document.getElementById('editPaymentSelect')?.value;
+  const notesVal = document.getElementById('editNotesInput')?.value.trim();
 
   const payload = {
-    customer_name: customerName,
-    customer_phone: customerPhone,
-    service_id: parseInt(serviceId, 10),
-    staff_id: staffIdVal ? parseInt(staffIdVal, 10) : null,
-    booking_date: bookingDate,
-    booking_time: bookingTime,
-    status: status,
-    payment_status: paymentStatus,
-    notes: notes,
-    total_price: totalPrice
+    service_id: serviceId ? parseInt(serviceId, 10) : undefined,
+    staff_id: staffId ? parseInt(staffId, 10) : null,
+    booking_date: dateVal,
+    booking_time: timeVal,
+    status: statusVal,
+    payment_status: paymentVal,
+    notes: notesVal
   };
 
   try {
     const res = await fetch(`../api/bookings/${currentActionAppointmentId}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify(payload),
-      credentials: 'include'
+      body: JSON.stringify(payload)
     });
 
     const result = await res.json();
     if (result.success) {
-      closeEditModal();
       showToast('Appointment updated successfully!', 'success');
+      closeEditModal();
       fetchAppointments();
     } else {
       showToast(result.message || 'Failed to update appointment.', 'error');
     }
-  } catch (error) {
-    console.error('Error updating appointment:', error);
+  } catch (err) {
+    console.error('Error updating appointment:', err);
     showToast('Network error while updating appointment.', 'error');
   }
 }
 
-// ================= MODAL 4: CONFIRM APPOINTMENT ACTION =================
+// Quick Confirm Handler
 async function confirmAppointment(id) {
   try {
     const res = await fetch(`../api/bookings/${id}/status`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ status: 'confirmed' }),
-      credentials: 'include'
+      body: JSON.stringify({ status: 'confirmed' })
     });
 
     const result = await res.json();
@@ -1136,94 +1103,93 @@ async function confirmAppointment(id) {
     } else {
       showToast(result.message || 'Failed to confirm appointment.', 'error');
     }
-  } catch (error) {
-    console.error('Error confirming appointment:', error);
+  } catch (err) {
+    console.error('Error confirming booking:', err);
     showToast('Network error while confirming appointment.', 'error');
   }
 }
 
-// ================= MODAL 5: RESCHEDULE APPOINTMENT =================
+// ================= MODAL 4: RESCHEDULE MODAL =================
 function openRescheduleModal(id) {
+  const appt = appointmentsData.find(a => a.id === id);
+  if (!appt) return;
+
   currentActionAppointmentId = id;
-  const item = appointmentsData.find(a => a.id === id);
-  if (!item) return;
-
-  document.getElementById('rescheduleCurrentCustomer').textContent = item.customer;
-  document.getElementById('rescheduleCurrentService').textContent = item.service;
-  document.getElementById('rescheduleCurrentSlot').textContent = `${item.dateFormatted} — ${item.time}`;
-
-  // Default to tomorrow
-  const tomorrowObj = new Date();
-  tomorrowObj.setDate(tomorrowObj.getDate() + 1);
-  document.getElementById('rescheduleNewDate').value = getLocalDateString(tomorrowObj);
-  document.getElementById('rescheduleNewTime').value = "10:30:00";
-
   const modal = document.getElementById('rescheduleModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-    lockBodyScroll();
-  }
+  if (!modal) return;
+
+  document.getElementById('rescheduleCurrentCustomer').textContent = appt.customer;
+  document.getElementById('rescheduleCurrentService').textContent = appt.service;
+  document.getElementById('rescheduleCurrentSlot').textContent = `${appt.dateFormatted} at ${appt.time}`;
+
+  const dateInput = document.getElementById('rescheduleNewDate');
+  if (dateInput) dateInput.value = appt.date;
+
+  const timeSelect = document.getElementById('rescheduleNewTime');
+  if (timeSelect) timeSelect.value = appt.rawTime || "09:00:00";
+
+  modal.showModal();
 }
 
 function closeRescheduleModal() {
   const modal = document.getElementById('rescheduleModal');
   if (modal) modal.close();
-  unlockBodyScroll();
 }
 
 async function handleConfirmReschedule(e) {
-  e.preventDefault();
+  if (e) e.preventDefault();
   if (!currentActionAppointmentId) return;
 
-  const newDate = document.getElementById('rescheduleNewDate').value;
-  const newTime = document.getElementById('rescheduleNewTime').value;
+  const newDate = document.getElementById('rescheduleNewDate')?.value;
+  const newTime = document.getElementById('rescheduleNewTime')?.value;
 
-  const payload = {
-    booking_date: newDate,
-    booking_time: newTime,
-    status: 'confirmed'
-  };
+  if (!newDate || !newTime) {
+    showToast('Please select a valid date and time.', 'error');
+    return;
+  }
 
   try {
     const res = await fetch(`../api/bookings/${currentActionAppointmentId}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
-      body: JSON.stringify(payload),
-      credentials: 'include'
+      body: JSON.stringify({
+        booking_date: newDate,
+        booking_time: newTime
+      })
     });
 
     const result = await res.json();
     if (result.success) {
-      closeRescheduleModal();
       showToast(`Appointment rescheduled to ${formatDateString(newDate)}!`, 'success');
+      closeRescheduleModal();
       fetchAppointments();
     } else {
       showToast(result.message || 'Failed to reschedule appointment.', 'error');
     }
-  } catch (error) {
-    console.error('Error rescheduling appointment:', error);
+  } catch (err) {
+    console.error('Error rescheduling booking:', err);
     showToast('Network error while rescheduling appointment.', 'error');
   }
 }
 
-// ================= MODAL 6: CANCEL APPOINTMENT =================
+// ================= MODAL 5: CANCEL MODAL =================
 function openCancelModal(id) {
-  currentActionAppointmentId = id;
-  const item = appointmentsData.find(a => a.id === id);
-  if (!item) return;
+  const appt = appointmentsData.find(a => a.id === id);
+  if (!appt) return;
 
-  document.getElementById('cancelModalRef').textContent = `${item.displayId} — ${item.customer} (${item.service})`;
+  currentActionAppointmentId = id;
   const modal = document.getElementById('cancelAppointmentModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-    lockBodyScroll();
-  }
+  if (!modal) return;
+
+  const refEl = document.getElementById('cancelModalRef');
+  if (refEl) refEl.textContent = appt.displayId;
+
+  modal.showModal();
 }
 
 function closeCancelModal() {
   const modal = document.getElementById('cancelAppointmentModal');
   if (modal) modal.close();
-  unlockBodyScroll();
 }
 
 async function handleConfirmCancellation() {
@@ -1233,42 +1199,41 @@ async function handleConfirmCancellation() {
     const res = await fetch(`../api/bookings/${currentActionAppointmentId}/cancel`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ reason: 'Admin cancelled' }),
-      credentials: 'include'
+      body: JSON.stringify({ reason: 'Admin dashboard cancellation' })
     });
 
     const result = await res.json();
     if (result.success) {
-      closeCancelModal();
       showToast('Appointment has been cancelled.', 'warning');
+      closeCancelModal();
       fetchAppointments();
     } else {
       showToast(result.message || 'Failed to cancel appointment.', 'error');
     }
-  } catch (error) {
-    console.error('Error cancelling appointment:', error);
+  } catch (err) {
+    console.error('Error cancelling booking:', err);
     showToast('Network error while cancelling appointment.', 'error');
   }
 }
 
-// ================= MODAL 7: DELETE APPOINTMENT =================
+// ================= MODAL 6: DELETE MODAL =================
 function openDeleteModal(id) {
-  currentActionAppointmentId = id;
-  const item = appointmentsData.find(a => a.id === id);
-  if (!item) return;
+  const appt = appointmentsData.find(a => a.id === id);
+  if (!appt) return;
 
-  document.getElementById('deleteModalRef').textContent = `${item.displayId} — ${item.customer} (${item.service})`;
+  currentActionAppointmentId = id;
   const modal = document.getElementById('deleteAppointmentModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-    lockBodyScroll();
-  }
+  if (!modal) return;
+
+  const refEl = document.getElementById('deleteModalRef');
+  if (refEl) refEl.textContent = appt.displayId;
+
+  modal.showModal();
 }
 
 function closeDeleteModal() {
   const modal = document.getElementById('deleteAppointmentModal');
   if (modal) modal.close();
-  unlockBodyScroll();
 }
 
 async function handleConfirmDeletion() {
@@ -1277,81 +1242,81 @@ async function handleConfirmDeletion() {
   try {
     const res = await fetch(`../api/bookings/${currentActionAppointmentId}`, {
       method: 'DELETE',
-      headers: getAuthHeaders(),
-      credentials: 'include'
+      headers: getAuthHeaders()
     });
 
     const result = await res.json();
     if (result.success) {
-      closeDeleteModal();
       showToast('Appointment record deleted permanently.', 'info');
+      closeDeleteModal();
       fetchAppointments();
     } else {
       showToast(result.message || 'Failed to delete appointment.', 'error');
     }
-  } catch (error) {
-    console.error('Error deleting appointment:', error);
+  } catch (err) {
+    console.error('Error deleting booking:', err);
     showToast('Network error while deleting appointment.', 'error');
   }
 }
 
-// ================= MODAL STEADY & SCROLL LOCK =================
+// ================= SCROLL LOCK PREVENT JITTER ON DIALOGS =================
 function onPreventApptBackgroundWheel(e) {
-  const scrollable = e.target.closest('dialog, .overflow-y-auto');
-  if (scrollable) {
-    const isScrollingDown = e.deltaY > 0;
-    const canScrollDown = scrollable.scrollTop + scrollable.clientHeight < scrollable.scrollHeight - 1;
-    const canScrollUp = scrollable.scrollTop > 0;
-
-    if ((isScrollingDown && canScrollDown) || (!isScrollingDown && canScrollUp)) {
-      return;
-    }
+  const target = e.target;
+  if (!target.closest('dialog[open]')) {
+    e.preventDefault();
   }
-  e.preventDefault();
 }
 
 function onPreventApptBackgroundTouch(e) {
-  const scrollable = e.target.closest('dialog, .overflow-y-auto');
-  if (!scrollable) {
+  const target = e.target;
+  if (!target.closest('dialog[open]')) {
     e.preventDefault();
   }
 }
 
 function onPreventApptBackgroundKeys(e) {
-  const scrollKeys = ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '];
-  if (scrollKeys.includes(e.key)) {
-    const isInput = ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName);
-    if (!isInput) {
-      e.preventDefault();
+  if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) {
+    const target = e.target;
+    if (!target.closest('dialog[open]') || ['input', 'textarea'].includes(target.tagName.toLowerCase())) {
+      if (!target.closest('dialog[open]')) e.preventDefault();
     }
   }
 }
 
 function lockBodyScroll() {
   if (isApptModalScrollLocked) return;
-  isApptModalScrollLocked = true;
-  document.body.classList.add('modal-open');
+  const scrollY = window.scrollY || window.pageYOffset || 0;
+  document.body.style.position = 'fixed';
+  document.body.style.top = `-${scrollY}px`;
+  document.body.style.width = '100%';
+  document.body.style.overflowY = 'scroll';
+  document.body.dataset.savedScrollY = scrollY.toString();
+
   window.addEventListener('wheel', onPreventApptBackgroundWheel, { passive: false });
   window.addEventListener('touchmove', onPreventApptBackgroundTouch, { passive: false });
   window.addEventListener('keydown', onPreventApptBackgroundKeys, { passive: false });
+  isApptModalScrollLocked = true;
 }
 
 function unlockBodyScroll() {
-  const anyOpen = document.querySelector('dialog[open]');
-  if (anyOpen) return;
+  if (!isApptModalScrollLocked) return;
+  const savedScrollY = parseInt(document.body.dataset.savedScrollY || '0', 10);
+  document.body.style.position = '';
+  document.body.style.top = '';
+  document.body.style.width = '';
+  document.body.style.overflowY = '';
+  delete document.body.dataset.savedScrollY;
 
-  isApptModalScrollLocked = false;
-  document.body.classList.remove('modal-open');
   window.removeEventListener('wheel', onPreventApptBackgroundWheel);
   window.removeEventListener('touchmove', onPreventApptBackgroundTouch);
   window.removeEventListener('keydown', onPreventApptBackgroundKeys);
+  isApptModalScrollLocked = false;
+  window.scrollTo(0, savedScrollY);
 }
 
 function setupDialogSteadyListeners() {
-  document.querySelectorAll('dialog').forEach(dlg => {
-    dlg.addEventListener('close', () => unlockBodyScroll());
-    dlg.addEventListener('cancel', () => unlockBodyScroll());
-
+  const allDialogs = document.querySelectorAll('dialog');
+  allDialogs.forEach(dlg => {
     dlg.addEventListener('click', (e) => {
       const rect = dlg.getBoundingClientRect();
       const isInDialog = (
@@ -1362,84 +1327,93 @@ function setupDialogSteadyListeners() {
       );
       if (!isInDialog) {
         dlg.close();
+      }
+    });
+
+    const observer = new MutationObserver(() => {
+      const hasOpenDialog = Array.from(allDialogs).some(d => d.open);
+      if (hasOpenDialog) {
+        lockBodyScroll();
+      } else {
         unlockBodyScroll();
       }
     });
+    observer.observe(dlg, { attributes: true, attributeFilter: ['open'] });
   });
 }
 
+// Sidebar Mobile Toggle
 function toggleMobileSidebar(open = null) {
   const sidebar = document.getElementById('sidebar');
   const backdrop = document.getElementById('mobileSidebarBackdrop');
-  if (!sidebar || !backdrop) return;
 
-  const isOpen = sidebar.classList.contains('translate-x-0');
-  const shouldOpen = open !== null ? open : !isOpen;
+  if (open === null) {
+    open = sidebar.classList.contains('-translate-x-full');
+  }
 
-  if (shouldOpen) {
+  if (open) {
     sidebar.classList.remove('-translate-x-full');
-    sidebar.classList.add('translate-x-0');
-    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    backdrop.classList.remove('hidden');
     backdrop.classList.add('opacity-100');
-    document.body.style.overflow = 'hidden';
   } else {
-    sidebar.classList.remove('translate-x-0');
     sidebar.classList.add('-translate-x-full');
+    backdrop.classList.add('hidden');
     backdrop.classList.remove('opacity-100');
-    backdrop.classList.add('opacity-0', 'pointer-events-none');
-    document.body.style.overflow = '';
   }
 }
 
+// Logout Modal
 function openLogoutModal() {
   const modal = document.getElementById('logoutModal');
-  if (modal && typeof modal.showModal === 'function') {
-    modal.showModal();
-    lockBodyScroll();
-  }
+  if (modal) modal.showModal();
 }
 
-// ================= TOAST NOTIFICATION HELPER =================
+function handleLogout() {
+  localStorage.removeItem('nelys_token');
+  localStorage.removeItem('nelys_user');
+  localStorage.removeItem(APPOINTMENTS_CACHE_KEY);
+  window.location.replace('../login.html');
+}
+
+// Global Toast System
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   if (!container) return;
 
   const toast = document.createElement('div');
   const colors = {
-    info: 'bg-[#541A1A] text-[#F1E2D1] border-[#810B38]',
-    success: 'bg-emerald-800 text-white border-emerald-500',
-    warning: 'bg-amber-800 text-white border-amber-500',
-    error: 'bg-rose-900 text-white border-rose-500'
+    success: 'bg-emerald-800 text-white border-emerald-900',
+    error: 'bg-rose-900 text-white border-rose-950',
+    warning: 'bg-amber-800 text-white border-amber-900',
+    info: 'bg-[#541A1A] text-white border-[#810B38]'
   };
 
   const icons = {
-    info: 'fa-solid fa-circle-info text-[#DCC3AA]',
-    success: 'fa-solid fa-circle-check text-emerald-300',
-    warning: 'fa-solid fa-triangle-exclamation text-amber-300',
-    error: 'fa-solid fa-circle-xmark text-rose-300'
+    success: 'fa-circle-check',
+    error: 'fa-circle-exclamation',
+    warning: 'fa-triangle-exclamation',
+    info: 'fa-circle-info'
   };
 
-  toast.className = `p-4 rounded-2xl shadow-2xl border text-xs font-medium flex items-center gap-3 transition-all duration-300 transform translate-y-3 opacity-0 pointer-events-auto max-w-sm ${colors[type] || colors.info}`;
+  toast.className = `flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl border text-xs font-semibold transform transition-all duration-300 translate-y-2 opacity-0 ${colors[type] || colors.info}`;
   toast.innerHTML = `
-    <i class="${icons[type] || icons.info} text-base shrink-0"></i>
-    <span class="flex-1">${escapeHtml(message)}</span>
-    <button type="button" onclick="this.parentElement.remove()" class="w-5 h-5 rounded-md hover:bg-white/20 flex items-center justify-center text-xs opacity-75 hover:opacity-100">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
+    <i class="fa-solid ${icons[type] || icons.info} text-sm"></i>
+    <span>${escapeHtml(message)}</span>
   `;
 
   container.appendChild(toast);
 
   requestAnimationFrame(() => {
-    toast.classList.remove('translate-y-3', 'opacity-0');
+    toast.classList.remove('translate-y-2', 'opacity-0');
   });
 
   setTimeout(() => {
-    toast.classList.add('opacity-0', 'translate-y-2');
+    toast.classList.add('translate-y-2', 'opacity-0');
     setTimeout(() => toast.remove(), 300);
-  }, 4000);
+  }, 3500);
 }
 
+// HTML Entity Escaper
 function escapeHtml(str) {
   if (str === null || str === undefined) return '';
   return String(str)

@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Customers — Nely’s Salon | Admin Management</title>
+  <title>Customers — Nely's Salon | Admin Management</title>
   <meta name="description"
     content="Manage customer information, booking history, statistics, and salon profiles at Nely's Salon.">
 
@@ -22,6 +22,32 @@
 
   <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
   <link rel="stylesheet" href="../assets/css/output.css">
+
+    <!-- Instant Synchronous Auth Guard & 0ms Pre-Hydrator -->
+  <script>
+    (function() {
+      try {
+        var token = localStorage.getItem('nelys_token');
+        var userJson = localStorage.getItem('nelys_user');
+        if (!token || !userJson) {
+          window.location.replace('../login.html');
+          return;
+        }
+        var user = JSON.parse(userJson);
+        if (user.role !== 'admin') {
+          window.location.replace('../customer/booking.html');
+          return;
+        }
+        var cached = localStorage.getItem('nelys_admin_customers_cache');
+        if (cached) {
+          window.__PRELOADED_CUSTOMERS__ = JSON.parse(cached);
+        }
+      } catch (e) {
+        window.location.replace('../login.html');
+      }
+    })();
+  </script>
+
 </head>
 
 <body
@@ -47,7 +73,7 @@
           class="w-8 h-8 rounded-full border border-[#DCC3AA] object-cover">
         <div>
           <span class="font-serif text-base font-bold tracking-wider text-[#F1E2D1] uppercase leading-tight block">
-            Nely’s Salon
+            Nely's Salon
           </span>
           <span class="text-[10px] tracking-widest text-[#DCC3AA] font-semibold uppercase block">
             Admin Panel
@@ -93,7 +119,7 @@
             class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
           <div>
             <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
-              Nely’s Salon
+              Nely's Salon
             </h1>
             <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
               Admin Panel
@@ -207,7 +233,7 @@
       </button>
 
       <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
-        15 Years of Beauty Heritage · Lagro, QC
+        15 Years of Beauty Heritage • Lagro, QC
       </p>
     </div>
 
@@ -421,8 +447,8 @@
 
         <!-- Result count tag -->
         <div class="flex items-center justify-between text-xs text-stone-500 mt-3 pt-3 border-t border-stone-100">
-          <span id="customersResultCount">Showing 8 registered patrons</span>
-          <span class="text-[11px] text-stone-400">Click customer row or ⋮ menu to view full profile & salon history</span>
+          <span id="customersResultCount">Showing registered patrons</span>
+          <span class="text-[11px] text-stone-400">Click customer row or action menu to view full profile & salon history</span>
         </div>
       </section>
 
@@ -479,16 +505,10 @@
       <!-- Modal Header -->
       <div class="bg-gradient-to-r from-[#541A1A] to-[#810B38] text-[#F1E2D1] p-6 flex items-start justify-between">
         <div class="flex items-center gap-4">
-          <div 
-            id="profileModalAvatar" 
-            class="w-14 h-14 rounded-2xl bg-white/10 border-2 border-[#DCC3AA] text-[#F1E2D1] flex items-center justify-center font-serif text-xl font-bold shadow-md">
-            MS
-          </div>
+          <div id="profileModalAvatar" class="w-14 h-14 rounded-2xl bg-white/10 border-2 border-[#DCC3AA] text-[#F1E2D1] flex items-center justify-center font-serif text-xl font-bold shadow-md">—</div>
           <div>
             <div class="flex items-center gap-2.5">
-              <h3 id="profileModalCustomerName" class="font-serif text-2xl font-bold text-white tracking-wide">
-                Maria Santos
-              </h3>
+              <h3 id="profileModalCustomerName" class="font-serif text-2xl font-bold text-white tracking-wide">—</h3>
               <div id="profileModalStatusBadge">
                 <!-- Status Badge -->
               </div>
@@ -496,19 +516,19 @@
             <div class="flex items-center gap-4 text-xs text-[#DCC3AA] mt-1.5 flex-wrap">
               <span class="flex items-center gap-1.5">
                 <i class="fa-solid fa-phone text-[10px]"></i>
-                <span id="profileModalPhone">0917 888 9999</span>
+                <span id="profileModalPhone">—</span>
               </span>
               <span class="flex items-center gap-1.5">
                 <i class="fa-solid fa-envelope text-[10px]"></i>
-                <a id="profileModalEmail" href="mailto:maria@email.com" class="hover:underline font-mono">maria@email.com</a>
+                <a id="profileModalEmail" href="#" class="hover:underline font-mono">—</a>
               </span>
               <span class="flex items-center gap-1.5">
                 <i class="fa-solid fa-location-dot text-[10px]"></i>
-                <span id="profileModalAddress">Quezon City</span>
+                <span id="profileModalAddress">—</span>
               </span>
               <span class="flex items-center gap-1.5 text-stone-300">
                 <i class="fa-regular fa-calendar text-[10px]"></i>
-                <span id="profileModalSince">Customer since: January 2026</span>
+                <span id="profileModalSince">—</span>
               </span>
             </div>
           </div>
@@ -536,31 +556,31 @@
             
             <div class="p-3 bg-[#FAF6F0] rounded-xl border border-[#DCC3AA]/50 text-center">
               <span class="text-[10px] text-stone-500 font-bold uppercase block">Total</span>
-              <span id="profileModalStatTotal" class="font-serif text-xl font-bold text-[#541A1A]">12</span>
+              <span id="profileModalStatTotal" class="font-serif text-xl font-bold text-[#541A1A]">0</span>
               <span class="text-[10px] text-stone-400 block mt-0.5">Appointments</span>
             </div>
 
             <div class="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/60 text-center">
               <span class="text-[10px] text-emerald-700 font-bold uppercase block">Completed</span>
-              <span id="profileModalStatCompleted" class="font-serif text-xl font-bold text-emerald-800">10</span>
+              <span id="profileModalStatCompleted" class="font-serif text-xl font-bold text-emerald-800">0</span>
               <span class="text-[10px] text-emerald-600 block mt-0.5">Sessions</span>
             </div>
 
             <div class="p-3 bg-rose-50/60 rounded-xl border border-rose-200/60 text-center">
               <span class="text-[10px] text-rose-700 font-bold uppercase block">Cancelled</span>
-              <span id="profileModalStatCancelled" class="font-serif text-xl font-bold text-rose-800">1</span>
+              <span id="profileModalStatCancelled" class="font-serif text-xl font-bold text-rose-800">0</span>
               <span class="text-[10px] text-rose-600 block mt-0.5">Visits</span>
             </div>
 
             <div class="p-3 bg-amber-50/60 rounded-xl border border-amber-200/60 text-center">
               <span class="text-[10px] text-amber-700 font-bold uppercase block">Pending</span>
-              <span id="profileModalStatPending" class="font-serif text-xl font-bold text-amber-800">1</span>
+              <span id="profileModalStatPending" class="font-serif text-xl font-bold text-amber-800">0</span>
               <span class="text-[10px] text-amber-600 block mt-0.5">Upcoming</span>
             </div>
 
             <div class="p-3 bg-[#FAF6F0] rounded-xl border border-[#DCC3AA]/50 text-center col-span-2 sm:col-span-1">
               <span class="text-[10px] text-[#810B38] font-bold uppercase block">Total Spent</span>
-              <span id="profileModalStatSpent" class="font-serif text-xl font-bold text-[#810B38]">₱4,850</span>
+              <span id="profileModalStatSpent" class="font-serif text-xl font-bold text-[#810B38]">₱0.00</span>
               <span class="text-[10px] text-stone-400 block mt-0.5">Revenue</span>
             </div>
 
@@ -687,7 +707,7 @@
           </div>
           <div>
             <h3 class="font-serif text-lg font-bold tracking-wide">Add New Customer</h3>
-            <p class="text-[11px] text-[#DCC3AA]">Register a new client account at Nely’s Salon</p>
+            <p class="text-[11px] text-[#DCC3AA]">Register a new client account at Nely's Salon</p>
           </div>
         </div>
         <button 
@@ -716,7 +736,7 @@
               type="text" 
               id="addCustName" 
               required
-              placeholder="Enter customer name (e.g. Maria Santos)" 
+              placeholder="Enter customer full name..." 
               class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
           </div>
 
@@ -982,17 +1002,18 @@
       <div class="p-4 bg-[#FAF6F0] border-b border-[#DCC3AA]/50 flex items-center justify-between text-xs">
         <div>
           <span class="text-stone-400 block text-[10px] uppercase font-bold">Booking For</span>
-          <span id="bookForCustomerName" class="font-serif font-bold text-sm text-[#541A1A]">Maria Santos</span>
+          <span id="bookForCustomerName" class="font-serif font-bold text-sm text-[#541A1A]">—</span>
         </div>
         <div class="text-right">
           <span class="text-stone-400 block text-[10px] uppercase font-bold">Contact</span>
-          <span id="bookForCustomerPhone" class="font-mono text-stone-700 font-semibold">0917 888 9999</span>
+          <span id="bookForCustomerPhone" class="font-mono text-stone-700 font-semibold">—</span>
         </div>
       </div>
 
       <!-- Form -->
       <form onsubmit="handleConfirmBookForCustomer(event)" class="p-6 space-y-4">
-            <label for="bookForService" class="block text-xs font-bold text-stone-700 mb-1">
+        <div>
+          <label for="bookForService" class="block text-xs font-bold text-stone-700 mb-1">
             Service
           </label>
           <select 
@@ -1074,7 +1095,7 @@
       </div>
       <h3 class="font-serif text-lg font-bold text-stone-800">Delete Customer Record?</h3>
       <p class="text-xs text-stone-500 mt-1.5 leading-relaxed">
-        Are you sure you want to permanently remove <strong id="deleteCustomerNameTarget" class="text-stone-800">this customer</strong> from the salon database? This action cannot be reversed.
+        Are you sure you want to permanently remove <strong id="deleteCustomerNameTarget" class="text-stone-800">—</strong> from the salon database? This action cannot be reversed.
       </p>
 
       <div class="flex items-center justify-center gap-3 mt-6">
@@ -1104,7 +1125,7 @@
       </div>
       <h3 class="font-serif text-lg font-bold text-[#541A1A]">Sign Out of Admin?</h3>
       <p class="text-xs text-stone-500 mt-1 leading-relaxed">
-        Are you sure you want to log out of your administrative session at Nely’s Salon?
+        Are you sure you want to log out of your administrative session at Nely's Salon?
       </p>
 
       <div class="flex items-center justify-center gap-3 mt-6">
@@ -1127,5 +1148,7 @@
   <!-- Customers Page JavaScript Controller -->
   <script src="../assets/js/pages/admin/customers.js?v=2.0"></script>
 
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-2 pointer-events-none"></div>
 </body>
 </html>

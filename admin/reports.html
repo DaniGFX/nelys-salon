@@ -22,6 +22,30 @@
 
   <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
   <link rel="stylesheet" href="../assets/css/output.css">
+  <!-- Instant Synchronous Auth Guard & 0ms Pre-Hydrator -->
+  <script>
+    (function() {
+      try {
+        var token = localStorage.getItem('nelys_token');
+        var userJson = localStorage.getItem('nelys_user');
+        if (!token || !userJson) {
+          window.location.replace('../login.html');
+          return;
+        }
+        var user = JSON.parse(userJson);
+        if (user.role !== 'admin') {
+          window.location.replace('../customer/booking.html');
+          return;
+        }
+        var cached = localStorage.getItem('nelys_admin_reports_cache');
+        if (cached) {
+          window.__PRELOADED_REPORTS__ = JSON.parse(cached);
+        }
+      } catch (e) {
+        window.location.replace('../login.html');
+      }
+    })();
+  </script>
 </head>
 
 <body
@@ -732,5 +756,7 @@
   <!-- Reports Page JavaScript Controller -->
   <script src="../assets/js/pages/admin/reports.js?v=2.0"></script>
 
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 </body>
 </html>

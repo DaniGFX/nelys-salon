@@ -41,11 +41,11 @@ class Booking {
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare("
             SELECT b.*, 
-                   s.name as service_name, s.code as service_code, s.category as service_category, s.duration_minutes,
+                   s.name as service_name, s.code as service_code, s.category as service_category, s.duration_minutes, s.price as service_price,
                    u.email as customer_email, u.phone as customer_phone,
-                   cp.full_name as customer_name,
+                   COALESCE(cp.full_name, u.email, 'Valued Client') as customer_name,
                    st.name as staff_name,
-                   p.payment_method, p.status as payment_status, p.reference_number as payment_ref
+                   p.payment_method, COALESCE(p.status, 'unpaid') as payment_status, p.reference_number as payment_ref
             FROM bookings b
             JOIN services s ON b.service_id = s.id
             JOIN users u ON b.customer_id = u.id
@@ -63,8 +63,8 @@ class Booking {
         $stmt = $pdo->prepare("
             SELECT b.*, 
                    s.name as service_name, s.code as service_code, s.category as service_category,
-                   cp.full_name as customer_name, u.phone as customer_phone,
-                   p.payment_method, p.status as payment_status
+                   COALESCE(cp.full_name, u.email, 'Valued Client') as customer_name, u.phone as customer_phone,
+                   p.payment_method, COALESCE(p.status, 'unpaid') as payment_status
             FROM bookings b
             JOIN services s ON b.service_id = s.id
             JOIN users u ON b.customer_id = u.id
@@ -81,8 +81,8 @@ class Booking {
         $sql = "
             SELECT b.*, 
                    s.name as service_name, s.code as service_code, s.category as service_category,
-                   cp.full_name as customer_name, u.phone as customer_phone,
-                   st.name as staff_name, p.status as payment_status, p.payment_method
+                   COALESCE(cp.full_name, u.email, 'Valued Client') as customer_name, u.phone as customer_phone,
+                   st.name as staff_name, COALESCE(p.status, 'unpaid') as payment_status, p.payment_method
             FROM bookings b
             JOIN services s ON b.service_id = s.id
             JOIN users u ON b.customer_id = u.id
@@ -109,9 +109,12 @@ class Booking {
         $sql = "
             SELECT b.*, 
                    s.name as service_name, s.code as service_code, s.category as service_category,
-                   cp.full_name as customer_name, u.phone as customer_phone, u.email as customer_email,
+                   COALESCE(cp.full_name, u.email, 'Valued Client') as customer_name, 
+                   COALESCE(u.phone, '') as customer_phone, 
+                   COALESCE(u.email, '') as customer_email,
                    st.name as staff_name,
-                   p.status as payment_status, p.payment_method
+                   COALESCE(p.status, 'unpaid') as payment_status, 
+                   p.payment_method
             FROM bookings b
             JOIN services s ON b.service_id = s.id
             JOIN users u ON b.customer_id = u.id
@@ -122,18 +125,28 @@ class Booking {
         ";
         $params = [];
 
-        if (!empty($filters['status'])) {
+        if (!empty($filters['status']) && $filters['status'] !== 'all') {
             $sql .= " AND b.status = :status";
             $params['status'] = $filters['status'];
         }
 
-        if (!empty($filters['date'])) {
+        if (!empty($filters['date']) && $filters['date'] !== 'all') {
             $sql .= " AND b.booking_date = :date";
             $params['date'] = $filters['date'];
         }
 
+        if (!empty($filters['staff_id']) && $filters['staff_id'] !== 'all') {
+            $sql .= " AND b.staff_id = :staff_id";
+            $params['staff_id'] = $filters['staff_id'];
+        }
+
+        if (!empty($filters['service_id']) && $filters['service_id'] !== 'all') {
+            $sql .= " AND b.service_id = :service_id";
+            $params['service_id'] = $filters['service_id'];
+        }
+
         if (!empty($filters['search'])) {
-            $sql .= " AND (b.reference_no LIKE :s OR cp.full_name LIKE :s OR s.name LIKE :s)";
+            $sql .= " AND (b.reference_no LIKE :s OR cp.full_name LIKE :s OR s.name LIKE :s OR u.email LIKE :s OR u.phone LIKE :s)";
             $params['s'] = '%' . $filters['search'] . '%';
         }
 
@@ -202,8 +215,6 @@ class Booking {
 
     public static function delete(int $id): bool {
         $pdo = Database::getConnection();
-        $pdo->prepare("DELETE FROM payments WHERE booking_id = :id")->execute(['id' => $id]);
-        $pdo->prepare("DELETE FROM notifications WHERE booking_id = :id")->execute(['id' => $id]);
         $stmt = $pdo->prepare("DELETE FROM bookings WHERE id = :id");
         return $stmt->execute(['id' => $id]);
     }

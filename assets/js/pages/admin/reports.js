@@ -1,3 +1,6 @@
+// Seamless 0ms Cache Preload
+const REPORTS_CACHE_KEY = 'nelys_admin_reports_cache';
+let lastRendered_reports_Hash = '';
 /**
  * Nely's Salon — Admin Reports Controller
  * Directly connected to backend database API (/api/reports, /api/dashboard/stats)
@@ -645,7 +648,7 @@ async function handleConfirmLogout() {
 
 // ================= TOAST NOTIFICATIONS =================
 function showToast(message, type = 'info') {
-  let toastContainer = document.getElementById('adminToastContainer');
+  let toastContainer = document.getElementById('toastContainer');
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.id = 'adminToastContainer';
@@ -678,4 +681,9 @@ function showToast(message, type = 'info') {
     toast.classList.add('opacity-0', 'translate-y-2');
     setTimeout(() => toast.remove(), 300);
   }, 3500);
+}
+
+function safeSetText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }

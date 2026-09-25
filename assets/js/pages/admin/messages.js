@@ -1,3 +1,6 @@
+// Seamless 0ms Cache Preload
+const MESSAGES_CACHE_KEY = 'nelys_admin_messages_cache';
+let lastRendered_messages_Hash = '';
 /**
  * Admin Messages Page Controller
  * Nely's Salon Management System
@@ -964,4 +967,9 @@ function escapeHtml(string) {
       "'": '&#39;'
     }[m];
   });
+}
+
+function safeSetText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
 }

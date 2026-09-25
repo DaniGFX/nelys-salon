@@ -656,47 +656,29 @@
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
   <!-- Scripts -->
+    <!-- Instant Synchronous Auth Guard & 0ms Pre-Hydrator -->
   <script>
-    // Mobile Sidebar Toggle
-    function toggleMobileSidebar(show) {
-      const sidebar = document.getElementById('sidebar');
-      const overlay = document.getElementById('sidebarOverlay');
-      if (!sidebar) return;
-
-      const shouldOpen = show !== undefined ? show : sidebar.classList.contains('-translate-x-full');
-      if (shouldOpen) {
-        sidebar.classList.remove('-translate-x-full');
-        if (overlay) overlay.classList.remove('hidden');
-        document.body.classList.add('overflow-hidden', 'lg:overflow-auto');
-      } else {
-        sidebar.classList.add('-translate-x-full');
-        if (overlay) overlay.classList.add('hidden');
-        document.body.classList.remove('overflow-hidden', 'lg:overflow-auto');
+    (function() {
+      try {
+        var token = localStorage.getItem('nelys_token');
+        var userJson = localStorage.getItem('nelys_user');
+        if (!token || !userJson) {
+          window.location.replace('../login.html');
+          return;
+        }
+        var user = JSON.parse(userJson);
+        if (user.role !== 'admin') {
+          window.location.replace('../customer/booking.html');
+          return;
+        }
+        var cached = localStorage.getItem('nelys_admin_messages_cache');
+        if (cached) {
+          window.__PRELOADED_MESSAGES__ = JSON.parse(cached);
+        }
+      } catch (e) {
+        window.location.replace('../login.html');
       }
-    }
-
-    // Logout Modal Handlers
-    function openLogoutModal() {
-      const modal = document.getElementById('logoutModal');
-      if (modal) {
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-      }
-    }
-
-    function closeLogoutModal() {
-      const modal = document.getElementById('logoutModal');
-      if (modal) {
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-      }
-    }
-
-    function handleConfirmLogout() {
-      localStorage.removeItem('nelys_token');
-      localStorage.removeItem('nelys_user');
-      window.location.href = '../login.html';
-    }
+    })();
   </script>
   <script src="../assets/js/pages/admin/messages.js?v=2.0"></script>
 </body>
