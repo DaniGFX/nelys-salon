@@ -64,6 +64,14 @@ try {
         echo "[INFO] Tables already exist in database.\n";
     }
 
+    // Move `role` right after `id` so it appears in the front columns of the table
+    try {
+        $pdo->exec("ALTER TABLE `users` MODIFY COLUMN `role` ENUM('admin', 'customer') NOT NULL DEFAULT 'customer' AFTER `id`");
+        echo "[OK] Reordered `role` column right after `id` (visible at the front).\n";
+    } catch (Exception $e) {
+        // Ignored if already reordered
+    }
+
     // Always ensure the requested admin credentials and role identifier are synced
     echo "[INFO] Syncing admin account ({$adminEmail})...\n";
     $syncAdmin = $pdo->prepare("

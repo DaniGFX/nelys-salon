@@ -4,10 +4,10 @@
 USE `nelys_salon_db`;
 
 -- 1. Default Users (Admin: admin@gmail.com / admin123, Customer: maria@email.com / password123)
-INSERT INTO `users` (`id`, `email`, `phone`, `password_hash`, `role`) VALUES
-(1, 'admin@gmail.com', '09171234567', '$2y$10$g3IfXvphKzMtGFww.PhwkuMqRJ5fvFSwdIhWeG493jsmxZW5Bsucu', 'admin'),
-(2, 'maria@email.com', '09178889999', '$2y$10$RsV0QKdMFYQmHQC8su9L..YYEC9Q3L2Y.3pdDymk28EfK4ZWPfSkK', 'customer')
-ON DUPLICATE KEY UPDATE `email` = VALUES(`email`), `password_hash` = VALUES(`password_hash`), `role` = VALUES(`role`);
+INSERT INTO `users` (`id`, `role`, `email`, `phone`, `password_hash`) VALUES
+(1, 'admin', 'admin@gmail.com', '09171234567', '$2y$10$g3IfXvphKzMtGFww.PhwkuMqRJ5fvFSwdIhWeG493jsmxZW5Bsucu'),
+(2, 'customer', 'maria@email.com', '09178889999', '$2y$10$RsV0QKdMFYQmHQC8su9L..YYEC9Q3L2Y.3pdDymk28EfK4ZWPfSkK')
+ON DUPLICATE KEY UPDATE `role` = VALUES(`role`), `email` = VALUES(`email`), `password_hash` = VALUES(`password_hash`);
 
 -- 2. Customer Profiles
 INSERT INTO `customer_profiles` (`user_id`, `full_name`, `home_address`, `notification_preference`) VALUES
