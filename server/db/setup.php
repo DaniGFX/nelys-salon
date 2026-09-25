@@ -8,6 +8,10 @@
 
 require_once dirname(__DIR__) . '/config/database.php';
 
+if (php_sapi_name() !== 'cli') {
+    header('Content-Type: text/plain; charset=utf-8');
+}
+
 echo "========================================\n";
 echo " Nely's Salon - Database Setup Runner\n";
 echo "========================================\n";

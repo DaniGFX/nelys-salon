@@ -47,6 +47,11 @@ class Router {
 
         try {
             switch ($resource) {
+                // Database Setup Endpoint
+                case 'setup':
+                    require_once dirname(__DIR__) . '/db/setup.php';
+                    exit;
+
                 // Auth Routes
                 case 'auth':
                     $authCtrl = new AuthController();
