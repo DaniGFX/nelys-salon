@@ -649,3 +649,56 @@ window.openLogoutModal = openLogoutModal;
 window.closeLogoutModal = closeLogoutModal;
 window.handleConfirmLogout = handleConfirmLogout;
 window.confirmLogout = confirmLogout;
+
+// ================= TOAST NOTIFICATION SYSTEM =================
+function showToast(message, type = 'info') {
+  let container = document.getElementById('toastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toastContainer';
+    container.className = 'fixed bottom-5 right-5 z-[9999] flex flex-col gap-2.5 max-w-sm pointer-events-none';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  const colors = {
+    info: 'bg-[#541A1A] text-[#F1E2D1] border-[#810B38]',
+    success: 'bg-[#1b4332] text-[#d8f3dc] border-emerald-500',
+    warning: 'bg-[#7c2d12] text-[#ffedd5] border-amber-500',
+    error: 'bg-[#7f1d1d] text-[#fee2e2] border-rose-500'
+  };
+
+  const icons = {
+    info: 'fa-solid fa-circle-info text-[#DCC3AA]',
+    success: 'fa-solid fa-circle-check text-emerald-300',
+    warning: 'fa-solid fa-triangle-exclamation text-amber-300',
+    error: 'fa-solid fa-circle-xmark text-rose-300'
+  };
+
+  toast.className = 'p-4 rounded-2xl shadow-2xl border text-xs font-semibold flex items-center gap-3 transition-all duration-300 transform translate-y-3 opacity-0 pointer-events-auto max-w-sm ' + (colors[type] || colors.info);
+  toast.innerHTML = '<i class="' + (icons[type] || icons.info) + ' text-base shrink-0"></i><span class="flex-1">' + escapeHtml(message) + '</span><button type="button" onclick="this.parentElement.remove()" class="w-5 h-5 rounded-md hover:bg-white/20 flex items-center justify-center text-xs opacity-75 hover:opacity-100"><i class="fa-solid fa-xmark"></i></button>';
+
+  container.appendChild(toast);
+
+  requestAnimationFrame(() => {
+    toast.classList.remove('translate-y-3', 'opacity-0');
+  });
+
+  setTimeout(() => {
+    toast.classList.add('opacity-0', 'translate-y-2');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+window.showToast = showToast;
+window.escapeHtml = escapeHtml;
