@@ -50,21 +50,22 @@ function hydrateServicesFromCache() {
     const raw = localStorage.getItem(SERVICES_CACHE_KEY);
     if (raw) {
       const data = JSON.parse(raw);
+      let rawServices = [];
       if (Array.isArray(data)) {
-        servicesData = data.map(mapServiceRecord);
+        rawServices = data;
       } else if (data && typeof data === 'object') {
-        const rawServices = data.services || data;
-        if (Array.isArray(rawServices)) {
-          servicesData = rawServices.map(mapServiceRecord);
-        }
+        rawServices = data.services || [];
         if (data.metrics) {
           summaryMetrics = data.metrics;
         }
       }
-      computeSummaryMetrics();
-      renderSummaryCards();
-      applyFiltersAndRender();
-      return;
+      if (rawServices.length > 0) {
+        servicesData = rawServices.map(mapServiceRecord);
+        computeSummaryMetrics();
+        renderSummaryCards();
+        applyFiltersAndRender();
+        return;
+      }
     }
   } catch (err) {
     console.warn('Could not read services cache:', err);
@@ -121,12 +122,15 @@ function getAuthHeaders() {
 // ================= FETCH DATA FROM DATABASE =================
 async function fetchServicesData() {
   const container = document.getElementById('serviceCardsGrid');
+  const emptyState = document.getElementById('servicesEmptyState');
   if (container && servicesData.length === 0) {
+    if (emptyState) emptyState.classList.add('hidden');
+    container.classList.remove('hidden');
     container.innerHTML = `
-      <div class="col-span-full py-12 text-center text-[#735e5e]">
-        <div class="inline-flex items-center gap-2 font-semibold text-sm">
-          <i class="fa-solid fa-spinner fa-spin text-[#810B38]"></i>
-          <span>Loading salon treatments from database...</span>
+      <div class="col-span-full py-16 text-center text-[#735e5e]">
+        <div class="inline-flex items-center gap-2.5 font-semibold text-sm">
+          <i class="fa-solid fa-spinner fa-spin text-[#810B38] text-base"></i>
+          <span>Loading live salon treatments from database...</span>
         </div>
       </div>
     `;

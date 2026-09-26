@@ -15,6 +15,46 @@ class Service {
         try {
             $pdo = Database::getConnection();
             $pdo->exec("ALTER TABLE `services` MODIFY COLUMN `price` DECIMAL(10,2) NULL DEFAULT NULL");
+            
+            // Automatically sync/update official 13 services and price list
+            $officialServices = [
+                ['rebonding', 'Hair Rebonding', 'Hair Services', null, 180, 'Pin-straight permanent thermal rebonding therapy with glossy silk finish (Consultation-based).'],
+                ['brazilian', 'Brazilian Treatment', 'Hair Services', 1999.00, 120, 'Transformative keratin smoothing treatment eliminating frizz with mirror-like shine.'],
+                ['hair-dye', 'Hair Dye', 'Hair Services', 699.00, 90, 'Full rich dimensional coloration or grey coverage customized to your skin tone.'],
+                ['power-dose', 'Power Dose', 'Hair Services', 499.00, 45, 'Instant high-potency restorative ampoule treatment reviving brittle, lifeless ends.'],
+                ['cold-wave', 'Cold Wave Perm', 'Hair Services', 699.00, 90, 'Volumizing texture wave or defined bounce curls with lasting curl retention.'],
+                ['bonacure', 'Bonacure Repair', 'Hair Services', 499.00, 60, 'Advanced cellular hair repair infusion rebuilding elasticity and keratin bonds.'],
+                ['keratine-treatment', 'Keratine Treatment', 'Hair Services', 499.00, 60, 'Intensive protein replacement therapy delivering silky softness and strength.'],
+                ['footspa', 'Footspa with Scrub', 'Nail & Foot Care', 199.00, 45, 'Aromatic sea-salt soak, exfoliating callus buffing, and warm soothing massage.'],
+                ['manicure', 'Classic Manicure', 'Nail & Foot Care', 149.00, 30, 'Full cuticle grooming, nail shaping, and regular lacquer polish of your choice.'],
+                ['pedicure', 'Classic Pedicure', 'Nail & Foot Care', 149.00, 40, 'Rejuvenating foot bath, cut and file grooming, and vibrant color coating.'],
+                ['trim', 'Haircut & Trim', 'Hair Services', 149.00, 30, 'Precision aesthetic trim and styling tailored to your face silhouette.'],
+                ['gel-manicure', 'Gel Manicure', 'Nail & Foot Care', 499.00, 60, 'Long-lasting chip-free UV LED gel polish with meticulous nail bed preparation.'],
+                ['gel-pedicure', 'Gel Pedicure', 'Nail & Foot Care', 499.00, 60, 'Durable high-gloss gel lacquer application with cuticle renewal care.']
+            ];
+
+            $svcStmt = $pdo->prepare("
+                INSERT INTO `services` (`code`, `name`, `category`, `price`, `duration_minutes`, `description`, `is_active`)
+                VALUES (:code, :name, :category, :price, :duration, :description, 1)
+                ON DUPLICATE KEY UPDATE
+                    `name` = VALUES(`name`),
+                    `category` = VALUES(`category`),
+                    `price` = VALUES(`price`),
+                    `duration_minutes` = VALUES(`duration_minutes`),
+                    `description` = VALUES(`description`),
+                    `is_active` = 1
+            ");
+
+            foreach ($officialServices as $svc) {
+                $svcStmt->execute([
+                    ':code'        => $svc[0],
+                    ':name'        => $svc[1],
+                    ':category'    => $svc[2],
+                    ':price'       => $svc[3],
+                    ':duration'    => $svc[4],
+                    ':description' => $svc[5]
+                ]);
+            }
         } catch (Throwable $e) {}
     }
 
