@@ -18,67 +18,88 @@ class CustomerController {
     public function index(): void {
         RoleMiddleware::requireAdmin();
 
-        $rawCustomers = CustomerProfile::allWithMetrics();
-        $summary = CustomerProfile::getSummaryMetrics();
+        try {
+            $rawCustomers = CustomerProfile::allWithMetrics();
+            $summary = CustomerProfile::getSummaryMetrics();
 
-        $customers = array_map(function($c) {
-            $createdTs = strtotime($c['user_created_at'] ?? 'now');
-            $lastVisitText = 'Never';
-            if (!empty($c['last_visit_raw'])) {
-                $lvTime = strtotime($c['last_visit_raw']);
-                $lastVisitText = date('M d', $lvTime);
-            }
-
-            // Parse notes
-            $notesList = [];
-            if (!empty($c['notes'])) {
-                $decoded = json_decode($c['notes'], true);
-                if (is_array($decoded)) {
-                    $notesList = $decoded;
-                } else {
-                    $notesList[] = [
-                        'id' => 'n_' . $c['user_id'] . '_1',
-                        'text' => $c['notes'],
-                        'date' => date('M d, Y', $createdTs),
-                        'author' => 'Admin'
-                    ];
+            $customers = array_map(function($c) {
+                $createdTs = strtotime($c['user_created_at'] ?? 'now');
+                $lastVisitText = 'Never';
+                if (!empty($c['last_visit_raw'])) {
+                    $lvTime = strtotime($c['last_visit_raw']);
+                    $lastVisitText = date('M d', $lvTime);
                 }
-            }
 
-            return [
-                'id'                    => 'CUST-' . str_pad((string)$c['user_id'], 4, '0', STR_PAD_LEFT),
-                'userId'                => (int)$c['user_id'],
-                'name'                  => $c['name'] ?: 'Customer',
-                'phone'                 => $c['phone'] ?: 'N/A',
-                'email'                 => $c['email'] ?: '',
-                'dob'                   => $c['dob'] ?: '',
-                'address'               => $c['home_address'] ?: '',
-                'city'                  => $c['city'] ?: 'Quezon City',
-                'gender'                => $c['gender'] ?: 'Female',
-                'joinedDate'            => date('F Y', $createdTs),
-                'joinedTimestamp'       => date('Y-m-d', $createdTs),
-                'status'                => $c['status'] ?: 'Active',
-                'totalAppointments'     => (int)$c['total_appointments'],
-                'completedAppointments' => (int)$c['completed_appointments'],
-                'cancelledAppointments' => (int)$c['cancelled_appointments'],
-                'pendingAppointments'   => (int)$c['pending_appointments'],
-                'totalSpent'            => (float)$c['total_spent'],
-                'totalSpentFormatted'   => '₱' . number_format((float)$c['total_spent'], 2),
-                'lastVisit'             => $lastVisitText,
-                'notes'                 => $notesList,
-            ];
-        }, $rawCustomers);
+                // Parse notes
+                $notesList = [];
+                if (!empty($c['notes'])) {
+                    $decoded = json_decode($c['notes'], true);
+                    if (is_array($decoded)) {
+                        $notesList = $decoded;
+                    } else {
+                        $notesList[] = [
+                            'id' => 'n_' . $c['user_id'] . '_1',
+                            'text' => $c['notes'],
+                            'date' => date('M d, Y', $createdTs),
+                            'author' => 'Admin'
+                        ];
+                    }
+                }
 
-        $pdo = Database::getConnection();
-        $services = Service::all(true);
-        $staff = $pdo->query("SELECT id, name, role FROM staff WHERE is_active = 1 ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+                return [
+                    'id'                    => 'CUST-' . str_pad((string)$c['user_id'], 4, '0', STR_PAD_LEFT),
+                    'userId'                => (int)$c['user_id'],
+                    'name'                  => $c['name'] ?: 'Customer',
+                    'phone'                 => $c['phone'] ?: 'N/A',
+                    'email'                 => $c['email'] ?: '',
+                    'dob'                   => $c['dob'] ?: '',
+                    'address'               => $c['home_address'] ?: '',
+                    'city'                  => $c['city'] ?: 'Quezon City',
+                    'gender'                => $c['gender'] ?: 'Female',
+                    'joinedDate'            => date('F Y', $createdTs),
+                    'joinedTimestamp'       => date('Y-m-d', $createdTs),
+                    'status'                => $c['status'] ?: 'Active',
+                    'totalAppointments'     => (int)($c['total_appointments'] ?? 0),
+                    'completedAppointments' => (int)($c['completed_appointments'] ?? 0),
+                    'cancelledAppointments' => (int)($c['cancelled_appointments'] ?? 0),
+                    'pendingAppointments'   => (int)($c['pending_appointments'] ?? 0),
+                    'totalSpent'            => (float)($c['total_spent'] ?? 0),
+                    'totalSpentFormatted'   => '₱' . number_format((float)($c['total_spent'] ?? 0), 2),
+                    'lastVisit'             => $lastVisitText,
+                    'notes'                 => $notesList,
+                ];
+            }, $rawCustomers);
 
-        Response::success([
-            'customers' => $customers,
-            'summary'   => $summary,
-            'services'  => $services,
-            'staff'     => $staff,
-        ]);
+            $pdo = Database::getConnection();
+            $services = [];
+            try {
+                $services = Service::all(true);
+            } catch (Throwable $se) {}
+
+            $staff = [];
+            try {
+                $staff = $pdo->query("SELECT id, name, role FROM staff WHERE is_active = 1 ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+            } catch (Throwable $ste) {}
+
+            Response::success([
+                'customers' => $customers,
+                'summary'   => $summary,
+                'services'  => $services,
+                'staff'     => $staff,
+            ]);
+        } catch (Throwable $e) {
+            Response::success([
+                'customers' => [],
+                'summary'   => [
+                    'total'        => 0,
+                    'newThisMonth' => 0,
+                    'withUpcoming' => 0,
+                    'returning'    => 0,
+                ],
+                'services'  => [],
+                'staff'     => [],
+            ]);
+        }
     }
 
     public function show(int $id): void {

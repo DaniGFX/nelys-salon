@@ -89,9 +89,9 @@ function checkAdminAuth() {
 // Instant SWR Cache Hydration (0ms render, zero layout shift)
 function hydrateCustomersFromCache() {
   try {
-    const data = window.__PRELOADED_CUSTOMERS__ || JSON.parse(localStorage.getItem(CUSTOMERS_CACHE_KEY) || 'null');
-    if (cached) {
-      const data = JSON.parse(cached);
+    const raw = localStorage.getItem(CUSTOMERS_CACHE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
       if (data && typeof data === 'object') {
         customersData = data.customers || [];
         summaryMetrics = data.summary || summaryMetrics;
@@ -102,11 +102,13 @@ function hydrateCustomersFromCache() {
         renderCustomersTable();
         populateBookingDropdowns();
         updateSidebarBadges();
+        return;
       }
     }
   } catch (err) {
     console.warn('Could not read customers cache:', err);
   }
+  renderSummaryCards();
 }
 
 // Helper to get auth header
@@ -193,14 +195,36 @@ async function fetchCustomersData() {
       populateBookingDropdowns();
       updateSidebarBadges();
     } else {
-      if (customersData.length === 0) {
-        showToast(result.message || 'Failed to load customer records.', 'error');
+      renderSummaryCards();
+      renderCustomersTable();
+      if (customersData.length === 0 && tbody) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-12 text-center text-[#735e5e]">
+              <p class="font-medium text-sm text-stone-600 mb-2">Unable to retrieve customer records.</p>
+              <button type="button" onclick="fetchCustomersData()" class="px-4 py-1.5 rounded-xl bg-[#810B38] text-white text-xs font-semibold hover:bg-[#62082b] transition-colors">
+                <i class="fa-solid fa-arrow-rotate-right mr-1.5"></i>Retry
+              </button>
+            </td>
+          </tr>
+        `;
       }
     }
   } catch (error) {
     console.error('Error fetching customers:', error);
-    if (customersData.length === 0) {
-      showToast('Could not connect to backend server. Please check MySQL/Apache.', 'error');
+    renderSummaryCards();
+    renderCustomersTable();
+    if (customersData.length === 0 && tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="6" class="py-12 text-center text-[#735e5e]">
+            <p class="font-medium text-sm text-stone-600 mb-2">Could not connect to backend server.</p>
+            <button type="button" onclick="fetchCustomersData()" class="px-4 py-1.5 rounded-xl bg-[#810B38] text-white text-xs font-semibold hover:bg-[#62082b] transition-colors">
+              <i class="fa-solid fa-arrow-rotate-right mr-1.5"></i>Retry
+            </button>
+          </td>
+        </tr>
+      `;
     }
   }
 }
@@ -212,7 +236,7 @@ function renderSummaryCards() {
   const statUpcoming = document.getElementById('statUpcoming');
   const statReturning = document.getElementById('statReturning');
 
-  if (statTotal) statTotal.textContent = summaryMetrics.total !== undefined ? summaryMetrics.total : customersData.length;
+  if (statTotal) statTotal.textContent = summaryMetrics.total !== undefined ? summaryMetrics.total : (customersData.length || 0);
   if (statNew) statNew.textContent = summaryMetrics.newThisMonth !== undefined ? summaryMetrics.newThisMonth : 0;
   if (statUpcoming) statUpcoming.textContent = summaryMetrics.withUpcoming !== undefined ? summaryMetrics.withUpcoming : 0;
   if (statReturning) statReturning.textContent = summaryMetrics.returning !== undefined ? summaryMetrics.returning : 0;

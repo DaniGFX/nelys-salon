@@ -1,7 +1,13 @@
 # ==============================================================================
 # NELY'S SALON MANAGEMENT SYSTEM — .gitignore
-# Comprehensive security rules for secrets, environment variables, credentials,
-# database dumps, logs, uploads, scratch scripts, and temporary files.
+# Comprehensive Security & Privacy Rules:
+# - Secrets, Environment Variables & API Credentials
+# - Payment Gateway, SMS & SMTP Secrets
+# - Database Dumps, Exports & Customer Financial Records
+# - User Uploads, Receipts & Attachments
+# - Scratch, Debug & Audit Scripts
+# - Server Logs, Session Files & Caches
+# - Cloud CLI State, IDEs, Editors & OS Files
 # ==============================================================================
 
 # ==========================================
@@ -15,10 +21,18 @@
 .env.production
 .env.backup
 .env.dist.local
+*.env
 !.env.example
 
+# Local server configurations and credential overrides
+server/config/*.local.php
+server/config/secrets.php
+server/config/credentials.php
+server/config/database.local.php
+server/config/config.local.php
+
 # ==========================================
-# 2. Authentication Tokens & Sensitive Keys
+# 2. Authentication Tokens, Keys & Certificates
 # ==========================================
 *.token
 *.jwt
@@ -32,51 +46,90 @@
 *.crt
 *.cer
 *.der
+id_rsa*
+id_ecdsa*
+id_ed25519*
 *token*.txt
 *secret*.txt
 *cred*.txt
 *password*.txt
+*auth*.txt
 auth.json
 secrets.json
+credentials.json
+client_secret*.json
 service-account*.json
 
 # ==========================================
-# 3. Database Dumps, Backups & Local DBs
+# 3. Payment Gateway, SMS & Mailer Credentials
+# ==========================================
+*paymongo*.json
+*gcash*.json
+*maya*.json
+*stripe*.json
+*paypal*.json
+*smtp*.json
+*mailer*.json
+*twilio*.json
+*semaphore*.json
+
+# ==========================================
+# 4. Database Dumps, Backups & Local DBs
 # ==========================================
 # Root-level & exported database files
 /*.sql
 *.dump
 *.sql.bak
 *.sql.gz
+*.sql.bz2
 *.sqlite
 *.sqlite3
 *.db
 *.rdb
 *backup*.sql
 *dump*.sql
+*export*.sql
+/backups/
+/database_backups/
 
-# Whitelist standard database migrations and seed templates for deployment
+# Whitelist core database migrations and seed templates for deployment
 !server/db/schema.sql
 !server/db/seeds.sql
 !server/db/migrations/*.sql
 
 # ==========================================
-# 4. Scratch & Internal Debugging Scripts
+# 5. Customer Data, Financial Exports & Receipts
 # ==========================================
-/scratch/
-/scratch_*.txt
-/scratch_*.js
-/scratch_*.php
-/scratch_*.ps1
-test_*.php
-test_*.js
+/receipts/
+/invoices/
+/exports/
+/reports/export/
+*customer_export*
+*sales_export*
+*financial_report*
+*transactions*.csv
+*payout*.xlsx
+*.csv
+*.xlsx
+*.xls
+*.pdf
+
+# Allow static template assets and images
+!assets/**
 
 # ==========================================
-# 5. User Uploads, Customer Receipts & Storage
+# 6. Session Files & Auth Cache
+# ==========================================
+sess_*
+*.session
+cookies.txt
+.sessions/
+
+# ==========================================
+# 7. User Uploads, Customer Attachments & Storage
 # ==========================================
 /uploads/
 /storage/
-/receipts/
 /attachments/
 /public/uploads/
 /assets/uploads/
@@ -84,7 +137,22 @@ test_*.js
 !/assets/images/
 
 # ==========================================
-# 6. Logs & Debugging Output
+# 8. Scratch, Test & Debugging Scripts
+# ==========================================
+/scratch/
+scratch_*
+test_*.php
+test_*.js
+debug_*.php
+audit_*.js
+apply_*.js
+check_*.js
+build_*.js
+temp_*.js
+temp_*.php
+
+# ==========================================
+# 9. Logs, PID & Debugging Output
 # ==========================================
 *.log
 error_log
@@ -96,9 +164,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+*.pid
+*.seed
+*.pid.lock
+.phpunit.result.cache
 
 # ==========================================
-# 7. Dependencies & Vendor Directories
+# 10. Dependencies & Vendor Directories
 # ==========================================
 /node_modules/
 /vendor/
@@ -107,7 +179,7 @@ composer.phar
 .pnpm-store/
 
 # ==========================================
-# 8. Temporary Files & Build Caches
+# 11. Temporary Files & Build Caches
 # ==========================================
 tmp/
 temp/
@@ -121,7 +193,17 @@ temp/
 .sass-cache/
 
 # ==========================================
-# 9. IDEs, Editors & AI Workspaces
+# 12. Cloud Platforms & Dev Tool State
+# ==========================================
+.railway/
+.vercel/
+.netlify/
+.envrc
+.aws/
+.ssh/
+
+# ==========================================
+# 13. IDEs, Editors & AI Workspaces
 # ==========================================
 .vscode/
 .idea/
@@ -142,7 +224,7 @@ temp/
 .claude/
 
 # ==========================================
-# 10. Operating System Files
+# 14. Operating System Files
 # ==========================================
 .DS_Store
 .DS_Store?

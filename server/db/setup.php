@@ -82,6 +82,28 @@ try {
         echo "[OK] Added `is_read` column to notifications table.\n";
     } catch (Exception $e) {}
 
+    // Ensure customer_profiles table has city, dob, gender, status, notes columns
+    try {
+        $pdo->exec("ALTER TABLE `customer_profiles` ADD COLUMN `city` VARCHAR(100) DEFAULT 'Quezon City' AFTER `home_address`");
+        echo "[OK] Added `city` column to customer_profiles table.\n";
+    } catch (Exception $e) {}
+    try {
+        $pdo->exec("ALTER TABLE `customer_profiles` ADD COLUMN `dob` DATE NULL AFTER `city`");
+        echo "[OK] Added `dob` column to customer_profiles table.\n";
+    } catch (Exception $e) {}
+    try {
+        $pdo->exec("ALTER TABLE `customer_profiles` ADD COLUMN `gender` ENUM('Female', 'Male', 'Other') DEFAULT 'Female' AFTER `dob`");
+        echo "[OK] Added `gender` column to customer_profiles table.\n";
+    } catch (Exception $e) {}
+    try {
+        $pdo->exec("ALTER TABLE `customer_profiles` ADD COLUMN `status` ENUM('Active', 'Inactive') DEFAULT 'Active' AFTER `gender`");
+        echo "[OK] Added `status` column to customer_profiles table.\n";
+    } catch (Exception $e) {}
+    try {
+        $pdo->exec("ALTER TABLE `customer_profiles` ADD COLUMN `notes` TEXT NULL AFTER `status`");
+        echo "[OK] Added `notes` column to customer_profiles table.\n";
+    } catch (Exception $e) {}
+
     // Seed sample bookings for today if none exist
     try {
         $todayStr = date('Y-m-d');
