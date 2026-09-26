@@ -72,6 +72,33 @@ try {
         // Ignored if already reordered
     }
 
+    // Ensure notifications table has `category` and `is_read` columns
+    try {
+        $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `category` VARCHAR(50) DEFAULT 'system' AFTER `title`");
+        echo "[OK] Added `category` column to notifications table.\n";
+    } catch (Exception $e) {}
+    try {
+        $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `is_read` TINYINT(1) DEFAULT 0 AFTER `status`");
+        echo "[OK] Added `is_read` column to notifications table.\n";
+    } catch (Exception $e) {}
+
+    // Seed sample bookings for today if none exist
+    try {
+        $todayStr = date('Y-m-d');
+        $checkToday = (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE booking_date = '$todayStr'")->fetchColumn();
+        if ($checkToday === 0) {
+            $pdo->exec("
+                INSERT INTO `bookings` (`reference_no`, `customer_id`, `service_id`, `staff_id`, `booking_date`, `booking_time`, `visit_type`, `status`, `total_price`, `notes`)
+                VALUES 
+                ('NS-" . date('Ymd') . "-0101', 2, 1, 1, '$todayStr', '10:00:00', 'salon', 'confirmed', 1999.00, 'Brazilian treatment with consultation'),
+                ('NS-" . date('Ymd') . "-0202', 2, 2, 2, '$todayStr', '13:30:00', 'salon', 'pending', 699.00, 'Hair dye ash brown tone'),
+                ('NS-" . date('Ymd') . "-0303', 2, 12, 3, '$todayStr', '15:00:00', 'home', 'completed', 499.00, 'Home service gel manicure')
+                ON DUPLICATE KEY UPDATE `reference_no` = `reference_no`
+            ");
+            echo "[OK] Seeded live sample bookings for today ({$todayStr}).\n";
+        }
+    } catch (Exception $e) {}
+
     // Always ensure the requested admin credentials and role identifier are synced
     echo "[INFO] Syncing admin account ({$adminEmail})...\n";
     $syncAdmin = $pdo->prepare("

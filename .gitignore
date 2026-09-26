@@ -1,23 +1,49 @@
-# ==========================================
-# Dependencies & Package Managers
-# ==========================================
-/node_modules/
-/vendor/
-composer.phar
-.npm
-.pnpm-store
+# ==============================================================================
+# NELY'S SALON MANAGEMENT SYSTEM — .gitignore
+# Comprehensive security rules for secrets, environment variables, credentials,
+# database dumps, logs, uploads, scratch scripts, and temporary files.
+# ==============================================================================
 
 # ==========================================
-# Environment & Secrets (NEVER COMMIT)
+# 1. Environment Variables & Secrets (CRITICAL)
 # ==========================================
 .env
 .env.*
+.env.local
+.env.development
+.env.staging
+.env.production
+.env.backup
+.env.dist.local
 !.env.example
 
 # ==========================================
-# Database Exports & Dumps (Prevents Data Leaks)
+# 2. Authentication Tokens & Sensitive Keys
 # ==========================================
-# Exclude root SQL exports (e.g. phpMyAdmin / MySQL Workbench dumps)
+*.token
+*.jwt
+*.secret
+*.key
+*.pem
+*.pub
+*.pkcs12
+*.pfx
+*.p12
+*.crt
+*.cer
+*.der
+*token*.txt
+*secret*.txt
+*cred*.txt
+*password*.txt
+auth.json
+secrets.json
+service-account*.json
+
+# ==========================================
+# 3. Database Dumps, Backups & Local DBs
+# ==========================================
+# Root-level & exported database files
 /*.sql
 *.dump
 *.sql.bak
@@ -25,49 +51,105 @@ composer.phar
 *.sqlite
 *.sqlite3
 *.db
+*.rdb
 *backup*.sql
 *dump*.sql
 
-# ==========================================
-# SSL / TLS Certificates & Private Keys
-# ==========================================
-*.pem
-*.key
-*.crt
-*.cert
-*.pfx
-*.p12
+# Whitelist standard database migrations and seed templates for deployment
+!server/db/schema.sql
+!server/db/seeds.sql
+!server/db/migrations/*.sql
 
 # ==========================================
-# Logs & Debugging Files
+# 4. Scratch & Internal Debugging Scripts
 # ==========================================
+/scratch/
+/scratch_*.txt
+/scratch_*.js
+/scratch_*.php
+/scratch_*.ps1
+test_*.php
+test_*.js
+
+# ==========================================
+# 5. User Uploads, Customer Receipts & Storage
+# ==========================================
+/uploads/
+/storage/
+/receipts/
+/attachments/
+/public/uploads/
+/assets/uploads/
+!/uploads/.gitkeep
+!/assets/images/
+
+# ==========================================
+# 6. Logs & Debugging Output
+# ==========================================
+*.log
 error_log
 php_errors.log
-*.log
+access_log
+access.log
+debug.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
 
 # ==========================================
-# Temporary & Cache Files
+# 7. Dependencies & Vendor Directories
+# ==========================================
+/node_modules/
+/vendor/
+composer.phar
+.npm/
+.pnpm-store/
+
+# ==========================================
+# 8. Temporary Files & Build Caches
 # ==========================================
 tmp/
 temp/
 *.tmp
 *.bak
+*.old
+*.orig
+.cache/
+.parcel-cache/
+.turbo/
+.sass-cache/
 
 # ==========================================
-# Operating System & IDE Files
+# 9. IDEs, Editors & AI Workspaces
 # ==========================================
 .vscode/
 .idea/
+.fleet/
+*.sublime-project
+*.sublime-workspace
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.swp
+*.swo
 *~
+.gemini/
+.agents/
+.cursor/
+.windsurf/
+.claude/
+
+# ==========================================
+# 10. Operating System Files
+# ==========================================
 .DS_Store
-Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
 ehthumbs.db
+Thumbs.db
 Desktop.ini
+[Dd]esktop.ini

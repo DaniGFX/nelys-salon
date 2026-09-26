@@ -43,6 +43,9 @@ class Database {
 
             try {
                 self::$instance = new PDO($dsn, $user, $pass, $options);
+                try {
+                    self::$instance->exec("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
+                } catch (Exception $ignored) {}
             } catch (PDOException $e) {
                 error_log('[Nely\'s Salon] DB connection error: ' . $e->getMessage());
                 if (php_sapi_name() === 'cli') {
