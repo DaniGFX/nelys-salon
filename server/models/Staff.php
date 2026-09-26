@@ -8,36 +8,139 @@ require_once dirname(__DIR__) . '/config/database.php';
 require_once __DIR__ . '/Service.php';
 
 class Staff {
+    private static bool $schemaChecked = false;
+
+    public static function ensureSchema(): void {
+        if (self::$schemaChecked) return;
+        self::$schemaChecked = true;
+        try {
+            $pdo = Database::getConnection();
+            
+            // Ensure table exists
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `staff` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `name` VARCHAR(100) NOT NULL,
+                `role` VARCHAR(100) NOT NULL DEFAULT 'Salon Staff',
+                `specialties` VARCHAR(255) NULL,
+                `avatar` VARCHAR(255) NULL DEFAULT 'director.jpg',
+                `is_active` TINYINT(1) DEFAULT 1,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            // Ensure all columns exist on Railway
+            try { $pdo->exec("ALTER TABLE `staff` ADD COLUMN `full_name` VARCHAR(150) NULL AFTER `name`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `staff` ADD COLUMN `phone` VARCHAR(50) NULL AFTER `role`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `staff` ADD COLUMN `email` VARCHAR(100) NULL AFTER `phone`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `staff` ADD COLUMN `address` VARCHAR(255) NULL AFTER `email`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `staff` ADD COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'Active' AFTER `is_active`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `staff` ADD COLUMN `availability` VARCHAR(50) NOT NULL DEFAULT 'Available' AFTER `status`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `staff` ADD COLUMN `schedule` TEXT NULL AFTER `availability`"); } catch (Throwable $e) {}
+
+            // Seed default staff members if empty
+            $count = (int)$pdo->query("SELECT COUNT(*) FROM `staff`")->fetchColumn();
+            if ($count === 0) {
+                $defaultSchedule = json_encode([
+                    'Monday'    => '9:00 AM – 6:00 PM',
+                    'Tuesday'   => '9:00 AM – 6:00 PM',
+                    'Wednesday' => '9:00 AM – 6:00 PM',
+                    'Thursday'  => '9:00 AM – 6:00 PM',
+                    'Friday'    => '9:00 AM – 6:00 PM',
+                    'Saturday'  => '9:00 AM – 6:00 PM',
+                    'Sunday'    => 'Day Off'
+                ]);
+
+                $seedStmt = $pdo->prepare("
+                    INSERT INTO `staff` (`id`, `name`, `full_name`, `role`, `phone`, `email`, `address`, `specialties`, `avatar`, `is_active`, `status`, `availability`, `schedule`)
+                    VALUES (:id, :name, :full_name, :role, :phone, :email, :address, :specialties, :avatar, 1, 'Active', 'Available', :schedule)
+                    ON DUPLICATE KEY UPDATE `name` = VALUES(`name`)
+                ");
+
+                $seedStmt->execute([
+                    ':id'          => 1,
+                    ':name'        => 'Nely',
+                    ':full_name'   => 'Nely P. Dimaculangan',
+                    ':role'        => 'Master Stylist / Director',
+                    ':phone'       => '0917 123 4567',
+                    ':email'       => 'nely@nelyssalon.com',
+                    ':address'     => 'Lagro, Quezon City',
+                    ':specialties' => 'Hair Coloring, Rebonding, Precision Cuts',
+                    ':avatar'      => 'director.jpg',
+                    ':schedule'    => $defaultSchedule
+                ]);
+
+                $seedStmt->execute([
+                    ':id'          => 2,
+                    ':name'        => 'Ana',
+                    ':full_name'   => 'Ana Marie Ramos',
+                    ':role'        => 'Senior Nail Artist & Stylist',
+                    ':phone'       => '0917 234 5678',
+                    ':email'       => 'ana@nelyssalon.com',
+                    ':address'     => 'Fairview, Quezon City',
+                    ':specialties' => 'Nail Art, Gel Manicure/Pedicure, Hair Treatments',
+                    ':avatar'      => 'sculptor.jpg',
+                    ':schedule'    => $defaultSchedule
+                ]);
+
+                $seedStmt->execute([
+                    ':id'          => 3,
+                    ':name'        => 'Elena',
+                    ':full_name'   => 'Elena Cruz',
+                    ':role'        => 'Spa & Treatment Specialist',
+                    ':phone'       => '0917 345 6789',
+                    ':email'       => 'elena@nelyssalon.com',
+                    ':address'     => 'Novaliches, Quezon City',
+                    ':specialties' => 'Footspa, Deep Conditioning, Keratin Therapy',
+                    ':avatar'      => 'spa-specialist.jpg',
+                    ':schedule'    => $defaultSchedule
+                ]);
+            }
+        } catch (Throwable $e) {}
+    }
+
     public static function all(bool $activeOnly = false): array {
+        self::ensureSchema();
         $pdo = Database::getConnection();
-        $sql = "SELECT s.*, 
-                COUNT(b.id) AS total_appointments,
-                SUM(CASE WHEN b.status = 'completed' THEN 1 ELSE 0 END) AS completed_appointments
-                FROM staff s
-                LEFT JOIN bookings b ON b.staff_id = s.id";
-        
-        if ($activeOnly) {
-            $sql .= " WHERE s.is_active = 1 AND s.status = 'Active'";
+        try {
+            $sql = "SELECT s.*, 
+                    (SELECT COUNT(*) FROM bookings b WHERE b.staff_id = s.id) AS total_appointments,
+                    (SELECT COUNT(*) FROM bookings b WHERE b.staff_id = s.id AND b.status = 'completed') AS completed_appointments
+                    FROM staff s";
+            
+            if ($activeOnly) {
+                $sql .= " WHERE (s.is_active = 1 OR s.is_active IS NULL) AND (s.status = 'Active' OR s.status IS NULL)";
+            }
+            
+            $sql .= " ORDER BY s.id ASC";
+            return $pdo->query($sql)->fetchAll();
+        } catch (Throwable $e) {
+            return [];
         }
-        
-        $sql .= " GROUP BY s.id ORDER BY s.id ASC";
-        return $pdo->query($sql)->fetchAll();
     }
 
     public static function getSummaryMetrics(): array {
+        self::ensureSchema();
         $pdo = Database::getConnection();
-        
-        $total = (int)$pdo->query("SELECT COUNT(*) FROM staff")->fetchColumn();
-        $active = (int)$pdo->query("SELECT COUNT(*) FROM staff WHERE status = 'Active' AND is_active = 1")->fetchColumn();
-        $onLeave = (int)$pdo->query("SELECT COUNT(*) FROM staff WHERE status = 'On Leave'")->fetchColumn();
-        $inactive = (int)$pdo->query("SELECT COUNT(*) FROM staff WHERE status = 'Inactive' OR is_active = 0")->fetchColumn();
+        try {
+            $total = (int)$pdo->query("SELECT COUNT(*) FROM staff")->fetchColumn();
+            $active = (int)$pdo->query("SELECT COUNT(*) FROM staff WHERE (status = 'Active' OR status IS NULL) AND (is_active = 1 OR is_active IS NULL)")->fetchColumn();
+            $onLeave = (int)$pdo->query("SELECT COUNT(*) FROM staff WHERE status = 'On Leave'")->fetchColumn();
+            $inactive = (int)$pdo->query("SELECT COUNT(*) FROM staff WHERE status = 'Inactive' OR is_active = 0")->fetchColumn();
 
-        return [
-            'total'    => $total,
-            'active'   => $active,
-            'on_leave' => $onLeave,
-            'inactive' => $inactive
-        ];
+            return [
+                'total'    => $total,
+                'active'   => $active,
+                'on_leave' => $onLeave,
+                'inactive' => $inactive
+            ];
+        } catch (Throwable $e) {
+            return [
+                'total'    => 0,
+                'active'   => 0,
+                'on_leave' => 0,
+                'inactive' => 0
+            ];
+        }
     }
 
     public static function findById(int $id): ?array {

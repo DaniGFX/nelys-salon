@@ -15,11 +15,21 @@ INSERT INTO `customer_profiles` (`user_id`, `full_name`, `home_address`, `notifi
 ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`);
 
 -- 3. Staff Members (3 Core Specialists)
-INSERT INTO `staff` (`id`, `name`, `role`, `specialties`, `avatar`, `is_active`) VALUES
-(1, 'Nely', 'Master Stylist / Director', 'Hair Coloring, Rebonding, Precision Cuts', 'director.jpg', 1),
-(2, 'Ana', 'Senior Nail Artist & Stylist', 'Nail Art, Gel Manicure/Pedicure, Hair Treatments', 'sculptor.jpg', 1),
-(3, 'Elena', 'Spa & Treatment Specialist', 'Footspa, Deep Conditioning, Keratin Therapy', 'spa-specialist.jpg', 1)
-ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
+INSERT INTO `staff` (`id`, `name`, `full_name`, `role`, `phone`, `email`, `address`, `specialties`, `avatar`, `is_active`, `status`, `availability`, `schedule`) VALUES
+(1, 'Nely', 'Nely P. Dimaculangan', 'Master Stylist / Director', '0917 123 4567', 'nely@nelyssalon.com', 'Lagro, Quezon City', 'Hair Coloring, Rebonding, Precision Cuts', 'director.jpg', 1, 'Active', 'Available', '{"Monday":"9:00 AM – 6:00 PM","Tuesday":"9:00 AM – 6:00 PM","Wednesday":"9:00 AM – 6:00 PM","Thursday":"9:00 AM – 6:00 PM","Friday":"9:00 AM – 6:00 PM","Saturday":"9:00 AM – 6:00 PM","Sunday":"Day Off"}'),
+(2, 'Ana', 'Ana Marie Ramos', 'Senior Nail Artist & Stylist', '0917 234 5678', 'ana@nelyssalon.com', 'Fairview, Quezon City', 'Nail Art, Gel Manicure/Pedicure, Hair Treatments', 'sculptor.jpg', 1, 'Active', 'Available', '{"Monday":"9:00 AM – 6:00 PM","Tuesday":"9:00 AM – 6:00 PM","Wednesday":"9:00 AM – 6:00 PM","Thursday":"9:00 AM – 6:00 PM","Friday":"9:00 AM – 6:00 PM","Saturday":"9:00 AM – 6:00 PM","Sunday":"Day Off"}'),
+(3, 'Elena', 'Elena Cruz', 'Spa & Treatment Specialist', '0917 345 6789', 'elena@nelyssalon.com', 'Novaliches, Quezon City', 'Footspa, Deep Conditioning, Keratin Therapy', 'spa-specialist.jpg', 1, 'Active', 'Available', '{"Monday":"9:00 AM – 6:00 PM","Tuesday":"9:00 AM – 6:00 PM","Wednesday":"9:00 AM – 6:00 PM","Thursday":"9:00 AM – 6:00 PM","Friday":"9:00 AM – 6:00 PM","Saturday":"9:00 AM – 6:00 PM","Sunday":"Day Off"}')
+ON DUPLICATE KEY UPDATE 
+  `name` = VALUES(`name`),
+  `full_name` = VALUES(`full_name`),
+  `role` = VALUES(`role`),
+  `phone` = VALUES(`phone`),
+  `email` = VALUES(`email`),
+  `address` = VALUES(`address`),
+  `specialties` = VALUES(`specialties`),
+  `status` = VALUES(`status`),
+  `availability` = VALUES(`availability`),
+  `is_active` = VALUES(`is_active`);
 
 -- 4. 13 Salon Services
 INSERT INTO `services` (`id`, `code`, `name`, `category`, `price`, `duration_minutes`, `description`, `is_active`) VALUES

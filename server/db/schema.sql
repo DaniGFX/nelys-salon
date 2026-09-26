@@ -41,10 +41,17 @@ DROP TABLE IF EXISTS `staff`;
 CREATE TABLE `staff` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `name` VARCHAR(100) NOT NULL,
-  `role` VARCHAR(100) NOT NULL,
+  `full_name` VARCHAR(150) NULL,
+  `role` VARCHAR(100) NOT NULL DEFAULT 'Salon Staff',
+  `phone` VARCHAR(50) NULL,
+  `email` VARCHAR(100) NULL,
+  `address` VARCHAR(255) NULL,
   `specialties` VARCHAR(255) NULL,
-  `avatar` VARCHAR(255) NULL,
+  `avatar` VARCHAR(255) NULL DEFAULT 'director.jpg',
   `is_active` TINYINT(1) DEFAULT 1,
+  `status` VARCHAR(50) DEFAULT 'Active',
+  `availability` VARCHAR(50) DEFAULT 'Available',
+  `schedule` TEXT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
