@@ -73,7 +73,7 @@
       }
     })();
   </script>
-  <script defer src="../assets/js/pages/admin/payments.js?v=4.4"></script>
+  <script defer src="../assets/js/pages/admin/payments.js?v=4.5"></script>
 </head>
 
 <body
@@ -332,8 +332,8 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statTodayRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#810B38]">—</h3>
-          <span id="statTodayVisits" class="text-xs font-bold text-stone-400">—</span>
+          <h3 id="statTodayRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#810B38]">₱0</h3>
+          <span id="statTodayVisits" class="text-xs font-bold text-stone-400">0 visits</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
           <i class="fa-solid fa-money-bill-wave text-emerald-600 text-[10px]"></i>
@@ -350,8 +350,8 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statMonthRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">—</h3>
-          <span id="statMonthGross" class="text-xs font-bold text-stone-400">—</span>
+          <h3 id="statMonthRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">₱0</h3>
+          <span id="statMonthGross" class="text-xs font-bold text-stone-400">Gross billing</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
           <i class="fa-solid fa-arrow-trend-up text-emerald-600 text-[10px]"></i>
@@ -368,7 +368,7 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statPaidRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">—</h3>
+          <h3 id="statPaidRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">₱0</h3>
           <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">Settled</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
@@ -386,7 +386,7 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statPendingRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-amber-700">—</h3>
+          <h3 id="statPendingRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-amber-700">₱0</h3>
           <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Balance</span>
         </div>
         <p class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
@@ -568,12 +568,12 @@
 
           <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/50">
             <span class="text-[10px] text-stone-500 font-bold uppercase block">Daily Average</span>
-            <span id="revenueDailyAvg" class="font-bold text-stone-700">—</span>
+            <span id="revenueDailyAvg" class="font-bold text-stone-700">₱0</span>
           </div>
 
           <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/50">
             <span class="text-[10px] text-stone-500 font-bold uppercase block">Top Method</span>
-            <span id="revenueTopMethod" class="font-bold text-[#810B38]">—</span>
+            <span id="revenueTopMethod" class="font-bold text-[#810B38]">Cash</span>
           </div>
         </div>
 

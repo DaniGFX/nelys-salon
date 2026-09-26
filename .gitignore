@@ -15,6 +15,7 @@
 # - Build Caches, Temporary Files & Backups
 # - Cloud CLI State, Platform Metadata & Postman Environments
 # - IDEs, Code Editors, AI Assistant Metadata & OS Artifacts
+# - Archives, Compressed Backups & Database Client Caches
 # ==============================================================================
 
 # ==========================================
@@ -108,6 +109,10 @@ certificates/
 *mailgun*.json
 *webhook_secret*
 *.postman_environment.json
+*thunder-client*.json
+*insomnia*.json
+*http-client.env.json
+*rest-client.env.json
 
 # ==========================================
 # 4. Database Dumps, Backups & Local DBs
@@ -241,7 +246,7 @@ composer.phar
 .yarn/
 
 # ==========================================
-# 12. Temporary Files & Build Caches
+# 12. Temporary Files, Caches & Archives
 # ==========================================
 tmp/
 temp/
@@ -252,6 +257,12 @@ temp/
 *.swp
 *.swo
 *~
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
 .cache/
 .parcel-cache/
 .turbo/
@@ -271,7 +282,7 @@ temp/
 .docker/
 
 # ==========================================
-# 14. IDEs, Editors & AI Workspaces
+# 14. IDEs, Editors, Database Tools & AI Workspaces
 # ==========================================
 .vscode/
 .idea/
@@ -288,6 +299,10 @@ temp/
 .cursor/
 .windsurf/
 .claude/
+.copilot/
+.dbeaver/
+.navicat/
+.tableplus/
 
 # ==========================================
 # 15. Operating System Files

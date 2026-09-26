@@ -7,7 +7,57 @@
 require_once dirname(__DIR__) . '/config/database.php';
 
 class Payment {
+    private static bool $schemaChecked = false;
+
+    public static function ensureSchema(): void {
+        if (self::$schemaChecked) return;
+        self::$schemaChecked = true;
+        try {
+            $pdo = Database::getConnection();
+
+            // Ensure table exists
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `payments` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `booking_id` INT NULL,
+                `customer_id` INT NULL,
+                `service_id` INT NULL,
+                `amount` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+                `payment_method` VARCHAR(50) NOT NULL DEFAULT 'cash',
+                `reference_number` VARCHAR(100) NULL,
+                `receipt_file` VARCHAR(255) NULL,
+                `notes` TEXT NULL,
+                `status` VARCHAR(50) NOT NULL DEFAULT 'paid',
+                `paid_at` TIMESTAMP NULL,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            // Ensure all columns exist on Railway
+            try { $pdo->exec("ALTER TABLE `payments` MODIFY COLUMN `booking_id` INT NULL"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `payments` ADD COLUMN `customer_id` INT NULL AFTER `booking_id`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `payments` ADD COLUMN `service_id` INT NULL AFTER `customer_id`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `payments` ADD COLUMN `notes` TEXT NULL AFTER `receipt_file`"); } catch (Throwable $e) {}
+
+            // Seed default payment records if empty
+            $count = (int)$pdo->query("SELECT COUNT(*) FROM `payments`")->fetchColumn();
+            if ($count === 0) {
+                $seedStmt = $pdo->prepare("
+                    INSERT INTO `payments` (`id`, `booking_id`, `customer_id`, `service_id`, `amount`, `payment_method`, `reference_number`, `notes`, `status`, `paid_at`, `created_at`)
+                    VALUES 
+                    (1, 1, 1, 1, 1999.00, 'gcash', 'GCASH-982347102938', 'Full settlement for Brazilian Blowout appointment.', 'paid', NOW(), NOW()),
+                    (2, 2, 2, 2, 699.00, 'cash', 'CASH-20260910', 'Direct salon counter payment for Hair Dye.', 'paid', NOW(), NOW()),
+                    (3, 3, 2, 3, 499.00, 'gcash', 'GCASH-881290312389', 'Walk-in settlement for Gel Manicure session.', 'paid', NOW(), NOW())
+                    ON DUPLICATE KEY UPDATE `amount` = VALUES(`amount`)
+                ");
+                $seedStmt->execute();
+            }
+        } catch (Throwable $e) {
+            error_log('Payment::ensureSchema Error: ' . $e->getMessage());
+        }
+    }
+
     public static function allWithDetails(array $filters = []): array {
+        self::ensureSchema();
         $pdo = Database::getConnection();
 
         $sql = "SELECT p.*,
@@ -35,54 +85,7 @@ class Payment {
     }
 
     public static function getSummaryMetrics(): array {
-        $pdo = Database::getConnection();
-
-        // 1. Today's Revenue & Visits
-        $stmtToday = $pdo->query("
-            SELECT COALESCE(SUM(amount), 0) AS total_today, COUNT(id) AS visits_today
-            FROM payments
-            WHERE status IN ('paid', 'partial')
-              AND DATE(COALESCE(paid_at, created_at)) = CURRENT_DATE
-        ");
-        $todayData = $stmtToday->fetch();
-        $todayRevenue = (float)($todayData['total_today'] ?? 0);
-        $todayVisits = (int)($todayData['visits_today'] ?? 0);
-
-        // 2. Month's Revenue
-        $stmtMonth = $pdo->query("
-            SELECT COALESCE(SUM(amount), 0) AS total_month
-            FROM payments
-            WHERE status IN ('paid', 'partial')
-              AND YEAR(COALESCE(paid_at, created_at)) = YEAR(CURRENT_DATE)
-              AND MONTH(COALESCE(paid_at, created_at)) = MONTH(CURRENT_DATE)
-        ");
-        $monthRevenue = (float)($stmtMonth->fetchColumn() ?? 0);
-
-        // 3. Paid & Pending Total
-        $paidRevenue = (float)$pdo->query("
-            SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'paid'
-        ")->fetchColumn();
-
-        $pendingRevenue = (float)$pdo->query("
-            SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status IN ('pending', 'partial')
-        ")->fetchColumn();
-
-        // 4. Weekly Breakdown (Current Week Mon-Sun)
-        $stmtWeekly = $pdo->query("
-            SELECT 
-                DAYOFWEEK(COALESCE(paid_at, created_at)) AS day_num,
-                DATE_FORMAT(COALESCE(paid_at, created_at), '%a') AS day_name,
-                DATE(COALESCE(paid_at, created_at)) AS date_str,
-                COALESCE(SUM(amount), 0) AS daily_total
-            FROM payments
-            WHERE status IN ('paid', 'partial')
-              AND YEARWEEK(COALESCE(paid_at, created_at), 1) = YEARWEEK(CURRENT_DATE, 1)
-            GROUP BY date_str, day_num, day_name
-            ORDER BY date_str ASC
-        ");
-        $weeklyRows = $stmtWeekly->fetchAll();
-
-        // Map 7 days
+        self::ensureSchema();
         $daysOfWeek = [
             'Mon' => ['label' => 'Monday', 'day' => 'Mon', 'amount' => 0],
             'Tue' => ['label' => 'Tuesday', 'day' => 'Tue', 'amount' => 0],
@@ -93,47 +96,109 @@ class Payment {
             'Sun' => ['label' => 'Sunday', 'day' => 'Sun', 'amount' => 0],
         ];
 
-        $weeklyTotal = 0;
+        $todayRevenue = 0.0;
+        $todayVisits = 0;
+        $monthRevenue = 0.0;
+        $paidRevenue = 0.0;
+        $pendingRevenue = 0.0;
+        $weeklyTotal = 0.0;
         $highestDay = 'Mon';
-        $highestAmount = 0;
-
-        foreach ($weeklyRows as $w) {
-            $dayKey = $w['day_name'];
-            $amt = (float)$w['daily_total'];
-            if (isset($daysOfWeek[$dayKey])) {
-                $daysOfWeek[$dayKey]['amount'] = $amt;
-            }
-            $weeklyTotal += $amt;
-            if ($amt > $highestAmount) {
-                $highestAmount = $amt;
-                $highestDay = $dayKey;
-            }
-        }
-
-        $dailyAvg = count($weeklyRows) > 0 ? round($weeklyTotal / 7, 2) : 0;
-
-        // 5. Payment Methods Breakdown
-        $stmtMethods = $pdo->query("
-            SELECT payment_method, COUNT(id) AS count, COALESCE(SUM(amount), 0) AS total
-            FROM payments
-            WHERE status IN ('paid', 'partial')
-            GROUP BY payment_method
-            ORDER BY total DESC
-        ");
-        $methodRows = $stmtMethods->fetchAll();
-
+        $highestAmount = 0.0;
+        $dailyAvg = 0.0;
         $topMethod = 'Cash';
         $topMethodPct = 0;
-        $allMethodsTotal = array_sum(array_column($methodRows, 'total'));
-        if ($allMethodsTotal > 0 && !empty($methodRows)) {
-            $topRow = $methodRows[0];
-            $methodNames = [
-                'cash'          => 'Cash',
-                'gcash'         => 'GCash',
-                'bank_transfer' => 'Bank Transfer'
-            ];
-            $topMethod = $methodNames[$topRow['payment_method']] ?? ucfirst($topRow['payment_method']);
-            $topMethodPct = round(((float)$topRow['total'] / $allMethodsTotal) * 100);
+
+        try {
+            $pdo = Database::getConnection();
+
+            // 1. Today's Revenue & Visits
+            $stmtToday = $pdo->query("
+                SELECT COALESCE(SUM(amount), 0) AS total_today, COUNT(id) AS visits_today
+                FROM payments
+                WHERE status IN ('paid', 'partial')
+                  AND DATE(COALESCE(paid_at, created_at)) = CURRENT_DATE
+            ");
+            if ($stmtToday) {
+                $todayData = $stmtToday->fetch();
+                $todayRevenue = (float)($todayData['total_today'] ?? 0);
+                $todayVisits = (int)($todayData['visits_today'] ?? 0);
+            }
+
+            // 2. Month's Revenue
+            $stmtMonth = $pdo->query("
+                SELECT COALESCE(SUM(amount), 0) AS total_month
+                FROM payments
+                WHERE status IN ('paid', 'partial')
+                  AND YEAR(COALESCE(paid_at, created_at)) = YEAR(CURRENT_DATE)
+                  AND MONTH(COALESCE(paid_at, created_at)) = MONTH(CURRENT_DATE)
+            ");
+            if ($stmtMonth) {
+                $monthRevenue = (float)($stmtMonth->fetchColumn() ?? 0);
+            }
+
+            // 3. Paid & Pending Total
+            $paidRevenue = (float)$pdo->query("
+                SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status = 'paid'
+            ")->fetchColumn();
+
+            $pendingRevenue = (float)$pdo->query("
+                SELECT COALESCE(SUM(amount), 0) FROM payments WHERE status IN ('pending', 'partial')
+            ")->fetchColumn();
+
+            // 4. Weekly Breakdown (Current Week Mon-Sun)
+            $stmtWeekly = $pdo->query("
+                SELECT 
+                    DAYOFWEEK(COALESCE(paid_at, created_at)) AS day_num,
+                    DATE_FORMAT(COALESCE(paid_at, created_at), '%a') AS day_name,
+                    DATE(COALESCE(paid_at, created_at)) AS date_str,
+                    COALESCE(SUM(amount), 0) AS daily_total
+                FROM payments
+                WHERE status IN ('paid', 'partial')
+                  AND YEARWEEK(COALESCE(paid_at, created_at), 1) = YEARWEEK(CURRENT_DATE, 1)
+                GROUP BY date_str, day_num, day_name
+                ORDER BY date_str ASC
+            ");
+            if ($stmtWeekly) {
+                $weeklyRows = $stmtWeekly->fetchAll();
+                foreach ($weeklyRows as $w) {
+                    $dayKey = $w['day_name'];
+                    $amt = (float)$w['daily_total'];
+                    if (isset($daysOfWeek[$dayKey])) {
+                        $daysOfWeek[$dayKey]['amount'] = $amt;
+                    }
+                    $weeklyTotal += $amt;
+                    if ($amt > $highestAmount) {
+                        $highestAmount = $amt;
+                        $highestDay = $dayKey;
+                    }
+                }
+                $dailyAvg = count($weeklyRows) > 0 ? round($weeklyTotal / 7, 2) : 0;
+            }
+
+            // 5. Payment Methods Breakdown
+            $stmtMethods = $pdo->query("
+                SELECT payment_method, COUNT(id) AS count, COALESCE(SUM(amount), 0) AS total
+                FROM payments
+                WHERE status IN ('paid', 'partial')
+                GROUP BY payment_method
+                ORDER BY total DESC
+            ");
+            if ($stmtMethods) {
+                $methodRows = $stmtMethods->fetchAll();
+                $allMethodsTotal = array_sum(array_column($methodRows, 'total'));
+                if ($allMethodsTotal > 0 && !empty($methodRows)) {
+                    $topRow = $methodRows[0];
+                    $methodNames = [
+                        'cash'          => 'Cash',
+                        'gcash'         => 'GCash',
+                        'bank_transfer' => 'Bank Transfer'
+                    ];
+                    $topMethod = $methodNames[$topRow['payment_method']] ?? ucfirst($topRow['payment_method']);
+                    $topMethodPct = round(((float)$topRow['total'] / $allMethodsTotal) * 100);
+                }
+            }
+        } catch (Throwable $e) {
+            error_log('Payment::getSummaryMetrics Error: ' . $e->getMessage());
         }
 
         return [

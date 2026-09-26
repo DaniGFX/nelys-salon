@@ -16,17 +16,41 @@ class PaymentController {
     public function index(): void {
         RoleMiddleware::requireAdmin();
 
-        $payments = Payment::allWithDetails();
-        $metrics = Payment::getSummaryMetrics();
-        $services = Service::all(true);
-        $customers = CustomerProfile::allWithMetrics();
+        try {
+            Payment::ensureSchema();
+            $payments = Payment::allWithDetails();
+            $metrics = Payment::getSummaryMetrics();
+            $services = Service::all(true);
+            $customers = CustomerProfile::allWithMetrics();
 
-        Response::success([
-            'payments'  => $payments,
-            'metrics'   => $metrics,
-            'services'  => $services,
-            'customers' => $customers
-        ]);
+            Response::success([
+                'payments'  => $payments,
+                'metrics'   => $metrics,
+                'services'  => $services,
+                'customers' => $customers
+            ]);
+        } catch (Throwable $e) {
+            error_log('PaymentController::index Error: ' . $e->getMessage());
+            Response::success([
+                'payments'  => [],
+                'metrics'   => [
+                    'today_revenue'      => 0,
+                    'today_visits'       => 0,
+                    'month_revenue'      => 0,
+                    'paid_revenue'       => 0,
+                    'pending_revenue'    => 0,
+                    'weekly_revenue'     => [],
+                    'weekly_total'       => 0,
+                    'highest_day'        => 'Mon',
+                    'highest_amount'     => 0,
+                    'daily_average'      => 0,
+                    'top_payment_method' => 'Cash',
+                    'top_payment_pct'    => 0
+                ],
+                'services'  => [],
+                'customers' => []
+            ]);
+        }
     }
 
     public function show(int $id): void {

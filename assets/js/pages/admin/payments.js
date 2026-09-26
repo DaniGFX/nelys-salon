@@ -47,12 +47,55 @@ let currentMethodFilter = 'all';
 let currentRevenueTimeframe = 'week';
 
 // ================= INITIALIZATION & AUTH =================
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initPayments);
+} else {
+  initPayments();
+}
+
+function initPayments() {
+  hydratePaymentsFromCache();
   checkAdminAuth();
   setupEventListeners();
   fetchPaymentsData();
   fetchSidebarStats();
-});
+}
+
+function hydratePaymentsFromCache() {
+  try {
+    const raw = localStorage.getItem(PAYMENTS_CACHE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      let rawPayments = [];
+      if (Array.isArray(data)) {
+        rawPayments = data;
+      } else if (data && typeof data === 'object') {
+        rawPayments = data.payments || [];
+        if (data.metrics) {
+          summaryMetrics = Object.assign(summaryMetrics, data.metrics);
+        }
+        if (data.services && Array.isArray(data.services)) {
+          servicesCatalog = data.services;
+        }
+        if (data.customers && Array.isArray(data.customers)) {
+          customersList = data.customers;
+        }
+      }
+      if (rawPayments.length > 0) {
+        paymentsList = rawPayments.map(mapPaymentRecord);
+        populateRecordModalDropdowns();
+        renderSummaryCards();
+        renderRevenueOverview(currentRevenueTimeframe);
+        applyFiltersAndRender();
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read payments cache:', err);
+  }
+  renderSummaryCards();
+  renderRevenueOverview(currentRevenueTimeframe);
+}
 
 function checkAdminAuth() {
   const token = localStorage.getItem('nelys_token');
@@ -102,6 +145,25 @@ function getAuthHeaders() {
 
 // ================= FETCH DATA FROM BACKEND =================
 async function fetchPaymentsData() {
+  const tableBody = document.getElementById('paymentsTableBody');
+  const emptyState = document.getElementById('paymentsEmptyState');
+  const tableContainer = document.getElementById('paymentsTableContainer');
+
+  if (tableBody && paymentsList.length === 0) {
+    if (emptyState) emptyState.classList.add('hidden');
+    if (tableContainer) tableContainer.classList.remove('hidden');
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="7" class="px-5 py-12 text-center text-[#735e5e]">
+          <div class="inline-flex items-center gap-2.5 font-semibold text-xs">
+            <i class="fa-solid fa-spinner fa-spin text-[#810B38] text-sm"></i>
+            <span>Loading payment transactions from database...</span>
+          </div>
+        </td>
+      </tr>
+    `;
+  }
+
   try {
     const res = await fetch('../api/payments', {
       method: 'GET',
@@ -111,6 +173,8 @@ async function fetchPaymentsData() {
 
     if (res.status === 401 || res.status === 403) {
       console.warn('Admin session expired or unauthenticated.');
+      window.location.replace('../login.html');
+      return;
     }
 
     if (!res.ok) {
@@ -119,6 +183,10 @@ async function fetchPaymentsData() {
 
     const json = await res.json();
     if (json.data) {
+      try {
+        localStorage.setItem(PAYMENTS_CACHE_KEY, JSON.stringify(json.data));
+      } catch (e) {}
+
       if (json.data.payments && Array.isArray(json.data.payments)) {
         paymentsList = json.data.payments.map(mapPaymentRecord);
       } else if (Array.isArray(json.data)) {
@@ -145,7 +213,20 @@ async function fetchPaymentsData() {
 
   } catch (err) {
     console.error('Error fetching payments from backend:', err);
-    showToast('Failed to load payment records from server.', 'error');
+    renderSummaryCards();
+    renderRevenueOverview(currentRevenueTimeframe);
+    if (paymentsList.length === 0 && tableBody) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="7" class="px-5 py-8 text-center text-[#735e5e]">
+            <p class="font-medium text-xs text-stone-700 mb-2">Unable to connect to database or fetch transactions.</p>
+            <button type="button" onclick="fetchPaymentsData()" class="px-4 py-1.5 rounded-xl bg-[#810B38] text-white text-xs font-semibold hover:bg-[#62082b] transition-colors">
+              <i class="fa-solid fa-arrow-rotate-right mr-1.5"></i>Retry Loading
+            </button>
+          </td>
+        </tr>
+      `;
+    }
   }
 }
 
@@ -1205,5 +1286,32 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// Global Window Bindings for Inline HTML Handlers
+window.openLogoutModal = openLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.handleConfirmLogout = handleConfirmLogout;
+window.confirmLogout = confirmLogout;
+window.openRecordPaymentModal = openRecordPaymentModal;
+window.closeRecordPaymentModal = closeRecordPaymentModal;
+window.handleRecordPaymentSubmit = handleRecordPaymentSubmit;
+window.handleRecordServiceChange = handleRecordServiceChange;
+window.openPaymentDetailsModal = openPaymentDetailsModal;
+window.closePaymentDetailsModal = closePaymentDetailsModal;
+window.openEditPaymentModal = openEditPaymentModal;
+window.closeEditPaymentModal = closeEditPaymentModal;
+window.handleEditPaymentSubmit = handleEditPaymentSubmit;
+window.openReceiptModal = openReceiptModal;
+window.closeReceiptModal = closeReceiptModal;
+window.printReceipt = printReceipt;
+window.openRefundModal = openRefundModal;
+window.closeRefundModal = closeRefundModal;
+window.handleConfirmRefund = handleConfirmRefund;
+window.quickMarkPaid = quickMarkPaid;
+window.toggleKebabMenu = toggleKebabMenu;
+window.filterBySummaryCard = filterBySummaryCard;
+window.resetFilters = resetFilters;
+window.changeRevenueTimeframe = changeRevenueTimeframe;
+window.toggleMobileSidebar = toggleMobileSidebar;
+window.fetchPaymentsData = fetchPaymentsData;
 window.showToast = showToast;
 window.escapeHtml = escapeHtml;
