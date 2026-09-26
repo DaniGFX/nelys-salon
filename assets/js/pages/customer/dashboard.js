@@ -237,11 +237,12 @@ async function loadDashboardAppointments() {
     const res = await fetch('../api/bookings', { headers });
     const result = await res.json();
 
-    if (res.ok && result.status === 'success' && Array.isArray(result.data)) {
+    if (res.ok && (result.success || result.status === 'success') && Array.isArray(result.data)) {
       customerBookings = result.data;
       updateDashboardMetrics(customerBookings);
       renderDashboardUpcoming(customerBookings);
       renderDashboardRecentTable(customerBookings);
+      saveCustomerDashboardCache({ bookings: customerBookings });
     } else {
       console.warn('No active bookings returned from server:', result);
       handleEmptyBookingState();
@@ -501,6 +502,7 @@ async function loadFeaturedServices() {
         if (active.length > 0) {
           currentServices = active.slice(0, 4).map(mapBackendServiceToCard);
           renderFeaturedServices(currentServices);
+          saveCustomerDashboardCache({ services: currentServices });
           return;
         }
       }
@@ -634,6 +636,7 @@ async function loadDashboardNotifications() {
   currentNotifications = notifs;
   renderDashboardNotificationsPanel(notifs);
   renderDashboardNotificationsModal(notifs);
+  saveCustomerDashboardCache({ notifications: notifs });
 }
 
 function renderDashboardNotificationsPanel(notifs) {
@@ -1354,3 +1357,29 @@ function showToast(message, type = 'info') {
     setTimeout(() => toast.remove(), 300);
   }, 4500);
 }
+
+// ================= GLOBAL WINDOW BINDINGS =================
+window.initCustomerDashboard = initCustomerDashboard;
+window.hydrateCustomerDashboardFromCache = hydrateCustomerDashboardFromCache;
+window.openDetailsModal = openDetailsModal;
+window.closeDetailsModal = closeDetailsModal;
+window.openCancelModal = openCancelModal;
+window.closeCancelModal = closeCancelModal;
+window.confirmCancellation = confirmCancellation;
+window.openNotificationsModal = openNotificationsModal;
+window.closeNotificationsModal = closeNotificationsModal;
+window.openLocationModal = openLocationModal;
+window.closeLocationModal = closeLocationModal;
+window.openProfileModal = openProfileModal;
+window.closeProfileModal = closeProfileModal;
+window.handleProfileSave = handleProfileSave;
+window.showReceiptModal = showReceiptModal;
+window.closeReceiptModal = closeReceiptModal;
+window.printCustomerReceipt = printCustomerReceipt;
+window.filterAppointments = filterAppointments;
+window.toggleMobileSidebar = toggleMobileSidebar;
+window.openLogoutModal = openLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.confirmLogout = confirmLogout;
+window.handleLogout = handleLogout;
+window.showToast = showToast;
