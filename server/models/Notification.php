@@ -7,7 +7,54 @@
 require_once dirname(__DIR__) . '/config/database.php';
 
 class Notification {
+    private static bool $schemaChecked = false;
+
+    public static function ensureSchema(): void {
+        if (self::$schemaChecked) return;
+        self::$schemaChecked = true;
+        try {
+            $pdo = Database::getConnection();
+
+            // Ensure table exists
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `notifications` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `user_id` INT NULL,
+                `category` VARCHAR(50) NOT NULL DEFAULT 'system',
+                `title` VARCHAR(255) NOT NULL,
+                `message` TEXT NOT NULL,
+                `type` VARCHAR(50) NOT NULL DEFAULT 'info',
+                `action_link` VARCHAR(255) NULL,
+                `is_read` TINYINT(1) NOT NULL DEFAULT 0,
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            // Ensure columns exist
+            try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `category` VARCHAR(50) NOT NULL DEFAULT 'system' AFTER `user_id`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `type` VARCHAR(50) NOT NULL DEFAULT 'info' AFTER `message`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `action_link` VARCHAR(255) NULL AFTER `type`"); } catch (Throwable $e) {}
+
+            // Seed default notifications if empty
+            $count = (int)$pdo->query("SELECT COUNT(*) FROM `notifications`")->fetchColumn();
+            if ($count === 0) {
+                $seedStmt = $pdo->prepare("
+                    INSERT INTO `notifications` (`id`, `user_id`, `category`, `title`, `message`, `type`, `action_link`, `is_read`, `created_at`)
+                    VALUES 
+                    (1, 1, 'appointments', 'New Appointment Booking', 'Maria Santos booked Brazilian Blowout for today at 2:00 PM.', 'success', 'appointments.html', 0, NOW()),
+                    (2, 1, 'payments', 'Payment Received', 'Received ₱1,999.00 payment via GCash (Ref: GCASH-982347102938).', 'success', 'payments.html', 0, NOW()),
+                    (3, 1, 'customers', 'New Customer Registration', 'Ana Reyes registered a new customer profile.', 'info', 'customers.html', 1, NOW()),
+                    (4, 1, 'system', 'Salon System Update', 'Database performance optimizations and automated backups completed.', 'info', 'settings.html', 1, NOW())
+                    ON DUPLICATE KEY UPDATE `title` = VALUES(`title`)
+                ");
+                $seedStmt->execute();
+            }
+        } catch (Throwable $e) {
+            error_log('Notification::ensureSchema Error: ' . $e->getMessage());
+        }
+    }
+
     public static function allWithDetails(array $filters = []): array {
+        self::ensureSchema();
         $pdo = Database::getConnection();
 
         $sql = "
@@ -50,14 +97,25 @@ class Notification {
     }
 
     public static function getSummaryMetrics(): array {
-        $pdo = Database::getConnection();
+        self::ensureSchema();
+        $total = 0;
+        $unread = 0;
+        $appointments = 0;
+        $payments = 0;
+        $customers = 0;
+        $system = 0;
 
-        $total = (int)$pdo->query("SELECT COUNT(*) FROM notifications")->fetchColumn();
-        $unread = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE is_read = 0 OR is_read IS NULL")->fetchColumn();
-        $appointments = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE category = 'appointments'")->fetchColumn();
-        $payments = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE category = 'payments'")->fetchColumn();
-        $customers = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE category = 'customers'")->fetchColumn();
-        $system = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE category = 'system'")->fetchColumn();
+        try {
+            $pdo = Database::getConnection();
+            $total = (int)$pdo->query("SELECT COUNT(*) FROM notifications")->fetchColumn();
+            $unread = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE is_read = 0 OR is_read IS NULL")->fetchColumn();
+            $appointments = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE category = 'appointments'")->fetchColumn();
+            $payments = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE category = 'payments'")->fetchColumn();
+            $customers = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE category = 'customers'")->fetchColumn();
+            $system = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE category = 'system'")->fetchColumn();
+        } catch (Throwable $e) {
+            error_log('Notification::getSummaryMetrics Error: ' . $e->getMessage());
+        }
 
         return [
             'total'        => $total,

@@ -13,27 +13,58 @@ class NotificationController {
     public function index(): void {
         $user = AuthMiddleware::checkOptional();
         if ($user && ($user['role'] ?? '') === 'admin') {
-            $filters = [
-                'category' => $_GET['category'] ?? 'all',
-                'status'   => $_GET['status'] ?? 'all',
-                'search'   => $_GET['search'] ?? '',
-            ];
+            try {
+                Notification::ensureSchema();
+                $filters = [
+                    'category' => $_GET['category'] ?? 'all',
+                    'status'   => $_GET['status'] ?? 'all',
+                    'search'   => $_GET['search'] ?? '',
+                ];
 
-            $notifications = Notification::allWithDetails($filters);
-            $metrics = Notification::getSummaryMetrics();
-            $preferences = Notification::getPreferences();
+                $notifications = Notification::allWithDetails($filters);
+                $metrics = Notification::getSummaryMetrics();
+                $preferences = Notification::getPreferences();
 
-            Response::success([
-                'notifications' => $notifications,
-                'metrics'       => $metrics,
-                'preferences'   => $preferences,
-            ]);
+                Response::success([
+                    'notifications' => $notifications,
+                    'metrics'       => $metrics,
+                    'preferences'   => $preferences,
+                ]);
+            } catch (Throwable $e) {
+                error_log('NotificationController::index Error: ' . $e->getMessage());
+                Response::success([
+                    'notifications' => [],
+                    'metrics'       => [
+                        'total'        => 0,
+                        'unread'       => 0,
+                        'appointments' => 0,
+                        'payments'     => 0,
+                        'customers'    => 0,
+                        'system'       => 0,
+                    ],
+                    'preferences'   => [
+                        'newBooking'       => true,
+                        'apptConfirmation' => true,
+                        'apptCancellation' => true,
+                        'apptRescheduling' => true,
+                        'paymentReceived'  => true,
+                        'pendingPayment'   => true,
+                        'newCustomer'      => true
+                    ],
+                ]);
+            }
             return;
         }
 
         $userId = $user ? ($user['id'] ?? null) : null;
-        $notifications = Notification::forUser($userId);
-        Response::success($notifications);
+        try {
+            Notification::ensureSchema();
+            $notifications = Notification::forUser($userId);
+            Response::success($notifications);
+        } catch (Throwable $e) {
+            error_log('NotificationController::forUser Error: ' . $e->getMessage());
+            Response::success([]);
+        }
     }
 
     public function markRead(int $id): void {

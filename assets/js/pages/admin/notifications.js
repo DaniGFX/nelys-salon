@@ -32,11 +32,49 @@ let activeNotification = null;
 let currentFilter = 'all';
 
 // ================= DOM INITIALIZATION & AUTH =================
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initNotifications);
+} else {
+  initNotifications();
+}
+
+function initNotifications() {
+  hydrateNotificationsFromCache();
   checkAdminAuth();
   fetchNotificationsData();
   fetchSidebarStats();
-});
+}
+
+function hydrateNotificationsFromCache() {
+  try {
+    const raw = localStorage.getItem(NOTIFICATIONS_CACHE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      let rawNotifs = [];
+      if (Array.isArray(data)) {
+        rawNotifs = data;
+      } else if (data && typeof data === 'object') {
+        rawNotifs = data.notifications || [];
+        if (data.metrics) {
+          summaryMetrics = Object.assign(summaryMetrics, data.metrics);
+        }
+        if (data.preferences) {
+          notificationPreferences = Object.assign(notificationPreferences, data.preferences);
+          populatePreferencesForm(notificationPreferences);
+        }
+      }
+      if (rawNotifs.length > 0) {
+        notificationsList = rawNotifs.map(mapNotificationRecord);
+        renderSummaryCards();
+        applyFilterAndRender();
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read notifications cache:', err);
+  }
+  renderSummaryCards();
+}
 
 function checkAdminAuth() {
   const token = localStorage.getItem('nelys_token');
@@ -86,6 +124,18 @@ function getAuthHeaders() {
 
 // ================= FETCH DATA FROM BACKEND =================
 async function fetchNotificationsData() {
+  const container = document.getElementById('notificationsListContainer');
+  if (container && notificationsList.length === 0) {
+    container.innerHTML = `
+      <div class="py-12 text-center text-[#735e5e] bg-white rounded-2xl border border-[#DCC3AA]/50">
+        <div class="inline-flex items-center gap-2.5 font-semibold text-xs">
+          <i class="fa-solid fa-spinner fa-spin text-[#810B38] text-sm"></i>
+          <span>Loading notifications from database...</span>
+        </div>
+      </div>
+    `;
+  }
+
   try {
     const res = await fetch(`../api/notifications?category=${encodeURIComponent(currentFilter)}`, {
       method: 'GET',
@@ -95,7 +145,7 @@ async function fetchNotificationsData() {
 
     if (res.status === 401 || res.status === 403) {
       console.warn('Admin session unauthenticated or expired.');
-      window.location.href = '../login.html';
+      window.location.replace('../login.html');
       return;
     }
 
@@ -105,6 +155,10 @@ async function fetchNotificationsData() {
 
     const json = await res.json();
     if (json.data) {
+      try {
+        localStorage.setItem(NOTIFICATIONS_CACHE_KEY, JSON.stringify(json.data));
+      } catch (e) {}
+
       if (Array.isArray(json.data.notifications)) {
         notificationsList = json.data.notifications.map(mapNotificationRecord);
       } else if (Array.isArray(json.data)) {
@@ -126,7 +180,17 @@ async function fetchNotificationsData() {
 
   } catch (err) {
     console.error('Error fetching notifications:', err);
-    showToast('Failed to load notifications from database.', 'error');
+    renderSummaryCards();
+    if (notificationsList.length === 0 && container) {
+      container.innerHTML = `
+        <div class="py-10 text-center text-[#735e5e] bg-white rounded-2xl border border-[#DCC3AA]/50">
+          <p class="font-medium text-xs text-stone-700 mb-2">Unable to connect to database or fetch notifications.</p>
+          <button type="button" onclick="fetchNotificationsData()" class="px-4 py-1.5 rounded-xl bg-[#810B38] text-white text-xs font-semibold hover:bg-[#62082b] transition-colors">
+            <i class="fa-solid fa-arrow-rotate-right mr-1.5"></i>Retry Loading
+          </button>
+        </div>
+      `;
+    }
   }
 }
 
@@ -759,16 +823,6 @@ function safeSetText(id, text) {
   if (el) el.textContent = text;
 }
 
-window.openLogoutModal = openLogoutModal;
-window.closeLogoutModal = closeLogoutModal;
-window.handleConfirmLogout = typeof handleConfirmLogout === 'function' ? handleConfirmLogout : function() {
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
-  sessionStorage.clear();
-  window.location.href = '../login.html';
-};
-window.confirmLogout = window.handleConfirmLogout;
-
 // ================= STANDARDIZED ADMIN LOGOUT HANDLERS =================
 function openLogoutModal() {
   const modal = document.getElementById('logoutModal');
@@ -801,7 +855,21 @@ function confirmLogout() {
   handleConfirmLogout();
 }
 
+// Global Window Bindings for Inline HTML Handlers
 window.openLogoutModal = openLogoutModal;
 window.closeLogoutModal = closeLogoutModal;
 window.handleConfirmLogout = handleConfirmLogout;
 window.confirmLogout = confirmLogout;
+window.markAllAsRead = markAllAsRead;
+window.markSingleAsRead = markSingleAsRead;
+window.setNotificationFilter = setNotificationFilter;
+window.openNotificationDetailsModal = openNotificationDetailsModal;
+window.closeNotificationDetailsModal = closeNotificationDetailsModal;
+window.openPreferencesModal = openPreferencesModal;
+window.closePreferencesModal = closePreferencesModal;
+window.handleSavePreferences = handleSavePreferences;
+window.handleNotificationAction = handleNotificationAction;
+window.toggleMobileSidebar = toggleMobileSidebar;
+window.fetchNotificationsData = fetchNotificationsData;
+window.showToast = showToast;
+window.escapeHtml = escapeHtml;
