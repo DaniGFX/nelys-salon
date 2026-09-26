@@ -1,13 +1,20 @@
 # ==============================================================================
 # NELY'S SALON MANAGEMENT SYSTEM — .gitignore
-# Comprehensive Security & Privacy Rules:
-# - Secrets, Environment Variables & API Credentials
-# - Payment Gateway, SMS & SMTP Secrets
-# - Database Dumps, Exports & Customer Financial Records
-# - User Uploads, Receipts & Attachments
-# - Scratch, Debug & Audit Scripts
-# - Server Logs, Session Files & Caches
-# - Cloud CLI State, IDEs, Editors & OS Files
+# Comprehensive Security, Privacy & Confidentiality Rules:
+# - Secrets, Environment Variables & API Keys
+# - Authentication Tokens, Certificates & Private Keys
+# - Payment Gateway, SMS, Webhook & Mailer Secrets
+# - Database Dumps, Backups & Local Database Files
+# - Customer Data, Financial Reports, Receipts & Invoices
+# - User Uploads, Customer Attachments & Media Storage
+# - PHP Sessions, Cookies & Auth Caches
+# - Scratch, Audit, Simulation & Debugging Scripts
+# - Server Logs, Error Logs & Process IDs
+# - Local Server Configurations (XAMPP, Apache, PHP overrides)
+# - Dependencies & Package Manager Artifacts
+# - Build Caches, Temporary Files & Backups
+# - Cloud CLI State, Platform Metadata & Postman Environments
+# - IDEs, Code Editors, AI Assistant Metadata & OS Artifacts
 # ==============================================================================
 
 # ==========================================
@@ -20,16 +27,23 @@
 .env.staging
 .env.production
 .env.backup
+.env.vault
+.env.keys
+.env.me
 .env.dist.local
 *.env
-!.env.example
+*.env.php
+!/.env.example
 
-# Local server configurations and credential overrides
+# Local server configurations & database overrides
 server/config/*.local.php
 server/config/secrets.php
 server/config/credentials.php
 server/config/database.local.php
 server/config/config.local.php
+server/config/env.local.php
+config.local.php
+database.local.php
 
 # ==========================================
 # 2. Authentication Tokens, Keys & Certificates
@@ -46,32 +60,54 @@ server/config/config.local.php
 *.crt
 *.cer
 *.der
+*.csr
+*.kdbx
+*.ovpn
 id_rsa*
+id_dsa*
 id_ecdsa*
 id_ed25519*
+known_hosts
+authorized_keys
 *token*.txt
 *secret*.txt
 *cred*.txt
 *password*.txt
 *auth*.txt
+*api_key*
+*apikey*
+*.passwd
+*.pass
+*htpasswd
 auth.json
 secrets.json
 credentials.json
 client_secret*.json
 service-account*.json
+credentials/
+secrets/
+keys/
+certs/
+certificates/
 
 # ==========================================
-# 3. Payment Gateway, SMS & Mailer Credentials
+# 3. Payment Gateway, SMS, Webhooks & Mailer Credentials
 # ==========================================
 *paymongo*.json
 *gcash*.json
 *maya*.json
 *stripe*.json
 *paypal*.json
+*xendit*.json
+*dragonpay*.json
 *smtp*.json
 *mailer*.json
 *twilio*.json
 *semaphore*.json
+*sendgrid*.json
+*mailgun*.json
+*webhook_secret*
+*.postman_environment.json
 
 # ==========================================
 # 4. Database Dumps, Backups & Local DBs
@@ -82,6 +118,7 @@ service-account*.json
 *.sql.bak
 *.sql.gz
 *.sql.bz2
+*.sql.tar.gz
 *.sqlite
 *.sqlite3
 *.db
@@ -89,8 +126,11 @@ service-account*.json
 *backup*.sql
 *dump*.sql
 *export*.sql
+*snapshot*.sql
 /backups/
 /database_backups/
+/db_backups/
+/dumps/
 
 # Whitelist core database migrations and seed templates for deployment
 !server/db/schema.sql
@@ -98,24 +138,31 @@ service-account*.json
 !server/db/migrations/*.sql
 
 # ==========================================
-# 5. Customer Data, Financial Exports & Receipts
+# 5. Customer Data, Financial Exports, Receipts & Invoices
 # ==========================================
 /receipts/
 /invoices/
 /exports/
 /reports/export/
+/downloads/
+/data/
 *customer_export*
 *sales_export*
 *financial_report*
 *transactions*.csv
 *payout*.xlsx
+*customer_dump*
+*users_export*
 *.csv
 *.xlsx
 *.xls
 *.pdf
+*.tsv
+*.ods
 
-# Allow static template assets and images
+# Allow static assets and documentation
 !assets/**
+!docs/**
 
 # ==========================================
 # 6. Session Files & Auth Cache
@@ -124,6 +171,8 @@ sess_*
 *.session
 cookies.txt
 .sessions/
+/sessions/
+/php_session/
 
 # ==========================================
 # 7. User Uploads, Customer Attachments & Storage
@@ -133,23 +182,27 @@ cookies.txt
 /attachments/
 /public/uploads/
 /assets/uploads/
+/media/uploads/
 !/uploads/.gitkeep
 !/assets/images/
 
 # ==========================================
-# 8. Scratch, Test & Debugging Scripts
+# 8. Scratch, Test, Audit & Debugging Scripts
 # ==========================================
 /scratch/
 scratch_*
 test_*.php
 test_*.js
 debug_*.php
+debug_*.js
 audit_*.js
+audit_*.php
 apply_*.js
 check_*.js
 build_*.js
 temp_*.js
 temp_*.php
+simulate_*.js
 
 # ==========================================
 # 9. Logs, PID & Debugging Output
@@ -170,16 +223,25 @@ pnpm-debug.log*
 .phpunit.result.cache
 
 # ==========================================
-# 10. Dependencies & Vendor Directories
+# 10. Local Server (XAMPP / Apache / PHP) Overrides
+# ==========================================
+httpd.conf.local
+php.ini.local
+*.sock
+*.socket
+
+# ==========================================
+# 11. Dependencies & Vendor Directories
 # ==========================================
 /node_modules/
 /vendor/
 composer.phar
 .npm/
 .pnpm-store/
+.yarn/
 
 # ==========================================
-# 11. Temporary Files & Build Caches
+# 12. Temporary Files & Build Caches
 # ==========================================
 tmp/
 temp/
@@ -187,13 +249,16 @@ temp/
 *.bak
 *.old
 *.orig
+*.swp
+*.swo
+*~
 .cache/
 .parcel-cache/
 .turbo/
 .sass-cache/
 
 # ==========================================
-# 12. Cloud Platforms & Dev Tool State
+# 13. Cloud Platforms & Dev Tool State
 # ==========================================
 .railway/
 .vercel/
@@ -201,22 +266,23 @@ temp/
 .envrc
 .aws/
 .ssh/
+.gcloud/
+.azure/
+.docker/
 
 # ==========================================
-# 13. IDEs, Editors & AI Workspaces
+# 14. IDEs, Editors & AI Workspaces
 # ==========================================
 .vscode/
 .idea/
 .fleet/
 *.sublime-project
 *.sublime-workspace
+*.code-workspace
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.swp
-*.swo
-*~
 .gemini/
 .agents/
 .cursor/
@@ -224,7 +290,7 @@ temp/
 .claude/
 
 # ==========================================
-# 14. Operating System Files
+# 15. Operating System Files
 # ==========================================
 .DS_Store
 .DS_Store?
