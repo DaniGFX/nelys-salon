@@ -1,15 +1,17 @@
 /**
  * Nely's Salon — Customer Appointments Management Script
- * Handles tab switching, dynamic appointment filtering, modal views,
- * appointment cancellation, and re-booking workflows.
- * Optimized with 0ms pre-hydration & SWR cache diffing.
+ * Fully connected to backend MySQL database APIs:
+ * - GET ../api/bookings (Live customer appointments)
+ * - POST ../api/bookings/{ref}/cancel (Authoritative cancellation in MySQL)
+ * - POST ../api/bookings (Express re-booking in MySQL)
+ * - GET ../api/notifications, ../api/messages (Live badge counters)
+ * Zero-glitch SWR pre-hydration & steady dialog management.
  */
 
-// Seamless 0ms Cache Preload & State
 const CUST_APPTS_CACHE_KEY = 'nelys_customer_appointments_cache';
 let lastRendered_cust_appts_Hash = '';
 
-// Global appointments data state
+// Global appointments state
 let appointmentsData = [];
 let activeTab = 'upcoming';
 let currentSelectedAppointmentId = null;
@@ -50,6 +52,7 @@ function initCustomerAppointments() {
   hydrateCustomerAppointmentsFromCache();
   setupDialogSteadyListeners();
   loadCustomerAppointments();
+  loadSidebarBadgeCounters();
 }
 
 function initPatronProfile() {
@@ -90,7 +93,7 @@ function initPatronProfile() {
   }
 }
 
-// 1. Fetch appointments from live database
+// 1. Fetch appointments from live database API
 async function loadCustomerAppointments() {
   const token = localStorage.getItem('nelys_token');
   const headers = {
@@ -148,6 +151,8 @@ function mapBookingToAppointment(b) {
     dbStatus: b.status,
     service: b.service_name || 'Salon Service',
     serviceId: b.service_id,
+    staffId: b.staff_id || null,
+    staffName: b.staff_name || null,
     price: parseFloat(b.total_price || 0),
     priceFormatted: `₱${parseFloat(b.total_price || 0).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
     date: formatDisplayDate(b.booking_date),
@@ -162,42 +167,16 @@ function mapBookingToAppointment(b) {
       : "BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City",
     paymentMethod: methodLabel,
     paymentStatus: statusLabel,
-    staffName: b.staff_name || null,
-    cancellationReason: b.cancellation_reason || null,
+    cancellationReason: b.cancel_reason || b.cancellation_reason || null,
     cancelledAt: b.updated_at ? formatDisplayDate(b.updated_at.split(' ')[0]) : null,
     slug: b.service_code || 'brazilian'
   };
-}
-
-// 1. Mobile Sidebar Drawer Controls
-function toggleMobileSidebar(open = null) {
-  const sidebar = document.getElementById('sidebar');
-  const backdrop = document.getElementById('mobileSidebarBackdrop');
-  if (!sidebar || !backdrop) return;
-
-  const isOpen = sidebar.classList.contains('translate-x-0');
-  const shouldOpen = open !== null ? open : !isOpen;
-
-  if (shouldOpen) {
-    sidebar.classList.remove('-translate-x-full');
-    sidebar.classList.add('translate-x-0');
-    backdrop.classList.remove('opacity-0', 'pointer-events-none');
-    backdrop.classList.add('opacity-100');
-    document.body.style.overflow = 'hidden';
-  } else {
-    sidebar.classList.remove('translate-x-0');
-    sidebar.classList.add('-translate-x-full');
-    backdrop.classList.remove('opacity-100');
-    backdrop.classList.add('opacity-0', 'pointer-events-none');
-    document.body.style.overflow = '';
-  }
 }
 
 // 2. Tab Navigation Switcher
 function switchTab(tabName) {
   activeTab = tabName;
 
-  // Update tab buttons appearance
   const tabs = ['upcoming', 'pending', 'completed', 'cancelled'];
   tabs.forEach(t => {
     const btn = document.getElementById(`tabBtn-${t}`);
@@ -299,7 +278,7 @@ function buildAppointmentCardHtml(item) {
     <button 
       type="button" 
       onclick="openDetailsModal('${item.id}')"
-      class="px-4 py-2 rounded-xl border border-[#DCC3AA] bg-white hover:bg-[#FAF6F0] text-[#541A1A] text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+      class="px-4 py-2 rounded-xl border border-[#DCC3AA] bg-white hover:bg-[#FAF6F0] text-[#541A1A] text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer">
       <i class="fa-solid fa-eye text-[#810B38]"></i>
       <span>View Details</span>
     </button>
@@ -317,7 +296,7 @@ function buildAppointmentCardHtml(item) {
       <button 
         type="button" 
         onclick="openCancelModal('${item.id}')"
-        class="px-4 py-2 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-700 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+        class="px-4 py-2 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-700 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer">
         <i class="fa-solid fa-ban text-rose-500"></i>
         <span>Cancel</span>
       </button>
@@ -344,9 +323,9 @@ function buildAppointmentCardHtml(item) {
       <button 
         type="button" 
         onclick="openCancelModal('${item.id}')"
-        class="px-4 py-2 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-700 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+        class="px-4 py-2 rounded-xl border border-rose-200 bg-white hover:bg-rose-50 text-rose-700 text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer">
         <i class="fa-solid fa-xmark text-rose-500"></i>
-        <span>Cancel Request</span>
+        <span>Cancel Booking</span>
       </button>
     `;
   } else if (item.status === 'completed') {
@@ -361,7 +340,7 @@ function buildAppointmentCardHtml(item) {
       <button 
         type="button" 
         onclick="openQuickRebookModal('${item.id}')"
-        class="px-4 py-2 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+        class="px-4 py-2 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer">
         <i class="fa-solid fa-rotate-right"></i>
         <span>Re-book This Service</span>
       </button>
@@ -390,7 +369,7 @@ function buildAppointmentCardHtml(item) {
       <button 
         type="button" 
         onclick="openQuickRebookModal('${item.id}')"
-        class="px-4 py-2 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold transition-all shadow-sm flex items-center gap-1.5">
+        class="px-4 py-2 rounded-xl bg-[#810B38] text-white hover:bg-[#62082b] text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer">
         <i class="fa-solid fa-arrow-rotate-right"></i>
         <span>Book Again</span>
       </button>
@@ -465,56 +444,64 @@ function buildAppointmentCardHtml(item) {
   `;
 }
 
-// 6. Open Appointment Details Modal
+// 6. Open Appointment Details Modal (Fixed all element IDs)
 function openDetailsModal(bookingId) {
   const item = appointmentsData.find(a => a.id === bookingId);
   if (!item) return;
 
   currentSelectedAppointmentId = bookingId;
 
-  // Populate modal fields
-  document.getElementById('modalDetailId').textContent = item.id;
-  document.getElementById('modalDetailService').textContent = item.service;
-  document.getElementById('modalDetailDate').textContent = item.date;
-  document.getElementById('modalDetailTime').textContent = item.time;
-  document.getElementById('modalDetailPrice').textContent = item.priceFormatted;
-  document.getElementById('modalDetailStatus').textContent = item.status.toUpperCase();
-  document.getElementById('modalDetailVisitType').textContent = item.visitType;
-  document.getElementById('modalDetailAddress').textContent = item.address;
-  document.getElementById('modalDetailPayment').textContent = `${item.paymentMethod} (${item.paymentStatus})`;
-  document.getElementById('modalDetailStylist').textContent = item.staffName || 'To be assigned upon arrival';
+  // Set reference ID
+  const idEl = document.getElementById('modalDetailId');
+  if (idEl) idEl.textContent = `Ref: ${item.id}`;
 
-  // Status banner inside details
-  const statusContainer = document.getElementById('modalDetailStatusBadgeContainer');
-  if (statusContainer) {
+  // Set Service name
+  const serviceEl = document.getElementById('modalDetailService');
+  if (serviceEl) serviceEl.textContent = item.service;
+
+  // Set Date & Time
+  const dateTimeEl = document.getElementById('modalDetailDateTime');
+  if (dateTimeEl) dateTimeEl.textContent = `${item.date} at ${item.time}`;
+
+  // Set Stylist
+  const staffEl = document.getElementById('modalDetailStaff');
+  if (staffEl) staffEl.textContent = item.staffName || 'Any Available Stylist';
+
+  // Set Customer Name
+  const customerEl = document.getElementById('modalDetailCustomer');
+  if (customerEl) customerEl.textContent = item.customerName || 'Valued Patron';
+
+  // Set Phone
+  const phoneEl = document.getElementById('modalDetailPhone');
+  if (phoneEl) phoneEl.textContent = item.contactNumber || '—';
+
+  // Set Visit Type
+  const visitTypeEl = document.getElementById('modalDetailVisitType');
+  if (visitTypeEl) visitTypeEl.textContent = item.visitType;
+
+  // Set Address
+  const addressEl = document.getElementById('modalDetailAddress');
+  if (addressEl) addressEl.textContent = item.address;
+
+  // Set Payment
+  const paymentEl = document.getElementById('modalDetailPayment');
+  if (paymentEl) paymentEl.textContent = `${item.paymentMethod} (${item.paymentStatus})`;
+
+  // Set Total
+  const totalEl = document.getElementById('modalDetailTotal');
+  if (totalEl) totalEl.textContent = item.priceFormatted;
+
+  // Set Status Badge
+  const statusEl = document.getElementById('modalDetailStatus');
+  if (statusEl) {
     if (item.status === 'upcoming') {
-      statusContainer.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300">Upcoming Confirmed</span>`;
+      statusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-emerald-100 text-emerald-800 border border-emerald-300"><span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span> Confirmed</span>`;
     } else if (item.status === 'pending') {
-      statusContainer.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-amber-100 text-amber-800 border border-amber-300">Pending Salon Review</span>`;
+      statusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-amber-100 text-amber-800 border border-amber-300"><span class="w-1.5 h-1.5 rounded-full bg-amber-600"></span> Pending Review</span>`;
     } else if (item.status === 'completed') {
-      statusContainer.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-[#810B38]/10 text-[#810B38] border border-[#810B38]/30">Completed Session</span>`;
+      statusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-[#810B38]/10 text-[#810B38] border border-[#810B38]/30"><i class="fa-solid fa-circle-check"></i> Completed</span>`;
     } else {
-      statusContainer.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold uppercase bg-zinc-100 text-zinc-700 border border-zinc-300">Cancelled</span>`;
-    }
-  }
-
-  // Show/Hide contextual actions in modal footer
-  const modalCancelBtn = document.getElementById('modalBtnCancel');
-  const modalRebookBtn = document.getElementById('modalBtnRebook');
-
-  if (modalCancelBtn) {
-    if (item.status === 'upcoming' || item.status === 'pending') {
-      modalCancelBtn.classList.remove('hidden');
-    } else {
-      modalCancelBtn.classList.add('hidden');
-    }
-  }
-
-  if (modalRebookBtn) {
-    if (item.status === 'completed' || item.status === 'cancelled') {
-      modalRebookBtn.classList.remove('hidden');
-    } else {
-      modalRebookBtn.classList.add('hidden');
+      statusEl.innerHTML = `<span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-zinc-100 text-zinc-700 border border-zinc-300"><i class="fa-solid fa-ban"></i> Cancelled</span>`;
     }
   }
 
@@ -526,7 +513,15 @@ function openDetailsModal(bookingId) {
 
 function closeDetailsModal() {
   const modal = document.getElementById('detailsModal');
-  if (modal) modal.close();
+  if (modal && typeof modal.close === 'function') {
+    modal.close();
+  }
+}
+
+function openQuickRebookFromModal() {
+  if (currentSelectedAppointmentId) {
+    openQuickRebookModal(currentSelectedAppointmentId);
+  }
 }
 
 // 7. Quick Re-book Modal
@@ -538,9 +533,14 @@ function openQuickRebookModal(bookingId = null) {
   currentRebookAppointment = item;
   closeDetailsModal();
 
-  document.getElementById('rebookServiceName').textContent = item.service;
-  document.getElementById('rebookPrice').textContent = item.priceFormatted;
-  document.getElementById('rebookVisitType').textContent = item.visitType;
+  const nameEl = document.getElementById('rebookServiceName');
+  if (nameEl) nameEl.textContent = item.service;
+
+  const infoEl = document.getElementById('rebookVisitInfo');
+  if (infoEl) infoEl.textContent = `${item.visitType} · ${item.staffName ? 'Stylist: ' + item.staffName : 'Any Available Stylist'}`;
+
+  const priceEl = document.getElementById('rebookServicePrice');
+  if (priceEl) priceEl.textContent = item.priceFormatted;
 
   // Set minimum date to tomorrow
   const dateInput = document.getElementById('rebookDateInput');
@@ -562,25 +562,45 @@ function openQuickRebookModal(bookingId = null) {
 
 function closeQuickRebookModal() {
   const modal = document.getElementById('quickRebookModal');
-  if (modal) modal.close();
+  if (modal && typeof modal.close === 'function') {
+    modal.close();
+  }
 }
 
-async function confirmQuickRebook() {
+function selectRebookTime(timeStr, btn) {
+  const hiddenInput = document.getElementById('rebookTimeSelected');
+  if (hiddenInput) hiddenInput.value = timeStr;
+
+  document.querySelectorAll('.rebook-time-btn').forEach(b => {
+    b.className = 'rebook-time-btn py-2 px-3 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-all text-center';
+  });
+
+  if (btn) {
+    btn.className = 'rebook-time-btn py-2 px-3 rounded-xl border border-[#810B38] bg-[#810B38] text-white text-xs font-bold transition-all text-center';
+  }
+}
+
+async function handleQuickRebookSubmit(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
   if (!currentRebookAppointment) return;
 
   const dateInput = document.getElementById('rebookDateInput');
-  const timeInput = document.getElementById('rebookTimeInput');
+  const timeInput = document.getElementById('rebookTimeSelected');
 
   const dateVal = dateInput ? dateInput.value : '';
-  const timeVal = timeInput ? timeInput.value : '';
+  const timeVal = timeInput ? timeInput.value : '10:00 AM';
 
   if (!dateVal || !timeVal) {
     showToast('Please select your preferred date and time slot.', 'warning');
     return;
   }
 
-  // Format time properly HH:MM:SS
-  const formattedTime = timeVal.length === 5 ? `${timeVal}:00` : timeVal;
+  const submitBtn = document.querySelector('#quickRebookModal button[type="submit"]');
+  const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i> <span>Booking...</span>';
+  }
 
   const token = localStorage.getItem('nelys_token');
   const headers = {
@@ -591,9 +611,11 @@ async function confirmQuickRebook() {
 
   const payload = {
     service_id: currentRebookAppointment.serviceId || 1,
+    staff_id: currentRebookAppointment.staffId || null,
     booking_date: dateVal,
-    booking_time: formattedTime,
+    booking_time: timeVal,
     visit_type: currentRebookAppointment.visitType === 'Home Service' ? 'home' : 'salon',
+    home_address: currentRebookAppointment.visitType === 'Home Service' ? currentRebookAppointment.address : null,
     payment_method: currentRebookAppointment.paymentMethod.toLowerCase().includes('gcash') ? 'gcash' : 'cash',
     notes: currentRebookAppointment.id ? `Re-booked from Ref: ${currentRebookAppointment.id}` : 'Re-booked appointment'
   };
@@ -607,7 +629,7 @@ async function confirmQuickRebook() {
 
     const result = await res.json();
 
-    if (res.ok && result.status === 'success') {
+    if (res.ok && (result.status === 'success' || result.success)) {
       closeQuickRebookModal();
       showToast(`${currentRebookAppointment.service} successfully re-booked!`, 'success');
       await loadCustomerAppointments();
@@ -619,6 +641,11 @@ async function confirmQuickRebook() {
   } catch (err) {
     console.error('Rebook network error:', err);
     showToast('Failed to connect to booking server.', 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = origBtnHtml;
+    }
   }
 }
 
@@ -631,20 +658,17 @@ function openCancelModal(bookingId = null) {
 
   const item = appointmentsData.find(a => a.id === currentSelectedAppointmentId);
   if (item) {
-    const cancelRefEl = document.getElementById('cancelAppointmentRef');
-    if (cancelRefEl) cancelRefEl.textContent = item.id;
-    const cancelServiceEl = document.getElementById('cancelAppointmentService');
-    if (cancelServiceEl) cancelServiceEl.textContent = item.service;
+    const cancelRefEl = document.getElementById('cancelModalRef');
+    if (cancelRefEl) cancelRefEl.textContent = `Ref: ${item.id} — ${item.service}`;
   }
 
+  const otherContainer = document.getElementById('otherReasonContainer');
   const otherInput = document.getElementById('cancelReasonOther');
-  if (otherInput) {
-    otherInput.value = '';
-    otherInput.classList.add('hidden');
-  }
+  if (otherContainer) otherContainer.classList.add('hidden');
+  if (otherInput) otherInput.value = '';
 
   const reasonSelect = document.getElementById('cancelReasonSelect');
-  if (reasonSelect) reasonSelect.value = 'Schedule conflict';
+  if (reasonSelect) reasonSelect.value = 'Change of schedule';
 
   const modal = document.getElementById('cancelModal');
   if (modal && typeof modal.showModal === 'function') {
@@ -654,21 +678,14 @@ function openCancelModal(bookingId = null) {
 
 function closeCancelModal() {
   const modal = document.getElementById('cancelModal');
-  if (modal) modal.close();
-}
-
-function handleCancelReasonChange(select) {
-  const otherInput = document.getElementById('cancelReasonOther');
-  if (!otherInput) return;
-  if (select.value === 'Other') {
-    otherInput.classList.remove('hidden');
-    otherInput.focus();
-  } else {
-    otherInput.classList.add('hidden');
+  if (modal && typeof modal.close === 'function') {
+    modal.close();
   }
 }
 
-async function confirmCancelAppointment() {
+async function handleConfirmCancellation(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+
   const reasonSelect = document.getElementById('cancelReasonSelect');
   const otherNotes = document.getElementById('cancelReasonOther');
 
@@ -683,6 +700,13 @@ async function confirmCancelAppointment() {
     return;
   }
 
+  const submitBtn = document.querySelector('#cancelModal button[type="submit"]');
+  const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i> <span>Cancelling...</span>';
+  }
+
   const token = localStorage.getItem('nelys_token');
   const headers = {
     'Content-Type': 'application/json',
@@ -691,7 +715,7 @@ async function confirmCancelAppointment() {
   };
 
   try {
-    const res = await fetch(`../api/bookings/${ref}/cancel`, {
+    const res = await fetch(`../api/bookings/${encodeURIComponent(ref)}/cancel`, {
       method: 'POST',
       headers,
       body: JSON.stringify({ reason: finalReason })
@@ -699,9 +723,9 @@ async function confirmCancelAppointment() {
 
     const result = await res.json();
 
-    if (res.ok && result.status === 'success') {
+    if (res.ok && (result.status === 'success' || result.success)) {
       closeCancelModal();
-      showToast(`Appointment ${ref} has been cancelled.`, 'warning');
+      showToast(`Appointment ${ref} has been cancelled in database.`, 'warning');
       await loadCustomerAppointments();
       switchTab('cancelled');
     } else {
@@ -711,10 +735,63 @@ async function confirmCancelAppointment() {
   } catch (err) {
     console.error('Cancellation error:', err);
     showToast('Server connection failed.', 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = origBtnHtml;
+    }
   }
 }
 
-// 9. Contact Salon Modal
+// 9. Load Sidebar Badge Counters
+async function loadSidebarBadgeCounters() {
+  const token = localStorage.getItem('nelys_token');
+  const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+  // Notifications
+  try {
+    const res = await fetch('../api/notifications', { headers });
+    if (res.ok) {
+      const json = await res.json();
+      if ((json.success || json.status === 'success') && Array.isArray(json.data)) {
+        const unreadCount = json.data.filter(n => !n.is_read).length;
+        const notifBadge = document.getElementById('sidebarNotificationsBadge');
+        if (notifBadge) {
+          if (unreadCount > 0) {
+            notifBadge.textContent = unreadCount;
+            notifBadge.classList.remove('hidden');
+          } else {
+            notifBadge.classList.add('hidden');
+          }
+        }
+      }
+    }
+  } catch (_) {}
+
+  // Messages
+  if (token) {
+    try {
+      const res = await fetch('../api/messages', { headers });
+      if (res.ok) {
+        const json = await res.json();
+        if ((json.success || json.status === 'success') && Array.isArray(json.data)) {
+          const unreadMsgs = json.data.filter(m => m.sender === 'salon' && !m.is_read).length;
+          const msgBadge = document.getElementById('sidebarMessagesBadge');
+          if (msgBadge) {
+            if (unreadMsgs > 0) {
+              msgBadge.textContent = unreadMsgs;
+              msgBadge.classList.remove('hidden');
+            } else {
+              msgBadge.classList.add('hidden');
+            }
+          }
+        }
+      }
+    } catch (_) {}
+  }
+}
+
+// 10. Contact Salon Modal
 function openContactModal() {
   const modal = document.getElementById('contactModal');
   if (modal && typeof modal.showModal === 'function') {
@@ -724,10 +801,12 @@ function openContactModal() {
 
 function closeContactModal() {
   const modal = document.getElementById('contactModal');
-  if (modal) modal.close();
+  if (modal && typeof modal.close === 'function') {
+    modal.close();
+  }
 }
 
-// 10. Copy text helper
+// 11. Copy text helper
 function copyToClipboard(text, message = 'Copied to clipboard!') {
   if (navigator.clipboard) {
     navigator.clipboard.writeText(text).then(() => {
@@ -738,7 +817,7 @@ function copyToClipboard(text, message = 'Copied to clipboard!') {
   }
 }
 
-// 11. Toast System
+// 12. Toast System
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
   if (!container) return;
@@ -777,6 +856,28 @@ function showToast(message, type = 'info') {
     toast.classList.add('opacity-0', 'translate-y-2');
     setTimeout(() => toast.remove(), 300);
   }, 4000);
+}
+
+// 13. Mobile Sidebar Drawer Controls
+function toggleMobileSidebar(open = null) {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('mobileSidebarBackdrop');
+  if (!sidebar || !backdrop) return;
+
+  const isOpen = !sidebar.classList.contains('-translate-x-full');
+  const shouldOpen = open !== null ? open : !isOpen;
+
+  if (shouldOpen) {
+    sidebar.classList.remove('-translate-x-full');
+    backdrop.classList.remove('opacity-0', 'pointer-events-none');
+    backdrop.classList.add('opacity-100');
+    document.body.classList.add('overflow-hidden', 'lg:overflow-auto');
+  } else {
+    sidebar.classList.add('-translate-x-full');
+    backdrop.classList.remove('opacity-100');
+    backdrop.classList.add('opacity-0', 'pointer-events-none');
+    document.body.classList.remove('overflow-hidden', 'lg:overflow-auto');
+  }
 }
 
 // Helper: Escape HTML
@@ -863,7 +964,22 @@ function handleLogout(e) {
   return false;
 }
 
-// Global window bindings
+// Global window bindings for HTML attributes
+window.toggleMobileSidebar = toggleMobileSidebar;
+window.switchTab = switchTab;
+window.openDetailsModal = openDetailsModal;
+window.closeDetailsModal = closeDetailsModal;
+window.openQuickRebookModal = openQuickRebookModal;
+window.openQuickRebookFromModal = openQuickRebookFromModal;
+window.closeQuickRebookModal = closeQuickRebookModal;
+window.selectRebookTime = selectRebookTime;
+window.handleQuickRebookSubmit = handleQuickRebookSubmit;
+window.openCancelModal = openCancelModal;
+window.closeCancelModal = closeCancelModal;
+window.handleConfirmCancellation = handleConfirmCancellation;
+window.openContactModal = openContactModal;
+window.closeContactModal = closeContactModal;
+window.copyToClipboard = copyToClipboard;
 window.openLogoutModal = openLogoutModal;
 window.closeLogoutModal = closeLogoutModal;
 window.confirmLogout = confirmLogout;
