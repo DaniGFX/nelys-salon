@@ -7,43 +7,75 @@
 require_once dirname(__DIR__) . '/config/database.php';
 
 class Service {
+    private static bool $schemaChecked = false;
+
+    public static function ensureSchema(): void {
+        if (self::$schemaChecked) return;
+        self::$schemaChecked = true;
+        try {
+            $pdo = Database::getConnection();
+            $pdo->exec("ALTER TABLE `services` MODIFY COLUMN `price` DECIMAL(10,2) NULL DEFAULT NULL");
+        } catch (Throwable $e) {}
+    }
+
     public static function all(bool $activeOnly = false): array {
+        self::ensureSchema();
         $pdo = Database::getConnection();
-        $sql = "SELECT * FROM services";
-        if ($activeOnly) {
-            $sql .= " WHERE is_active = 1";
+        try {
+            $sql = "SELECT * FROM services";
+            if ($activeOnly) {
+                $sql .= " WHERE is_active = 1";
+            }
+            $sql .= " ORDER BY id ASC";
+            return $pdo->query($sql)->fetchAll();
+        } catch (Throwable $e) {
+            return [];
         }
-        $sql .= " ORDER BY category ASC, id ASC";
-        return $pdo->query($sql)->fetchAll();
     }
 
     public static function allWithMetrics(): array {
+        self::ensureSchema();
         $pdo = Database::getConnection();
-        $sql = "SELECT s.*, 
-                COUNT(b.id) AS total_bookings,
-                SUM(CASE WHEN b.status = 'completed' THEN 1 ELSE 0 END) AS completed_bookings
+        try {
+            $sql = "
+                SELECT 
+                    s.*, 
+                    (SELECT COUNT(*) FROM bookings b WHERE b.service_id = s.id) AS total_bookings,
+                    (SELECT COUNT(*) FROM bookings b WHERE b.service_id = s.id AND b.status = 'completed') AS completed_bookings
                 FROM services s
-                LEFT JOIN bookings b ON b.service_id = s.id
-                GROUP BY s.id
-                ORDER BY s.category ASC, s.id ASC";
-        return $pdo->query($sql)->fetchAll();
+                ORDER BY s.id ASC
+            ";
+            return $pdo->query($sql)->fetchAll();
+        } catch (Throwable $e) {
+            return self::all();
+        }
     }
 
     public static function getSummaryMetrics(): array {
+        self::ensureSchema();
         $pdo = Database::getConnection();
-        $total = (int)$pdo->query("SELECT COUNT(*) FROM services")->fetchColumn();
-        $active = (int)$pdo->query("SELECT COUNT(*) FROM services WHERE is_active = 1")->fetchColumn();
-        $inactive = (int)$pdo->query("SELECT COUNT(*) FROM services WHERE is_active = 0")->fetchColumn();
-        
-        $categoriesStmt = $pdo->query("SELECT category, COUNT(*) as count FROM services GROUP BY category");
-        $categories = $categoriesStmt->fetchAll();
+        try {
+            $total = (int)$pdo->query("SELECT COUNT(*) FROM services")->fetchColumn();
+            $active = (int)$pdo->query("SELECT COUNT(*) FROM services WHERE is_active = 1")->fetchColumn();
+            $inactive = (int)$pdo->query("SELECT COUNT(*) FROM services WHERE is_active = 0")->fetchColumn();
+            
+            $categoriesStmt = $pdo->query("SELECT category, COUNT(*) as count FROM services GROUP BY category");
+            $categories = $categoriesStmt ? $categoriesStmt->fetchAll() : [];
 
-        return [
-            'total' => $total,
-            'active' => $active,
-            'inactive' => $inactive,
-            'categories' => $categories
-        ];
+            return [
+                'total' => $total,
+                'active' => $active,
+                'inactive' => $inactive,
+                'categories' => $categories
+            ];
+        } catch (Throwable $e) {
+            return [
+                'total' => 0,
+                'active' => 0,
+                'inactive' => 0,
+                'categories' => []
+            ];
+        }
     }
 
     public static function findById(int $id): ?array {

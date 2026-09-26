@@ -23,20 +23,20 @@ ON DUPLICATE KEY UPDATE `name` = VALUES(`name`);
 
 -- 4. 13 Salon Services
 INSERT INTO `services` (`id`, `code`, `name`, `category`, `price`, `duration_minutes`, `description`, `is_active`) VALUES
-(1, 'brazilian', 'Brazilian Treatment', 'Hair Services', 1999.00, 120, 'Transformative keratin smoothing treatment eliminating frizz with mirror-like shine.', 1),
-(2, 'hair-dye', 'Hair Dye', 'Hair Services', 699.00, 90, 'Full rich dimensional coloration or grey coverage customized to your skin tone.', 1),
-(3, 'power-dose', 'Power Dose', 'Hair Services', 499.00, 45, 'Instant high-potency restorative ampoule treatment reviving brittle, lifeless ends.', 1),
-(4, 'cold-wave', 'Cold Wave Perm', 'Hair Services', 799.00, 90, 'Volumizing texture wave or defined bounce curls with lasting curl retention.', 1),
-(5, 'bonacure', 'Bonacure Repair', 'Hair Services', 899.00, 60, 'Advanced cellular hair repair infusion rebuilding elasticity and keratin bonds.', 1),
-(6, 'keratine-treatment', 'Keratine Treatment', 'Hair Services', 499.00, 60, 'Intensive protein replacement therapy delivering silky softness and strength.', 1),
-(7, 'trim', 'Haircut & Trim', 'Hair Services', 150.00, 30, 'Precision aesthetic trim and styling tailored to your face silhouette.', 1),
-(8, 'rebonding', 'Hair Rebonding', 'Hair Services', 1499.00, 180, 'Pin-straight permanent thermal rebonding therapy with glossy silk finish.', 1),
-(9, 'footspa', 'Footspa with Scrub', 'Nail & Foot Care', 350.00, 45, 'Aromatic sea-salt soak, exfoliating callus buffing, and warm soothing massage.', 1),
-(10, 'manicure', 'Classic Manicure', 'Nail & Foot Care', 150.00, 30, 'Full cuticle grooming, nail shaping, and regular lacquer polish of your choice.', 1),
-(11, 'pedicure', 'Classic Pedicure', 'Nail & Foot Care', 180.00, 40, 'Rejuvenating foot bath, cut and file grooming, and vibrant color coating.', 1),
+(1, 'rebonding', 'Hair Rebonding', 'Hair Services', NULL, 180, 'Pin-straight permanent thermal rebonding therapy with glossy silk finish (Consultation-based).', 1),
+(2, 'brazilian', 'Brazilian Treatment', 'Hair Services', 1999.00, 120, 'Transformative keratin smoothing treatment eliminating frizz with mirror-like shine.', 1),
+(3, 'hair-dye', 'Hair Dye', 'Hair Services', 699.00, 90, 'Full rich dimensional coloration or grey coverage customized to your skin tone.', 1),
+(4, 'power-dose', 'Power Dose', 'Hair Services', 499.00, 45, 'Instant high-potency restorative ampoule treatment reviving brittle, lifeless ends.', 1),
+(5, 'cold-wave', 'Cold Wave Perm', 'Hair Services', 699.00, 90, 'Volumizing texture wave or defined bounce curls with lasting curl retention.', 1),
+(6, 'bonacure', 'Bonacure Repair', 'Hair Services', 499.00, 60, 'Advanced cellular hair repair infusion rebuilding elasticity and keratin bonds.', 1),
+(7, 'keratine-treatment', 'Keratine Treatment', 'Hair Services', 499.00, 60, 'Intensive protein replacement therapy delivering silky softness and strength.', 1),
+(8, 'footspa', 'Footspa with Scrub', 'Nail & Foot Care', 199.00, 45, 'Aromatic sea-salt soak, exfoliating callus buffing, and warm soothing massage.', 1),
+(9, 'manicure', 'Classic Manicure', 'Nail & Foot Care', 149.00, 30, 'Full cuticle grooming, nail shaping, and regular lacquer polish of your choice.', 1),
+(10, 'pedicure', 'Classic Pedicure', 'Nail & Foot Care', 149.00, 40, 'Rejuvenating foot bath, cut and file grooming, and vibrant color coating.', 1),
+(11, 'trim', 'Haircut & Trim', 'Hair Services', 149.00, 30, 'Precision aesthetic trim and styling tailored to your face silhouette.', 1),
 (12, 'gel-manicure', 'Gel Manicure', 'Nail & Foot Care', 499.00, 60, 'Long-lasting chip-free UV LED gel polish with meticulous nail bed preparation.', 1),
-(13, 'gel-pedicure', 'Gel Pedicure', 'Nail & Foot Care', 549.00, 60, 'Durable high-gloss gel lacquer application with cuticle renewal care.', 1)
-ON DUPLICATE KEY UPDATE `code` = VALUES(`code`);
+(13, 'gel-pedicure', 'Gel Pedicure', 'Nail & Foot Care', 499.00, 60, 'Durable high-gloss gel lacquer application with cuticle renewal care.', 1)
+ON DUPLICATE KEY UPDATE `name` = VALUES(`name`), `category` = VALUES(`category`), `price` = VALUES(`price`), `duration_minutes` = VALUES(`duration_minutes`), `description` = VALUES(`description`), `is_active` = 1;
 
 -- 5. Business Settings
 INSERT INTO `business_settings` (`setting_key`, `setting_value`) VALUES

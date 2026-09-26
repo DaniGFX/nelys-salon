@@ -56,7 +56,7 @@ CREATE TABLE `services` (
   `code` VARCHAR(50) NOT NULL UNIQUE,
   `name` VARCHAR(150) NOT NULL,
   `category` VARCHAR(100) NOT NULL,
-  `price` DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  `price` DECIMAL(10,2) NULL DEFAULT NULL,
   `duration_minutes` INT NOT NULL DEFAULT 60,
   `description` TEXT NULL,
   `is_active` TINYINT(1) DEFAULT 1,

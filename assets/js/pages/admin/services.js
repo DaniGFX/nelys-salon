@@ -29,14 +29,48 @@ let activeService = null;
 let isModalScrollLocked = false;
 
 // ================= INITIALIZATION & AUTH =================
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initServices);
+} else {
+  initServices();
+}
+
+function initServices() {
+  hydrateServicesFromCache();
   checkAdminAuth();
   setupEventListeners();
   setupModalSteadyListeners();
   updateTimeBadge();
   fetchServicesData();
   fetchSidebarStats();
-});
+}
+
+function hydrateServicesFromCache() {
+  try {
+    const raw = localStorage.getItem(SERVICES_CACHE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (Array.isArray(data)) {
+        servicesData = data.map(mapServiceRecord);
+      } else if (data && typeof data === 'object') {
+        const rawServices = data.services || data;
+        if (Array.isArray(rawServices)) {
+          servicesData = rawServices.map(mapServiceRecord);
+        }
+        if (data.metrics) {
+          summaryMetrics = data.metrics;
+        }
+      }
+      computeSummaryMetrics();
+      renderSummaryCards();
+      applyFiltersAndRender();
+      return;
+    }
+  } catch (err) {
+    console.warn('Could not read services cache:', err);
+  }
+  renderSummaryCards();
+}
 
 function checkAdminAuth() {
   const token = localStorage.getItem('nelys_token');
@@ -86,6 +120,18 @@ function getAuthHeaders() {
 
 // ================= FETCH DATA FROM DATABASE =================
 async function fetchServicesData() {
+  const container = document.getElementById('serviceCardsGrid');
+  if (container && servicesData.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full py-12 text-center text-[#735e5e]">
+        <div class="inline-flex items-center gap-2 font-semibold text-sm">
+          <i class="fa-solid fa-spinner fa-spin text-[#810B38]"></i>
+          <span>Loading salon treatments from database...</span>
+        </div>
+      </div>
+    `;
+  }
+
   try {
     const res = await fetch('../api/services?all=true', {
       method: 'GET',
@@ -95,6 +141,8 @@ async function fetchServicesData() {
 
     if (res.status === 401 || res.status === 403) {
       console.warn('Admin session expired or unauthenticated.');
+      window.location.replace('../login.html');
+      return;
     }
 
     if (!res.ok) {
@@ -104,6 +152,10 @@ async function fetchServicesData() {
     const json = await res.json();
     let rawServices = [];
     if (json.data) {
+      try {
+        localStorage.setItem(SERVICES_CACHE_KEY, JSON.stringify(json.data));
+      } catch (e) {}
+
       if (Array.isArray(json.data)) {
         rawServices = json.data;
       } else if (json.data.services && Array.isArray(json.data.services)) {
@@ -126,7 +178,17 @@ async function fetchServicesData() {
 
   } catch (err) {
     console.error('Error fetching services from backend:', err);
-    showToast('Failed to load services from server. Please refresh.', 'error');
+    renderSummaryCards();
+    if (servicesData.length === 0 && container) {
+      container.innerHTML = `
+        <div class="col-span-full py-12 text-center text-[#735e5e] bg-white rounded-3xl border border-[#DCC3AA]">
+          <p class="font-medium text-sm text-stone-700 mb-3">Unable to connect to database or fetch service catalog.</p>
+          <button type="button" onclick="fetchServicesData()" class="px-5 py-2 rounded-xl bg-[#810B38] text-white text-xs font-semibold hover:bg-[#62082b] transition-colors">
+            <i class="fa-solid fa-arrow-rotate-right mr-1.5"></i>Retry Loading
+          </button>
+        </div>
+      `;
+    }
   }
 }
 
@@ -248,10 +310,10 @@ function renderSummaryCards() {
   const inactiveEl = document.getElementById('statInactiveServices');
   const sidebarBadge = document.getElementById('sidebarServicesBadge');
 
-  if (totalEl) totalEl.textContent = summaryMetrics.total;
-  if (activeEl) activeEl.textContent = summaryMetrics.active;
-  if (inactiveEl) inactiveEl.textContent = summaryMetrics.inactive;
-  if (sidebarBadge) sidebarBadge.textContent = summaryMetrics.total;
+  if (totalEl) totalEl.textContent = summaryMetrics.total !== undefined ? summaryMetrics.total : (servicesData.length || 0);
+  if (activeEl) activeEl.textContent = summaryMetrics.active !== undefined ? summaryMetrics.active : 0;
+  if (inactiveEl) inactiveEl.textContent = summaryMetrics.inactive !== undefined ? summaryMetrics.inactive : 0;
+  if (sidebarBadge) sidebarBadge.textContent = summaryMetrics.total !== undefined ? summaryMetrics.total : (servicesData.length || 0);
 }
 
 // ================= SETUP EVENT LISTENERS =================
