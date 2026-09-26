@@ -20,55 +20,63 @@ class MessageController {
      * If Customer: Returns message stream for the authenticated customer.
      */
     public function index(): void {
-        $user = AuthMiddleware::check();
+        try {
+            $user = AuthMiddleware::check();
 
-        if ($user['role'] === 'admin') {
-            $search = $_GET['search'] ?? '';
-            $filter = $_GET['filter'] ?? 'all';
+            if ($user['role'] === 'admin') {
+                $search = $_GET['search'] ?? '';
+                $filter = $_GET['filter'] ?? 'all';
 
-            $conversations = Message::getAdminConversations($search, $filter);
-            $unreadTotal = Message::getAdminUnreadCount();
+                $conversations = Message::getAdminConversations($search, $filter);
+                $unreadTotal = Message::getAdminUnreadCount();
 
-            // If a specific user_id was requested to view & mark as read
-            if (!empty($_GET['user_id'])) {
-                $targetUserId = (int)$_GET['user_id'];
-                Message::markAllReadByAdmin($targetUserId);
+                // If a specific user_id was requested to view & mark as read
+                if (!empty($_GET['user_id'])) {
+                    $targetUserId = (int)$_GET['user_id'];
+                    Message::markAllReadByAdmin($targetUserId);
+                }
+
+                Response::success([
+                    'conversations' => $conversations,
+                    'unread_total'  => $unreadTotal
+                ]);
+                return;
             }
 
-            Response::success([
-                'conversations' => $conversations,
-                'unread_total'  => $unreadTotal
-            ]);
-            return;
-        }
-
-        // Customer Flow
-        $userId = (int)$user['id'];
-        $messages = Message::findByUser($userId);
-
-        // If fresh conversation with no messages yet, seed personalized welcome greeting
-        if (empty($messages)) {
-            $profile = CustomerProfile::findByUserId($userId);
-            $fullName = $profile['full_name'] ?? ($user['email'] ? explode('@', $user['email'])[0] : 'there');
-            $firstName = explode(' ', trim($fullName))[0] ?: 'there';
-
-            $welcomeText = "Hello {$firstName}! Welcome to Nely's Salon official support. How can we assist you today with appointments, treatments, or beauty questions?";
-
-            Message::create([
-                'user_id'     => $userId,
-                'sender'      => 'salon',
-                'sender_name' => "Nely's Salon Concierge",
-                'text'        => $welcomeText,
-                'status'      => 'read',
-            ]);
-
+            // Customer Flow
+            $userId = (int)$user['id'];
             $messages = Message::findByUser($userId);
-        } else {
-            // Mark salon messages as read when fetched by customer
-            Message::markAllReadForUser($userId);
-        }
 
-        Response::success($messages);
+            // If fresh conversation with no messages yet, seed personalized welcome greeting
+            if (empty($messages)) {
+                $profile = CustomerProfile::findByUserId($userId);
+                $fullName = $profile['full_name'] ?? ($user['email'] ? explode('@', $user['email'])[0] : 'there');
+                $firstName = explode(' ', trim($fullName))[0] ?: 'there';
+
+                $welcomeText = "Hello {$firstName}! Welcome to Nely's Salon official support. How can we assist you today with appointments, treatments, or beauty questions?";
+
+                Message::create([
+                    'user_id'     => $userId,
+                    'sender'      => 'salon',
+                    'sender_name' => "Nely's Salon Concierge",
+                    'text'        => $welcomeText,
+                    'status'      => 'read',
+                ]);
+
+                $messages = Message::findByUser($userId);
+            } else {
+                // Mark salon messages as read when fetched by customer
+                Message::markAllReadForUser($userId);
+            }
+
+            Response::success($messages);
+        } catch (Throwable $e) {
+            error_log('MessageController::index Error: ' . $e->getMessage());
+            Response::success([
+                'conversations' => [],
+                'unread_total'  => 0
+            ]);
+        }
     }
 
     /**
@@ -77,168 +85,193 @@ class MessageController {
      * If Customer: Sends message and receives automated concierge response.
      */
     public function send(): void {
-        $user = AuthMiddleware::check();
-        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-        $input = Sanitizer::cleanArray($input);
+        try {
+            $user = AuthMiddleware::check();
+            $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $input = Sanitizer::cleanArray($input);
 
-        $text = trim($input['text'] ?? '');
-        $attachmentName = !empty($input['attachment_name']) ? trim($input['attachment_name']) : null;
-        $attachmentUrl = !empty($input['attachment_url']) ? $input['attachment_url'] : null;
+            $text = trim($input['text'] ?? '');
+            $attachmentName = !empty($input['attachment_name']) ? trim($input['attachment_name']) : null;
+            $attachmentUrl = !empty($input['attachment_url']) ? $input['attachment_url'] : null;
 
-        if (empty($text) && empty($attachmentName)) {
-            Response::error('Message text or attachment is required.', 422);
-        }
-
-        // Admin sending message to a customer
-        if ($user['role'] === 'admin') {
-            $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : 0;
-            if (!$targetUserId) {
-                Response::error('Target customer user_id is required.', 422);
+            if (empty($text) && empty($attachmentName)) {
+                Response::error('Message text or attachment is required.', 422);
             }
 
-            $adminName = !empty($input['sender_name']) ? trim($input['sender_name']) : "Nely's Salon Concierge";
+            // Admin sending message to a customer
+            if ($user['role'] === 'admin') {
+                $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : 0;
+                if (!$targetUserId) {
+                    Response::error('Target customer user_id is required.', 422);
+                }
 
-            $msgId = Message::create([
-                'user_id'         => $targetUserId,
-                'sender'          => 'salon',
-                'sender_name'     => $adminName,
+                $adminName = !empty($input['sender_name']) ? trim($input['sender_name']) : "Nely's Salon Concierge";
+
+                $msgId = Message::create([
+                    'user_id'         => $targetUserId,
+                    'sender'          => 'salon',
+                    'sender_name'     => $adminName,
+                    'text'            => $text ?: "Shared attachment: {$attachmentName}",
+                    'attachment_name' => $attachmentName,
+                    'attachment_url'  => $attachmentUrl,
+                    'status'          => 'sent',
+                ]);
+
+                $saved = Message::findById($msgId);
+                $timeTs = strtotime($saved['created_at']);
+
+                Response::success([
+                    'id'         => (int)$saved['id'],
+                    'sender'     => 'admin',
+                    'senderName' => $saved['sender_name'],
+                    'text'       => $saved['text'],
+                    'time'       => date('g:i A', $timeTs),
+                    'date'       => date('M j, Y', $timeTs),
+                    'status'     => $saved['status'],
+                    'attachment' => $saved['attachment_name'] ? [
+                        'name' => $saved['attachment_name'],
+                        'url'  => $saved['attachment_url']
+                    ] : null
+                ], 'Message sent successfully.', 201);
+                return;
+            }
+
+            // Customer sending message to Salon
+            $userId = (int)$user['id'];
+            $profile = CustomerProfile::findByUserId($userId);
+            $customerName = $profile['full_name'] ?? 'Client';
+
+            // 1. Save customer outgoing message
+            $custMsgId = Message::create([
+                'user_id'         => $userId,
+                'sender'          => 'customer',
+                'sender_name'     => $customerName,
                 'text'            => $text ?: "Shared attachment: {$attachmentName}",
                 'attachment_name' => $attachmentName,
                 'attachment_url'  => $attachmentUrl,
                 'status'          => 'sent',
             ]);
 
-            $saved = Message::findById($msgId);
-            $timeTs = strtotime($saved['created_at']);
+            $customerMessage = Message::findById($custMsgId);
+
+            // 2. Generate intelligent automated concierge response
+            $replyText = self::generateConciergeReply($text);
+
+            $salonMsgId = Message::create([
+                'user_id'     => $userId,
+                'sender'      => 'salon',
+                'sender_name' => "Nely's Salon Concierge",
+                'text'        => $replyText,
+                'status'      => 'read',
+            ]);
+
+            $salonMessage = Message::findById($salonMsgId);
 
             Response::success([
-                'id'         => (int)$saved['id'],
-                'sender'     => 'admin',
-                'senderName' => $saved['sender_name'],
-                'text'       => $saved['text'],
-                'time'       => date('g:i A', $timeTs),
-                'date'       => date('M j, Y', $timeTs),
-                'status'     => $saved['status'],
-                'attachment' => $saved['attachment_name'] ? [
-                    'name' => $saved['attachment_name'],
-                    'url'  => $saved['attachment_url']
-                ] : null
+                'customer_message' => $customerMessage,
+                'salon_reply'      => $salonMessage,
             ], 'Message sent successfully.', 201);
-            return;
+        } catch (Throwable $e) {
+            error_log('MessageController::send Error: ' . $e->getMessage());
+            Response::error('Failed to send message: ' . $e->getMessage(), 500);
         }
-
-        // Customer sending message to Salon
-        $userId = (int)$user['id'];
-        $profile = CustomerProfile::findByUserId($userId);
-        $customerName = $profile['full_name'] ?? 'Client';
-
-        // 1. Save customer outgoing message
-        $custMsgId = Message::create([
-            'user_id'         => $userId,
-            'sender'          => 'customer',
-            'sender_name'     => $customerName,
-            'text'            => $text ?: "Shared attachment: {$attachmentName}",
-            'attachment_name' => $attachmentName,
-            'attachment_url'  => $attachmentUrl,
-            'status'          => 'sent',
-        ]);
-
-        $customerMessage = Message::findById($custMsgId);
-
-        // 2. Generate intelligent automated concierge response
-        $replyText = self::generateConciergeReply($text);
-
-        $salonMsgId = Message::create([
-            'user_id'     => $userId,
-            'sender'      => 'salon',
-            'sender_name' => "Nely's Salon Concierge",
-            'text'        => $replyText,
-            'status'      => 'read',
-        ]);
-
-        $salonMessage = Message::findById($salonMsgId);
-
-        Response::success([
-            'customer_message' => $customerMessage,
-            'salon_reply'      => $salonMessage,
-        ], 'Message sent successfully.', 201);
     }
 
     /**
      * Mark a conversation as read
      */
     public function markRead(): void {
-        $user = AuthMiddleware::check();
-        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-        $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : (!empty($_GET['user_id']) ? (int)$_GET['user_id'] : 0);
+        try {
+            $user = AuthMiddleware::check();
+            $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : (!empty($_GET['user_id']) ? (int)$_GET['user_id'] : 0);
 
-        if ($user['role'] === 'admin') {
-            if ($targetUserId) {
-                Message::markAllReadByAdmin($targetUserId);
+            if ($user['role'] === 'admin') {
+                if ($targetUserId) {
+                    Message::markAllReadByAdmin($targetUserId);
+                }
+            } else {
+                Message::markAllReadForUser((int)$user['id']);
             }
-        } else {
-            Message::markAllReadForUser((int)$user['id']);
-        }
 
-        Response::success(null, 'Messages marked as read.');
+            Response::success(null, 'Messages marked as read.');
+        } catch (Throwable $e) {
+            error_log('MessageController::markRead Error: ' . $e->getMessage());
+            Response::success(null, 'Messages marked as read.');
+        }
     }
 
     /**
      * Delete a single message
      */
     public function delete(int $id): void {
-        $user = AuthMiddleware::check();
+        try {
+            $user = AuthMiddleware::check();
 
-        $message = Message::findById($id);
-        if (!$message) {
-            Response::notFound('Message not found.');
+            $message = Message::findById($id);
+            if (!$message) {
+                Response::notFound('Message not found.');
+            }
+
+            if ($user['role'] !== 'admin' && (int)$message['user_id'] !== (int)$user['id']) {
+                Response::forbidden('You do not have permission to delete this message.');
+            }
+
+            Message::delete($id);
+            Response::success(null, 'Message deleted successfully.');
+        } catch (Throwable $e) {
+            error_log('MessageController::delete Error: ' . $e->getMessage());
+            Response::error('Failed to delete message: ' . $e->getMessage(), 500);
         }
-
-        if ($user['role'] !== 'admin' && (int)$message['user_id'] !== (int)$user['id']) {
-            Response::forbidden('You do not have permission to delete this message.');
-        }
-
-        Message::delete($id);
-        Response::success(null, 'Message deleted successfully.');
     }
 
     /**
      * Clear entire chat stream for a customer
      */
     public function clear(): void {
-        $user = AuthMiddleware::check();
+        try {
+            $user = AuthMiddleware::check();
 
-        if ($user['role'] === 'admin') {
-            $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-            $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : (!empty($_GET['user_id']) ? (int)$_GET['user_id'] : 0);
+            if ($user['role'] === 'admin') {
+                $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+                $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : (!empty($_GET['user_id']) ? (int)$_GET['user_id'] : 0);
 
-            if (!$targetUserId) {
-                Response::error('Target user_id is required.', 422);
+                if (!$targetUserId) {
+                    Response::error('Target user_id is required.', 422);
+                }
+
+                Message::clearAllForUser($targetUserId);
+                Response::success(null, 'Conversation cleared successfully.');
+                return;
             }
 
-            Message::clearAllForUser($targetUserId);
-            Response::success(null, 'Conversation cleared successfully.');
-            return;
+            $userId = (int)$user['id'];
+            Message::clearAllForUser($userId);
+            Response::success(null, 'Chat history cleared successfully.');
+        } catch (Throwable $e) {
+            error_log('MessageController::clear Error: ' . $e->getMessage());
+            Response::error('Failed to clear conversation: ' . $e->getMessage(), 500);
         }
-
-        $userId = (int)$user['id'];
-        Message::clearAllForUser($userId);
-        Response::success(null, 'Chat history cleared successfully.');
     }
 
     /**
      * Get unread messages count for badges
      */
     public function unreadCount(): void {
-        $user = AuthMiddleware::check();
+        try {
+            $user = AuthMiddleware::check();
 
-        if ($user['role'] === 'admin') {
-            $count = Message::getAdminUnreadCount();
-        } else {
-            $count = Message::getUnreadCount((int)$user['id']);
+            if ($user['role'] === 'admin') {
+                $count = Message::getAdminUnreadCount();
+            } else {
+                $count = Message::getUnreadCount((int)$user['id']);
+            }
+
+            Response::success(['unread_count' => $count]);
+        } catch (Throwable $e) {
+            error_log('MessageController::unreadCount Error: ' . $e->getMessage());
+            Response::success(['unread_count' => 0]);
         }
-
-        Response::success(['unread_count' => $count]);
     }
 
     /**

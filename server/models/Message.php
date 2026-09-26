@@ -7,10 +7,50 @@
 require_once dirname(__DIR__) . '/config/database.php';
 
 class Message {
+    private static bool $schemaChecked = false;
+
+    /**
+     * Ensure messages table schema is initialized
+     */
+    public static function ensureSchema(): void {
+        if (self::$schemaChecked) return;
+        self::$schemaChecked = true;
+        try {
+            $pdo = Database::getConnection();
+
+            // Ensure table exists
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `messages` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `user_id` INT NOT NULL,
+                `sender` VARCHAR(50) NOT NULL DEFAULT 'customer',
+                `sender_name` VARCHAR(255) NOT NULL DEFAULT 'Client',
+                `text` TEXT NOT NULL,
+                `attachment_name` VARCHAR(255) NULL,
+                `attachment_url` VARCHAR(255) NULL,
+                `status` VARCHAR(50) NOT NULL DEFAULT 'sent',
+                `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_messages_user` (`user_id`),
+                INDEX `idx_messages_status` (`status`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+            // Ensure columns exist
+            try { $pdo->exec("ALTER TABLE `messages` ADD COLUMN `sender_name` VARCHAR(255) NOT NULL DEFAULT 'Client' AFTER `sender`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `messages` ADD COLUMN `attachment_name` VARCHAR(255) NULL AFTER `text`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `messages` ADD COLUMN `attachment_url` VARCHAR(255) NULL AFTER `attachment_name`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `messages` ADD COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'sent' AFTER `attachment_url`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `messages` ADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER `created_at`"); } catch (Throwable $e) {}
+
+        } catch (Throwable $e) {
+            error_log('Message::ensureSchema Error: ' . $e->getMessage());
+        }
+    }
+
     /**
      * Retrieve conversation stream for a user
      */
     public static function findByUser(int $userId, int $limit = 100): array {
+        self::ensureSchema();
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare("
             SELECT * FROM messages 
@@ -28,6 +68,7 @@ class Message {
      * Find single message by ID
      */
     public static function findById(int $id): ?array {
+        self::ensureSchema();
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare("SELECT * FROM messages WHERE id = :id");
         $stmt->execute(['id' => $id]);
@@ -39,6 +80,7 @@ class Message {
      * Store new message
      */
     public static function create(array $data): int {
+        self::ensureSchema();
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare("
             INSERT INTO messages (user_id, sender, sender_name, text, attachment_name, attachment_url, status, created_at)
@@ -136,6 +178,7 @@ class Message {
      * Retrieve all customer conversations for Admin Dashboard
      */
     public static function getAdminConversations(string $search = '', string $filter = 'all'): array {
+        self::ensureSchema();
         $pdo = Database::getConnection();
 
         // 1. Fetch all customer users with profiles

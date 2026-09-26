@@ -16,12 +16,45 @@ let attachedFile = null;
 let totalUnreadCount = 0;
 
 // ================= DOM INITIALIZATION & AUTH =================
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initMessages);
+} else {
+  initMessages();
+}
+
+function initMessages() {
+  hydrateMessagesFromCache();
   checkAdminAuth();
   setupEventListeners();
   fetchConversationsData();
   fetchSidebarStats();
-});
+}
+
+function hydrateMessagesFromCache() {
+  try {
+    const cached = window.__PRELOADED_MESSAGES__ || JSON.parse(localStorage.getItem(MESSAGES_CACHE_KEY) || 'null');
+    if (cached) {
+      if (Array.isArray(cached.conversations)) {
+        conversationsData = cached.conversations;
+      } else if (Array.isArray(cached)) {
+        conversationsData = cached;
+      }
+      if (cached.unread_total !== undefined) {
+        totalUnreadCount = cached.unread_total;
+      } else {
+        totalUnreadCount = conversationsData.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+      }
+      if (conversationsData.length > 0 && !currentConversationId) {
+        currentConversationId = conversationsData[0].id;
+      }
+      updateUnreadBadges();
+      renderConversationsList();
+      renderActiveConversation();
+    }
+  } catch (e) {
+    console.warn('Error pre-hydrating messages cache:', e);
+  }
+}
 
 function checkAdminAuth() {
   const token = localStorage.getItem('nelys_token');
@@ -1006,7 +1039,41 @@ function confirmLogout() {
   handleConfirmLogout();
 }
 
+// ================= MOBILE SIDEBAR DRAWER =================
+function toggleMobileSidebar(show) {
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebarOverlay');
+  if (!sidebar) return;
+
+  const isHidden = sidebar.classList.contains('-translate-x-full');
+  const shouldOpen = show !== undefined ? show : isHidden;
+
+  if (shouldOpen) {
+    sidebar.classList.remove('-translate-x-full');
+    if (overlay) overlay.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+  } else {
+    sidebar.classList.add('-translate-x-full');
+    if (overlay) overlay.classList.add('hidden');
+    document.body.classList.remove('overflow-hidden');
+  }
+}
+
+// ================= GLOBAL WINDOW EXPORTS =================
+window.toggleMobileSidebar = toggleMobileSidebar;
+window.selectConversation = selectConversation;
+window.backToConversationList = backToConversationList;
+window.toggleQuickReplyDropdown = toggleQuickReplyDropdown;
+window.selectQuickReply = selectQuickReply;
+window.toggleCustomerInfoPanel = toggleCustomerInfoPanel;
+window.toggleMuteCurrent = toggleMuteCurrent;
+window.openDeleteModal = openDeleteModal;
+window.closeDeleteModal = closeDeleteModal;
+window.confirmDeleteConversation = confirmDeleteConversation;
+window.triggerFileInput = triggerFileInput;
+window.clearAttachment = clearAttachment;
 window.openLogoutModal = openLogoutModal;
 window.closeLogoutModal = closeLogoutModal;
 window.handleConfirmLogout = handleConfirmLogout;
 window.confirmLogout = confirmLogout;
+window.showToast = showToast;

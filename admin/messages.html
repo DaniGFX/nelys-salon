@@ -73,7 +73,7 @@
       }
     })();
   </script>
-  <script defer src="../assets/js/pages/admin/messages.js?v=4.4"></script>
+  <script defer src="../assets/js/pages/admin/messages.js?v=4.5"></script>
 </head>
 
 <body
@@ -356,10 +356,10 @@
               <i class="fa-solid fa-arrow-left text-xs"></i>
             </button>
 
-            <div id="chatHeaderAvatar" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xs sm:text-sm flex items-center justify-center border border-[#DCC3AA] shadow-xs shrink-0">—</div>
+            <div id="chatHeaderAvatar" class="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xs sm:text-sm flex items-center justify-center border border-[#DCC3AA] shadow-xs shrink-0">NS</div>
             <div class="min-w-0">
               <div class="flex items-center gap-1.5 sm:gap-2">
-                <h4 id="chatHeaderName" class="font-bold text-xs sm:text-sm text-[#541A1A] truncate">—</h4>
+                <h4 id="chatHeaderName" class="font-bold text-xs sm:text-sm text-[#541A1A] truncate">Select Conversation</h4>
                 <div id="chatHeaderStatus" class="flex items-center gap-1 text-[10px] sm:text-[11px] shrink-0"></div>
               </div>
               <p id="chatHeaderMeta" class="text-[10px] sm:text-[11px] text-[#735e5e] truncate"></p>
@@ -545,9 +545,9 @@
 
         <!-- Customer Identity Card -->
         <div class="text-center space-y-2">
-          <div id="infoAvatar" class="w-16 h-16 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xl flex items-center justify-center mx-auto border-2 border-[#DCC3AA] shadow-md">—</div>
+          <div id="infoAvatar" class="w-16 h-16 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xl flex items-center justify-center mx-auto border-2 border-[#DCC3AA] shadow-md">NS</div>
           <div>
-            <h4 id="infoName" class="font-serif text-lg font-bold text-[#541A1A]">—</h4>
+            <h4 id="infoName" class="font-serif text-lg font-bold text-[#541A1A]">Select Customer</h4>
             <div id="infoStatus" class="inline-flex items-center gap-1.5 text-xs text-[#735e5e] font-medium"></div>
           </div>
         </div>
@@ -556,15 +556,15 @@
         <div class="space-y-2 bg-[#FAF6F0] p-3.5 rounded-2xl border border-[#DCC3AA]/50 text-xs">
           <div class="flex items-center gap-2.5 text-[#735e5e]">
             <i class="fa-solid fa-phone text-[#810B38] w-4 text-center"></i>
-            <a id="infoPhone" href="#" class="font-semibold text-[#541A1A] hover:underline">—</a>
+            <a id="infoPhone" href="#" class="font-semibold text-[#541A1A] hover:underline">None</a>
           </div>
           <div class="flex items-center gap-2.5 text-[#735e5e]">
             <i class="fa-solid fa-envelope text-[#810B38] w-4 text-center"></i>
-            <a id="infoEmail" href="#" class="font-semibold text-[#541A1A] hover:underline truncate">—</a>
+            <a id="infoEmail" href="#" class="font-semibold text-[#541A1A] hover:underline truncate">None</a>
           </div>
           <div class="flex items-center gap-2.5 text-[#735e5e]">
             <i class="fa-solid fa-location-dot text-[#810B38] w-4 text-center"></i>
-            <span id="infoLocation" class="text-[#2b1d1d]">—</span>
+            <span id="infoLocation" class="text-[#2b1d1d]">Lagro, Quezon City</span>
           </div>
         </div>
 
@@ -591,11 +591,11 @@
           <div class="grid grid-cols-2 gap-2 text-xs">
             <div class="bg-[#FAF6F0] p-2.5 rounded-xl border border-[#DCC3AA]/40 text-center">
               <span class="text-[10px] text-[#735e5e] block">Total Visits</span>
-              <span id="infoVisits" class="font-bold text-[#541A1A] text-sm">—</span>
+              <span id="infoVisits" class="font-bold text-[#541A1A] text-sm">0</span>
             </div>
             <div class="bg-[#FAF6F0] p-2.5 rounded-xl border border-[#DCC3AA]/40 text-center">
               <span class="text-[10px] text-[#735e5e] block">Total Spent</span>
-              <span id="infoSpent" class="font-bold text-[#541A1A] text-sm">—</span>
+              <span id="infoSpent" class="font-bold text-[#541A1A] text-sm">₱0</span>
             </div>
           </div>
 
