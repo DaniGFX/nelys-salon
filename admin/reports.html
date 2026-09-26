@@ -73,7 +73,7 @@
       }
     })();
   </script>
-  <script defer src="../assets/js/pages/admin/reports.js?v=4.4"></script>
+  <script defer src="../assets/js/pages/admin/reports.js?v=4.5"></script>
 </head>
 
 <body
@@ -340,10 +340,13 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statTotalRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#810B38]">—</h3>
+          <h3 id="statTotalRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#810B38]">₱0</h3>
           <span class="text-xs font-bold text-stone-400">Selected period</span>
         </div>
-        <p id="statRevenueGrowth" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5"></p>
+        <p id="statRevenueGrowth" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-arrow-trend-up text-emerald-600 text-[10px]"></i>
+          <span class="text-emerald-600 font-semibold">+0.0%</span> from previous period
+        </p>
       </article>
 
       <!-- Card 2: Total Appointments -->
@@ -355,10 +358,13 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statTotalAppointments" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">—</h3>
+          <h3 id="statTotalAppointments" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">0</h3>
           <span class="text-xs font-bold text-stone-400">Total visits</span>
         </div>
-        <p id="statAppointmentGrowth" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5"></p>
+        <p id="statAppointmentGrowth" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-arrow-trend-up text-emerald-600 text-[10px]"></i>
+          <span class="text-emerald-600 font-semibold">+0.0%</span> from previous period
+        </p>
       </article>
 
       <!-- Card 3: Total Customers -->
@@ -370,10 +376,13 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statTotalCustomers" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">—</h3>
+          <h3 id="statTotalCustomers" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">0</h3>
           <span class="text-xs font-bold text-stone-400">Registered</span>
         </div>
-        <p id="statNewCustomers" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5"></p>
+        <p id="statNewCustomers" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
+          <i class="fa-solid fa-user-plus text-amber-600 text-[10px]"></i>
+          <span class="text-amber-700 font-semibold">0 new</span> customers
+        </p>
       </article>
 
       <!-- Card 4: Completed Services -->
@@ -385,7 +394,7 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statCompletedServices" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">—</h3>
+          <h3 id="statCompletedServices" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">0</h3>
           <span id="statCompletionRateBadge" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">0%</span>
         </div>
         <p id="statCompletionRate" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
@@ -572,19 +581,19 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
               <div class="p-2.5 bg-[#FAF6F0] rounded-xl border border-[#DCC3AA]/50 text-center">
                 <span class="text-[10px] text-stone-500 block uppercase font-bold">Total</span>
-                <span id="custStatTotal" class="font-serif text-xl font-bold text-[#541A1A]">—</span>
+                <span id="custStatTotal" class="font-serif text-xl font-bold text-[#541A1A]">0</span>
               </div>
               <div class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
                 <span class="text-[10px] text-emerald-700 block uppercase font-bold">New</span>
-                <span id="custStatNew" class="font-serif text-xl font-bold text-emerald-700">—</span>
+                <span id="custStatNew" class="font-serif text-xl font-bold text-emerald-700">0</span>
               </div>
               <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-center">
                 <span class="text-[10px] text-amber-700 block uppercase font-bold">Returning</span>
-                <span id="custStatReturning" class="font-serif text-xl font-bold text-blue-700">—</span>
+                <span id="custStatReturning" class="font-serif text-xl font-bold text-blue-700">0</span>
               </div>
               <div class="p-2.5 bg-stone-100 rounded-xl border border-stone-200 text-center">
                 <span class="text-[10px] text-stone-500 block uppercase font-bold">Inactive</span>
-                <span id="custStatInactive" class="font-serif text-xl font-bold text-stone-500">—</span>
+                <span id="custStatInactive" class="font-serif text-xl font-bold text-stone-500">0</span>
               </div>
             </div>
 

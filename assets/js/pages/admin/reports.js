@@ -14,12 +14,35 @@ let currentDateRange = 'this_month';
 let reportData = null;
 
 // ================= INITIALIZATION & AUTH =================
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initReports);
+} else {
+  initReports();
+}
+
+function initReports() {
+  hydrateReportsFromCache();
   checkAdminAuth();
   setupEventListeners();
   fetchReportsData();
   fetchSidebarStats();
-});
+}
+
+function hydrateReportsFromCache() {
+  try {
+    const raw = localStorage.getItem(REPORTS_CACHE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data && typeof data === 'object') {
+        reportData = data;
+        renderAllSections();
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('Could not read reports cache:', err);
+  }
+}
 
 function checkAdminAuth() {
   const token = localStorage.getItem('nelys_token');
@@ -78,6 +101,8 @@ async function fetchReportsData() {
 
     if (res.status === 401 || res.status === 403) {
       console.warn('Admin session expired or unauthenticated.');
+      window.location.replace('../login.html');
+      return;
     }
 
     if (!res.ok) {
@@ -87,6 +112,9 @@ async function fetchReportsData() {
     const json = await res.json();
     if (json.data) {
       reportData = json.data;
+      try {
+        localStorage.setItem(REPORTS_CACHE_KEY, JSON.stringify(json.data));
+      } catch (e) {}
       renderAllSections();
     }
 
@@ -700,5 +728,16 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
+// Global Window Bindings for Inline HTML Handlers
+window.openLogoutModal = openLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.handleConfirmLogout = handleConfirmLogout;
+window.confirmLogout = confirmLogout;
+window.openExportModal = openExportModal;
+window.closeExportModal = closeExportModal;
+window.handleExportExcel = handleExportExcel;
+window.handleExportPDF = handleExportPDF;
+window.toggleMobileSidebar = toggleMobileSidebar;
+window.fetchReportsData = fetchReportsData;
 window.showToast = showToast;
 window.escapeHtml = escapeHtml;

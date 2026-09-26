@@ -2,7 +2,7 @@
 # NELY'S SALON MANAGEMENT SYSTEM — .gitignore
 # Comprehensive Security, Privacy & Confidentiality Rules:
 # - Secrets, Environment Variables & API Keys
-# - Authentication Tokens, Certificates & Private Keys
+# - Authentication Tokens, Certificates, Keystores & Private Keys
 # - Payment Gateway, SMS, Webhook & Mailer Secrets
 # - Database Dumps, Backups & Local Database Files
 # - Customer Data, Financial Reports, Receipts & Invoices
@@ -58,11 +58,15 @@ database.local.php
 *.pkcs12
 *.pfx
 *.p12
+*.p7b
+*.p7c
 *.crt
 *.cer
 *.der
 *.csr
 *.kdbx
+*.jks
+*.keystore
 *.ovpn
 id_rsa*
 id_dsa*
@@ -85,6 +89,10 @@ secrets.json
 credentials.json
 client_secret*.json
 service-account*.json
+google-services.json
+firebase-adminsdk*.json
+oauth*.json
+token*.json
 credentials/
 secrets/
 keys/
@@ -208,6 +216,8 @@ build_*.js
 temp_*.js
 temp_*.php
 simulate_*.js
+*.patch
+*.diff
 
 # ==========================================
 # 9. Logs, PID & Debugging Output
@@ -234,6 +244,10 @@ httpd.conf.local
 php.ini.local
 *.sock
 *.socket
+xampp/
+mysql/
+apache/
+phpmyadmin/
 
 # ==========================================
 # 11. Dependencies & Vendor Directories
