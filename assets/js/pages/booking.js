@@ -1,24 +1,33 @@
 /**
  * Nely's Salon - Multi-Step Online Booking Wizard
- * Fully connected to backend APIs:
+ * Fully connected to backend MySQL APIs:
  * - GET ../api/services (Live services catalog)
+ * - GET ../api/staff (Live salon stylists & specialists roster)
  * - GET ../api/availability?date=... (Live slot capacity & booking availability)
  * - GET ../api/customers/profile (Patron autofill)
- * - POST ../api/bookings (Authoritative booking creation in MySQL)
+ * - POST ../api/bookings (Authoritative booking creation with staff_id in MySQL)
  * - GET ../api/notifications, ../api/messages, ../api/bookings (Live sidebar badges)
  */
+
+const SERVICES_CACHE_KEY = 'nelys_booking_services_cache';
+const STAFF_CACHE_KEY = 'nelys_booking_staff_cache';
 
 // Application Booking State
 const bookingState = {
   step: 1,
   service: {
-    id: 1,
+    id: null,
     code: 'brazilian',
     name: 'Brazilian',
     price: 1999,
     priceFormatted: '₱1,999',
     category: 'Hair Services',
     duration: '120 mins'
+  },
+  staff: {
+    id: null,
+    name: 'Any Available Stylist',
+    role: 'Salon Team'
   },
   date: '',
   dateIso: '',
@@ -46,6 +55,7 @@ const bookingState = {
 
 // Global Catalog & Slot Data
 let activeServicesList = [];
+let activeStaffList = [];
 let availableTimeSlots = [];
 
 // Calendar State
@@ -61,12 +71,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   initInitialDates();
   initPatronProfile();
   initCalendar();
+
+  // Instant hydration from local cache to eliminate any visual pop/flash
+  hydrateCachedServices();
+  hydrateCachedStaff();
   updateSummary();
 
-  // Load backend data in parallel
+  // Load live backend data in parallel from MySQL
   await Promise.allSettled([
     fetchFreshPatronProfile(),
     loadLiveServices(),
+    loadLiveStaff(),
     loadSidebarBadgeCounters(),
     fetchSlotAvailability(bookingState.dateIso)
   ]);
@@ -178,7 +193,26 @@ async function fetchFreshPatronProfile() {
   }
 }
 
-// 4. Load Live Services from Backend API
+// 4. Hydrate & Load Services from Backend API
+function hydrateCachedServices() {
+  try {
+    const cachedRaw = localStorage.getItem(SERVICES_CACHE_KEY);
+    if (cachedRaw) {
+      const parsed = JSON.parse(cachedRaw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        activeServicesList = parsed;
+        renderBookingServices(activeServicesList);
+        if (!bookingState.service.id && activeServicesList.length > 0) {
+          const firstSvc = activeServicesList[0];
+          selectService(firstSvc.id, firstSvc.name, firstSvc.price, firstSvc.categoryLabel, firstSvc.duration, firstSvc.code);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Cached services read notice:', err);
+  }
+}
+
 async function loadLiveServices() {
   try {
     const res = await fetch('../api/services');
@@ -188,7 +222,17 @@ async function loadLiveServices() {
         const active = result.data.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
         if (active.length > 0) {
           activeServicesList = active.map(mapBackendServiceToBookingItem);
+          localStorage.setItem(SERVICES_CACHE_KEY, JSON.stringify(activeServicesList));
           renderBookingServices(activeServicesList);
+
+          // Select first service if none selected or selected not in list
+          const currentSelected = activeServicesList.find(s => s.id === bookingState.service.id || s.code === bookingState.service.code);
+          if (currentSelected) {
+            selectService(currentSelected.id, currentSelected.name, currentSelected.price, currentSelected.categoryLabel, currentSelected.duration, currentSelected.code);
+          } else {
+            const firstSvc = activeServicesList[0];
+            selectService(firstSvc.id, firstSvc.name, firstSvc.price, firstSvc.categoryLabel, firstSvc.duration, firstSvc.code);
+          }
           return;
         }
       }
@@ -227,7 +271,7 @@ function mapBackendServiceToBookingItem(item) {
   }
 
   return {
-    id: item.id,
+    id: parseInt(item.id),
     code: code,
     name: name,
     categoryGroup: categoryGroup,
@@ -253,7 +297,7 @@ function renderBookingServices(services) {
     let hairHtml = '';
     hairServices.forEach(s => {
       const isSelected = bookingState.service.id === s.id || bookingState.service.code === s.code;
-      const borderClass = isSelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md' : 'border-[#DCC3AA] bg-white';
+      const borderClass = isSelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md bg-[#FAF6F0]' : 'border-[#DCC3AA] bg-white';
 
       hairHtml += `
         <div onclick="selectService(${s.id}, '${escapeHtml(s.name)}', ${s.price}, '${escapeHtml(s.categoryLabel)}', '${escapeHtml(s.duration)}', '${escapeHtml(s.code)}')"
@@ -291,7 +335,7 @@ function renderBookingServices(services) {
     let nailHtml = '';
     nailServices.forEach(s => {
       const isSelected = bookingState.service.id === s.id || bookingState.service.code === s.code;
-      const borderClass = isSelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md' : 'border-[#DCC3AA] bg-white';
+      const borderClass = isSelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md bg-[#FAF6F0]' : 'border-[#DCC3AA] bg-white';
 
       nailHtml += `
         <div onclick="selectService(${s.id}, '${escapeHtml(s.name)}', ${s.price}, '${escapeHtml(s.categoryLabel)}', '${escapeHtml(s.duration)}', '${escapeHtml(s.code)}')"
@@ -343,25 +387,25 @@ function checkUrlPreselectedService() {
 // 5. Select Service Handler
 function selectService(id, name, price, category = 'Hair Services', duration = '60 mins', code = '') {
   bookingState.service = {
-    id: id,
+    id: parseInt(id),
     code: code || String(id),
     name: name,
-    price: price,
-    priceFormatted: `₱${parseFloat(price).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
+    price: parseFloat(price) || 0,
+    priceFormatted: `₱${parseFloat(price || 0).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
     category: category,
     duration: duration
   };
 
   // Update card styles
   document.querySelectorAll('.service-card').forEach(c => {
-    c.classList.remove('border-[#810B38]', 'ring-2', 'ring-[#810B38]/30', 'shadow-md');
-    c.classList.add('border-[#DCC3AA]');
+    c.classList.remove('border-[#810B38]', 'ring-2', 'ring-[#810B38]/30', 'shadow-md', 'bg-[#FAF6F0]');
+    c.classList.add('border-[#DCC3AA]', 'bg-white');
   });
 
   const activeCard = document.getElementById(`svcCard-${code || id}`) || document.querySelector(`.service-card[onclick*="'${id}'"]`);
   if (activeCard) {
-    activeCard.classList.remove('border-[#DCC3AA]');
-    activeCard.classList.add('border-[#810B38]', 'ring-2', 'ring-[#810B38]/30', 'shadow-md');
+    activeCard.classList.remove('border-[#DCC3AA]', 'bg-white');
+    activeCard.classList.add('border-[#810B38]', 'ring-2', 'ring-[#810B38]/30', 'shadow-md', 'bg-[#FAF6F0]');
   }
 
   const selectedLabel = document.getElementById('step1SelectedLabel');
@@ -372,7 +416,216 @@ function selectService(id, name, price, category = 'Hair Services', duration = '
   updateSummary();
 }
 
-// 6. Category Filter Handler
+// 6. Hydrate & Load Staff from Backend API
+function hydrateCachedStaff() {
+  try {
+    const cachedRaw = localStorage.getItem(STAFF_CACHE_KEY);
+    if (cachedRaw) {
+      const parsed = JSON.parse(cachedRaw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        activeStaffList = parsed;
+        renderBookingStaff(activeStaffList);
+      }
+    }
+  } catch (err) {
+    console.warn('Cached staff read notice:', err);
+  }
+}
+
+async function loadLiveStaff() {
+  try {
+    const res = await fetch('../api/staff');
+    if (res.ok) {
+      const json = await res.json();
+      let staffData = [];
+      if (json.data) {
+        if (Array.isArray(json.data.staff)) {
+          staffData = json.data.staff;
+        } else if (Array.isArray(json.data)) {
+          staffData = json.data;
+        }
+      }
+
+      if (staffData.length > 0) {
+        const active = staffData.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true || s.status === 'Active');
+        if (active.length > 0) {
+          activeStaffList = active.map(mapBackendStaffItem);
+          localStorage.setItem(STAFF_CACHE_KEY, JSON.stringify(activeStaffList));
+          renderBookingStaff(activeStaffList);
+          return;
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Live staff fetch notice:', err);
+  }
+
+  // If no staff loaded, render default "Any Available Stylist"
+  if (activeStaffList.length === 0) {
+    renderBookingStaff([]);
+  }
+}
+
+function mapBackendStaffItem(item) {
+  let avatarUrl = '../assets/images/logo.jfif';
+  if (item.avatar) {
+    if (item.avatar.includes('/') || item.avatar.startsWith('http') || item.avatar.startsWith('data:')) {
+      avatarUrl = item.avatar;
+    } else if (item.avatar === 'director.jpg' || item.avatar === 'sculptor.jpg' || item.avatar === 'spa-specialist.jpg') {
+      avatarUrl = `../assets/images/team/${item.avatar}`;
+    } else {
+      avatarUrl = `../assets/images/${item.avatar}`;
+    }
+  }
+
+  return {
+    id: parseInt(item.id),
+    name: item.name || 'Stylist',
+    fullName: item.full_name || item.name || 'Salon Stylist',
+    role: item.role || item.position || 'Stylist & Specialist',
+    avatar: avatarUrl,
+    specialties: item.specialties || '',
+    availability: item.availability || 'Available',
+    status: item.status || 'Active'
+  };
+}
+
+function renderBookingStaff(staffList) {
+  const container = document.getElementById('staffSelectionGrid');
+  if (!container) return;
+
+  const isAnySelected = !bookingState.staff.id;
+  const anyBorder = isAnySelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md bg-[#FAF6F0]' : 'border-[#DCC3AA] bg-white';
+  const anyCheck = isAnySelected ? 'bg-[#810B38] text-white' : 'bg-gray-100 text-transparent';
+
+  let html = `
+    <!-- Option 0: Any Available Stylist -->
+    <div onclick="selectStaff(null, 'Any Available Stylist', 'Salon Team')"
+      id="staffCard-any"
+      class="staff-card p-4 rounded-2xl border-2 ${anyBorder} hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
+      <div>
+        <div class="flex items-start justify-between mb-3">
+          <div class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center text-base shadow-sm border border-[#DCC3AA]">
+            <i class="fa-solid fa-wand-magic-sparkles text-xs"></i>
+          </div>
+          <span id="staffCheck-any" class="w-5 h-5 rounded-full ${anyCheck} flex items-center justify-center text-[10px] transition-colors">
+            <i class="fa-solid fa-check"></i>
+          </span>
+        </div>
+        <h4 class="font-serif text-lg font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors leading-tight">
+          Any Available
+        </h4>
+        <p class="text-[11px] text-[#810B38] font-bold mt-0.5">
+          Fastest Confirmation
+        </p>
+        <p class="text-[11px] text-[#735e5e] mt-1 line-clamp-2">
+          Let our salon concierge match you with the best available specialist.
+        </p>
+      </div>
+      <div class="mt-3 pt-2.5 border-t border-[#F1E2D1] flex items-center justify-between text-[11px]">
+        <span class="font-semibold text-emerald-700 flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Recommended
+        </span>
+        <span class="text-xs font-bold text-[#810B38] flex items-center gap-0.5">
+          Select <i class="fa-solid fa-arrow-right text-[9px]"></i>
+        </span>
+      </div>
+    </div>
+  `;
+
+  staffList.forEach(s => {
+    const isSelected = bookingState.staff.id === s.id;
+    const cardBorder = isSelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md bg-[#FAF6F0]' : 'border-[#DCC3AA] bg-white';
+    const cardCheck = isSelected ? 'bg-[#810B38] text-white' : 'bg-gray-100 text-transparent';
+
+    html += `
+      <!-- Stylist Card: ${escapeHtml(s.name)} -->
+      <div onclick="selectStaff(${s.id}, '${escapeHtml(s.name)}', '${escapeHtml(s.role)}')"
+        id="staffCard-${s.id}"
+        class="staff-card p-4 rounded-2xl border-2 ${cardBorder} hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
+        <div>
+          <div class="flex items-start justify-between mb-3">
+            <div class="relative">
+              <img src="${s.avatar}" alt="${escapeHtml(s.name)}"
+                onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
+                class="w-10 h-10 rounded-full border border-[#DCC3AA] object-cover shadow-sm">
+              <div class="hidden w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-xs border border-[#DCC3AA]">
+                ${escapeHtml(s.name.substring(0, 2).toUpperCase())}
+              </div>
+            </div>
+            <span id="staffCheck-${s.id}" class="w-5 h-5 rounded-full ${cardCheck} flex items-center justify-center text-[10px] transition-colors">
+              <i class="fa-solid fa-check"></i>
+            </span>
+          </div>
+          <h4 class="font-serif text-lg font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors leading-tight">
+            ${escapeHtml(s.name)}
+          </h4>
+          <p class="text-[11px] text-[#810B38] font-medium mt-0.5 truncate" title="${escapeHtml(s.role)}">
+            ${escapeHtml(s.role)}
+          </p>
+          <p class="text-[11px] text-[#735e5e] mt-1 line-clamp-2">
+            ${escapeHtml(s.specialties || 'Dedicated salon beauty & styling specialist.')}
+          </p>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-[#F1E2D1] flex items-center justify-between text-[11px]">
+          <span class="font-semibold text-emerald-700 flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ${escapeHtml(s.availability || 'Available')}
+          </span>
+          <span class="text-xs font-bold text-[#810B38] flex items-center gap-0.5">
+            Select <i class="fa-solid fa-arrow-right text-[9px]"></i>
+          </span>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function selectStaff(id, name, role) {
+  const staffId = id ? parseInt(id) : null;
+  const staffName = name || 'Any Available Stylist';
+  const staffRole = role || 'Salon Team';
+
+  bookingState.staff = {
+    id: staffId,
+    name: staffName,
+    role: staffRole
+  };
+
+  // Update card styling
+  document.querySelectorAll('.staff-card').forEach(card => {
+    card.classList.remove('border-[#810B38]', 'ring-2', 'ring-[#810B38]/30', 'shadow-md', 'bg-[#FAF6F0]');
+    card.classList.add('border-[#DCC3AA]', 'bg-white');
+  });
+
+  document.querySelectorAll('[id^="staffCheck-"]').forEach(chk => {
+    chk.className = 'w-5 h-5 rounded-full bg-gray-100 text-transparent flex items-center justify-center text-[10px] transition-colors';
+  });
+
+  const targetCardId = staffId ? `staffCard-${staffId}` : 'staffCard-any';
+  const targetCheckId = staffId ? `staffCheck-${staffId}` : 'staffCheck-any';
+
+  const activeCard = document.getElementById(targetCardId);
+  if (activeCard) {
+    activeCard.classList.remove('border-[#DCC3AA]', 'bg-white');
+    activeCard.classList.add('border-[#810B38]', 'ring-2', 'ring-[#810B38]/30', 'shadow-md', 'bg-[#FAF6F0]');
+  }
+
+  const activeCheck = document.getElementById(targetCheckId);
+  if (activeCheck) {
+    activeCheck.className = 'w-5 h-5 rounded-full bg-[#810B38] text-white flex items-center justify-center text-[10px] transition-colors';
+  }
+
+  const badge = document.getElementById('selectedStaffBadge');
+  if (badge) {
+    badge.textContent = staffName;
+  }
+
+  updateSummary();
+}
+
+// 7. Category Filter Handler
 function filterServiceCategory(category) {
   const tabAll = document.getElementById('tabBtn-all');
   const tabHair = document.getElementById('tabBtn-hair');
@@ -404,7 +657,7 @@ function filterServiceCategory(category) {
   }
 }
 
-// 7. Interactive Calendar & Time Slots
+// 8. Interactive Calendar & Time Slots
 function initCalendar() {
   renderCalendar();
 }
@@ -511,7 +764,7 @@ function selectDate(formattedDate, dateIso, btn) {
   fetchSlotAvailability(dateIso);
 }
 
-// 8. Fetch Slot Availability from Backend API
+// 9. Fetch Slot Availability from Backend API
 async function fetchSlotAvailability(dateIso) {
   const container = document.getElementById('timeSlotsGrid');
   if (!container || !dateIso) return;
@@ -593,7 +846,7 @@ function selectTime(timeStr, btn) {
   updateSummary();
 }
 
-// 9. Step 3: Visit Type Handler
+// 10. Step 3: Visit Type Handler
 function selectVisitType(type) {
   bookingState.visitType = type;
 
@@ -620,7 +873,7 @@ function selectVisitType(type) {
   updateSummary();
 }
 
-// 10. Step 4: Payment Method Handler
+// 11. Step 4: Payment Method Handler
 function selectPaymentMethod(method) {
   bookingState.payment.method = method;
 
@@ -680,9 +933,10 @@ function handleReceiptUpload(e) {
   showToast('Receipt attached successfully!', 'success');
 }
 
-// 11. Summary Sidebar Update
+// 12. Summary Sidebar Update
 function updateSummary() {
   const sumSvc = document.getElementById('sumService');
+  const sumStaff = document.getElementById('sumStaff');
   const sumDur = document.getElementById('sumDuration');
   const sumDate = document.getElementById('sumDate');
   const sumTime = document.getElementById('sumTime');
@@ -691,6 +945,7 @@ function updateSummary() {
   const sumTot = document.getElementById('sumTotal');
 
   if (sumSvc) sumSvc.textContent = bookingState.service.name || 'Select a service';
+  if (sumStaff) sumStaff.textContent = bookingState.staff.name || 'Any Available Stylist';
   if (sumDur) sumDur.textContent = bookingState.service.duration || '60 mins';
   if (sumDate) sumDate.textContent = bookingState.date || 'Date TBD';
   if (sumTime) sumTime.textContent = bookingState.time || '10:00 AM';
@@ -718,7 +973,7 @@ function handleSummaryClick() {
   }
 }
 
-// 12. Stepper & Section Navigation
+// 13. Stepper & Section Navigation
 function goToStep(targetStep) {
   if (targetStep < 1 || targetStep > 4) return;
 
@@ -796,11 +1051,12 @@ function goToStep(targetStep) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// 13. Step 5 & Confirmation Modal
+// 14. Step 5 & Confirmation Modal
 function openConfirmModal() {
   updateSummary();
 
   const modalSvc = document.getElementById('modalService');
+  const modalStaff = document.getElementById('modalStaff');
   const modalDate = document.getElementById('modalDate');
   const modalTime = document.getElementById('modalTime');
   const modalVisit = document.getElementById('modalVisit');
@@ -808,6 +1064,7 @@ function openConfirmModal() {
   const modalTotal = document.getElementById('modalTotal');
 
   if (modalSvc) modalSvc.textContent = bookingState.service.name;
+  if (modalStaff) modalStaff.textContent = bookingState.staff.name || 'Any Available Stylist';
   if (modalDate) modalDate.textContent = bookingState.date;
   if (modalTime) modalTime.textContent = bookingState.time;
   if (modalVisit) modalVisit.textContent = bookingState.visitType === 'salon' ? 'Salon Visit (Lagro, QC)' : 'Home Service';
@@ -831,7 +1088,7 @@ function closeConfirmModal() {
   if (modal) modal.close();
 }
 
-// 14. Authoritative Booking Creation (POST /api/bookings)
+// 15. Authoritative Booking Creation (POST /api/bookings)
 async function finalizeBooking() {
   const confirmBtn = document.querySelector('#confirmModal button[onclick="finalizeBooking()"]');
   const originalBtnContent = confirmBtn ? confirmBtn.innerHTML : '';
@@ -865,6 +1122,7 @@ async function finalizeBooking() {
 
   const payload = {
     service_id: bookingState.service.id,
+    staff_id: bookingState.staff.id || null,
     booking_date: bookingState.dateIso || bookingState.date,
     booking_time: bookingState.time,
     visit_type: bookingState.visitType,
@@ -922,6 +1180,9 @@ async function finalizeBooking() {
     const succSvcEl = document.getElementById('succService');
     if (succSvcEl) succSvcEl.textContent = bookingData.service_name || bookingState.service.name;
 
+    const succStaffEl = document.getElementById('succStaff');
+    if (succStaffEl) succStaffEl.textContent = bookingState.staff.name || 'Any Available Stylist';
+
     const succDateEl = document.getElementById('succDate');
     if (succDateEl) succDateEl.textContent = bookingState.date;
 
@@ -933,7 +1194,7 @@ async function finalizeBooking() {
 
     const notifConfirmedEl = document.getElementById('succNotifConfirmed');
     if (notifConfirmedEl) {
-      notifConfirmedEl.innerHTML = `<strong>Appointment Confirmed:</strong> Your ${bookingData.service_name || bookingState.service.name} appointment is scheduled for ${bookingState.date} at ${bookingState.time}.`;
+      notifConfirmedEl.innerHTML = `<strong>Appointment Confirmed:</strong> Your ${bookingData.service_name || bookingState.service.name} appointment with ${bookingState.staff.name || 'our stylist team'} is scheduled for ${bookingState.date} at ${bookingState.time}.`;
     }
 
     const payMap = {
@@ -995,7 +1256,7 @@ async function finalizeBooking() {
   }
 }
 
-// 15. Load Sidebar Badge Counters
+// 16. Load Sidebar Badge Counters
 async function loadSidebarBadgeCounters() {
   const token = localStorage.getItem('nelys_token');
   const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
@@ -1072,7 +1333,7 @@ async function loadSidebarBadgeCounters() {
   }
 }
 
-// 16. Steady Dialog Dismissal & Mobile Sidebar
+// 17. Steady Dialog Dismissal & Mobile Sidebar
 function setupDialogSteadyListeners() {
   document.querySelectorAll('dialog').forEach(dlg => {
     dlg.addEventListener('click', (e) => {
@@ -1172,11 +1433,26 @@ function handleLogout(e) {
   return false;
 }
 
-// Global window bindings
+// Global window bindings for HTML event attributes
+window.selectService = selectService;
+window.selectStaff = selectStaff;
+window.selectDate = selectDate;
+window.selectTime = selectTime;
+window.selectVisitType = selectVisitType;
+window.selectPaymentMethod = selectPaymentMethod;
+window.handleReceiptUpload = handleReceiptUpload;
+window.filterServiceCategory = filterServiceCategory;
+window.changeCalendarMonth = changeCalendarMonth;
+window.goToStep = goToStep;
+window.openConfirmModal = openConfirmModal;
+window.closeConfirmModal = closeConfirmModal;
+window.finalizeBooking = finalizeBooking;
+window.handleSummaryClick = handleSummaryClick;
 window.openLogoutModal = openLogoutModal;
 window.closeLogoutModal = closeLogoutModal;
 window.confirmLogout = confirmLogout;
 window.handleLogout = handleLogout;
+window.toggleMobileSidebar = toggleMobileSidebar;
 
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
