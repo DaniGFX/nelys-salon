@@ -84,22 +84,19 @@ function normalizeBookingItem(b) {
 function hydrateAppointmentsFromCache() {
   try {
     const data = window.__PRELOADED_APPOINTMENTS__ || JSON.parse(localStorage.getItem(APPOINTMENTS_CACHE_KEY) || 'null');
-    if (cached) {
-      const data = JSON.parse(cached);
-      if (data && typeof data === 'object') {
-        const rawBookings = data.bookings || [];
-        servicesList = data.services || [];
-        staffList = data.staff || [];
-        customersList = data.customers || [];
-        summaryMetrics = data.summary || summaryMetrics;
+    if (data && typeof data === 'object') {
+      const rawBookings = data.bookings || (Array.isArray(data) ? data : []);
+      servicesList = data.services || [];
+      staffList = data.staff || [];
+      customersList = data.customers || [];
+      summaryMetrics = data.summary || summaryMetrics;
 
-        appointmentsData = rawBookings.map(normalizeBookingItem).filter(Boolean);
+      appointmentsData = rawBookings.map(normalizeBookingItem).filter(Boolean);
 
-        populateDropdowns();
-        renderSummaryCounters();
-        renderAppointmentsTable();
-        updateSidebarBadges();
-      }
+      populateDropdowns();
+      renderSummaryCounters();
+      renderAppointmentsTable();
+      updateSidebarBadges();
     }
   } catch (err) {
     console.warn('Could not read appointments cache:', err);
@@ -107,13 +104,18 @@ function hydrateAppointmentsFromCache() {
 }
 
 // ================= INITIALIZATION & AUTH =================
-document.addEventListener('DOMContentLoaded', () => {
+function initAppointments() {
   hydrateAppointmentsFromCache();
   checkAdminAuth();
-  setupEventListeners();
   setupDialogSteadyListeners();
   fetchAppointments();
-});
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initAppointments);
+} else {
+  initAppointments();
+}
 
 function checkAdminAuth() {
   const token = localStorage.getItem('nelys_token');
