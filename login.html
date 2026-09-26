@@ -16,6 +16,10 @@
 
   <!-- Compiled Tailwind CSS -->
   <link rel="stylesheet" href="assets/css/output.css">
+
+  <!-- Preload Critical Above-the-Fold Images (Zero White Flicker on Reload) -->
+  <link rel="preload" as="image" href="assets/images/login-signup-form.png" fetchpriority="high">
+  <link rel="preload" as="image" href="assets/images/logo.jfif">
 </head>
 <body class="h-full bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col justify-between">
 
@@ -23,12 +27,15 @@
   <main class="flex-1 min-h-screen grid grid-cols-1 lg:grid-cols-12">
     
     <!-- ================= LEFT SIDE — BRANDING (WEBSITE / DESKTOP VIEW ONLY) ================= -->
-    <div class="hidden lg:flex lg:col-span-5 text-white lg:p-12 xl:p-14 flex-col justify-between relative overflow-hidden">
+    <div class="hidden lg:flex lg:col-span-5 text-white lg:p-12 xl:p-14 flex-col justify-between relative overflow-hidden bg-[#241719]">
       
       <!-- Background Cover Image -->
       <img 
         src="assets/images/login-signup-form.png" 
         alt="Nely's Salon" 
+        loading="eager"
+        fetchpriority="high"
+        decoding="sync"
         class="absolute inset-0 w-full h-full object-cover object-center"
       >
 
