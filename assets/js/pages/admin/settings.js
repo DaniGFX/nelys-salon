@@ -73,12 +73,48 @@ let settings = {
 };
 
 // ================= DOM CONTENT LOADED & AUTH =================
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initSettings);
+} else {
+  initSettings();
+}
+
+function initSettings() {
+  hydrateSettingsFromCache();
   checkAdminAuth();
   fetchSettingsData();
   fetchSidebarStats();
   updateTimeBadge();
-});
+}
+
+function hydrateSettingsFromCache() {
+  try {
+    const cached = window.__PRELOADED_SETTINGS__ || JSON.parse(localStorage.getItem(SETTINGS_CACHE_KEY) || 'null');
+    if (cached) {
+      if (cached.salonInfo) settings.salonInfo = { ...settings.salonInfo, ...cached.salonInfo };
+      if (Array.isArray(cached.businessHours) && cached.businessHours.length === 7) {
+        settings.businessHours = cached.businessHours;
+      }
+      if (cached.appointmentSettings) settings.appointmentSettings = { ...settings.appointmentSettings, ...cached.appointmentSettings };
+      if (cached.paymentSettings) settings.paymentSettings = { ...settings.paymentSettings, ...cached.paymentSettings };
+      if (cached.notifications) settings.notifications = { ...settings.notifications, ...cached.notifications };
+      if (cached.account) settings.account = { ...settings.account, ...cached.account };
+      if (cached.systemPreferences) settings.systemPreferences = { ...settings.systemPreferences, ...cached.systemPreferences };
+      if (cached.isDeactivated !== undefined) settings.isDeactivated = !!cached.isDeactivated;
+
+      populateSalonInfo();
+      renderBusinessHoursTable();
+      populateAppointmentSettings();
+      populatePaymentSettings();
+      populateNotificationPreferences();
+      populateAccountSettings();
+      populateSystemPreferences();
+      updateSystemDeactivatedUI();
+    }
+  } catch (e) {
+    console.warn('Error pre-hydrating settings cache:', e);
+  }
+}
 
 function checkAdminAuth() {
   const token = localStorage.getItem('nelys_token');
@@ -941,11 +977,13 @@ function toggleMobileSidebar(show) {
   }
 }
 
+// ================= STANDARDIZED ADMIN LOGOUT HANDLERS =================
 function openLogoutModal() {
   const modal = document.getElementById('logoutModal');
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    modal.style.display = 'flex';
   }
 }
 
@@ -954,17 +992,25 @@ function closeLogoutModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    modal.style.display = 'none';
   }
 }
 
 function handleConfirmLogout() {
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
+  try {
+    localStorage.removeItem('nelys_token');
+    localStorage.removeItem('nelys_user');
+    sessionStorage.clear();
+  } catch (e) {}
   window.location.href = '../login.html';
 }
 
+function confirmLogout() {
+  handleConfirmLogout();
+}
+
 function showToast(message, type = 'info') {
-  let toastContainer = document.getElementById('toastContainer');
+  let toastContainer = document.getElementById('toastContainer') || document.getElementById('adminToastContainer');
   if (!toastContainer) {
     toastContainer = document.createElement('div');
     toastContainer.id = 'adminToastContainer';
@@ -1016,49 +1062,29 @@ function safeSetText(id, text) {
   if (el) el.textContent = text;
 }
 
-window.openLogoutModal = openLogoutModal;
-window.closeLogoutModal = closeLogoutModal;
-window.handleConfirmLogout = typeof handleConfirmLogout === 'function' ? handleConfirmLogout : function() {
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
-  sessionStorage.clear();
-  window.location.href = '../login.html';
-};
-window.confirmLogout = window.handleConfirmLogout;
-
-// ================= STANDARDIZED ADMIN LOGOUT HANDLERS =================
-function openLogoutModal() {
-  const modal = document.getElementById('logoutModal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    modal.style.display = 'flex';
-  }
-}
-
-function closeLogoutModal() {
-  const modal = document.getElementById('logoutModal');
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    modal.style.display = 'none';
-  }
-}
-
-function handleConfirmLogout() {
-  try {
-    localStorage.removeItem('nelys_token');
-    localStorage.removeItem('nelys_user');
-    sessionStorage.clear();
-  } catch(e) {}
-  window.location.href = '../login.html';
-}
-
-function confirmLogout() {
-  handleConfirmLogout();
-}
-
+// ================= GLOBAL WINDOW EXPORTS =================
+window.toggleMobileSidebar = toggleMobileSidebar;
+window.handleSaveSalonInfo = handleSaveSalonInfo;
+window.handleSaveBusinessHours = handleSaveBusinessHours;
+window.toggleDayOpen = toggleDayOpen;
+window.handleSaveAppointmentSettings = handleSaveAppointmentSettings;
+window.handleSavePaymentSettings = handleSavePaymentSettings;
+window.handleSaveNotificationPreferences = handleSaveNotificationPreferences;
+window.handleSaveAccountSettings = handleSaveAccountSettings;
+window.handleSaveSystemPreferences = handleSaveSystemPreferences;
+window.openChangePasswordModal = openChangePasswordModal;
+window.closeChangePasswordModal = closeChangePasswordModal;
+window.handleUpdatePassword = handleUpdatePassword;
+window.togglePasswordVisibility = togglePasswordVisibility;
+window.openDeactivateModal = openDeactivateModal;
+window.closeDeactivateModal = closeDeactivateModal;
+window.handleConfirmDeactivate = handleConfirmDeactivate;
+window.handleReactivateSystem = handleReactivateSystem;
+window.openDeleteAccountModal = openDeleteAccountModal;
+window.closeDeleteAccountModal = closeDeleteAccountModal;
+window.handleConfirmDeleteAccount = handleConfirmDeleteAccount;
 window.openLogoutModal = openLogoutModal;
 window.closeLogoutModal = closeLogoutModal;
 window.handleConfirmLogout = handleConfirmLogout;
 window.confirmLogout = confirmLogout;
+window.showToast = showToast;

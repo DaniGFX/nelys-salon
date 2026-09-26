@@ -7,12 +7,39 @@
 require_once dirname(__DIR__) . '/config/database.php';
 
 class Setting {
+    private static bool $schemaChecked = false;
+
+    /**
+     * Ensure business_settings table schema is initialized
+     */
+    public static function ensureSchema(): void {
+        if (self::$schemaChecked) return;
+        self::$schemaChecked = true;
+        try {
+            $pdo = Database::getConnection();
+
+            // Ensure table exists
+            $pdo->exec("CREATE TABLE IF NOT EXISTS `business_settings` (
+                `id` INT AUTO_INCREMENT PRIMARY KEY,
+                `setting_key` VARCHAR(100) NOT NULL UNIQUE,
+                `setting_value` TEXT NULL,
+                `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX `idx_setting_key` (`setting_key`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+        } catch (Throwable $e) {
+            error_log('Setting::ensureSchema Error: ' . $e->getMessage());
+        }
+    }
+
     public static function all(): array {
+        self::ensureSchema();
         $pdo = Database::getConnection();
         return $pdo->query("SELECT setting_key, setting_value FROM business_settings")->fetchAll(PDO::FETCH_KEY_PAIR);
     }
 
     public static function get(string $key, ?string $default = null): ?string {
+        self::ensureSchema();
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare("SELECT setting_value FROM business_settings WHERE setting_key = :k LIMIT 1");
         $stmt->execute(['k' => $key]);
@@ -21,6 +48,7 @@ class Setting {
     }
 
     public static function set(string $key, string $value): bool {
+        self::ensureSchema();
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare("
             INSERT INTO business_settings (setting_key, setting_value, updated_at)
@@ -31,6 +59,7 @@ class Setting {
     }
 
     public static function allCategorized(?int $adminUserId = null): array {
+        self::ensureSchema();
         $pdo = Database::getConnection();
 
         // 1. Salon Information
