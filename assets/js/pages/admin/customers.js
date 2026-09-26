@@ -483,62 +483,15 @@ function renderCustomersTable() {
           ${statusPill}
         </td>
 
-        <!-- Action Column (Kebab Menu) -->
-        <td class="px-5 py-4 whitespace-nowrap text-right text-xs relative" onclick="event.stopPropagation()">
-          <div class="inline-block text-left">
-            <button 
-              type="button" 
-              onclick="toggleRowKebabMenu(${cust.userId}, event)"
-              class="w-8 h-8 rounded-xl bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA] flex items-center justify-center transition-colors shadow-2xs focus:outline-none"
-              title="Actions for ${escapeHtml(cust.name)}">
-              <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
-            </button>
-
-            <!-- Dropdown Menu -->
-            <div 
-              id="kebabMenu-${cust.userId}" 
-              class="kebab-dropdown-menu hidden absolute right-5 mt-1 w-48 rounded-2xl bg-white border border-[#DCC3AA] shadow-2xl py-1.5 z-30 text-left">
-              
-              <!-- 1. View Profile -->
-              <button 
-                type="button" 
-                onclick="openCustomerProfileModal(${cust.userId})"
-                class="w-full px-4 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
-                <i class="fa-solid fa-id-card text-[#810B38] w-4 text-center"></i>
-                <span>View Profile</span>
-              </button>
-
-              <!-- 2. Edit Record -->
-              <button 
-                type="button" 
-                onclick="openEditCustomerModal(${cust.userId})"
-                class="w-full px-4 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
-                <i class="fa-solid fa-pen-to-square text-[#810B38] w-4 text-center"></i>
-                <span>Edit Customer</span>
-              </button>
-
-              <!-- 3. Book Appointment -->
-              <button 
-                type="button" 
-                onclick="openBookForCustomerModal(${cust.userId})"
-                class="w-full px-4 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 flex items-center gap-2.5 transition-colors">
-                <i class="fa-solid fa-calendar-plus text-emerald-600 w-4 text-center"></i>
-                <span>Book Appointment</span>
-              </button>
-
-              <div class="border-t border-[#F1E2D1] my-1"></div>
-
-              <!-- 4. Delete Record -->
-              <button 
-                type="button" 
-                onclick="openDeleteCustomerModal(${cust.userId})"
-                class="w-full px-4 py-2 text-xs font-semibold text-rose-800 hover:bg-rose-50 flex items-center gap-2.5 transition-colors">
-                <i class="fa-solid fa-trash-can text-rose-600 w-4 text-center"></i>
-                <span>Delete Record</span>
-              </button>
-
-            </div>
-          </div>
+        <!-- Action Column (Three Dots Kebab) -->
+        <td class="px-5 py-4 whitespace-nowrap text-right text-xs" onclick="event.stopPropagation()">
+          <button 
+            type="button" 
+            onclick="toggleRowKebabMenu(${cust.userId}, event)"
+            class="w-8 h-8 rounded-xl bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA] inline-flex items-center justify-center transition-colors shadow-2xs focus:outline-none cursor-pointer"
+            title="Actions for ${escapeHtml(cust.name)}">
+            <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+          </button>
         </td>
 
       </tr>
@@ -621,27 +574,102 @@ function resetFilters() {
   showToast('All filters have been reset.', 'info');
 }
 
-// ================= KEBAB MENU HANDLER =================
+// ================= KEBAB MENU HANDLER (Floating Portal Outside Table) =================
 function toggleRowKebabMenu(userId, event) {
-  if (event) event.stopPropagation();
-  const allMenus = document.querySelectorAll('.kebab-dropdown-menu');
-  const targetMenu = document.getElementById(`kebabMenu-${userId}`);
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
 
-  allMenus.forEach(menu => {
-    if (menu !== targetMenu) menu.classList.add('hidden');
-  });
+  const cust = customersData.find(c => (c.userId == userId || c.id == userId));
+  if (!cust) return;
 
-  if (targetMenu) {
-    targetMenu.classList.toggle('hidden');
+  let portal = document.getElementById('floatingCustomerActionPortal');
+  if (!portal) {
+    portal = document.createElement('div');
+    portal.id = 'floatingCustomerActionPortal';
+    portal.className = 'fixed z-[9999] bg-white rounded-2xl border border-[#DCC3AA] shadow-2xl py-1.5 text-left text-xs min-w-[200px] transition-opacity duration-150 animate-fadeIn divide-y divide-[#FAF6F0]';
+    document.body.appendChild(portal);
+  }
+
+  if (!portal.classList.contains('hidden') && portal.dataset.activeId == userId) {
+    closeFloatingCustomerActionPortal();
+    return;
+  }
+
+  portal.dataset.activeId = userId;
+  portal.innerHTML = `
+    <div class="px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#735e5e]/80 bg-[#FAF6F0]/50">
+      ${escapeHtml(cust.name || 'Customer Profile')}
+    </div>
+    <div class="py-1">
+      <button type="button" onclick="closeFloatingCustomerActionPortal(); openCustomerProfileModal(${cust.userId})" class="w-full px-3.5 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
+        <i class="fa-solid fa-id-card text-[#810B38] w-4 text-center"></i>
+        <span>View Profile</span>
+      </button>
+      <button type="button" onclick="closeFloatingCustomerActionPortal(); openEditCustomerModal(${cust.userId})" class="w-full px-3.5 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
+        <i class="fa-solid fa-pen-to-square text-[#810B38] w-4 text-center"></i>
+        <span>Edit Customer</span>
+      </button>
+      <button type="button" onclick="closeFloatingCustomerActionPortal(); openNewAppointmentModal(${cust.userId})" class="w-full px-3.5 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
+        <i class="fa-regular fa-calendar-plus text-[#810B38] w-4 text-center"></i>
+        <span>Book Appointment</span>
+      </button>
+      <a href="messages.html?user_id=${cust.userId}" onclick="closeFloatingCustomerActionPortal()" class="w-full px-3.5 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
+        <i class="fa-regular fa-comments text-[#810B38] w-4 text-center"></i>
+        <span>Send Message</span>
+      </a>
+    </div>
+    <div class="py-1">
+      <button type="button" onclick="closeFloatingCustomerActionPortal(); openDeleteCustomerModal(${cust.userId})" class="w-full px-3.5 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 flex items-center gap-2.5 transition-colors">
+        <i class="fa-regular fa-trash-can text-rose-600 w-4 text-center"></i>
+        <span>Delete Customer</span>
+      </button>
+    </div>
+  `;
+
+  portal.classList.remove('hidden');
+
+  const btn = event.currentTarget || (event.target ? event.target.closest('button') : null);
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    const portalWidth = portal.offsetWidth || 200;
+    const portalHeight = portal.offsetHeight || 220;
+
+    let top = rect.bottom + 6;
+    let left = rect.right - portalWidth;
+
+    if (top + portalHeight > window.innerHeight - 10) {
+      top = Math.max(10, rect.top - portalHeight - 6);
+    }
+    if (left < 10) {
+      left = 10;
+    }
+    if (left + portalWidth > window.innerWidth - 10) {
+      left = window.innerWidth - portalWidth - 10;
+    }
+
+    portal.style.top = `${top}px`;
+    portal.style.left = `${left}px`;
   }
 }
 
-function setupClickOutside() {
-  document.addEventListener('click', () => {
-    const allMenus = document.querySelectorAll('.kebab-dropdown-menu');
-    allMenus.forEach(menu => menu.classList.add('hidden'));
-  });
+function closeFloatingCustomerActionPortal() {
+  const portal = document.getElementById('floatingCustomerActionPortal');
+  if (portal) {
+    portal.classList.add('hidden');
+    portal.dataset.activeId = '';
+  }
 }
+
+// Global Click & Scroll listeners
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#floatingCustomerActionPortal') && !e.target.closest('button[onclick*="toggleRowKebabMenu"]')) {
+    closeFloatingCustomerActionPortal();
+  }
+});
+window.addEventListener('resize', closeFloatingCustomerActionPortal);
+window.addEventListener('scroll', closeFloatingCustomerActionPortal, { passive: true });
 
 // ================= MODAL 1: CUSTOMER PROFILE & HISTORY MODAL =================
 async function openCustomerProfileModal(userId) {
@@ -1333,3 +1361,5 @@ window.openLogoutModal = openLogoutModal;
 window.closeLogoutModal = closeLogoutModal;
 window.handleConfirmLogout = handleConfirmLogout;
 window.confirmLogout = confirmLogout;
+
+window.closeFloatingCustomerActionPortal = closeFloatingCustomerActionPortal;

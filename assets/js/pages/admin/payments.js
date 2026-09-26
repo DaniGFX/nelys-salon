@@ -735,102 +735,119 @@ function renderPaymentsTable(items) {
           ${statusBadge}
         </td>
 
-        <!-- Action (⋮ Kebab Menu) -->
+        <!-- Action (Three Dots Kebab Button) -->
         <td class="px-5 py-4 text-right">
-          <div class="relative inline-block text-left kebab-menu-container">
-            <button 
-              type="button" 
-              onclick="toggleKebabMenu(event, ${p.id})"
-              class="w-8 h-8 rounded-lg bg-stone-100 hover:bg-[#810B38] hover:text-white text-stone-600 transition-colors flex items-center justify-center text-sm shadow-xs focus:outline-none"
-              aria-label="Actions for payment ${p.displayId}">
-              <i class="fa-solid fa-ellipsis-vertical"></i>
-            </button>
-
-            <!-- Dropdown Menu -->
-            <div 
-              id="kebab-menu-${p.id}" 
-              class="hidden absolute right-0 mt-1 w-48 bg-white border border-[#DCC3AA]/50 rounded-xl shadow-xl z-30 py-1.5 text-left text-xs divide-y divide-stone-100">
-              
-              <div class="py-1">
-                <!-- View Payment -->
-                <button 
-                  type="button" 
-                  onclick="openPaymentDetailsModal(${p.id})"
-                  class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-[#810B38] font-medium flex items-center gap-2.5 transition-colors">
-                  <i class="fa-solid fa-eye text-[#810B38] w-4 text-center"></i>
-                  <span>View Payment</span>
-                </button>
-
-                <!-- Edit Payment -->
-                <button 
-                  type="button" 
-                  onclick="openEditPaymentModal(${p.id})"
-                  class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-[#810B38] font-medium flex items-center gap-2.5 transition-colors">
-                  <i class="fa-solid fa-pen-to-square text-[#810B38] w-4 text-center"></i>
-                  <span>Edit Payment</span>
-                </button>
-              </div>
-
-              <div class="py-1">
-                <!-- Record Payment / Mark Paid -->
-                <button 
-                  type="button" 
-                  onclick="quickMarkPaid(${p.id})"
-                  class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-emerald-700 font-medium flex items-center gap-2.5 transition-colors">
-                  <i class="fa-solid fa-money-bill-wave text-emerald-600 w-4 text-center"></i>
-                  <span>${p.status === 'Paid' ? 'Re-confirm Paid' : 'Mark as Paid'}</span>
-                </button>
-
-                <!-- View Receipt -->
-                <button 
-                  type="button" 
-                  onclick="openReceiptModal(${p.id})"
-                  class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-indigo-700 font-medium flex items-center gap-2.5 transition-colors">
-                  <i class="fa-solid fa-receipt text-indigo-600 w-4 text-center"></i>
-                  <span>View Receipt</span>
-                </button>
-              </div>
-
-              <div class="py-1">
-                <!-- Refund -->
-                <button 
-                  type="button" 
-                  onclick="openRefundModal(${p.id})"
-                  class="w-full px-3.5 py-2 text-rose-600 hover:bg-rose-50 font-medium flex items-center gap-2.5 transition-colors">
-                  <i class="fa-solid fa-arrow-rotate-left text-rose-600 w-4 text-center"></i>
-                  <span>Refund</span>
-                </button>
-              </div>
-
-            </div>
-          </div>
+          <button 
+            type="button" 
+            onclick="toggleKebabMenu(event, ${p.id})"
+            class="w-8 h-8 rounded-lg bg-stone-100 hover:bg-[#810B38] hover:text-white text-stone-600 transition-colors inline-flex items-center justify-center text-sm shadow-xs focus:outline-none cursor-pointer"
+            aria-label="Actions for payment ${p.displayId}">
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+          </button>
         </td>
       </tr>
     `;
   }).join('');
 }
 
-// ================= KEBAB MENU TOGGLE =================
+// ================= KEBAB MENU TOGGLE (Floating Portal Outside Table) =================
 function toggleKebabMenu(event, paymentId) {
-  event.stopPropagation();
-  const menu = document.getElementById(`kebab-menu-${paymentId}`);
-  if (!menu) return;
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
 
-  const isHidden = menu.classList.contains('hidden');
-  closeAllKebabMenus();
+  const p = paymentsList.find(item => item.id == paymentId || item.displayId == paymentId);
+  if (!p) return;
 
-  if (isHidden) {
-    menu.classList.remove('hidden');
-    activeKebabDropdown = menu;
+  let portal = document.getElementById('floatingPaymentActionPortal');
+  if (!portal) {
+    portal = document.createElement('div');
+    portal.id = 'floatingPaymentActionPortal';
+    portal.className = 'fixed z-[9999] bg-white rounded-2xl border border-[#DCC3AA] shadow-2xl py-1.5 text-left text-xs min-w-[190px] transition-opacity duration-150 animate-fadeIn divide-y divide-stone-100';
+    document.body.appendChild(portal);
+  }
+
+  if (!portal.classList.contains('hidden') && portal.dataset.activeId == paymentId) {
+    closeFloatingPaymentActionPortal();
+    return;
+  }
+
+  portal.dataset.activeId = paymentId;
+  portal.innerHTML = `
+    <div class="px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#735e5e]/80 bg-[#FAF6F0]/50">
+      Payment #${escapeHtml(String(p.displayId || p.id))}
+    </div>
+    <div class="py-1">
+      <button type="button" onclick="closeFloatingPaymentActionPortal(); openPaymentDetailsModal(${p.id})" class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-[#810B38] font-medium flex items-center gap-2.5 transition-colors">
+        <i class="fa-solid fa-eye text-[#810B38] w-4 text-center"></i>
+        <span>View Payment</span>
+      </button>
+      <button type="button" onclick="closeFloatingPaymentActionPortal(); openEditPaymentModal(${p.id})" class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-[#810B38] font-medium flex items-center gap-2.5 transition-colors">
+        <i class="fa-solid fa-pen-to-square text-[#810B38] w-4 text-center"></i>
+        <span>Edit Payment</span>
+      </button>
+    </div>
+    <div class="py-1">
+      <button type="button" onclick="closeFloatingPaymentActionPortal(); quickMarkPaid(${p.id})" class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-emerald-700 font-medium flex items-center gap-2.5 transition-colors">
+        <i class="fa-solid fa-money-bill-wave text-emerald-600 w-4 text-center"></i>
+        <span>${p.status === 'Paid' ? 'Re-confirm Paid' : 'Mark as Paid'}</span>
+      </button>
+      <button type="button" onclick="closeFloatingPaymentActionPortal(); openReceiptModal(${p.id})" class="w-full px-3.5 py-2 text-stone-700 hover:bg-[#FAF6F0] hover:text-indigo-700 font-medium flex items-center gap-2.5 transition-colors">
+        <i class="fa-solid fa-receipt text-indigo-600 w-4 text-center"></i>
+        <span>View Receipt</span>
+      </button>
+    </div>
+    <div class="py-1">
+      <button type="button" onclick="closeFloatingPaymentActionPortal(); openRefundModal(${p.id})" class="w-full px-3.5 py-2 text-rose-600 hover:bg-rose-50 font-medium flex items-center gap-2.5 transition-colors">
+        <i class="fa-solid fa-arrow-rotate-left text-rose-600 w-4 text-center"></i>
+        <span>Refund</span>
+      </button>
+    </div>
+  `;
+
+  portal.classList.remove('hidden');
+
+  const btn = event.currentTarget || (event.target ? event.target.closest('button') : null);
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    const portalWidth = portal.offsetWidth || 190;
+    const portalHeight = portal.offsetHeight || 220;
+
+    let top = rect.bottom + 6;
+    let left = rect.right - portalWidth;
+
+    if (top + portalHeight > window.innerHeight - 10) {
+      top = Math.max(10, rect.top - portalHeight - 6);
+    }
+    if (left < 10) {
+      left = 10;
+    }
+    if (left + portalWidth > window.innerWidth - 10) {
+      left = window.innerWidth - portalWidth - 10;
+    }
+
+    portal.style.top = `${top}px`;
+    portal.style.left = `${left}px`;
   }
 }
 
-function closeAllKebabMenus() {
-  document.querySelectorAll('[id^="kebab-menu-"]').forEach(el => {
-    el.classList.add('hidden');
-  });
-  activeKebabDropdown = null;
+function closeFloatingPaymentActionPortal() {
+  const portal = document.getElementById('floatingPaymentActionPortal');
+  if (portal) {
+    portal.classList.add('hidden');
+    portal.dataset.activeId = '';
+  }
 }
+
+// Global Click & Scroll listeners
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#floatingPaymentActionPortal') && !e.target.closest('button[onclick*="toggleKebabMenu"]')) {
+    closeFloatingPaymentActionPortal();
+  }
+});
+window.addEventListener('resize', closeFloatingPaymentActionPortal);
+window.addEventListener('scroll', closeFloatingPaymentActionPortal, { passive: true });
 
 // ================= PAYMENT DETAILS MODAL =================
 function openPaymentDetailsModal(paymentId) {
@@ -1315,3 +1332,5 @@ window.toggleMobileSidebar = toggleMobileSidebar;
 window.fetchPaymentsData = fetchPaymentsData;
 window.showToast = showToast;
 window.escapeHtml = escapeHtml;
+
+window.closeFloatingPaymentActionPortal = closeFloatingPaymentActionPortal;

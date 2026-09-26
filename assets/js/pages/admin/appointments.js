@@ -698,38 +698,14 @@ function renderAppointmentsTable() {
               <i class="fa-regular fa-eye"></i>
             </button>
 
-            <!-- Kebab Dropdown Menu -->
-            <div class="relative inline-block text-left">
-              <button 
-                type="button" 
-                onclick="toggleRowKebabMenu(${appt.id}, event)"
-                class="w-7 h-7 rounded-lg bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] flex items-center justify-center text-xs transition-colors"
-                title="More Actions">
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-              </button>
-
-              <div id="rowMenu-${appt.id}" class="hidden fixed w-44 rounded-2xl bg-white shadow-xl border border-[#DCC3AA] py-1.5 z-50 text-left text-xs">
-                <button type="button" onclick="openEditModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-[#FAF6F0] text-[#541A1A] flex items-center gap-2 font-medium">
-                  <i class="fa-solid fa-pen text-[11px] text-[#810B38]"></i>
-                  <span>Edit Appointment</span>
-                </button>
-                <button type="button" onclick="openRescheduleModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-[#FAF6F0] text-[#541A1A] flex items-center gap-2 font-medium">
-                  <i class="fa-regular fa-calendar-days text-[11px] text-[#810B38]"></i>
-                  <span>Reschedule</span>
-                </button>
-                <div class="my-1 border-t border-[#F1E2D1]"></div>
-                ${appt.status !== 'cancelled' ? `
-                  <button type="button" onclick="openCancelModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-amber-50 text-amber-900 flex items-center gap-2 font-medium">
-                    <i class="fa-solid fa-ban text-[11px] text-amber-700"></i>
-                    <span>Cancel Booking</span>
-                  </button>
-                ` : ''}
-                <button type="button" onclick="openDeleteModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-rose-50 text-rose-800 flex items-center gap-2 font-medium">
-                  <i class="fa-regular fa-trash-can text-[11px] text-rose-600"></i>
-                  <span>Delete Record</span>
-                </button>
-              </div>
-            </div>
+            <!-- Kebab Action Button -->
+            <button 
+              type="button" 
+              onclick="toggleRowKebabMenu(${appt.id}, event)"
+              class="w-7 h-7 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA] flex items-center justify-center text-xs transition-colors cursor-pointer"
+              title="More Actions for Appointment #${appt.id}">
+              <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
 
           </div>
         </td>
@@ -801,42 +777,104 @@ function changePage(page) {
   }
 }
 
-// Toggle Row Action Menu
+// Toggle Row Action Menu (Floating Portal Outside Table)
 function toggleRowKebabMenu(id, event) {
-  if (event) event.stopPropagation();
-  const currentMenu = document.getElementById(`rowMenu-${id}`);
-  
-  // Close all other open kebab menus
-  document.querySelectorAll('[id^="rowMenu-"]').forEach(menu => {
-    if (menu !== currentMenu) menu.classList.add('hidden');
-  });
+  if (event) {
+    event.stopPropagation();
+    event.preventDefault();
+  }
 
-  if (!currentMenu) return;
+  const appt = appointmentsData.find(a => a.id == id);
+  if (!appt) return;
 
-  if (currentMenu.classList.contains('hidden')) {
-    currentMenu.classList.remove('hidden');
-    if (event && event.currentTarget) {
-      const rect = event.currentTarget.getBoundingClientRect();
-      currentMenu.style.top = `${rect.bottom + 4}px`;
-      currentMenu.style.left = `${Math.max(10, rect.right - 176)}px`;
+  let portal = document.getElementById('floatingAppointmentActionPortal');
+  if (!portal) {
+    portal = document.createElement('div');
+    portal.id = 'floatingAppointmentActionPortal';
+    portal.className = 'fixed z-[9999] bg-white rounded-2xl border border-[#DCC3AA] shadow-2xl py-1.5 text-left text-xs min-w-[190px] transition-opacity duration-150 animate-fadeIn divide-y divide-[#FAF6F0]';
+    document.body.appendChild(portal);
+  }
+
+  if (!portal.classList.contains('hidden') && portal.dataset.activeId == id) {
+    closeFloatingAppointmentActionPortal();
+    return;
+  }
+
+  portal.dataset.activeId = id;
+  portal.innerHTML = `
+    <div class="px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-[#735e5e]/80 bg-[#FAF6F0]/50">
+      Appointment #${escapeHtml(String(appt.id))}
+    </div>
+    <div class="py-1">
+      <button type="button" onclick="closeFloatingAppointmentActionPortal(); openViewDetailsModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-[#FAF6F0] text-[#541A1A] flex items-center gap-2.5 font-medium transition-colors">
+        <i class="fa-regular fa-eye text-[11px] text-[#810B38] w-4 text-center"></i>
+        <span>View Details</span>
+      </button>
+      <button type="button" onclick="closeFloatingAppointmentActionPortal(); openEditModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-[#FAF6F0] text-[#541A1A] flex items-center gap-2.5 font-medium transition-colors">
+        <i class="fa-solid fa-pen text-[11px] text-[#810B38] w-4 text-center"></i>
+        <span>Edit Appointment</span>
+      </button>
+      <button type="button" onclick="closeFloatingAppointmentActionPortal(); openRescheduleModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-[#FAF6F0] text-[#541A1A] flex items-center gap-2.5 font-medium transition-colors">
+        <i class="fa-regular fa-calendar-days text-[11px] text-[#810B38] w-4 text-center"></i>
+        <span>Reschedule</span>
+      </button>
+    </div>
+    <div class="py-1">
+      ${appt.status !== 'cancelled' ? `
+        <button type="button" onclick="closeFloatingAppointmentActionPortal(); openCancelModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-amber-50 text-amber-900 flex items-center gap-2.5 font-medium transition-colors">
+          <i class="fa-solid fa-ban text-[11px] text-amber-700 w-4 text-center"></i>
+          <span>Cancel Booking</span>
+        </button>
+      ` : ''}
+      <button type="button" onclick="closeFloatingAppointmentActionPortal(); openDeleteModal(${appt.id})" class="w-full px-3.5 py-2 text-left hover:bg-rose-50 text-rose-800 flex items-center gap-2.5 font-medium transition-colors">
+        <i class="fa-regular fa-trash-can text-[11px] text-rose-600 w-4 text-center"></i>
+        <span>Delete Record</span>
+      </button>
+    </div>
+  `;
+
+  portal.classList.remove('hidden');
+
+  const btn = event.currentTarget || (event.target ? event.target.closest('button') : null);
+  if (btn) {
+    const rect = btn.getBoundingClientRect();
+    const portalWidth = portal.offsetWidth || 190;
+    const portalHeight = portal.offsetHeight || 180;
+
+    let top = rect.bottom + 6;
+    let left = rect.right - portalWidth;
+
+    if (top + portalHeight > window.innerHeight - 10) {
+      top = Math.max(10, rect.top - portalHeight - 6);
     }
-  } else {
-    currentMenu.classList.add('hidden');
+    if (left < 10) {
+      left = 10;
+    }
+    if (left + portalWidth > window.innerWidth - 10) {
+      left = window.innerWidth - portalWidth - 10;
+    }
+
+    portal.style.top = `${top}px`;
+    portal.style.left = `${left}px`;
   }
 }
 
-// Close dropdowns on outside click
-function setupEventListeners() {
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('[id^="rowMenu-"]')) {
-      document.querySelectorAll('[id^="rowMenu-"]').forEach(menu => menu.classList.add('hidden'));
-    }
-  });
-
-  window.addEventListener('scroll', () => {
-    document.querySelectorAll('[id^="rowMenu-"]').forEach(menu => menu.classList.add('hidden'));
-  }, { passive: true });
+function closeFloatingAppointmentActionPortal() {
+  const portal = document.getElementById('floatingAppointmentActionPortal');
+  if (portal) {
+    portal.classList.add('hidden');
+    portal.dataset.activeId = '';
+  }
 }
+
+// Global Click & Scroll listener to auto-close floating portal
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('#floatingAppointmentActionPortal') && !e.target.closest('button[onclick*="toggleRowKebabMenu"]')) {
+    closeFloatingAppointmentActionPortal();
+  }
+});
+window.addEventListener('resize', closeFloatingAppointmentActionPortal);
+window.addEventListener('scroll', closeFloatingAppointmentActionPortal, { passive: true });
 
 // ================= MODAL 1: VIEW DETAILS MODAL =================
 function openViewDetailsModal(id) {
@@ -1456,3 +1494,5 @@ window.openLogoutModal = openLogoutModal;
 window.closeLogoutModal = closeLogoutModal;
 window.handleConfirmLogout = handleConfirmLogout;
 window.confirmLogout = confirmLogout;
+
+window.closeFloatingAppointmentActionPortal = closeFloatingAppointmentActionPortal;
