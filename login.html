@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="assets/css/output.css">
 
   <!-- Preload Critical Above-the-Fold Images (Zero White Flicker on Reload) -->
-  <link rel="preload" as="image" href="assets/images/login-signup-form.png" fetchpriority="high">
+  <link rel="preload" as="image" href="assets/images/login-signup-form.jpg" fetchpriority="high">
   <link rel="preload" as="image" href="assets/images/logo.jfif">
 </head>
 <body class="h-full bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col justify-between">
@@ -27,11 +27,13 @@
   <main class="flex-1 min-h-screen grid grid-cols-1 lg:grid-cols-12">
     
     <!-- ================= LEFT SIDE — BRANDING (WEBSITE / DESKTOP VIEW ONLY) ================= -->
-    <div class="hidden lg:flex lg:col-span-5 text-white lg:p-12 xl:p-14 flex-col justify-between relative overflow-hidden bg-[#241719]">
+    <div 
+      class="hidden lg:flex lg:col-span-5 text-white lg:p-12 xl:p-14 flex-col justify-between relative overflow-hidden bg-[#241719] bg-cover bg-center"
+      style="background-image: url('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAoACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDBtXlaRVYKQSB05rbTTd0gfDYQ8Z6GsuyhMksS5wWYDI+tdRqVldWdhNOl1nZ22ken+NcMU2rnotq9jLnQwrlpMfWsZ7me7uRBF+8LHCgdP/r10Saf9pe0e4cuJGXKjpgrmsrQEVfEcQXGAzY/I0AjB0PVbS3z5pEO1w29sc/lXYXurm50+QsQUnACMvIIwuD9Ov4CvLftEj2MkAfKkAbQBzzXpkukPc+GdPVVdZo4EHyg5BwP8KtLRikkrMadSjEls0svlpE4QZ6MApGc1meGYz/wkUUpllOZCArD5fuk02003VLcXEL27SLtAQ4we+c5rmlvL6OSGK3lSG4iZvM3k5BztzU2ZSszVsbS1gdWSCMODkNt5FeiR3wbThM5G1Fy/U9qKKqJnI56/wDFFisMsltcSC4CYUbcKf1zWZNeTX2mxNOwCTAjNy5Yoc9R6dO/WiiiQ4n/2Q==');">
       
-      <!-- Background Cover Image -->
+      <!-- Background Cover Image (Ultra-fast 100KB HD JPG) -->
       <img 
-        src="assets/images/login-signup-form.png" 
+        src="assets/images/login-signup-form.jpg" 
         alt="Nely's Salon" 
         loading="eager"
         fetchpriority="high"
@@ -40,8 +42,7 @@
       >
 
       <!-- Brand Gradient & Tint Overlay for Contrast & Aesthetics -->
-      <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-black/35"></div>
-      
+      <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-black/35 pointer-events-none"></div>
       
       <!-- Top Branding Bar -->
       <div class="relative z-10">
@@ -75,12 +76,12 @@
           </span>
         </div>
 
-        <!-- Short Welcoming Message -->
+        <!-- Dynamic Welcoming Message (Switches instantly with mode) -->
         <div class="space-y-2.5">
-          <h1 class="font-serif text-3xl xl:text-4xl text-[#F1E2D1] font-normal leading-snug drop-shadow-sm">
+          <h1 id="heroBrandTitle" class="font-serif text-3xl xl:text-4xl text-[#F1E2D1] font-normal leading-snug drop-shadow-sm">
             Welcome to Your Beauty Sanctuary
           </h1>
-          <p class="text-sm text-[#DCC3AA]/90 leading-relaxed font-light">
+          <p id="heroBrandDesc" class="text-sm text-[#DCC3AA]/90 leading-relaxed font-light">
             Sign in to manage your appointments, review service history, or register to experience 15 years of trusted salon care in Lagro, QC.
           </p>
         </div>
@@ -110,7 +111,7 @@
 
     </div>
 
-    <!-- ================= RIGHT SIDE — FORM ================= -->
+    <!-- ================= RIGHT SIDE — FORM CONTAINER ================= -->
     <div class="col-span-12 lg:col-span-7 bg-[#FDFBF7] px-4 py-4 sm:px-8 sm:py-6 lg:px-10 lg:py-6 flex flex-col justify-between items-center relative min-h-screen">
       
       <!-- Top Mobile Header (Adjusted to the Top) -->
@@ -123,118 +124,289 @@
       </div>
 
       <!-- Form Container: Normal clean form on mobile, elegant card on desktop -->
-      <div class="w-full max-w-md sm:max-w-lg lg:max-w-xl my-auto py-2">
+      <div class="w-full max-w-md sm:max-w-xl lg:max-w-2xl my-auto py-2">
         <div class="w-full bg-transparent sm:bg-white sm:rounded-3xl p-0 sm:p-7 lg:p-8 sm:shadow-2xl sm:border sm:border-[#E8D9CA] relative">
           
           <!-- ================= FORM 1: LOGIN ================= -->
-          <form id="formLogin" onsubmit="handleLoginSubmit(event)" class="space-y-4">
-          
-          <div class="text-left mb-6">
-            <span class="inline-block text-[10px] font-bold uppercase tracking-widest text-[#810B38] bg-[#810B38]/10 px-3 py-1 rounded-full mb-2.5">Client Portal</span>
-            <h2 class="font-serif text-2xl sm:text-3xl font-bold text-[#541A1A] mb-1">
-              Welcome Back
-            </h2>
-            <p class="text-xs text-[#735e5e]">
-              Enter your credentials to access your appointments and beauty records.
-            </p>
-          </div>
-
-          <!-- Email or Mobile -->
-          <div class="text-left">
-            <label for="loginIdentifier" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1.5">
-              Mobile Number or Email
-            </label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
-                <i class="fa-regular fa-envelope text-xs"></i>
-              </span>
-              <input 
-                type="text" 
-                id="loginIdentifier" 
-                required 
-                placeholder="Enter your email or mobile number"
-                class="w-full pl-10 pr-4 py-3 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
-              >
+          <form id="formLogin" onsubmit="handleLoginSubmit(event)" class="space-y-4 ">
+            <div class="text-left mb-6">
+              <span class="inline-block text-[10px] font-bold uppercase tracking-widest text-[#810B38] bg-[#810B38]/10 px-3 py-1 rounded-full mb-2.5">Client Portal</span>
+              <h2 class="font-serif text-2xl sm:text-3xl font-bold text-[#541A1A] mb-1">
+                Welcome Back
+              </h2>
+              <p class="text-xs text-[#735e5e]">
+                Enter your credentials to access your appointments and beauty records.
+              </p>
             </div>
-          </div>
 
-          <!-- Password -->
-          <div class="text-left">
-            <label for="loginPassword" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1.5">
-              Password
-            </label>
-            <div class="relative">
-              <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
-                <i class="fa-solid fa-lock text-xs"></i>
-              </span>
-              <input 
-                type="password" 
-                id="loginPassword" 
-                required 
-                placeholder="••••••••"
-                class="w-full pl-10 pr-10 py-3 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
-              >
-              <button 
-                type="button" 
-                onclick="togglePasswordVisibility('loginPassword', this)" 
-                class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#735e5e] hover:text-[#810B38]"
-                aria-label="Toggle password visibility">
-                <i class="fa-regular fa-eye text-xs"></i>
-              </button>
+            <!-- Email or Mobile -->
+            <div class="text-left">
+              <label for="loginIdentifier" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1.5">
+                Mobile Number or Email
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
+                  <i class="fa-regular fa-envelope text-xs"></i>
+                </span>
+                <input 
+                  type="text" 
+                  id="loginIdentifier" 
+                  required 
+                  placeholder="Enter your email or mobile number"
+                  class="w-full pl-10 pr-4 py-3 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
+                >
+              </div>
             </div>
-          </div>
 
-          <!-- Remember This Device & Forgot Password Row -->
-          <div class="flex items-center justify-between text-xs pt-1">
-            <label class="flex items-center gap-2 cursor-pointer select-none text-[#735e5e] hover:text-[#541A1A]">
-              <input type="checkbox" checked class="accent-[#810B38] rounded">
-              <span>Remember this device</span>
-            </label>
-            <a href="#" onclick="showToast('Password reset link sent to your registered contact.', 'info'); return false;" class="text-[11px] font-semibold text-[#810B38] hover:underline hover:text-[#541A1A] transition-colors">
-              Forgot password?
-            </a>
-          </div>
+            <!-- Password -->
+            <div class="text-left">
+              <label for="loginPassword" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1.5">
+                Password
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
+                  <i class="fa-solid fa-lock text-xs"></i>
+                </span>
+                <input 
+                  type="password" 
+                  id="loginPassword" 
+                  required 
+                  placeholder="••••••••"
+                  class="w-full pl-10 pr-10 py-3 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
+                >
+                <button 
+                  type="button" 
+                  onclick="togglePasswordVisibility('loginPassword', this)" 
+                  class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#735e5e] hover:text-[#810B38]"
+                  aria-label="Toggle password visibility">
+                  <i class="fa-regular fa-eye text-xs"></i>
+                </button>
+              </div>
+            </div>
 
-          <!-- Burgundy Primary Button -->
-          <button 
-            type="submit" 
-            class="w-full py-3.5 rounded-full bg-[#810B38] text-white text-xs font-bold tracking-wider uppercase hover:bg-[#62082b] transition-all shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 mt-2">
-            <i class="fa-solid fa-right-to-bracket text-xs"></i>
-            <span>LOG IN TO ACCOUNT</span>
-          </button>
+            <!-- Remember This Device & Forgot Password Row -->
+            <div class="flex items-center justify-between text-xs pt-1">
+              <label class="flex items-center gap-2 cursor-pointer select-none text-[#735e5e] hover:text-[#541A1A]">
+                <input type="checkbox" checked class="accent-[#810B38] rounded">
+                <span>Remember this device</span>
+              </label>
+              <a href="#" onclick="showToast('Password reset link sent to your registered contact.', 'info'); return false;" class="text-[11px] font-semibold text-[#810B38] hover:underline hover:text-[#541A1A] transition-colors">
+                Forgot password?
+              </a>
+            </div>
 
-          <!-- Divider -->
-          <div class="relative flex py-2 items-center">
-            <div class="flex-grow border-t border-[#E8D9CA]"></div>
-            <span class="flex-shrink mx-3 text-[11px] text-[#735e5e] uppercase tracking-wider font-semibold">Or</span>
-            <div class="flex-grow border-t border-[#E8D9CA]"></div>
-          </div>
+            <!-- Burgundy Primary Button -->
+            <button 
+              type="submit" 
+              class="w-full py-3.5 rounded-full bg-[#810B38] text-white text-xs font-bold tracking-wider uppercase hover:bg-[#62082b] transition-all shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 mt-2">
+              <i class="fa-solid fa-right-to-bracket text-xs"></i>
+              <span>LOG IN TO ACCOUNT</span>
+            </button>
 
-          <!-- Guest Booking Shortcut -->
-          <a 
-            href="index.html#online-booking" 
-            class="w-full py-2.5 rounded-full bg-[#FAF6F0] text-[#541A1A] border border-[#DCC3AA] hover:border-[#810B38] text-xs font-bold tracking-wider uppercase transition-colors flex items-center justify-center gap-2">
-            <i class="fa-regular fa-calendar-plus text-xs text-[#810B38]"></i>
-            <span>Continue as Guest to Book</span>
-          </a>
+            <!-- Divider -->
+            <div class="relative flex py-2 items-center">
+              <div class="flex-grow border-t border-[#E8D9CA]"></div>
+              <span class="flex-shrink mx-3 text-[11px] text-[#735e5e] uppercase tracking-wider font-semibold">Or</span>
+              <div class="flex-grow border-t border-[#E8D9CA]"></div>
+            </div>
 
-          <!-- Link to Sign Up -->
-          <p class="text-xs text-center text-[#735e5e] pt-1">
-            Don't have an account yet?
+            <!-- Guest Booking Shortcut -->
             <a 
-              href="signup.html" 
-              class="text-[#810B38] font-bold underline hover:text-[#541A1A] ml-1">
-              Create an account
+              href="index.html#online-booking" 
+              class="w-full py-2.5 rounded-full bg-[#FAF6F0] text-[#541A1A] border border-[#DCC3AA] hover:border-[#810B38] text-xs font-bold tracking-wider uppercase transition-colors flex items-center justify-center gap-2">
+              <i class="fa-regular fa-calendar-plus text-xs text-[#810B38]"></i>
+              <span>Continue as Guest to Book</span>
             </a>
-          </p>
 
-        </form>
+            <!-- Link to Sign Up (Instant in-place switch, zero flicker) -->
+            <p class="text-xs text-center text-[#735e5e] pt-1">
+              Don't have an account yet?
+              <a 
+                href="signup.html" 
+                onclick="event.preventDefault(); switchAuthMode('signup');"
+                class="text-[#810B38] font-bold underline hover:text-[#541A1A] ml-1 cursor-pointer">
+                Create an account
+              </a>
+            </p>
+          </form>
+
+          <!-- ================= FORM 2: SIGN UP ================= -->
+          <form id="formSignUp" onsubmit="handleSignUpSubmit(event)" class="space-y-4 hidden">
+            <div class="text-left mb-5">
+              <span class="inline-block text-[10px] font-bold uppercase tracking-widest text-[#810B38] bg-[#810B38]/10 px-3 py-1 rounded-full mb-2">New Client Registration</span>
+              <h2 class="font-serif text-2xl sm:text-3xl font-bold text-[#541A1A] mb-1">
+                Create Your Account
+              </h2>
+              <p class="text-xs text-[#735e5e]">
+                Join Nely’s Salon for personalized bookings, service records, and VIP care.
+              </p>
+            </div>
+
+            <!-- Row 1: Full Name & Mobile Number (2 columns on sm/lg) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <!-- Full Name -->
+              <div class="text-left">
+                <label for="signupName" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1">
+                  Full Name *
+                </label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
+                    <i class="fa-regular fa-user text-xs"></i>
+                  </span>
+                  <input 
+                    type="text" 
+                    id="signupName" 
+                    required 
+                    placeholder="Enter Your Full Name"
+                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
+                  >
+                </div>
+              </div>
+
+              <!-- Mobile Number -->
+              <div class="text-left">
+                <label for="signupPhone" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1">
+                  Mobile Number *
+                </label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
+                    <i class="fa-solid fa-phone text-xs"></i>
+                  </span>
+                  <input 
+                    type="tel" 
+                    id="signupPhone" 
+                    required 
+                    placeholder="Enter your mobile number"
+                    class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
+                  >
+                </div>
+              </div>
+            </div>
+
+            <!-- Row 2: Email Address (Full Width) -->
+            <div class="text-left">
+              <label for="signupEmail" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1">
+                Email Address *
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
+                  <i class="fa-regular fa-envelope text-xs"></i>
+                </span>
+                <input 
+                  type="email" 
+                  id="signupEmail" 
+                  required 
+                  placeholder="Enter your email address"
+                  class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
+                >
+              </div>
+            </div>
+
+            <!-- Row 3: Password & Confirm Password (2 columns on sm/lg) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <!-- Create Password -->
+              <div class="text-left">
+                <label for="signupPassword" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1">
+                  Create Password *
+                </label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
+                    <i class="fa-solid fa-lock text-xs"></i>
+                  </span>
+                  <input 
+                    type="password" 
+                    id="signupPassword" 
+                    required 
+                    minlength="6"
+                    placeholder="At least 6 characters"
+                    class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
+                  >
+                  <button 
+                    type="button" 
+                    onclick="togglePasswordVisibility('signupPassword', this)" 
+                    class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#735e5e] hover:text-[#810B38]"
+                    aria-label="Toggle password visibility">
+                    <i class="fa-regular fa-eye text-xs"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Confirm Password -->
+              <div class="text-left">
+                <label for="signupConfirmPassword" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1">
+                  Confirm Password *
+                </label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
+                    <i class="fa-solid fa-shield-halved text-xs"></i>
+                  </span>
+                  <input 
+                    type="password" 
+                    id="signupConfirmPassword" 
+                    required 
+                    minlength="6"
+                    placeholder="Re-enter password"
+                    class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
+                  >
+                  <button 
+                    type="button" 
+                    onclick="togglePasswordVisibility('signupConfirmPassword', this)" 
+                    class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-[#735e5e] hover:text-[#810B38]"
+                    aria-label="Toggle password visibility">
+                    <i class="fa-regular fa-eye text-xs"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Terms Checkbox -->
+            <div class="text-left text-xs text-[#735e5e] pt-1">
+              <label class="flex items-start gap-2 cursor-pointer select-none">
+                <input type="checkbox" required class="accent-[#810B38] rounded mt-0.5">
+                <span>I agree to Nely's Salon booking terms and data privacy policy.</span>
+              </label>
+            </div>
+
+            <!-- Burgundy Primary Button -->
+            <button 
+              type="submit" 
+              class="w-full py-3.5 rounded-full bg-[#810B38] text-white text-xs font-bold tracking-wider uppercase hover:bg-[#62082b] transition-all shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 mt-2">
+              <i class="fa-solid fa-user-check text-xs"></i>
+              <span>CREATE CLIENT ACCOUNT</span>
+            </button>
+
+            <!-- Divider -->
+            <div class="relative flex py-1.5 items-center">
+              <div class="flex-grow border-t border-[#E8D9CA]"></div>
+              <span class="flex-shrink mx-3 text-[11px] text-[#735e5e] uppercase tracking-wider font-semibold">Or</span>
+              <div class="flex-grow border-t border-[#E8D9CA]"></div>
+            </div>
+
+            <!-- Guest Booking Shortcut -->
+            <a 
+              href="index.html#online-booking" 
+              class="w-full py-2.5 rounded-full bg-[#FAF6F0] text-[#541A1A] border border-[#DCC3AA] hover:border-[#810B38] text-xs font-bold tracking-wider uppercase transition-colors flex items-center justify-center gap-2">
+              <i class="fa-regular fa-calendar-plus text-xs text-[#810B38]"></i>
+              <span>Continue as Guest to Book</span>
+            </a>
+
+            <!-- Toggle Link to Login (Instant in-place switch, zero flicker) -->
+            <p class="text-xs text-center text-[#735e5e] pt-1">
+              Already registered?
+              <a 
+                href="login.html" 
+                onclick="event.preventDefault(); switchAuthMode('login');"
+                class="text-[#810B38] font-bold underline hover:text-[#541A1A] ml-1 cursor-pointer">
+                Log in here
+              </a>
+            </p>
+          </form>
 
         </div>
       </div>
 
       <!-- Footer Info (Adjusted to the Bottom) -->
-      <div class="w-full max-w-md sm:max-w-lg lg:max-w-xl pt-4 mt-auto text-center text-[11px] text-[#735e5e] border-t border-[#E8D9CA]/40 lg:border-t-0">
+      <div class="w-full max-w-md sm:max-w-xl lg:max-w-2xl pt-4 mt-auto text-center text-[11px] text-[#735e5e] border-t border-[#E8D9CA]/40 lg:border-t-0">
         <span>Nely’s Salon · 15 Years of Beauty Heritage · Blk 42 Lot 59 Ascension Rd, Lagro, QC</span>
       </div>
 
@@ -245,8 +417,34 @@
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
-  <!-- JavaScript for Password Toggling and Form Submission -->
+  <!-- JavaScript for Password Toggling, Mode Switching and Form Submissions -->
   <script>
+    function switchAuthMode(mode) {
+      const loginForm = document.getElementById('formLogin');
+      const signupForm = document.getElementById('formSignUp');
+      const titleEl = document.getElementById('heroBrandTitle');
+      const descEl = document.getElementById('heroBrandDesc');
+
+      if (mode === 'signup') {
+        if (loginForm) loginForm.classList.add('hidden');
+        if (signupForm) signupForm.classList.remove('hidden');
+        if (titleEl) titleEl.textContent = 'Begin Your Beauty Journey With Us';
+        if (descEl) descEl.textContent = 'Create an account to book your appointments with ease, track your favorite hair and nail rituals, and experience 15 years of personalized beauty care in Lagro, QC.';
+        document.title = 'Sign Up — Nely’s Salon | "Your Beauty Is Our Duty"';
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, '', 'signup.html');
+        }
+      } else {
+        if (signupForm) signupForm.classList.add('hidden');
+        if (loginForm) loginForm.classList.remove('hidden');
+        if (titleEl) titleEl.textContent = 'Welcome to Your Beauty Sanctuary';
+        if (descEl) descEl.textContent = 'Sign in to manage your appointments, review service history, or register to experience 15 years of trusted salon care in Lagro, QC.';
+        document.title = 'Login & Sign Up — Nely’s Salon | "Your Beauty Is Our Duty"';
+        if (window.history && window.history.replaceState) {
+          window.history.replaceState(null, '', 'login.html');
+        }
+      }
+    }
 
     function togglePasswordVisibility(inputId, btn) {
       const input = document.getElementById(inputId);
@@ -366,10 +564,107 @@
       }
     }
 
-    // Redirect if visited with #signup
+    async function handleSignUpSubmit(e) {
+      e.preventDefault();
+      const name = document.getElementById('signupName').value.trim();
+      const phone = document.getElementById('signupPhone').value.trim();
+      const email = document.getElementById('signupEmail').value.trim();
+      const password = document.getElementById('signupPassword').value;
+      const confirmPassword = document.getElementById('signupConfirmPassword').value;
+
+      if (password !== confirmPassword) {
+        showToast('Passwords do not match. Please re-check both password fields.', 'error');
+        document.getElementById('signupConfirmPassword').focus();
+        return;
+      }
+
+      if (password.length < 6) {
+        showToast('Password must be at least 6 characters.', 'error');
+        document.getElementById('signupPassword').focus();
+        return;
+      }
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalBtnContent = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i> <span>CREATING ACCOUNT...</span>';
+      }
+
+      try {
+        const response = await fetch('api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            full_name: name,
+            phone: phone,
+            email: email,
+            password: password
+          })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || result.status === 'error') {
+          let errorMsg = result.message || 'Registration failed.';
+          if (result.errors) {
+            const fieldErrors = Object.values(result.errors).flat();
+            if (fieldErrors.length > 0) {
+              errorMsg = fieldErrors.join(' ');
+            }
+          }
+          showToast(errorMsg, 'error');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnContent;
+          }
+          return;
+        }
+
+        // Successfully registered! Store session/user
+        if (result.data?.token) {
+          localStorage.setItem('nelys_token', result.data.token);
+        }
+        if (result.data?.user) {
+          localStorage.setItem('nelys_user', JSON.stringify(result.data.user));
+        }
+
+        showToast(`Account created for ${name}! Redirecting to customer dashboard...`, 'success');
+        setTimeout(() => {
+          window.location.href = 'customer/dashboard.html';
+        }, 1500);
+
+      } catch (err) {
+        console.error('Sign up connection error:', err);
+        showToast('Unable to connect to server. Please check your connection.', 'error');
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnContent;
+        }
+      }
+    }
+
+    // Check URL query/hash on load
     document.addEventListener('DOMContentLoaded', () => {
-      if (window.location.hash === '#signup') {
-        window.location.href = 'signup.html';
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (hash === '#signup' || path.endsWith('signup.html')) {
+        switchAuthMode('signup');
+      } else if (hash === '#login' || path.endsWith('login.html')) {
+        switchAuthMode('login');
+      }
+    });
+
+    window.addEventListener('popstate', () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (hash === '#signup' || path.endsWith('signup.html')) {
+        switchAuthMode('signup');
+      } else {
+        switchAuthMode('login');
       }
     });
   </script>
