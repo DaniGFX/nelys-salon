@@ -936,13 +936,13 @@ function toggleMobileSidebar(show) {
   }
 }
 
-// Logout Modal
+// ================= STANDARDIZED ADMIN LOGOUT HANDLERS =================
 function openLogoutModal() {
   const modal = document.getElementById('logoutModal');
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
-    lockBodyScroll();
+    modal.style.display = 'flex';
   }
 }
 
@@ -951,78 +951,24 @@ function closeLogoutModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    modal.style.display = 'none';
   }
-  unlockBodyScroll();
 }
 
 function handleConfirmLogout() {
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
+  try {
+    localStorage.removeItem('nelys_token');
+    localStorage.removeItem('nelys_user');
+    sessionStorage.clear();
+  } catch(e) {}
   window.location.href = '../login.html';
 }
 
-// Toast notification helper
-function showToast(message, type = 'info') {
-  let toastContainer = document.getElementById('toastContainer');
-  if (!toastContainer) {
-    toastContainer = document.createElement('div');
-    toastContainer.id = 'adminToastContainer';
-    toastContainer.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none';
-    document.body.appendChild(toastContainer);
-  }
-
-  const toast = document.createElement('div');
-  const icon = type === 'success' 
-    ? 'fa-circle-check text-emerald-400' 
-    : type === 'error' 
-    ? 'fa-circle-exclamation text-rose-400' 
-    : 'fa-circle-info text-[#DCC3AA]';
-
-  const borderColor = type === 'success'
-    ? 'border-emerald-500/50'
-    : type === 'error'
-    ? 'border-rose-500/50'
-    : 'border-[#DCC3AA]/50';
-
-  toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 bg-[#541A1A] text-[#F1E2D1] border ${borderColor} rounded-xl shadow-2xl text-xs font-medium animate-fadeIn transition-all duration-300`;
-  toast.innerHTML = `
-    <i class="fa-solid ${icon} text-base shrink-0"></i>
-    <span class="flex-1 leading-snug">${escapeHtml(message)}</span>
-  `;
-
-  toastContainer.appendChild(toast);
-
-  setTimeout(() => {
-    toast.classList.add('opacity-0', 'translate-y-2');
-    setTimeout(() => toast.remove(), 300);
-  }, 3500);
+function confirmLogout() {
+  handleConfirmLogout();
 }
 
-// Real-time clock badge
-function updateTimeBadge() {
-  const clockEl = document.getElementById('topClockDisplay');
-  if (!clockEl) return;
-
-  const now = new Date();
-  const timeStr = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  const dateStr = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  clockEl.textContent = `${dateStr} · ${timeStr}`;
-
-  setTimeout(updateTimeBadge, 1000);
-}
-
-// Utility: HTML escaping
-function escapeHtml(str) {
-  if (!str) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function safeSetText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text;
-}
+window.openLogoutModal = openLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.handleConfirmLogout = handleConfirmLogout;
+window.confirmLogout = confirmLogout;

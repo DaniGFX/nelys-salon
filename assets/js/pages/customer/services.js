@@ -3,7 +3,12 @@
  * Directly connected to backend services API (GET /api/services)
  * Features live catalog sync, real-time search, category filtering,
  * service details modal, appointment booking redirects, and live sidebar badges.
+ * Optimized with 0ms pre-hydration & SWR cache diffing.
  */
+
+// Seamless 0ms Cache Preload & State
+const CUST_SERVICES_CACHE_KEY = 'nelys_customer_services_cache';
+let lastRendered_cust_services_Hash = '';
 
 // Global State
 let servicesCatalog = [];
@@ -223,13 +228,51 @@ const defaultServicesCatalog = [
   }
 ];
 
-// Initialize on DOM Ready
-document.addEventListener('DOMContentLoaded', () => {
+// Immediate 0ms Hydration
+function hydrateCustomerServicesFromCache() {
   initPatronProfile();
+  
+  let preloaded = window.__PRELOADED_CUSTOMER_SERVICES__;
+  if (!preloaded) {
+    try {
+      const raw = localStorage.getItem(CUST_SERVICES_CACHE_KEY);
+      if (raw) preloaded = JSON.parse(raw);
+    } catch (e) {}
+  }
+
+  if (Array.isArray(preloaded) && preloaded.length > 0) {
+    try {
+      const activeServices = preloaded.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
+      servicesCatalog = activeServices.map(mapBackendService);
+      lastRendered_cust_services_Hash = JSON.stringify(preloaded);
+      updateCategoryCounts();
+      renderServices();
+    } catch (e) {
+      console.warn('Customer services cache hydration error:', e);
+      servicesCatalog = [...defaultServicesCatalog];
+      updateCategoryCounts();
+      renderServices();
+    }
+  } else {
+    servicesCatalog = [...defaultServicesCatalog];
+    updateCategoryCounts();
+    renderServices();
+  }
+}
+
+// Lifecycle Bootstrapping
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCustomerServices);
+} else {
+  initCustomerServices();
+}
+
+function initCustomerServices() {
+  hydrateCustomerServicesFromCache();
+  setupDialogBackdropDismissals();
   loadServicesFromBackend();
   loadLiveBadges();
-  setupDialogBackdropDismissals();
-});
+}
 
 // 1. Initialize Patron Profile in Sidebar and Profile Modal
 function initPatronProfile() {
@@ -241,7 +284,7 @@ function initPatronProfile() {
 
   try {
     currentUser = JSON.parse(savedUserJson);
-    const displayName = currentUser.full_name || currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Client');
+    const displayName = currentUser.full_name || currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Client Patron');
 
     const sidebarName = document.getElementById('customerSidebarName');
     if (sidebarName) {
@@ -281,21 +324,21 @@ async function loadServicesFromBackend() {
     if (res.ok) {
       const result = await res.json();
       if ((result.success || result.status === 'success') && Array.isArray(result.data) && result.data.length > 0) {
-        // Filter active services and map to UI schema
-        const activeServices = result.data.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
-        servicesCatalog = activeServices.map(item => mapBackendService(item));
-      } else {
-        servicesCatalog = [...defaultServicesCatalog];
+        const newHash = JSON.stringify(result.data);
+        if (newHash !== lastRendered_cust_services_Hash || servicesCatalog.length === 0) {
+          lastRendered_cust_services_Hash = newHash;
+          try {
+            localStorage.setItem(CUST_SERVICES_CACHE_KEY, newHash);
+          } catch (e) {}
+          const activeServices = result.data.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
+          servicesCatalog = activeServices.map(item => mapBackendService(item));
+          updateCategoryCounts();
+          renderServices();
+        }
       }
-    } else {
-      servicesCatalog = [...defaultServicesCatalog];
     }
   } catch (e) {
-    console.warn('Backend services API unreachable, using local catalog:', e);
-    servicesCatalog = [...defaultServicesCatalog];
-  } finally {
-    renderServices();
-    updateCategoryCounts();
+    console.warn('Backend services API unreachable:', e);
   }
 }
 
@@ -378,41 +421,44 @@ function getServiceBadge(category, name = '', code = '') {
   if (n.includes('keratine')) return 'Frizz Defense';
   if (n.includes('rebond')) return 'Thermal Straightening';
   if (n.includes('gel')) return 'Long Lasting';
+  if (n.includes('trim') || n.includes('cut')) return 'Everyday Essential';
   if (n.includes('footspa')) return 'Relaxation';
-  if (n.includes('pedicure')) return 'Foot Hygiene';
   if (n.includes('manicure')) return 'Classic Care';
-  if (n.includes('trim')) return 'Everyday Essential';
-  return 'Salon Treatment';
+  if (n.includes('pedicure')) return 'Foot Hygiene';
+  return 'Salon Favorite';
 }
 
-// 4. Update Dynamic Category Counts
+// 4. Update Tab Counters
 function updateCategoryCounts() {
-  const countAll = servicesCatalog.length;
-  const countHair = servicesCatalog.filter(s => s.category === 'hair').length;
-  const countNails = servicesCatalog.filter(s => s.category === 'nails').length;
-  const countFootCare = servicesCatalog.filter(s => s.category === 'foot-care').length;
+  const counts = {
+    all: servicesCatalog.length,
+    hair: servicesCatalog.filter(s => s.category === 'hair').length,
+    nails: servicesCatalog.filter(s => s.category === 'nails').length,
+    'foot-care': servicesCatalog.filter(s => s.category === 'foot-care').length
+  };
 
   const elAll = document.getElementById('count-all');
   const elHair = document.getElementById('count-hair');
   const elNails = document.getElementById('count-nails');
   const elFoot = document.getElementById('count-foot-care');
 
-  if (elAll) elAll.textContent = countAll;
-  if (elHair) elHair.textContent = countHair;
-  if (elNails) elNails.textContent = countNails;
-  if (elFoot) elFoot.textContent = countFootCare;
+  if (elAll) elAll.textContent = counts.all;
+  if (elHair) elHair.textContent = counts.hair;
+  if (elNails) elNails.textContent = counts.nails;
+  if (elFoot) elFoot.textContent = counts['foot-care'];
 }
 
-// 5. Category Filter Switcher
-function filterCategory(cat) {
-  currentCategory = cat;
+// 5. Category Filtering
+function filterCategory(category) {
+  currentCategory = category;
 
-  const categories = ['all', 'hair', 'nails', 'foot-care'];
-  categories.forEach(c => {
-    const btn = document.getElementById(`tabBtn-${c}`);
+  // Update button visual states
+  const catButtons = ['all', 'hair', 'nails', 'foot-care'];
+  catButtons.forEach(cat => {
+    const btn = document.getElementById(`tabBtn-${cat}`);
     if (!btn) return;
 
-    if (c === cat) {
+    if (cat === category) {
       btn.className = "tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#810B38] bg-[#810B38] text-white shadow-sm focus:outline-none";
       const counter = btn.querySelector('.tab-counter');
       if (counter) {
@@ -430,40 +476,37 @@ function filterCategory(cat) {
   renderServices();
 }
 
-// 6. Real-time Search Handler
-function handleSearch(val) {
-  searchQuery = (val || '').toLowerCase().trim();
+// 6. Search Handler
+function handleSearch(query) {
+  searchQuery = (query || '').trim().toLowerCase();
   renderServices();
 }
 
-// 7. Render Services Grid
+// 7. Render Services to Grid
 function renderServices() {
   const container = document.getElementById('servicesGridContainer');
   const emptyState = document.getElementById('emptyServicesState');
   if (!container) return;
 
-  const filtered = servicesCatalog.filter(item => {
-    // 1. Category Filter
-    if (currentCategory !== 'all' && item.category !== currentCategory) {
-      return false;
-    }
+  let filtered = servicesCatalog;
 
-    // 2. Search Query Filter
-    if (searchQuery) {
-      const matchName = (item.name || '').toLowerCase().includes(searchQuery);
-      const matchDesc = (item.description || '').toLowerCase().includes(searchQuery);
-      const matchCategory = (item.categoryLabel || '').toLowerCase().includes(searchQuery);
-      if (!matchName && !matchDesc && !matchCategory) {
-        return false;
-      }
-    }
+  // Filter Category
+  if (currentCategory !== 'all') {
+    filtered = filtered.filter(s => s.category === currentCategory);
+  }
 
-    return true;
-  });
+  // Filter Search
+  if (searchQuery) {
+    filtered = filtered.filter(s => 
+      s.name.toLowerCase().includes(searchQuery) ||
+      s.description.toLowerCase().includes(searchQuery) ||
+      s.categoryLabel.toLowerCase().includes(searchQuery) ||
+      (s.badge && s.badge.toLowerCase().includes(searchQuery))
+    );
+  }
 
-  // Handle Empty State
+  // Empty State Check
   if (filtered.length === 0) {
-    container.innerHTML = '';
     container.classList.add('hidden');
     if (emptyState) emptyState.classList.remove('hidden');
     return;
@@ -719,37 +762,61 @@ function toggleMobileSidebar(force = null) {
   }
 }
 
-// 12. Dialog Outside Click Dismissal
+// 12. Dialog Outside Click Dismissal & Steady Listeners
 function setupDialogBackdropDismissals() {
-  [document.getElementById('serviceDetailsModal'), document.getElementById('profileModal')].forEach(modal => {
-    if (modal) {
-      modal.addEventListener('click', (e) => {
-        const rect = modal.getBoundingClientRect();
-        const isInDialog = (
-          rect.top <= e.clientY &&
-          e.clientY <= rect.top + rect.height &&
-          rect.left <= e.clientX &&
-          e.clientX <= rect.left + rect.width
-        );
-        if (!isInDialog && typeof modal.close === 'function') {
-          modal.close();
-        }
-      });
-    }
+  document.querySelectorAll('dialog').forEach(dlg => {
+    dlg.addEventListener('click', (e) => {
+      const rect = dlg.getBoundingClientRect();
+      const isInDialog = (
+        rect.top <= e.clientY &&
+        e.clientY <= rect.top + rect.height &&
+        rect.left <= e.clientX &&
+        e.clientX <= rect.left + rect.width
+      );
+      if (!isInDialog && typeof dlg.close === 'function') {
+        dlg.close();
+      }
+    });
   });
 }
 
-// 13. Logout Handler
-function handleLogout(e) {
-  if (confirm("Are you sure you want to log out of Nely's Salon?")) {
-    localStorage.removeItem('nelys_token');
-    localStorage.removeItem('nelys_user');
-    showToast('Logging out...', 'info');
-    return true;
+// 13. Logout Modal Handlers
+function openLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal && typeof modal.showModal === 'function') {
+    if (window.innerWidth < 1024 && typeof toggleMobileSidebar === 'function') {
+      toggleMobileSidebar(false);
+    }
+    modal.showModal();
   }
-  if (e) e.preventDefault();
+}
+
+function closeLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal && typeof modal.close === 'function') {
+    modal.close();
+  }
+}
+
+function confirmLogout() {
+  localStorage.removeItem('nelys_token');
+  localStorage.removeItem('nelys_user');
+  sessionStorage.clear();
+  showToast('Logging out...', 'info');
+  window.location.href = '../login.html';
+}
+
+function handleLogout(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  openLogoutModal();
   return false;
 }
+
+// Explicit window bindings
+window.openLogoutModal = openLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.confirmLogout = confirmLogout;
+window.handleLogout = handleLogout;
 
 // 14. Toast Notification Helper
 function showToast(message, type = 'success') {

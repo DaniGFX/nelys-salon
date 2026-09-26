@@ -8,12 +8,26 @@
  * - GET ../api/messages (Live message unread counter)
  */
 
+// Seamless 0ms Cache Preload
+const CUST_DASH_CACHE_KEY = 'nelys_customer_dashboard_cache';
+let lastRendered_cust_dash_Hash = '';
+
 // Global State
 let customerBookings = [];
 let currentSelectedBooking = null;
 let currentCancelBooking = null;
 let currentServices = [];
 let currentNotifications = [];
+
+function saveCustomerDashboardCache(partial) {
+  try {
+    const existing = JSON.parse(localStorage.getItem(CUST_DASH_CACHE_KEY) || '{}');
+    const updated = { ...existing, ...partial };
+    localStorage.setItem(CUST_DASH_CACHE_KEY, JSON.stringify(updated));
+  } catch (e) {
+    console.warn('Failed to save customer dashboard cache:', e);
+  }
+}
 
 // Fallback Services in case backend API is temporarily offline
 const defaultFeaturedServices = [
@@ -59,7 +73,14 @@ const defaultFeaturedServices = [
   }
 ];
 
-document.addEventListener('DOMContentLoaded', async () => {
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCustomerDashboard);
+} else {
+  initCustomerDashboard();
+}
+
+async function initCustomerDashboard() {
+  hydrateCustomerDashboardFromCache();
   initGreeting();
   initPatronProfile();
   setupDialogSteadyListeners();
@@ -72,7 +93,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadDashboardNotifications(),
     loadSidebarBadgeCounters()
   ]);
-});
+}
+
+function hydrateCustomerDashboardFromCache() {
+  try {
+    const data = window.__PRELOADED_CUSTOMER_DASHBOARD__ || JSON.parse(localStorage.getItem(CUST_DASH_CACHE_KEY) || 'null');
+    if (data && typeof data === 'object') {
+      if (data.bookings && Array.isArray(data.bookings) && data.bookings.length > 0) {
+        customerBookings = data.bookings;
+        updateDashboardMetrics(customerBookings);
+        renderDashboardUpcoming(customerBookings);
+        renderDashboardRecentTable(customerBookings);
+      }
+      if (data.services && Array.isArray(data.services) && data.services.length > 0) {
+        currentServices = data.services;
+        renderFeaturedServices(currentServices);
+      }
+      if (data.notifications && Array.isArray(data.notifications) && data.notifications.length > 0) {
+        currentNotifications = data.notifications;
+        renderDashboardNotificationsPanel(currentNotifications);
+        renderDashboardNotificationsModal(currentNotifications);
+      }
+      lastRendered_cust_dash_Hash = JSON.stringify(data);
+    }
+  } catch (err) {
+    console.warn('Could not read customer dashboard cache:', err);
+  }
+}
 
 // 1. Dynamic Greeting based on time of day
 function initGreeting() {
@@ -1231,17 +1278,42 @@ function setupDialogSteadyListeners() {
   });
 }
 
-// 21. Logout Handler
-function handleLogout(e) {
-  if (confirm("Are you sure you want to log out of Nely's Salon?")) {
-    localStorage.removeItem('nelys_token');
-    localStorage.removeItem('nelys_user');
-    showToast('Logging out...', 'info');
-    return true;
+// 21. Logout Modal Handlers
+function openLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal && typeof modal.showModal === 'function') {
+    lockBodyScroll();
+    modal.showModal();
   }
-  e.preventDefault();
+}
+
+function closeLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal && typeof modal.close === 'function') {
+    modal.close();
+    unlockBodyScroll();
+  }
+}
+
+function confirmLogout() {
+  localStorage.removeItem('nelys_token');
+  localStorage.removeItem('nelys_user');
+  sessionStorage.clear();
+  showToast('Logging out...', 'info');
+  window.location.href = '../login.html';
+}
+
+function handleLogout(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  openLogoutModal();
   return false;
 }
+
+// Ensure explicit window binding
+window.openLogoutModal = openLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.confirmLogout = confirmLogout;
+window.handleLogout = handleLogout;
 
 // 22. Toast Notification Helper
 function showToast(message, type = 'info') {

@@ -3,17 +3,54 @@
  * Handles live database notification synchronization, appointment/payment alerts,
  * category filtering (All, Appointments, Payments, Updates), mark all as read,
  * unread status management, and contextual detail modals.
+ * Optimized with 0ms pre-hydration & SWR cache diffing.
  */
+
+// Seamless 0ms Cache Preload & State
+const CUST_NOTIF_CACHE_KEY = 'nelys_customer_notifications_cache';
+let lastRendered_cust_notif_Hash = '';
 
 let notificationsData = [];
 let currentCategory = 'all';
 let currentUserId = 'guest';
 
-document.addEventListener('DOMContentLoaded', () => {
+// Immediate 0ms Hydration
+function hydrateCustomerNotificationsFromCache() {
   initPatronProfile();
+  
+  let preloaded = window.__PRELOADED_CUSTOMER_NOTIFICATIONS__;
+  if (!preloaded) {
+    try {
+      const raw = localStorage.getItem(CUST_NOTIF_CACHE_KEY);
+      if (raw) preloaded = JSON.parse(raw);
+    } catch (e) {}
+  }
+
+  if (Array.isArray(preloaded) && preloaded.length > 0) {
+    try {
+      notificationsData = preloaded;
+      lastRendered_cust_notif_Hash = JSON.stringify(preloaded);
+      updateCountsAndBadges();
+      renderNotifications();
+    } catch (e) {
+      console.warn('Notifications cache hydration error:', e);
+    }
+  }
+}
+
+// Lifecycle Bootstrapping
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCustomerNotificationsPage);
+} else {
+  initCustomerNotificationsPage();
+}
+
+function initCustomerNotificationsPage() {
+  hydrateCustomerNotificationsFromCache();
   loadNotifications();
   setupEventListeners();
-});
+  loadSidebarBadges();
+}
 
 // 1. Initialize Patron Profile in Sidebar
 function initPatronProfile() {
@@ -23,7 +60,7 @@ function initPatronProfile() {
   try {
     const user = JSON.parse(savedUserJson);
     currentUserId = user.id || user.email || 'guest';
-    const displayName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Client');
+    const displayName = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Client Patron');
 
     const sidebarName = document.getElementById('customerSidebarName') || document.querySelector('aside .truncate');
     if (sidebarName) {
@@ -108,9 +145,16 @@ async function loadNotifications() {
   // Sort by date / recency
   fetchedNotifs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
-  notificationsData = fetchedNotifs;
-  updateCountsAndBadges();
-  renderNotifications();
+  const newHash = JSON.stringify(fetchedNotifs);
+  if (newHash !== lastRendered_cust_notif_Hash || notificationsData.length === 0) {
+    lastRendered_cust_notif_Hash = newHash;
+    notificationsData = fetchedNotifs;
+    try {
+      localStorage.setItem(CUST_NOTIF_CACHE_KEY, newHash);
+    } catch (e) {}
+    updateCountsAndBadges();
+    renderNotifications();
+  }
 }
 
 function getReadSet() {
@@ -203,8 +247,8 @@ function mapBookingToNotification(b, readSet) {
     category,
     title,
     message,
-    time: formatDateLabel(b.created_at || b.booking_date),
-    timestamp: new Date(b.created_at || b.booking_date).getTime() || Date.now(),
+    time: formatDateLabel(b.updated_at || b.created_at || b.booking_date),
+    timestamp: new Date(b.updated_at || b.created_at || b.booking_date).getTime() || Date.now(),
     isRead,
     icon,
     iconBg,
@@ -214,55 +258,52 @@ function mapBookingToNotification(b, readSet) {
       bookingId: refNo,
       service: serviceName,
       dateTime: dateFormatted,
-      location: b.visit_type === 'home' ? (b.home_address || 'Home Service') : "Nely's Salon Atelier (Lagro, QC)",
-      status: b.status ? b.status.toUpperCase() : 'PENDING',
-      reason: b.cancel_reason || '',
-      amount: priceFormatted
+      status: status.toUpperCase(),
+      amount: priceFormatted,
+      method: b.payment_method || 'Cash / In-store',
+      reason: b.cancellation_reason || null
     }
   };
 }
 
-// Fallback items if fresh database has no bookings yet
+// Clean fallback notifications
 function getDefaultFallbackNotifications(readSet) {
   const items = [
     {
-      id: "NOTIF-WELCOME",
-      category: "updates",
-      title: "Welcome to Nely's Salon Patron Portal",
-      message: "Manage your bookings, explore beauty treatments, and track hair care history effortlessly.",
-      time: "Today",
+      id: 'NOTIF-FALLBACK-1',
+      category: 'updates',
+      title: 'Welcome to Nely’s Salon Online Portal',
+      message: 'Explore our beauty treatments, manage your upcoming visits, and message our official concierge seamlessly.',
+      time: 'Today',
       timestamp: Date.now(),
-      isRead: readSet.has("NOTIF-WELCOME"),
-      icon: "fa-solid fa-sparkles",
-      iconBg: "bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA]",
-      dotColor: readSet.has("NOTIF-WELCOME") ? null : "bg-[#810B38]",
+      isRead: readSet.has('NOTIF-FALLBACK-1'),
+      icon: 'fa-solid fa-sparkles',
+      iconBg: 'bg-[#810B38] text-white',
+      dotColor: readSet.has('NOTIF-FALLBACK-1') ? null : 'bg-[#810B38]',
       payload: {
-        type: "update",
-        title: "Welcome to Nely's Salon",
-        message: "We are delighted to have you! Book your favorite hair, nail, and foot spa appointments anytime.",
-        promoCode: "NELYS15"
+        type: 'update',
+        title: 'Welcome to Nely’s Salon Online Portal',
+        promoCode: 'NELYS15'
       }
     },
     {
-      id: "NOTIF-ANNIV",
-      category: "updates",
-      title: "15-Year Anniversary Celebration",
-      message: "Enjoy 10% off any premium hair care package and complimentary consultation this month at our Lagro atelier.",
-      time: "This Week",
+      id: 'NOTIF-FALLBACK-2',
+      category: 'updates',
+      title: 'Exclusive Client Privilege',
+      message: 'Get special hair treatment discounts when you book your sessions in advance online.',
+      time: 'Recently',
       timestamp: Date.now() - 86400000,
-      isRead: readSet.has("NOTIF-ANNIV"),
-      icon: "fa-solid fa-gift",
-      iconBg: "bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA]",
-      dotColor: readSet.has("NOTIF-ANNIV") ? null : "bg-[#810B38]",
+      isRead: readSet.has('NOTIF-FALLBACK-2'),
+      icon: 'fa-solid fa-gift',
+      iconBg: 'bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA]',
+      dotColor: readSet.has('NOTIF-FALLBACK-2') ? null : 'bg-[#810B38]',
       payload: {
-        type: "update",
-        title: "15 Years of Beauty Heritage",
-        message: "Thank you for being part of our journey! Show promo code NELYS15 upon appointment arrival.",
-        promoCode: "NELYS15"
+        type: 'update',
+        title: 'Exclusive Client Privilege',
+        promoCode: 'BEAUTYCARE'
       }
     }
   ];
-
   return items;
 }
 
@@ -290,9 +331,14 @@ function updateCountsAndBadges() {
   }
 
   // Update sidebar counter for notifications
-  const asideBadge = document.querySelector('a[href="notifications.html"] span.ml-auto');
+  const asideBadge = document.getElementById('sidebarNotificationsBadge');
   if (asideBadge) {
-    asideBadge.textContent = unreadCount;
+    if (unreadCount > 0) {
+      asideBadge.textContent = unreadCount;
+      asideBadge.classList.remove('hidden');
+    } else {
+      asideBadge.classList.add('hidden');
+    }
   }
 }
 
@@ -350,12 +396,13 @@ function renderNotifications() {
             ${escapeHtml(notif.message)}
           </p>
 
-          <div class="mt-3 flex items-center gap-2 text-[11px] font-semibold text-[#810B38] group-hover:translate-x-0.5 transition-transform">
-            <span>View details</span>
-            <i class="fa-solid fa-arrow-right text-[10px]"></i>
+          <div class="mt-3 flex items-center gap-4 text-xs font-semibold text-[#810B38]">
+            <span class="inline-flex items-center gap-1 group-hover:underline">
+              <span>View details</span>
+              <i class="fa-solid fa-chevron-right text-[10px] transition-transform group-hover:translate-x-0.5"></i>
+            </span>
           </div>
         </div>
-
       </article>
     `;
   });
@@ -363,48 +410,7 @@ function renderNotifications() {
   container.innerHTML = html;
 }
 
-// 5. Handle Click on Notification Card
-function handleNotificationClick(id) {
-  const notif = notificationsData.find(n => n.id === id);
-  if (!notif) return;
-
-  // Mark as read
-  if (!notif.isRead) {
-    notif.isRead = true;
-    notif.dotColor = null;
-    const readSet = getReadSet();
-    readSet.add(id);
-    saveReadSet(readSet);
-    updateCountsAndBadges();
-    renderNotifications();
-  }
-
-  // Open Contextual Modal
-  if (notif.payload && notif.payload.type === 'payment') {
-    openPaymentModal(notif);
-  } else if (notif.payload && notif.payload.type === 'update') {
-    openUpdateModal(notif);
-  } else {
-    openAppointmentModal(notif);
-  }
-}
-
-// 6. Mark All As Read
-function markAllAsRead() {
-  const readSet = getReadSet();
-  notificationsData.forEach(n => {
-    n.isRead = true;
-    n.dotColor = null;
-    readSet.add(n.id);
-  });
-
-  saveReadSet(readSet);
-  updateCountsAndBadges();
-  renderNotifications();
-  showToast('All notifications marked as read.');
-}
-
-// 7. Category Filter Switcher
+// 5. Category Switcher
 function switchCategory(cat) {
   currentCategory = cat;
 
@@ -431,23 +437,61 @@ function switchCategory(cat) {
   renderNotifications();
 }
 
+// 6. Handle Notification Click
+function handleNotificationClick(id) {
+  const notif = notificationsData.find(n => n.id === id);
+  if (!notif) return;
+
+  // Mark as read in local set
+  const readSet = getReadSet();
+  readSet.add(id);
+  saveReadSet(readSet);
+
+  notif.isRead = true;
+  updateCountsAndBadges();
+  renderNotifications();
+
+  // Route to contextual modal
+  if (notif.category === 'payments') {
+    openPaymentModal(notif);
+  } else if (notif.category === 'appointments') {
+    openAppointmentModal(notif);
+  } else {
+    openUpdateModal(notif);
+  }
+}
+
+// 7. Mark All Notifications as Read
+function markAllAsRead() {
+  const readSet = getReadSet();
+  notificationsData.forEach(n => {
+    readSet.add(n.id);
+    n.isRead = true;
+  });
+  saveReadSet(readSet);
+
+  updateCountsAndBadges();
+  renderNotifications();
+  showToast('All notifications marked as read.');
+}
+
 // 8. Contextual Modal 1: Appointment Notification
 function openAppointmentModal(notif) {
   const p = notif.payload || {};
 
   const titleEl = document.getElementById('apptNotifTitle');
+  const idEl = document.getElementById('apptNotifBookingId');
   const serviceEl = document.getElementById('apptNotifService');
   const dtEl = document.getElementById('apptNotifDateTime');
-  const locEl = document.getElementById('apptNotifLocation');
   const statusEl = document.getElementById('apptNotifStatus');
   const amtEl = document.getElementById('apptNotifAmount');
   const reasonRow = document.getElementById('apptNotifReasonRow');
   const reasonEl = document.getElementById('apptNotifReason');
 
   if (titleEl) titleEl.textContent = notif.title;
-  if (serviceEl) serviceEl.textContent = p.service || notif.title;
+  if (idEl) idEl.textContent = p.bookingId || notif.id;
+  if (serviceEl) serviceEl.textContent = p.service || 'Salon Service';
   if (dtEl) dtEl.textContent = p.dateTime || notif.time;
-  if (locEl) locEl.textContent = p.location || "Nely's Salon Atelier (Lagro, QC)";
   if (statusEl) statusEl.textContent = p.status || 'CONFIRMED';
   if (amtEl) amtEl.textContent = p.amount || '₱0.00';
 
@@ -512,12 +556,12 @@ function openUpdateModal(notif) {
   if (msgEl) msgEl.textContent = notif.message;
   if (promoEl && p.promoCode) promoEl.textContent = p.promoCode;
 
-  const modal = document.getElementById('updateNotifModal');
+  const modal = (document.getElementById('updateNotifModal') || document.getElementById('announcementNotifModal'));
   if (modal && typeof modal.showModal === 'function') modal.showModal();
 }
 
 function closeUpdateModal() {
-  const modal = document.getElementById('updateNotifModal');
+  const modal = (document.getElementById('updateNotifModal') || document.getElementById('announcementNotifModal'));
   if (modal) modal.close();
 }
 
@@ -532,9 +576,63 @@ function copyPromoCode() {
   });
 }
 
-// 12. Setup General Event Listeners
+// 12. Load other sidebar badges
+async function loadSidebarBadges() {
+  const token = localStorage.getItem('nelys_token');
+  const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+  // Appointments
+  try {
+    const res = await fetch('../api/bookings', { headers });
+    if (res.ok) {
+      const json = await res.json();
+      if ((json.success || json.status === 'success') && Array.isArray(json.data)) {
+        const activeCount = json.data.filter(b => {
+          const st = (b.status || '').toLowerCase();
+          return st === 'pending' || st === 'confirmed';
+        }).length;
+
+        const badge = document.getElementById('sidebarAppointmentsBadge');
+        if (badge) {
+          if (activeCount > 0) {
+            badge.textContent = activeCount;
+            badge.classList.remove('hidden');
+          } else {
+            badge.classList.add('hidden');
+          }
+        }
+      }
+    }
+  } catch (_) {}
+
+  // Messages
+  try {
+    let unreadMsgs = 0;
+    if (token) {
+      const msgRes = await fetch('../api/messages/unread-count', { headers });
+      if (msgRes.ok) {
+        const msgJson = await msgRes.json();
+        if ((msgJson.success || msgJson.status === 'success') && msgJson.data) {
+          unreadMsgs = msgJson.data.unread_count || 0;
+        }
+      }
+    }
+
+    const msgBadge = document.getElementById('sidebarMessagesBadge');
+    if (msgBadge) {
+      if (unreadMsgs > 0) {
+        msgBadge.textContent = unreadMsgs;
+        msgBadge.classList.remove('hidden');
+      } else {
+        msgBadge.classList.add('hidden');
+      }
+    }
+  } catch (_) {}
+}
+
+// 13. Setup General Event Listeners
 function setupEventListeners() {
-  // Mobile sidebar controls if needed
+  setupDialogBackdropDismissals();
 }
 
 // Utility: Format Date Label
@@ -582,3 +680,85 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+
+// 14. Dialog Outside Click Dismissal
+function setupDialogBackdropDismissals() {
+  document.querySelectorAll('dialog').forEach(dlg => {
+    dlg.addEventListener('click', (e) => {
+      const rect = dlg.getBoundingClientRect();
+      const isInDialog = (
+        rect.top <= e.clientY &&
+        e.clientY <= rect.top + rect.height &&
+        rect.left <= e.clientX &&
+        e.clientX <= rect.left + rect.width
+      );
+      if (!isInDialog && typeof dlg.close === 'function') {
+        dlg.close();
+      }
+    });
+  });
+}
+
+// 15. Mobile Sidebar Controls
+function toggleMobileSidebar(force = null) {
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('mobileSidebarBackdrop');
+  if (!sidebar) return;
+
+  const isClosed = sidebar.classList.contains('-translate-x-full');
+  const shouldOpen = typeof force === 'boolean' ? force : isClosed;
+
+  if (shouldOpen) {
+    sidebar.classList.remove('-translate-x-full');
+    if (backdrop) {
+      backdrop.classList.remove('opacity-0', 'pointer-events-none');
+      backdrop.classList.add('opacity-100');
+    }
+  } else {
+    sidebar.classList.add('-translate-x-full');
+    if (backdrop) {
+      backdrop.classList.remove('opacity-100');
+      backdrop.classList.add('opacity-0', 'pointer-events-none');
+    }
+  }
+}
+
+// 16. Logout Modal Handlers
+function openLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal && typeof modal.showModal === 'function') {
+    if (window.innerWidth < 1024 && typeof toggleMobileSidebar === 'function') {
+      toggleMobileSidebar(false);
+    }
+    modal.showModal();
+  }
+}
+
+function closeLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal && typeof modal.close === 'function') {
+    modal.close();
+  }
+}
+
+function confirmLogout() {
+  localStorage.removeItem('nelys_token');
+  localStorage.removeItem('nelys_user');
+  sessionStorage.clear();
+  showToast('Logging out...');
+  window.location.href = '../login.html';
+}
+
+function handleLogout(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  openLogoutModal();
+  return false;
+}
+
+// Explicit window bindings
+window.openLogoutModal = openLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.confirmLogout = confirmLogout;
+window.handleLogout = handleLogout;
+window.toggleMobileSidebar = toggleMobileSidebar;

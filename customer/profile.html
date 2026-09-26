@@ -16,6 +16,30 @@
 
   <!-- Compiled Tailwind CSS -->
   <link rel="stylesheet" href="../assets/css/output.css">
+  <!-- Instant Synchronous Auth Guard & 0ms Pre-Hydrator -->
+  <script>
+    (function() {
+      try {
+        var token = localStorage.getItem('nelys_token');
+        var userJson = localStorage.getItem('nelys_user');
+        if (!token || !userJson) {
+          window.location.replace('../login.html');
+          return;
+        }
+        var user = JSON.parse(userJson);
+        if (user.role === 'admin') {
+          window.location.replace('../admin/dashboard.html');
+          return;
+        }
+        var cached = localStorage.getItem('nelys_customer_profile_cache');
+        if (cached) {
+          window.__PRELOADED_CUSTOMER_PROFILE__ = JSON.parse(cached);
+        }
+      } catch (e) {
+        window.location.replace('../login.html');
+      }
+    })();
+  </script>
 </head>
 <body class="min-h-full bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col lg:flex-row">
 
@@ -76,6 +100,7 @@
 
   <!-- ================= DESKTOP & MOBILE SIDEBAR ================= -->
     <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+          <!-- ================= SIDEBAR (DESKTOP + MOBILE DRAWER) ================= -->
   <aside 
     id="sidebar"
     class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
@@ -119,9 +144,11 @@
 
     <!-- Customer Profile Quick Pill -->
     <div class="px-5 py-4 mx-4 my-3 rounded-2xl bg-[#6e1335]/40 border border-[#810B38]/50 flex items-center gap-3">
-      <div id="customerAvatarInitials" class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">--</div>
+      <div id="customerAvatarInitials" class="w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-sm border border-[#DCC3AA] shadow-inner shrink-0">
+        --
+      </div>
       <div class="min-w-0 flex-1">
-        <span id="customerSidebarName" class="block text-sm font-semibold text-[#F1E2D1] truncate">Client</span>
+        <span id="customerSidebarName" class="block text-sm font-semibold text-[#F1E2D1] truncate"></span>
         <span class="inline-flex items-center gap-1.5 text-[11px] text-[#DCC3AA]">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
           Verified Client
@@ -136,6 +163,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Dashboard</span>
+        
       </a>
 
       <!-- Book Appointment -->
@@ -143,6 +171,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-calendar-plus w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Book Appointment</span>
+        
       </a>
 
       <!-- My Appointments -->
@@ -150,7 +179,8 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>My Appointments</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+        <span id="sidebarAppointmentsBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        
       </a>
 
       <!-- Services & Prices -->
@@ -158,6 +188,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Services & Prices</span>
+        
       </a>
 
       <!-- Messages -->
@@ -165,7 +196,8 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">1</span>
+        <span id="sidebarMessagesBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        
       </a>
 
       <!-- Notifications -->
@@ -173,13 +205,14 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
-        <span class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">3</span>
+        <span id="sidebarNotificationsBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        
       </a>
 
-      <!-- My Profile (Active) -->
+      <!-- My Profile -->
       <a href="profile.html"
-        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
-        <i class="fa-solid fa-user w-5 text-center text-[#DCC3AA]"></i>
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all group">
+        <i class="fa-solid fa-user w-5 text-center text-[#DCC3AA]  transition-transform"></i>
         <span>My Profile</span>
         <span class="ml-auto w-1.5 h-1.5 rounded-full bg-[#DCC3AA]"></span>
       </a>
@@ -187,12 +220,13 @@
 
     <!-- Sidebar Footer / Logout -->
     <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
-      <a 
-        href="../login.html"
-        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+      <button 
+        type="button" 
+        onclick="openLogoutModal()" 
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group cursor-pointer">
         <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
         <span>Log Out</span>
-      </a>
+      </button>
 
       <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
         15 Years of Beauty Heritage · Lagro, QC
@@ -721,7 +755,7 @@
   </dialog>
 
   <!-- ================= MODAL: LOGOUT CONFIRMATION ================= -->
-  <dialog id="logoutModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d]">
+  <dialog id="logoutModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d] max-w-sm w-full backdrop:bg-black/50 backdrop:backdrop-blur-sm overscroll-contain">
     <div class="p-6 sm:p-7 space-y-5 text-center">
       <div class="w-12 h-12 rounded-2xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl border border-[#DCC3AA] mx-auto">
         <i class="fa-solid fa-door-open"></i>
@@ -753,6 +787,6 @@
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
   <!-- Page JavaScript -->
-  <script src="../assets/js/pages/customer/profile.js"></script>
+  <script defer src="../assets/js/pages/customer/profile.js?v=2.2"></script>
 </body>
 </html>

@@ -23,9 +23,42 @@
   <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
   <link rel="stylesheet" href="../assets/css/output.css">
 
-    <!-- Instant Synchronous Auth Guard & 0ms Pre-Hydrator -->
+      <!-- Zero-FOUC (Flash Of Unstyled/Static Content) Guard & Instant Pre-Hydrator -->
+  <style>
+    /* Prevent raw 0 / empty table flash before synchronous hydration */
+    [data-hydrating] {
+      min-height: 1.5em;
+    }
+  </style>
   <script>
     (function() {
+    // Instant fallback for logout modal
+    window.openLogoutModal = function() {
+      var m = document.getElementById('logoutModal');
+      if (m) {
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+        m.style.display = 'flex';
+      }
+    };
+    window.closeLogoutModal = function() {
+      var m = document.getElementById('logoutModal');
+      if (m) {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+        m.style.display = 'none';
+      }
+    };
+    window.handleConfirmLogout = function() {
+      try {
+        localStorage.removeItem('nelys_token');
+        localStorage.removeItem('nelys_user');
+        sessionStorage.clear();
+      } catch(e) {}
+      window.location.href = '../login.html';
+    };
+    window.confirmLogout = window.handleConfirmLogout;
+
       try {
         var token = localStorage.getItem('nelys_token');
         var userJson = localStorage.getItem('nelys_user');
@@ -47,6 +80,8 @@
       }
     })();
   </script>
+  <!-- Load appointments controller with defer so it executes immediately on DOM ready before paint -->
+  <script defer src="../assets/js/pages/admin/appointments.js?v=4.0"></script>
 
 </head>
 
@@ -105,9 +140,10 @@
   </div>
 
                 <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+        <!-- ================= SIDEBAR (DESKTOP + MOBILE DRAWER) ================= -->
   <aside 
     id="sidebar"
-    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
+    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen lg:self-start shrink-0">
 
     <!-- Sidebar Header (Branding) -->
     <div class="p-6 border-b border-[#810B38]/40">
@@ -153,14 +189,16 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Dashboard</span>
+        
       </a>
 
-      <!-- Appointments (Active) -->
+      <!-- Appointments -->
       <a href="appointments.html"
-        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
-        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA]"></i>
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all group">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA]  transition-transform"></i>
         <span>Appointments</span>
-        <span id="sidebarAppointmentsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A] hidden">0</span>
+        <span id="sidebarAppointmentsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1] hidden">0</span>
+        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-[#DCC3AA]"></span>
       </a>
 
       <!-- Customers -->
@@ -168,6 +206,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Customers</span>
+        
       </a>
 
       <!-- Services -->
@@ -175,6 +214,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Services</span>
+        
       </a>
 
       <!-- Staff -->
@@ -182,6 +222,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Staff</span>
+        
       </a>
 
       <!-- Payments -->
@@ -189,6 +230,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-credit-card w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Payments</span>
+        
       </a>
 
       <!-- Reports -->
@@ -196,6 +238,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-chart-line w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Reports</span>
+        
       </a>
 
       <!-- Notifications -->
@@ -204,6 +247,7 @@
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
         <span id="sidebarNotificationsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1] hidden">0</span>
+        
       </a>
 
       <!-- Messages -->
@@ -212,6 +256,7 @@
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
         <span id="sidebarMessagesBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1] hidden">0</span>
+        
       </a>
 
       <!-- Settings -->
@@ -219,6 +264,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-gear w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Settings</span>
+        
       </a>
     </nav>
 
@@ -226,8 +272,8 @@
     <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
       <button 
         type="button" 
-        onclick="openLogoutModal()" 
-        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+        onclick="openLogoutModal()"
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group cursor-pointer">
         <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
         <span>Log Out</span>
       </button>
@@ -523,7 +569,7 @@
       <div id="appointmentsPaginationContainer" class="pt-4 border-t border-[#F1E2D1] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
         <!-- Results Counter Info -->
         <div class="text-[#735e5e] font-medium text-center sm:text-left">
-          Showing <span id="paginationStartCount" class="font-bold text-[#541A1A]">1</span> to <span id="paginationEndCount" class="font-bold text-[#541A1A]">10</span> of <span id="paginationTotalCount" class="font-bold text-[#541A1A]">0</span> appointments
+          Showing <span id="paginationStartCount" class="font-bold text-[#541A1A]">0</span> to <span id="paginationEndCount" class="font-bold text-[#541A1A]">0</span> of <span id="paginationTotalCount" class="font-bold text-[#541A1A]">0</span> appointments
         </div>
 
         <!-- Pagination Page Buttons -->
@@ -960,38 +1006,45 @@
   </dialog>
 
   <!-- ================= MODAL 7: LOGOUT CONFIRMATION ================= -->
-  <dialog id="logoutModal" class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d] max-w-sm w-full">
-    <div class="p-6 sm:p-7 space-y-5 text-center">
-      <div class="w-12 h-12 rounded-2xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl border border-[#DCC3AA] mx-auto">
-        <i class="fa-solid fa-door-open"></i>
+              <!-- ================= LOGOUT CONFIRMATION MODAL ================= -->
+  <div 
+    id="logoutModal" 
+    style="z-index: 99999;"
+    onclick="if(event.target === this) closeLogoutModal();"
+    class="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="logoutModalTitle">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-sm w-full shadow-2xl p-6 text-center space-y-4 relative" onclick="event.stopPropagation();">
+      <div class="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto text-xl shadow-xs">
+        <i class="fa-solid fa-arrow-right-from-bracket"></i>
       </div>
-
-      <div class="space-y-1">
-        <h4 class="font-serif text-2xl font-bold text-[#541A1A]">Log out of Admin?</h4>
-        <p class="text-xs text-[#735e5e]">You will need your staff credentials to sign back into Nely's Salon Management.</p>
+      <div>
+        <h3 id="logoutModalTitle" class="font-serif text-lg font-bold text-[#541A1A]">Confirm Logout</h3>
+        <p class="text-xs text-stone-500 mt-1">Are you sure you want to end your administrative session?</p>
       </div>
-
-      <div class="flex items-center gap-3 pt-2">
+      <div class="flex items-center justify-center gap-3 pt-2">
         <button 
           type="button" 
-          onclick="document.getElementById('logoutModal').close()" 
-          class="flex-1 py-3 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
+          onclick="closeLogoutModal()"
+          class="w-full py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors cursor-pointer">
           Cancel
         </button>
-        <a 
-          href="../login.html" 
-          class="flex-1 py-3 rounded-xl bg-[#541A1A] hover:bg-[#810B38] text-white text-xs font-bold text-center transition-colors shadow-md flex items-center justify-center">
+        <button 
+          type="button" 
+          onclick="handleConfirmLogout()"
+          class="w-full py-2.5 rounded-xl bg-[#810B38] hover:bg-rose-900 text-white text-xs font-semibold transition-colors shadow-sm cursor-pointer">
           Logout
-        </a>
+        </button>
       </div>
     </div>
-  </dialog>
+  </div>
 
   <!-- ================= TOAST CONTAINER ================= -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
   <!-- Page JavaScript -->
-  <script src="../assets/js/pages/admin/appointments.js?v=2.0"></script>
+  
 </body>
 
 </html>

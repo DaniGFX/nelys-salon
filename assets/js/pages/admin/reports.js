@@ -613,13 +613,13 @@ function toggleMobileSidebar(show) {
   }
 }
 
-// ================= LOGOUT MODAL =================
+// ================= STANDARDIZED ADMIN LOGOUT HANDLERS =================
 function openLogoutModal() {
-  closeAllModals();
   const modal = document.getElementById('logoutModal');
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    modal.style.display = 'flex';
   }
 }
 
@@ -628,62 +628,24 @@ function closeLogoutModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    modal.style.display = 'none';
   }
 }
 
-async function handleConfirmLogout() {
+function handleConfirmLogout() {
   try {
-    await fetch('../api/auth/logout', {
-      method: 'POST',
-      headers: getAuthHeaders()
-    });
-  } catch (e) {
-    // Proceed with local logout regardless
-  }
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
-  sessionStorage.clear();
+    localStorage.removeItem('nelys_token');
+    localStorage.removeItem('nelys_user');
+    sessionStorage.clear();
+  } catch(e) {}
   window.location.href = '../login.html';
 }
 
-// ================= TOAST NOTIFICATIONS =================
-function showToast(message, type = 'info') {
-  let toastContainer = document.getElementById('toastContainer');
-  if (!toastContainer) {
-    toastContainer = document.createElement('div');
-    toastContainer.id = 'adminToastContainer';
-    toastContainer.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none';
-    document.body.appendChild(toastContainer);
-  }
-
-  const toast = document.createElement('div');
-  const icon = type === 'success' 
-    ? 'fa-circle-check text-emerald-400' 
-    : type === 'error' 
-    ? 'fa-circle-exclamation text-rose-400' 
-    : 'fa-circle-info text-[#DCC3AA]';
-
-  const borderColor = type === 'success'
-    ? 'border-emerald-500/50'
-    : type === 'error'
-    ? 'border-rose-500/50'
-    : 'border-[#DCC3AA]/50';
-
-  toast.className = `pointer-events-auto flex items-center gap-3 px-4 py-3 bg-[#541A1A] text-[#F1E2D1] border ${borderColor} rounded-xl shadow-2xl text-xs font-medium animate-fadeIn transition-all duration-300`;
-  toast.innerHTML = `
-    <i class="fa-solid ${icon} text-base shrink-0"></i>
-    <span class="flex-1">${message}</span>
-  `;
-
-  toastContainer.appendChild(toast);
-
-  setTimeout(() => {
-    toast.classList.add('opacity-0', 'translate-y-2');
-    setTimeout(() => toast.remove(), 300);
-  }, 3500);
+function confirmLogout() {
+  handleConfirmLogout();
 }
 
-function safeSetText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text;
-}
+window.openLogoutModal = openLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.handleConfirmLogout = handleConfirmLogout;
+window.confirmLogout = confirmLogout;

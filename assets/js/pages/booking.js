@@ -1111,27 +1111,72 @@ function toggleMobileSidebar(open = null) {
   }
 }
 
+// Body Scroll Lock for Dialogs
+function lockBodyScroll() {
+  document.body.classList.add('overflow-hidden');
+  window.addEventListener('touchmove', onPreventCustomerBackgroundTouch, { passive: false });
+  window.addEventListener('keydown', onPreventCustomerBackgroundKeys);
+}
+
+function unlockBodyScroll() {
+  const openDialogs = Array.from(document.querySelectorAll('dialog')).filter(d => d.open);
+  if (openDialogs.length > 0) return;
+  document.body.classList.remove('overflow-hidden');
+  window.removeEventListener('touchmove', onPreventCustomerBackgroundTouch);
+  window.removeEventListener('keydown', onPreventCustomerBackgroundKeys);
+}
+
+function onPreventCustomerBackgroundTouch(e) {
+  const activeDialog = document.querySelector('dialog[open]');
+  if (activeDialog && !activeDialog.contains(e.target)) {
+    e.preventDefault();
+  }
+}
+
+function onPreventCustomerBackgroundKeys(e) {
+  if (['Space', 'PageUp', 'PageDown', 'End', 'Home'].includes(e.code)) {
+    const activeDialog = document.querySelector('dialog[open]');
+    if (activeDialog && !activeDialog.contains(e.target)) {
+      e.preventDefault();
+    }
+  }
+}
+
 function openLogoutModal() {
   const modal = document.getElementById('logoutModal');
   if (modal && typeof modal.showModal === 'function') {
+    lockBodyScroll();
     modal.showModal();
   }
 }
 
 function closeLogoutModal() {
   const modal = document.getElementById('logoutModal');
-  if (modal) modal.close();
+  if (modal && typeof modal.close === 'function') {
+    modal.close();
+    unlockBodyScroll();
+  }
 }
 
 function confirmLogout() {
-  closeLogoutModal();
   localStorage.removeItem('nelys_token');
   localStorage.removeItem('nelys_user');
-  showToast('Signing out...', 'info');
-  setTimeout(() => {
-    window.location.href = '../login.html';
-  }, 800);
+  sessionStorage.clear();
+  showToast('Logging out...', 'info');
+  window.location.href = '../login.html';
 }
+
+function handleLogout(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  openLogoutModal();
+  return false;
+}
+
+// Global window bindings
+window.openLogoutModal = openLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.confirmLogout = confirmLogout;
+window.handleLogout = handleLogout;
 
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');

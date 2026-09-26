@@ -1118,13 +1118,13 @@ function closeAllModals() {
   closeLogoutModal();
 }
 
-// ================= LOGOUT MODAL =================
+// ================= STANDARDIZED ADMIN LOGOUT HANDLERS =================
 function openLogoutModal() {
-  closeAllModals();
   const modal = document.getElementById('logoutModal');
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    modal.style.display = 'flex';
   }
 }
 
@@ -1133,93 +1133,24 @@ function closeLogoutModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    modal.style.display = 'none';
   }
 }
 
-async function handleConfirmLogout() {
+function handleConfirmLogout() {
   try {
-    await fetch('../api/auth/logout', {
-      method: 'POST',
-      headers: getAuthHeaders()
-    });
-  } catch (e) {
-    // Proceed with local logout regardless
-  }
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
-  sessionStorage.clear();
+    localStorage.removeItem('nelys_token');
+    localStorage.removeItem('nelys_user');
+    sessionStorage.clear();
+  } catch(e) {}
   window.location.href = '../login.html';
 }
 
-// ================= MOBILE NAVIGATION =================
-function toggleMobileSidebar(open) {
-  const sidebar = document.getElementById('sidebar');
-  const backdrop = document.getElementById('mobileSidebarBackdrop');
-
-  const shouldOpen = open !== undefined ? open : (sidebar && sidebar.classList.contains('-translate-x-full'));
-
-  if (sidebar && backdrop) {
-    if (shouldOpen) {
-      sidebar.classList.remove('-translate-x-full');
-      backdrop.classList.remove('opacity-0', 'pointer-events-none');
-      backdrop.classList.add('opacity-100', 'pointer-events-auto');
-    } else {
-      sidebar.classList.add('-translate-x-full');
-      backdrop.classList.remove('opacity-100', 'pointer-events-auto');
-      backdrop.classList.add('opacity-0', 'pointer-events-none');
-    }
-  }
+function confirmLogout() {
+  handleConfirmLogout();
 }
 
-// ================= TOAST NOTIFICATIONS =================
-function showToast(message, type = 'info') {
-  let container = document.getElementById('toastContainer');
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'adminToastContainer';
-    container.className = 'fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none';
-    document.body.appendChild(container);
-  }
-
-  const toast = document.createElement('div');
-  let bg = 'bg-[#541A1A] text-white border border-[#DCC3AA]/50';
-  let icon = '<i class="fa-solid fa-circle-info text-[#DCC3AA]"></i>';
-
-  if (type === 'success') {
-    bg = 'bg-emerald-900 text-emerald-50 border border-emerald-500/50';
-    icon = '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
-  } else if (type === 'error') {
-    bg = 'bg-rose-900 text-rose-50 border border-rose-500/50';
-    icon = '<i class="fa-solid fa-triangle-exclamation text-rose-400"></i>';
-  } else if (type === 'warning') {
-    bg = 'bg-amber-900 text-amber-50 border border-amber-500/50';
-    icon = '<i class="fa-solid fa-circle-exclamation text-amber-400"></i>';
-  }
-
-  toast.className = `${bg} pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl text-xs font-medium max-w-sm transform translate-y-3 opacity-0 transition-all duration-300`;
-  toast.innerHTML = `
-    <div class="text-sm shrink-0">${icon}</div>
-    <div class="flex-1">${message}</div>
-    <button type="button" class="text-white/60 hover:text-white shrink-0 ml-1 text-xs" onclick="this.parentElement.remove()">
-      <i class="fa-solid fa-xmark"></i>
-    </button>
-  `;
-
-  container.appendChild(toast);
-
-  // Trigger animation
-  setTimeout(() => {
-    toast.classList.remove('translate-y-3', 'opacity-0');
-  }, 10);
-
-  // Auto dismiss
-  setTimeout(() => {
-    toast.classList.add('opacity-0', 'translate-y-2');
-    setTimeout(() => toast.remove(), 300);
-  }, 4000);
-}
-
-function safeSetText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text;
-}
+window.openLogoutModal = openLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.handleConfirmLogout = handleConfirmLogout;
+window.confirmLogout = confirmLogout;

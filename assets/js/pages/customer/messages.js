@@ -4,7 +4,11 @@
  * Connected to live backend Messages API (/api/messages)
  * Dynamic messaging with live MySQL persistence, appointment context,
  * simulated concierge typing, offline resilience, and responsive UI.
+ * Optimized with 0ms pre-hydration & SWR cache diffing.
  */
+
+// Seamless 0ms Cache Preload & State
+let lastRendered_cust_messages_Hash = '';
 
 // Current Customer & Chat State
 let currentUser = null;
@@ -26,16 +30,54 @@ let isEmptyState = false;
 let messageToDeleteId = null;
 let searchQuery = '';
 
-// DOM Loaded
-document.addEventListener('DOMContentLoaded', () => {
+// Immediate 0ms Hydration
+function hydrateCustomerMessagesFromCache() {
   purgeLegacyMockStorage();
   initPatronProfile();
+  
+  let preloaded = window.__PRELOADED_CUSTOMER_MESSAGES__;
+  if (!preloaded) {
+    try {
+      const key = getStorageKey();
+      const raw = localStorage.getItem(key);
+      if (raw) preloaded = JSON.parse(raw);
+    } catch (e) {}
+  }
+
+  if (Array.isArray(preloaded) && preloaded.length > 0) {
+    try {
+      // Discard if contains legacy mock
+      const isLegacyMock = preloaded.some(m => 
+        (m.text || '').includes('Haircut tomorrow at 2:00 PM') || 
+        (m.text || '').includes('change my service to Brazilian')
+      );
+      if (!isLegacyMock) {
+        customerChatData.messages = preloaded;
+        isEmptyState = false;
+        lastRendered_cust_messages_Hash = JSON.stringify(preloaded);
+        renderChatStream();
+      }
+    } catch (e) {
+      console.warn('Messages cache hydration error:', e);
+    }
+  }
+}
+
+// Lifecycle Bootstrapping
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCustomerMessagesPage);
+} else {
+  initCustomerMessagesPage();
+}
+
+function initCustomerMessagesPage() {
+  hydrateCustomerMessagesFromCache();
   loadCustomerChatData();
   setupEventListeners();
   loadAppointmentContext();
   loadNotificationBadges();
   setupDialogBackdropClicks();
-});
+}
 
 // Purge any old hardcoded demo messages lingering in browser storage from legacy versions
 function purgeLegacyMockStorage() {
@@ -71,7 +113,7 @@ function initPatronProfile() {
 
   try {
     currentUser = JSON.parse(savedUserJson);
-    const displayName = currentUser.full_name || currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Client');
+    const displayName = currentUser.full_name || currentUser.name || (currentUser.email ? currentUser.email.split('@')[0] : 'Client Patron');
 
     const sidebarName = document.getElementById('customerSidebarName') || document.querySelector('aside .truncate');
     if (sidebarName) {
@@ -106,28 +148,6 @@ async function loadCustomerChatData() {
   const token = localStorage.getItem('nelys_token');
   const key = getStorageKey();
 
-  // Load from cache first for immediate rendering
-  const cached = localStorage.getItem(key);
-  if (cached) {
-    try {
-      const parsed = JSON.parse(cached);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        // Discard if contains legacy mock
-        const isLegacyMock = parsed.some(m => 
-          (m.text || '').includes('Haircut tomorrow at 2:00 PM') || 
-          (m.text || '').includes('change my service to Brazilian')
-        );
-        if (isLegacyMock) {
-          localStorage.removeItem(key);
-        } else {
-          customerChatData.messages = parsed;
-          isEmptyState = false;
-          renderChatStream();
-        }
-      }
-    } catch (_) {}
-  }
-
   // If user is logged in, fetch authoritative chat stream from backend
   if (token) {
     try {
@@ -138,15 +158,19 @@ async function loadCustomerChatData() {
       if (res.ok) {
         const json = await res.json();
         if ((json.success || json.status === 'success') && Array.isArray(json.data)) {
-          if (json.data.length > 0) {
-            customerChatData.messages = json.data.map(mapBackendMessage);
-            isEmptyState = false;
-          } else {
-            customerChatData.messages = [];
-            isEmptyState = true;
+          const newHash = JSON.stringify(json.data);
+          if (newHash !== lastRendered_cust_messages_Hash || customerChatData.messages.length === 0) {
+            lastRendered_cust_messages_Hash = newHash;
+            if (json.data.length > 0) {
+              customerChatData.messages = json.data.map(mapBackendMessage);
+              isEmptyState = false;
+            } else {
+              customerChatData.messages = [];
+              isEmptyState = true;
+            }
+            saveCustomerChatData();
+            renderChatStream();
           }
-          saveCustomerChatData();
-          renderChatStream();
           return;
         }
       }
@@ -156,7 +180,7 @@ async function loadCustomerChatData() {
   }
 
   // If no backend data and no cache, initialize default clean concierge greeting
-  if (!cached || customerChatData.messages.length === 0) {
+  if (customerChatData.messages.length === 0 && !isEmptyState) {
     const firstName = currentUser && currentUser.full_name && currentUser.id !== 'guest'
       ? currentUser.full_name.split(' ')[0]
       : '';
@@ -348,114 +372,81 @@ function setupEventListeners() {
   // Form submit
   const messageForm = document.getElementById('customerMessageForm');
   if (messageForm) {
-    messageForm.addEventListener('submit', (e) => {
-      e.preventDefault();
-      sendCustomerMessage();
-    });
+    messageForm.addEventListener('submit', handleSendMessage);
   }
 
-  // Textarea Enter key (Shift+Enter for newline)
-  const messageInput = document.getElementById('customerMessageInput');
-  if (messageInput) {
-    messageInput.addEventListener('keydown', (e) => {
+  // Keydown for enter to send
+  const msgInput = document.getElementById('customerMessageInput');
+  if (msgInput) {
+    msgInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        sendCustomerMessage();
+        handleSendMessage(e);
       }
     });
   }
 
+  // Quick Action Chips
+  document.querySelectorAll('.quick-reply-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const prompt = chip.getAttribute('data-prompt');
+      if (prompt) {
+        sendQuickPrompt(prompt);
+      }
+    });
+  });
+
   // File Attachment input
-  const fileInput = document.getElementById('customerFileInput');
+  const fileInput = (document.getElementById('chatFileInput') || document.getElementById('customerFileInput'));
   if (fileInput) {
     fileInput.addEventListener('change', handleFileSelected);
   }
-
-  // Window Resize
-  window.addEventListener('resize', () => {
-    const chatCol = document.getElementById('chatColumn');
-    if (chatCol) {
-      chatCol.classList.remove('hidden');
-      chatCol.classList.add('flex');
-    }
-  });
 }
 
-// Search Filter Input Handler
-function handleSearchInput(e) {
-  searchQuery = e.target.value.toLowerCase().trim();
-
-  // Sync both inputs
-  const desktopInput = document.getElementById('searchChatInput');
-  const mobileInput = document.getElementById('mobileSearchChatInput');
-  if (desktopInput && desktopInput !== e.target) desktopInput.value = e.target.value;
-  if (mobileInput && mobileInput !== e.target) mobileInput.value = e.target.value;
-
-  renderChatStream();
-}
-
-// Toggle Mobile Search Bar
-function toggleMobileSearch() {
-  const bar = document.getElementById('mobileSearchBar');
-  const input = document.getElementById('mobileSearchChatInput');
-  if (!bar) return;
-
-  bar.classList.toggle('hidden');
-  if (!bar.classList.contains('hidden') && input) {
-    input.focus();
-  }
-}
-
-// Textarea Auto-resize
-function autoResizeTextarea(textarea) {
-  if (!textarea) return;
-  textarea.style.height = 'auto';
-  const newHeight = Math.min(textarea.scrollHeight, 120);
-  textarea.style.height = `${newHeight}px`;
-}
-
-// 8. Render Messages
+// 8. Render Chat Messages Stream
 function renderChatStream() {
-  const stream = document.getElementById('customerChatStream');
-  const emptyView = document.getElementById('emptyStateView');
-  const activeView = document.getElementById('activeChatView');
-
-  if (!stream) return;
+  const container = document.getElementById('customerChatStream');
+  const emptyContainer = (document.getElementById('emptyChatState') || document.getElementById('emptyStateView'));
+  if (!container) return;
 
   if (isEmptyState || customerChatData.messages.length === 0) {
-    if (emptyView) emptyView.classList.remove('hidden');
-    if (activeView) activeView.classList.add('hidden');
+    container.innerHTML = '';
+    if (emptyContainer) {
+      emptyContainer.classList.remove('hidden');
+    }
     return;
-  } else {
-    if (emptyView) emptyView.classList.add('hidden');
-    if (activeView) activeView.classList.remove('hidden');
   }
 
-  const filtered = customerChatData.messages.filter(msg => {
-    if (!searchQuery) return true;
-    return (msg.text || '').toLowerCase().includes(searchQuery);
-  });
+  if (emptyContainer) {
+    emptyContainer.classList.add('hidden');
+  }
 
-  if (filtered.length === 0 && searchQuery) {
-    stream.innerHTML = `
-      <div class="py-12 text-center text-[#735e5e]">
-        <i class="fa-solid fa-magnifying-glass text-2xl text-[#DCC3AA] mb-2"></i>
-        <p class="text-xs font-bold text-[#541A1A]">No messages match "${escapeHtml(searchQuery)}"</p>
-        <p class="text-[11px] text-[#735e5e] mt-1">Try another search term.</p>
+  let filtered = customerChatData.messages;
+  if (searchQuery) {
+    filtered = filtered.filter(m => 
+      (m.text || '').toLowerCase().includes(searchQuery) ||
+      (m.attachment && m.attachment.name.toLowerCase().includes(searchQuery))
+    );
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="py-12 text-center text-stone-400 space-y-2">
+        <i class="fa-solid fa-magnifying-glass text-2xl text-stone-300"></i>
+        <p class="text-xs">No messages matching "<strong>${escapeHtml(searchQuery)}</strong>"</p>
+        <button type="button" onclick="clearMessageSearch()" class="text-xs text-[#810B38] font-bold hover:underline">
+          Clear Search
+        </button>
       </div>
     `;
     return;
   }
 
-  const todayDateStr = new Date().toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric'
-  });
+  let html = '';
+  const todayDateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
-  let html = `
-    <!-- Date Header Pill -->
-    <div class="flex items-center justify-center my-3">
+  html += `
+    <div class="flex items-center justify-center my-4">
       <span class="px-3.5 py-1 rounded-full bg-[#FAF6F0] border border-[#DCC3AA]/70 text-[11px] font-semibold text-[#735e5e] shadow-xs">
         Today, ${todayDateStr}
       </span>
@@ -499,21 +490,20 @@ function renderChatStream() {
     } else {
       // Incoming salon bubble (White card)
       return `
-        <div class="flex items-start gap-2.5 mb-3.5 group" id="msg-${msg.id}">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xs flex items-center justify-center shrink-0 border border-[#DCC3AA] mt-1 shadow-xs">
-            <i class="fa-solid fa-scissors text-[10px] text-[#DCC3AA]"></i>
+        <div class="flex items-start gap-2.5 sm:gap-3 mb-3.5" id="msg-${msg.id}">
+          <div class="w-8 h-8 rounded-full bg-[#541A1A] text-[#F1E2D1] font-bold text-xs flex items-center justify-center border border-[#DCC3AA] shrink-0 mt-1 shadow-xs">
+            NS
           </div>
-
           <div class="max-w-[85%] sm:max-w-[70%]">
-            <div class="text-[11px] font-bold text-[#541A1A] mb-1 pl-1 flex items-center gap-1.5">
-              <span>${escapeHtml(msg.senderName || "Nely's Salon Concierge")}</span>
-              <span class="text-[9px] px-1.5 py-0.5 rounded-full bg-[#810B38]/10 text-[#810B38] font-semibold">Salon Staff</span>
+            <div class="flex items-center gap-2 mb-1 pl-1">
+              <span class="text-[11px] font-bold text-[#541A1A]">${escapeHtml(msg.senderName || "Nely's Salon Concierge")}</span>
+              <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200 font-semibold">Official</span>
             </div>
-            <div class="bg-white border border-[#DCC3AA]/70 text-[#2b1d1d] px-4 py-3 rounded-2xl rounded-tl-xs shadow-sm space-y-1">
-              ${msg.text ? `<p class="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(msg.text)}</p>` : ''}
+            <div class="bg-white text-[#2b1d1d] border border-[#DCC3AA]/80 px-4 py-3 rounded-2xl rounded-tl-xs shadow-sm space-y-1">
+              ${msg.text ? `<p class="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap text-[#2b1d1d]">${escapeHtml(msg.text)}</p>` : ''}
               ${renderAttachmentBubble(msg.attachment, false)}
             </div>
-            <div class="flex items-center gap-1.5 mt-1 text-[10px] text-[#735e5e] pl-1">
+            <div class="flex items-center gap-1.5 mt-1 pl-1 text-[10px] text-[#735e5e]">
               <span>${msg.time}</span>
             </div>
           </div>
@@ -522,81 +512,93 @@ function renderChatStream() {
     }
   }).join('');
 
-  stream.innerHTML = html;
-  stream.scrollTop = stream.scrollHeight;
+  container.innerHTML = html;
+  scrollChatToBottom();
 }
 
-// Render Attachment inside message bubble
-function renderAttachmentBubble(attachment, isOutgoing) {
+function renderAttachmentBubble(attachment, isCustomer) {
   if (!attachment) return '';
 
-  if (attachment.dataUrl) {
+  const isImg = attachment.dataUrl && (attachment.dataUrl.startsWith('data:image') || attachment.dataUrl.includes('image'));
+  const textColor = isCustomer ? 'text-white' : 'text-[#541A1A]';
+  const subColor = isCustomer ? 'text-white/80' : 'text-[#735e5e]';
+  const bgBox = isCustomer ? 'bg-black/10' : 'bg-[#FAF6F0] border border-[#DCC3AA]';
+
+  if (isImg) {
     return `
-      <div class="mt-2">
-        <img 
-          src="${attachment.dataUrl}" 
-          alt="${escapeHtml(attachment.name || 'Photo')}" 
-          class="max-w-xs max-h-48 rounded-xl object-cover border ${isOutgoing ? 'border-white/20' : 'border-[#DCC3AA]/50'} shadow-xs hover:opacity-95 transition-opacity cursor-pointer"
-          onclick="window.open('${attachment.dataUrl}', '_blank')" />
-        <span class="block text-[10px] ${isOutgoing ? 'text-white/70' : 'text-[#735e5e]'} mt-1 truncate">
-          ${escapeHtml(attachment.name || 'Photo')}
-        </span>
+      <div class="mt-2 rounded-xl overflow-hidden border border-black/10 max-w-xs shadow-xs">
+        <img src="${attachment.dataUrl}" alt="${escapeHtml(attachment.name)}" class="w-full h-auto object-cover max-h-48">
+        <div class="p-1.5 text-[10px] ${textColor} ${bgBox} truncate">
+          ${escapeHtml(attachment.name)}
+        </div>
       </div>
     `;
   }
 
   return `
-    <div class="mt-2 p-2 rounded-xl ${isOutgoing ? 'bg-black/20' : 'bg-[#FAF6F0] border border-[#DCC3AA]/40'} flex items-center gap-2 text-xs">
-      <i class="fa-solid fa-paperclip ${isOutgoing ? 'text-[#DCC3AA]' : 'text-[#810B38]'}"></i>
-      <span class="truncate underline font-mono text-[11px] ${isOutgoing ? 'text-white' : 'text-[#810B38]'}">
-        ${escapeHtml(attachment.name || 'Attachment')}
-      </span>
+    <div class="mt-2 flex items-center gap-2.5 p-2 rounded-xl ${bgBox}">
+      <div class="w-8 h-8 rounded-lg bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm shrink-0 border border-[#DCC3AA]/40">
+        <i class="fa-solid fa-file"></i>
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="text-xs font-semibold ${textColor} truncate">${escapeHtml(attachment.name)}</div>
+        <div class="text-[10px] ${subColor}">Attachment</div>
+      </div>
     </div>
   `;
 }
 
-// 9. Send Message (Connected to Backend POST /api/messages)
-async function sendCustomerMessage(customText = null) {
-  const input = document.getElementById('customerMessageInput');
-  const text = customText !== null ? customText : (input ? input.value.trim() : '');
+function scrollChatToBottom(smooth = false) {
+  const container = document.getElementById('customerChatStream');
+  if (container) {
+    container.scrollTo({
+      top: container.scrollHeight,
+      behavior: smooth ? 'smooth' : 'auto'
+    });
+  }
+}
 
-  if (!text && !attachedFile) return;
+// 9. Send Message Handler
+async function handleSendMessage(e) {
+  if (e) e.preventDefault();
+
+  const input = document.getElementById('customerMessageInput');
+  if (!input) return;
+
+  const text = input.value.trim();
+  const fileAttachment = attachedFile;
+
+  if (!text && !fileAttachment) return;
 
   const token = localStorage.getItem('nelys_token');
-  const customerName = currentUser && currentUser.full_name ? currentUser.full_name : 'Client';
   const now = new Date();
-  const timeString = formatTime(now);
+  const timeStr = formatTime(now);
 
-  const localAttachment = attachedFile ? { ...attachedFile } : null;
-
-  // 1. Optimistic Outgoing Message
-  const optimisticMsg = {
+  const localMsg = {
     id: Date.now(),
     sender: 'customer',
-    senderName: customerName,
-    text: text || (localAttachment ? `Shared attachment: ${localAttachment.name}` : ''),
-    time: timeString,
+    senderName: currentUser && currentUser.full_name ? currentUser.full_name : 'You',
+    text: text,
+    time: timeStr,
     date: 'Today',
     status: 'sent',
-    attachment: localAttachment
+    attachment: fileAttachment ? {
+      name: fileAttachment.name,
+      dataUrl: fileAttachment.dataUrl
+    } : null
   };
 
-  customerChatData.messages.push(optimisticMsg);
+  // Optimistically add to chat stream
+  customerChatData.messages.push(localMsg);
+  isEmptyState = false;
   saveCustomerChatData();
 
-  // Clear Form Inputs
-  if (input && customText === null) {
-    input.value = '';
-    input.style.height = 'auto';
-  }
-  clearCustomerAttachment();
-
+  // Reset inputs
+  input.value = '';
+  clearAttachedFile();
   renderChatStream();
 
-  // Show Typing Indicator
-  showTypingIndicator();
-
-  // 2. Send to Backend API if user is authenticated
+  // Post message to live Backend API
   if (token) {
     try {
       const res = await fetch('../api/messages', {
@@ -607,183 +609,215 @@ async function sendCustomerMessage(customText = null) {
         },
         body: JSON.stringify({
           text: text,
-          attachment_name: localAttachment ? localAttachment.name : null,
-          attachment_url: localAttachment ? localAttachment.dataUrl : null
+          attachment_name: fileAttachment ? fileAttachment.name : null,
+          attachment_url: fileAttachment ? fileAttachment.dataUrl : null
         })
       });
 
       if (res.ok) {
-        const json = await res.json();
-        if ((json.success || json.status === 'success') && json.data) {
-          // Keep typing indicator visible briefly for realistic conversational UX
-          setTimeout(() => {
-            hideTypingIndicator();
-
-            // Replace optimistic customer message with DB record if returned
-            if (json.data.customer_message) {
-              const idx = customerChatData.messages.findIndex(m => m.id === optimisticMsg.id);
-              if (idx !== -1) {
-                customerChatData.messages[idx] = mapBackendMessage(json.data.customer_message);
-              }
-            }
-
-            // Append salon reply from backend
-            if (json.data.salon_reply) {
-              customerChatData.messages.push(mapBackendMessage(json.data.salon_reply));
-            }
-
-            saveCustomerChatData();
-            renderChatStream();
-          }, 850);
-          return;
+        const result = await res.json();
+        if (result.success || result.status === 'success') {
+          localMsg.id = result.data ? result.data.id : localMsg.id;
+          saveCustomerChatData();
         }
       }
     } catch (err) {
-      console.warn('Backend send failed, falling back to local responder:', err);
+      console.warn('Backend message sync notice:', err);
     }
   }
 
-  // 3. Fallback to Local Concierge Responder if offline or unauthenticated
-  setTimeout(() => {
-    hideTypingIndicator();
-    respondAsConciergeFallback(text);
-  }, 900);
+  // Simulate concierge response
+  triggerConciergeSmartReply(text);
 }
 
-// Typing Indicator Helpers
+// 10. Quick Action Chips
+function sendQuickPrompt(promptText) {
+  const input = document.getElementById('customerMessageInput');
+  if (input) {
+    input.value = promptText;
+    handleSendMessage();
+  }
+}
+
+// 11. Simulated Intelligent Salon Concierge Auto-Reply
+function triggerConciergeSmartReply(userText) {
+  showTypingIndicator();
+
+  setTimeout(async () => {
+    hideTypingIndicator();
+
+    const lower = (userText || '').toLowerCase();
+    let reply = "Thank you for reaching out! Our reception desk has received your message and a salon coordinator will get back to you shortly.";
+
+    if (lower.includes('book') || lower.includes('appointment') || lower.includes('schedule') || lower.includes('reserve')) {
+      reply = "We would love to welcome you! You can easily book an appointment through our Book Appointment page or let us know your preferred date, time, and service right here.";
+    } else if (lower.includes('price') || lower.includes('cost') || lower.includes('rate') || lower.includes('how much') || lower.includes('brazilian') || lower.includes('rebond')) {
+      reply = "Our Brazilian treatment starts at ₱1,999, Keratin treatment at ₱499, Hair Rebonding at ₱1,499, and Hair Dye at ₱699. You can also view the full catalog in our 'Services & Prices' tab!";
+    } else if (lower.includes('hour') || lower.includes('open') || lower.includes('time') || lower.includes('location') || lower.includes('where')) {
+      reply = "We are located at BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City. We are open Monday through Saturday from 9:00 AM to 6:00 PM.";
+    } else if (lower.includes('home') || lower.includes('service')) {
+      reply = "Yes! We offer home service across Lagro, Fairview, Novaliches, and nearby QC areas. You can select 'Home Service' when booking your appointment.";
+    } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('good morning') || lower.includes('good afternoon')) {
+      const firstName = currentUser && currentUser.full_name && currentUser.id !== 'guest' ? currentUser.full_name.split(' ')[0] : 'there';
+      reply = `Hello ${firstName}! How can we assist you today at Nely's Salon?`;
+    }
+
+    const salonMsg = {
+      id: Date.now() + 1,
+      sender: 'salon',
+      senderName: "Nely's Salon Concierge",
+      text: reply,
+      time: formatTime(new Date()),
+      date: 'Today',
+      status: 'read'
+    };
+
+    customerChatData.messages.push(salonMsg);
+    saveCustomerChatData();
+    renderChatStream();
+
+    const token = localStorage.getItem('nelys_token');
+    if (token) {
+      try {
+        await fetch('../api/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            sender: 'salon',
+            sender_name: "Nely's Salon Concierge",
+            text: reply
+          })
+        });
+      } catch (_) {}
+    }
+  }, 1400);
+}
+
 function showTypingIndicator() {
-  const indicator = document.getElementById('typingIndicator');
-  const stream = document.getElementById('customerChatStream');
-  if (indicator) {
-    indicator.classList.remove('hidden');
-  }
-  if (stream) {
-    stream.scrollTop = stream.scrollHeight;
-  }
+  const container = document.getElementById('customerChatStream');
+  if (!container) return;
+
+  const existing = (document.getElementById('conciergeTypingIndicator') || document.getElementById('typingIndicator'));
+  if (existing) existing.remove();
+
+  const typingEl = document.createElement('div');
+  typingEl.id = 'conciergeTypingIndicator';
+  typingEl.className = 'flex items-center gap-3 mb-3.5';
+  typingEl.innerHTML = `
+    <div class="w-8 h-8 rounded-full bg-[#541A1A] text-[#F1E2D1] font-bold text-xs flex items-center justify-center border border-[#DCC3AA] shrink-0 shadow-xs">
+      NS
+    </div>
+    <div class="bg-white border border-[#DCC3AA]/80 px-4 py-3 rounded-2xl rounded-tl-xs shadow-xs flex items-center gap-1.5">
+      <span class="w-2 h-2 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.3s]"></span>
+      <span class="w-2 h-2 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.15s]"></span>
+      <span class="w-2 h-2 rounded-full bg-[#810B38] animate-bounce"></span>
+    </div>
+  `;
+
+  container.appendChild(typingEl);
+  scrollChatToBottom(true);
 }
 
 function hideTypingIndicator() {
-  const indicator = document.getElementById('typingIndicator');
-  if (indicator) {
-    indicator.classList.add('hidden');
-  }
+  const el = (document.getElementById('conciergeTypingIndicator') || document.getElementById('typingIndicator'));
+  if (el) el.remove();
 }
 
-// 10. Local Concierge Reply Fallback (Used when offline)
-function respondAsConciergeFallback(customerQuery) {
-  const query = (customerQuery || '').toLowerCase();
-  let reply = "Thank you for reaching out to Nely's Salon! Our front desk staff has received your message and will assist you shortly.";
-
-  if (query.includes('appointment') || query.includes('booking') || query.includes('sched')) {
-    reply = "You can view or manage all your bookings under 'My Appointments', or schedule a new one right away under 'Book Appointment'!";
-  } else if (query.includes('price') || query.includes('cost') || query.includes('magkano') || query.includes('how much') || query.includes('rate')) {
-    reply = "Our full updated price list is available under 'Services & Prices'. Brazilian blowout starts at ₱1,999, haircuts at ₱150, and gel nails at ₱499.";
-  } else if (query.includes('hour') || query.includes('time') || query.includes('open') || query.includes('schedule') || query.includes('closing')) {
-    reply = "Nely's Salon is open Monday through Saturday from 9:00 AM to 6:00 PM in Lagro, Quezon City.";
-  } else if (query.includes('location') || query.includes('address') || query.includes('saan') || query.includes('where')) {
-    reply = "We are located at BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City. We also offer Home Service for select hair and nail treatments!";
-  } else if (query.includes('service') || query.includes('rebond') || query.includes('brazilian') || query.includes('nail') || query.includes('spa')) {
-    reply = "We offer 13 signature hair, nail, and foot spa treatments! Check out the 'Services & Prices' tab to view full details, inclusions, and book.";
-  } else if (query.includes('stylist') || query.includes('staff') || query.includes('nely')) {
-    reply = "Our salon is led by Nely and certified senior stylists with over 15 years of beauty heritage in Lagro, QC.";
-  } else if (query.includes('hello') || query.includes('hi') || query.includes('good morning') || query.includes('good afternoon')) {
-    const firstName = currentUser && currentUser.full_name ? currentUser.full_name.split(' ')[0] : 'there';
-    reply = `Hello ${firstName}! How can we make your day more beautiful today?`;
-  }
-
-  const salonMsg = {
-    id: Date.now(),
-    sender: 'salon',
-    senderName: "Nely's Salon Concierge",
-    text: reply,
-    time: formatTime(new Date()),
-    date: 'Today',
-    status: 'read'
-  };
-
-  customerChatData.messages.push(salonMsg);
-  saveCustomerChatData();
-  renderChatStream();
-}
-
-// 11. Quick Topic Buttons
-function applyQuickTopic(topic) {
-  let prompt = '';
-  switch (topic) {
-    case 'appointment':
-      prompt = "Hi, I have a question regarding my appointment schedule.";
-      break;
-    case 'services':
-      prompt = "Hello! Can you tell me more about your signature hair and nail treatments?";
-      break;
-    case 'pricing':
-      prompt = "Hi! How much are your current rates for hair and nail services?";
-      break;
-    case 'availability':
-      prompt = "Hello, what are your available slots for this week?";
-      break;
-    case 'info':
-      prompt = "Hi! Where are you located and what are your operating hours?";
-      break;
-    default:
-      prompt = "Hello Nely's Salon!";
-  }
-
-  sendCustomerMessage(prompt);
-}
-
-// 12. Attachment Handlers
-function triggerCustomerFileInput() {
-  const fileInput = document.getElementById('customerFileInput');
+// 12. File Attachment Handling
+function triggerFileInput() {
+  const fileInput = (document.getElementById('chatFileInput') || document.getElementById('customerFileInput'));
   if (fileInput) fileInput.click();
 }
 
 function handleFileSelected(e) {
-  const file = e.target.files[0];
+  const file = e.target.files && e.target.files[0];
   if (!file) return;
 
-  const preview = document.getElementById('customerAttachmentPreview');
-  const fileName = document.getElementById('customerAttachmentFileName');
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('File size must be under 5MB.', 'error');
+    return;
+  }
 
-  if (file.type.startsWith('image/')) {
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      attachedFile = {
-        name: file.name,
-        size: file.size,
-        type: file.type,
-        dataUrl: event.target.result
-      };
-      if (preview && fileName) {
-        fileName.textContent = file.name;
-        preview.classList.remove('hidden');
-      }
-    };
-    reader.readAsDataURL(file);
-  } else {
+  const reader = new FileReader();
+  reader.onload = function(evt) {
     attachedFile = {
       name: file.name,
       size: file.size,
       type: file.type,
-      dataUrl: null
+      dataUrl: evt.target.result
     };
-    if (preview && fileName) {
-      fileName.textContent = file.name;
-      preview.classList.remove('hidden');
+    showAttachmentPreview();
+  };
+  reader.readAsDataURL(file);
+}
+
+function showAttachmentPreview() {
+  const previewBox = (document.getElementById('attachmentPreviewBox') || document.getElementById('customerAttachmentPreview'));
+  const previewName = (document.getElementById('previewFileName') || document.getElementById('customerAttachmentFileName'));
+  const previewThumb = document.getElementById('previewThumbnail');
+
+  if (!previewBox || !attachedFile) return;
+
+  if (previewName) previewName.textContent = attachedFile.name;
+
+  if (previewThumb) {
+    if (attachedFile.dataUrl.startsWith('data:image')) {
+      previewThumb.innerHTML = `<img src="${attachedFile.dataUrl}" class="w-full h-full object-cover rounded-md">`;
+    } else {
+      previewThumb.innerHTML = `<i class="fa-solid fa-file text-[#810B38]"></i>`;
     }
+  }
+
+  previewBox.classList.remove('hidden');
+}
+
+function clearAttachedFile() {
+  attachedFile = null;
+  const previewBox = (document.getElementById('attachmentPreviewBox') || document.getElementById('customerAttachmentPreview'));
+  const fileInput = (document.getElementById('chatFileInput') || document.getElementById('customerFileInput'));
+  if (previewBox) previewBox.classList.add('hidden');
+  if (fileInput) fileInput.value = '';
+}
+
+// 13. Search Filtering in Messages
+function handleSearchInput(e) {
+  searchQuery = (e.target.value || '').trim().toLowerCase();
+  renderChatStream();
+}
+
+function toggleMobileSearch() {
+  const mobileBar = document.getElementById('mobileSearchBar');
+  const mobileInput = document.getElementById('mobileSearchChatInput');
+  if (!mobileBar) return;
+
+  if (mobileBar.classList.contains('hidden')) {
+    mobileBar.classList.remove('hidden');
+    if (mobileInput) mobileInput.focus();
+  } else {
+    mobileBar.classList.add('hidden');
+    if (mobileInput) mobileInput.value = '';
+    searchQuery = '';
+    renderChatStream();
   }
 }
 
-function clearCustomerAttachment() {
-  attachedFile = null;
-  const fileInput = document.getElementById('customerFileInput');
-  if (fileInput) fileInput.value = '';
+function clearMessageSearch() {
+  searchQuery = '';
+  const searchInput = document.getElementById('searchChatInput');
+  const mobileInput = document.getElementById('mobileSearchChatInput');
+  const mobileBar = document.getElementById('mobileSearchBar');
 
-  const preview = document.getElementById('customerAttachmentPreview');
-  if (preview) preview.classList.add('hidden');
+  if (searchInput) searchInput.value = '';
+  if (mobileInput) mobileInput.value = '';
+  if (mobileBar) mobileBar.classList.add('hidden');
+
+  renderChatStream();
 }
 
-// 13. Delete Single Message (Connected to Backend DELETE /api/messages/{id})
+// Delete Single Message
 function promptDeleteMessage(msgId) {
   messageToDeleteId = msgId;
   const modal = document.getElementById('deleteMessageModal');
@@ -888,7 +922,7 @@ async function confirmClearChat() {
 
 // Dialog outside click backdrop closing
 function setupDialogBackdropClicks() {
-  [document.getElementById('deleteMessageModal'), document.getElementById('clearChatModal')].forEach(modal => {
+  [document.getElementById('deleteMessageModal'), document.getElementById('clearChatModal'), document.getElementById('logoutModal')].forEach(modal => {
     if (modal) {
       modal.addEventListener('click', (e) => {
         const rect = modal.getBoundingClientRect();
@@ -949,17 +983,43 @@ function toggleSalonInfoDrawer(open) {
   }
 }
 
-// 18. Logout Handler
-function handleLogout(e) {
-  if (confirm("Are you sure you want to log out of Nely's Salon?")) {
-    localStorage.removeItem('nelys_token');
-    localStorage.removeItem('nelys_user');
-    showToast('Logging out...', 'info');
-    return true;
+// 18. Logout Modal Handlers
+function openLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal && typeof modal.showModal === 'function') {
+    if (window.innerWidth < 1024 && typeof toggleMobileSidebar === 'function') {
+      toggleMobileSidebar(false);
+    }
+    modal.showModal();
   }
-  if (e) e.preventDefault();
+}
+
+function closeLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal && typeof modal.close === 'function') {
+    modal.close();
+  }
+}
+
+function confirmLogout() {
+  localStorage.removeItem('nelys_token');
+  localStorage.removeItem('nelys_user');
+  sessionStorage.clear();
+  showToast('Logging out...', 'info');
+  window.location.href = '../login.html';
+}
+
+function handleLogout(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
+  openLogoutModal();
   return false;
 }
+
+// Global window bindings
+window.openLogoutModal = openLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.confirmLogout = confirmLogout;
+window.handleLogout = handleLogout;
 
 // 19. Toast Notification Helper
 function showToast(message, type = 'success') {

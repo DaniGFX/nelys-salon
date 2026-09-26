@@ -22,9 +22,36 @@
 
   <!-- Compiled Tailwind CSS (with global invisible scrollbars) -->
   <link rel="stylesheet" href="../assets/css/output.css">
-  <!-- Instant Synchronous Auth Guard & 0ms Pre-Hydrator -->
+    <!-- Instant Synchronous Auth Guard & 0ms Pre-Hydrator -->
   <script>
     (function() {
+    // Instant fallback for logout modal
+    window.openLogoutModal = function() {
+      var m = document.getElementById('logoutModal');
+      if (m) {
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+        m.style.display = 'flex';
+      }
+    };
+    window.closeLogoutModal = function() {
+      var m = document.getElementById('logoutModal');
+      if (m) {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+        m.style.display = 'none';
+      }
+    };
+    window.handleConfirmLogout = function() {
+      try {
+        localStorage.removeItem('nelys_token');
+        localStorage.removeItem('nelys_user');
+        sessionStorage.clear();
+      } catch(e) {}
+      window.location.href = '../login.html';
+    };
+    window.confirmLogout = window.handleConfirmLogout;
+
       try {
         var token = localStorage.getItem('nelys_token');
         var userJson = localStorage.getItem('nelys_user');
@@ -46,6 +73,7 @@
       }
     })();
   </script>
+  <script defer src="../assets/js/pages/admin/reports.js?v=4.0"></script>
 </head>
 
 <body
@@ -103,9 +131,10 @@
   </div>
 
                 <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+        <!-- ================= SIDEBAR (DESKTOP + MOBILE DRAWER) ================= -->
   <aside 
     id="sidebar"
-    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
+    class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen lg:self-start shrink-0">
 
     <!-- Sidebar Header (Branding) -->
     <div class="p-6 border-b border-[#810B38]/40">
@@ -117,7 +146,7 @@
             class="w-12 h-12 rounded-full border-2 border-[#DCC3AA] object-cover shadow-lg">
           <div>
             <h1 class="font-serif text-xl font-bold tracking-widest text-[#F1E2D1] uppercase leading-none">
-              Nely’s Salon
+              Nely's Salon
             </h1>
             <p class="text-[11px] tracking-[0.2em] uppercase text-[#DCC3AA] font-semibold mt-1">
               Admin Panel
@@ -151,6 +180,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Dashboard</span>
+        
       </a>
 
       <!-- Appointments -->
@@ -159,6 +189,7 @@
         <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Appointments</span>
         <span id="sidebarAppointmentsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1] hidden">0</span>
+        
       </a>
 
       <!-- Customers -->
@@ -166,6 +197,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-users w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Customers</span>
+        
       </a>
 
       <!-- Services -->
@@ -173,6 +205,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Services</span>
+        
       </a>
 
       <!-- Staff -->
@@ -180,6 +213,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-user-tie w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Staff</span>
+        
       </a>
 
       <!-- Payments -->
@@ -187,12 +221,13 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-credit-card w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Payments</span>
+        
       </a>
 
-      <!-- Reports (Active) -->
+      <!-- Reports -->
       <a href="reports.html"
-        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
-        <i class="fa-solid fa-chart-line w-5 text-center text-[#DCC3AA]"></i>
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all group">
+        <i class="fa-solid fa-chart-line w-5 text-center text-[#DCC3AA]  transition-transform"></i>
         <span>Reports</span>
         <span class="ml-auto w-1.5 h-1.5 rounded-full bg-[#DCC3AA]"></span>
       </a>
@@ -203,6 +238,7 @@
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
         <span id="sidebarNotificationsBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1] hidden">0</span>
+        
       </a>
 
       <!-- Messages -->
@@ -211,6 +247,7 @@
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
         <span id="sidebarMessagesBadge" class="ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-[#F1E2D1] hidden">0</span>
+        
       </a>
 
       <!-- Settings -->
@@ -218,6 +255,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-gear w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Settings</span>
+        
       </a>
     </nav>
 
@@ -225,8 +263,8 @@
     <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
       <button 
         type="button" 
-        onclick="openLogoutModal()" 
-        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+        onclick="openLogoutModal()"
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group cursor-pointer">
         <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
         <span>Log Out</span>
       </button>
@@ -302,13 +340,10 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statTotalRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#810B38]">₱0</h3>
+          <h3 id="statTotalRevenue" class="font-serif text-3xl sm:text-4xl font-bold text-[#810B38]">—</h3>
           <span class="text-xs font-bold text-stone-400">Selected period</span>
         </div>
-        <p id="statRevenueGrowth" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
-          <i class="fa-solid fa-arrow-trend-up text-emerald-600 text-[10px]"></i>
-          <span class="text-emerald-600 font-semibold">+0%</span> from previous period
-        </p>
+        <p id="statRevenueGrowth" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5"></p>
       </article>
 
       <!-- Card 2: Total Appointments -->
@@ -320,13 +355,10 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statTotalAppointments" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">0</h3>
+          <h3 id="statTotalAppointments" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">—</h3>
           <span class="text-xs font-bold text-stone-400">Total visits</span>
         </div>
-        <p id="statAppointmentGrowth" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
-          <i class="fa-solid fa-arrow-trend-up text-emerald-600 text-[10px]"></i>
-          <span class="text-emerald-600 font-semibold">+0%</span> from previous period
-        </p>
+        <p id="statAppointmentGrowth" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5"></p>
       </article>
 
       <!-- Card 3: Total Customers -->
@@ -338,13 +370,10 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statTotalCustomers" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">0</h3>
+          <h3 id="statTotalCustomers" class="font-serif text-3xl sm:text-4xl font-bold text-[#541A1A]">—</h3>
           <span class="text-xs font-bold text-stone-400">Registered</span>
         </div>
-        <p id="statNewCustomers" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
-          <i class="fa-solid fa-user-plus text-amber-600 text-[10px]"></i>
-          <span class="text-amber-700 font-semibold">0 new</span> customers
-        </p>
+        <p id="statNewCustomers" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5"></p>
       </article>
 
       <!-- Card 4: Completed Services -->
@@ -356,7 +385,7 @@
           </div>
         </div>
         <div class="flex items-baseline justify-between">
-          <h3 id="statCompletedServices" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">0</h3>
+          <h3 id="statCompletedServices" class="font-serif text-3xl sm:text-4xl font-bold text-emerald-700">—</h3>
           <span id="statCompletionRateBadge" class="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">0%</span>
         </div>
         <p id="statCompletionRate" class="text-xs text-[#735e5e] mt-2 font-medium flex items-center gap-1.5">
@@ -402,11 +431,11 @@
             </div>
             <div>
               <span class="text-stone-400 block text-[10px] uppercase font-bold">Average Daily Revenue</span>
-              <span id="chartRevenueAverage" class="font-serif text-lg font-bold text-[#541A1A]">₱0</span>
+              <span id="chartRevenueAverage" class="font-bold text-stone-700">—</span>
             </div>
             <div class="text-right">
               <span class="text-stone-400 block text-[10px] uppercase font-bold">Highest Day</span>
-              <span id="chartRevenueHighest" class="font-serif text-base font-bold text-emerald-700">—</span>
+              <span id="chartRevenueHighest" class="font-bold text-stone-700">—</span>
             </div>
           </div>
         </section>
@@ -543,19 +572,19 @@
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-5">
               <div class="p-2.5 bg-[#FAF6F0] rounded-xl border border-[#DCC3AA]/50 text-center">
                 <span class="text-[10px] text-stone-500 block uppercase font-bold">Total</span>
-                <span id="custStatTotal" class="font-serif text-xl font-bold text-[#541A1A]">0</span>
+                <span id="custStatTotal" class="font-serif text-xl font-bold text-[#541A1A]">—</span>
               </div>
               <div class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
                 <span class="text-[10px] text-emerald-700 block uppercase font-bold">New</span>
-                <span id="custStatNew" class="font-serif text-xl font-bold text-emerald-800">0</span>
+                <span id="custStatNew" class="font-serif text-xl font-bold text-emerald-700">—</span>
               </div>
               <div class="p-2.5 bg-amber-50 rounded-xl border border-amber-200 text-center">
                 <span class="text-[10px] text-amber-700 block uppercase font-bold">Returning</span>
-                <span id="custStatReturning" class="font-serif text-xl font-bold text-amber-800">0</span>
+                <span id="custStatReturning" class="font-serif text-xl font-bold text-blue-700">—</span>
               </div>
               <div class="p-2.5 bg-stone-100 rounded-xl border border-stone-200 text-center">
                 <span class="text-[10px] text-stone-500 block uppercase font-bold">Inactive</span>
-                <span id="custStatInactive" class="font-serif text-xl font-bold text-stone-600">0</span>
+                <span id="custStatInactive" class="font-serif text-xl font-bold text-stone-500">—</span>
               </div>
             </div>
 
@@ -723,38 +752,41 @@
     </div>
   </div>
 
-  <!-- ================= LOGOUT MODAL ================= -->
+              <!-- ================= LOGOUT CONFIRMATION MODAL ================= -->
   <div 
     id="logoutModal" 
-    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4">
-    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-sm w-full p-6 text-center animate-fadeIn">
-      <div class="w-14 h-14 rounded-2xl bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA] flex items-center justify-center mx-auto mb-4 text-xl">
+    style="z-index: 99999;"
+    onclick="if(event.target === this) closeLogoutModal();"
+    class="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="logoutModalTitle">
+    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-sm w-full shadow-2xl p-6 text-center space-y-4 relative" onclick="event.stopPropagation();">
+      <div class="w-14 h-14 rounded-2xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center mx-auto text-xl shadow-xs">
         <i class="fa-solid fa-arrow-right-from-bracket"></i>
       </div>
-      <h3 class="font-serif text-lg font-bold text-[#541A1A]">Sign Out of Admin?</h3>
-      <p class="text-xs text-stone-500 mt-1 leading-relaxed">
-        Are you sure you want to log out of your administrative session at Nely’s Salon?
-      </p>
-
-      <div class="flex items-center justify-center gap-3 mt-6">
+      <div>
+        <h3 id="logoutModalTitle" class="font-serif text-lg font-bold text-[#541A1A]">Confirm Logout</h3>
+        <p class="text-xs text-stone-500 mt-1">Are you sure you want to end your administrative session?</p>
+      </div>
+      <div class="flex items-center justify-center gap-3 pt-2">
         <button 
           type="button" 
           onclick="closeLogoutModal()"
-          class="flex-1 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+          class="w-full py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors cursor-pointer">
           Cancel
         </button>
         <button 
           type="button" 
           onclick="handleConfirmLogout()"
-          class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
+          class="w-full py-2.5 rounded-xl bg-[#810B38] hover:bg-rose-900 text-white text-xs font-semibold transition-colors shadow-sm cursor-pointer">
           Logout
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Reports Page JavaScript Controller -->
-  <script src="../assets/js/pages/admin/reports.js?v=2.0"></script>
+  <!-- Reports Page JavaScript Controller (Deferred in Head) -->
 
   <!-- Toast Container -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>

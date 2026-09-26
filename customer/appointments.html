@@ -22,6 +22,34 @@
 
   <!-- Compiled Tailwind CSS -->
   <link rel="stylesheet" href="../assets/css/output.css">
+
+  <!-- Instant Synchronous Auth Guard & 0ms Pre-Hydrator -->
+  <script>
+    (function() {
+      try {
+        var token = localStorage.getItem('nelys_token');
+        var userJson = localStorage.getItem('nelys_user');
+        if (!token || !userJson) {
+          window.location.replace('../login.html');
+          return;
+        }
+        var user = JSON.parse(userJson);
+        if (user.role === 'admin') {
+          window.location.replace('../admin/dashboard.html');
+          return;
+        }
+        var cached = localStorage.getItem('nelys_customer_appointments_cache');
+        if (cached) {
+          window.__PRELOADED_CUSTOMER_APPTS__ = JSON.parse(cached);
+        }
+      } catch (e) {
+        window.location.replace('../login.html');
+      }
+    })();
+  </script>
+
+  <!-- Defer Page Script for zero blocking and instant execution -->
+  <script defer src="../assets/js/pages/customer/appointments.js?v=2.2"></script>
 </head>
 
 <body
@@ -73,6 +101,7 @@
 
   <!-- ================= DESKTOP & MOBILE SIDEBAR ================= -->
     <!-- ================= 1. SIDEBAR NAVIGATION ================= -->
+          <!-- ================= SIDEBAR (DESKTOP + MOBILE DRAWER) ================= -->
   <aside 
     id="sidebar"
     class="fixed top-0 bottom-0 left-0 z-50 w-72 bg-gradient-to-b from-[#541A1A] via-[#5c1b1b] to-[#401212] text-[#F1E2D1] flex flex-col justify-between border-r border-[#810B38]/30 shadow-2xl transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:transition-none lg:sticky lg:top-0 lg:h-screen shrink-0">
@@ -120,7 +149,7 @@
         --
       </div>
       <div class="min-w-0 flex-1">
-        <span id="customerSidebarName" class="block text-sm font-semibold text-[#F1E2D1] truncate">Client Patron</span>
+        <span id="customerSidebarName" class="block text-sm font-semibold text-[#F1E2D1] truncate"></span>
         <span class="inline-flex items-center gap-1.5 text-[11px] text-[#DCC3AA]">
           <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
           Verified Client
@@ -135,6 +164,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-house w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Dashboard</span>
+        
       </a>
 
       <!-- Book Appointment -->
@@ -142,14 +172,16 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-calendar-plus w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Book Appointment</span>
+        
       </a>
 
-      <!-- My Appointments (Active) -->
+      <!-- My Appointments -->
       <a href="appointments.html"
-        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all">
-        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA]"></i>
+        class="flex items-center gap-3.5 px-4 py-3 rounded-xl bg-[#810B38] text-white font-semibold text-sm shadow-md transition-all group">
+        <i class="fa-solid fa-calendar-days w-5 text-center text-[#DCC3AA]  transition-transform"></i>
         <span>My Appointments</span>
         <span id="sidebarAppointmentsBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        <span class="ml-auto w-1.5 h-1.5 rounded-full bg-[#DCC3AA]"></span>
       </a>
 
       <!-- Services & Prices -->
@@ -157,6 +189,7 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-scissors w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Services & Prices</span>
+        
       </a>
 
       <!-- Messages -->
@@ -165,6 +198,7 @@
         <i class="fa-solid fa-comments w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Messages</span>
         <span id="sidebarMessagesBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        
       </a>
 
       <!-- Notifications -->
@@ -173,6 +207,7 @@
         <i class="fa-solid fa-bell w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>Notifications</span>
         <span id="sidebarNotificationsBadge" class="hidden ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#DCC3AA] text-[#541A1A]">0</span>
+        
       </a>
 
       <!-- My Profile -->
@@ -180,17 +215,19 @@
         class="flex items-center gap-3.5 px-4 py-3 rounded-xl text-[#F1E2D1] hover:bg-[#810B38]/40 hover:text-white font-medium text-sm transition-all group">
         <i class="fa-solid fa-user w-5 text-center text-[#DCC3AA] group-hover:scale-110 transition-transform"></i>
         <span>My Profile</span>
+        
       </a>
     </nav>
 
     <!-- Sidebar Footer / Logout -->
     <div class="p-4 border-t border-[#810B38]/40 bg-[#401212]/60">
-      <a 
-        href="../login.html"
-        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group">
+      <button 
+        type="button" 
+        onclick="openLogoutModal()" 
+        class="flex items-center justify-center gap-2.5 w-full px-4 py-2.5 rounded-xl bg-white/5 hover:bg-[#810B38] text-[#F1E2D1] hover:text-white font-semibold text-xs transition-colors group cursor-pointer">
         <i class="fa-solid fa-right-from-bracket text-[#DCC3AA] group-hover:text-white transition-colors"></i>
         <span>Log Out</span>
-      </a>
+      </button>
 
       <p class="text-[10px] text-center text-[#DCC3AA]/60 mt-3 font-medium">
         15 Years of Beauty Heritage · Lagro, QC
@@ -243,7 +280,7 @@
           class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#810B38] bg-[#810B38] text-white shadow-sm focus:outline-none">
           <span>Upcoming</span>
           <span id="count-upcoming"
-            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA] bg-[#DCC3AA] text-[#541A1A] min-w-[20px] text-center inline-block">0</span>
+            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA] bg-[#DCC3AA] text-[#541A1A] min-w-[20px] text-center inline-block">—</span>
         </button>
 
         <!-- Tab 2: Pending -->
@@ -251,7 +288,7 @@
           class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
           <span>Pending</span>
           <span id="count-pending"
-            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">0</span>
+            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">—</span>
         </button>
 
         <!-- Tab 3: Completed -->
@@ -259,7 +296,7 @@
           class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
           <span>Completed</span>
           <span id="count-completed"
-            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">0</span>
+            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">—</span>
         </button>
 
         <!-- Tab 4: Cancelled -->
@@ -267,7 +304,7 @@
           class="tab-btn px-4 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-colors duration-150 flex items-center gap-2 shrink-0 select-none border border-[#DCC3AA]/60 bg-white/80 hover:bg-[#FAF6F0] text-[#541A1A] shadow-sm focus:outline-none">
           <span>Cancelled</span>
           <span id="count-cancelled"
-            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">0</span>
+            class="tab-counter px-2 py-0.5 rounded-full text-[10px] font-bold border border-[#DCC3AA]/60 bg-[#FAF6F0] text-[#735e5e] min-w-[20px] text-center inline-block">—</span>
         </button>
 
       </div>
@@ -706,30 +743,35 @@
     </div>
   </dialog>
 
+  <!-- ================= MODAL: LOGOUT CONFIRMATION ================= -->
+  <dialog id="logoutModal"
+    class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d] max-w-sm w-full backdrop:bg-black/50 backdrop:backdrop-blur-sm overscroll-contain">
+    <div class="p-6 sm:p-7 space-y-5 text-center">
+      <div
+        class="w-12 h-12 rounded-2xl bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-xl border border-[#DCC3AA] mx-auto">
+        <i class="fa-solid fa-door-open"></i>
+      </div>
+
+      <div class="space-y-1">
+        <h4 class="font-serif text-2xl font-bold text-[#541A1A]">Are you sure you want to log out?</h4>
+        <p class="text-xs text-[#735e5e]">You will need to sign in again to access your appointments and salon features.</p>
+      </div>
+
+      <div class="flex items-center gap-3 pt-2">
+        <button type="button" onclick="closeLogoutModal()"
+          class="flex-1 py-3 rounded-xl bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-colors">
+          Cancel
+        </button>
+        <button type="button" onclick="confirmLogout()"
+          class="flex-1 py-3 rounded-xl bg-[#541A1A] hover:bg-[#810B38] text-white text-xs font-bold transition-colors shadow-md">
+          Logout
+        </button>
+      </div>
+    </div>
+  </dialog>
+
   <!-- ================= TOAST CONTAINER ================= -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
-
-  <!-- Page JavaScript -->
-  <script src="../assets/js/pages/customer/appointments.js?v=1.0.1"></script>
-  <script>
-    // Immediate fallback hydration from localStorage
-    (function() {
-      try {
-        const saved = localStorage.getItem('nelys_user');
-        if (saved) {
-          const user = JSON.parse(saved);
-          const name = user.full_name || user.name || (user.email ? user.email.split('@')[0] : 'Client Patron');
-          const el = document.getElementById('customerSidebarName');
-          if (el) el.textContent = name;
-          const av = document.getElementById('customerAvatarInitials');
-          if (av) {
-            const inits = name.split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
-            if (inits) av.textContent = inits;
-          }
-        }
-      } catch(e) {}
-    })();
-  </script>
 </body>
 
 </html>

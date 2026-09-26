@@ -1362,17 +1362,9 @@ function toggleMobileSidebar(open = null) {
   }
 }
 
-// Logout Modal
-function openLogoutModal() {
-  const modal = document.getElementById('logoutModal');
-  if (modal) modal.showModal();
-}
 
 function handleLogout() {
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
-  localStorage.removeItem(APPOINTMENTS_CACHE_KEY);
-  window.location.replace('../login.html');
+  handleConfirmLogout();
 }
 
 // Global Toast System
@@ -1423,3 +1415,44 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+
+window.handleConfirmLogout = handleConfirmLogout;
+window.handleLogout = handleLogout;
+
+// ================= STANDARDIZED ADMIN LOGOUT HANDLERS =================
+function openLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    modal.style.display = 'flex';
+  }
+}
+
+function closeLogoutModal() {
+  const modal = document.getElementById('logoutModal');
+  if (modal) {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    modal.style.display = 'none';
+  }
+}
+
+function handleConfirmLogout() {
+  try {
+    localStorage.removeItem('nelys_token');
+    localStorage.removeItem('nelys_user');
+    sessionStorage.clear();
+  } catch(e) {}
+  window.location.href = '../login.html';
+}
+
+function confirmLogout() {
+  handleConfirmLogout();
+}
+
+window.openLogoutModal = openLogoutModal;
+window.closeLogoutModal = closeLogoutModal;
+window.handleConfirmLogout = handleConfirmLogout;
+window.confirmLogout = confirmLogout;

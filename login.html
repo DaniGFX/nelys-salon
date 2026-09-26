@@ -23,10 +23,18 @@
   <main class="flex-1 min-h-screen grid grid-cols-1 lg:grid-cols-12">
     
     <!-- ================= LEFT SIDE — BRANDING (WEBSITE / DESKTOP VIEW ONLY) ================= -->
-    <div class="hidden lg:flex lg:col-span-5 bg-gradient-to-br from-[#541A1A] via-[#6e1335] to-[#810B38] text-white lg:p-12 xl:p-14 flex-col justify-between relative overflow-hidden">
+    <div class="hidden lg:flex lg:col-span-5 text-white lg:p-12 xl:p-14 flex-col justify-between relative overflow-hidden bg-[#541A1A]">
       
-      <!-- Subtle Decorative Background Pattern -->
-      <div class="absolute inset-0 opacity-10 bg-[radial-gradient(#DCC3AA_1px,transparent_1px)] [background-size:20px_20px]"></div>
+      <!-- Background Cover Image -->
+      <img 
+        src="assets/images/login-signup-form.png" 
+        alt="Nely's Salon" 
+        class="absolute inset-0 w-full h-full object-cover object-center"
+      >
+
+      <!-- Brand Gradient & Tint Overlay for Contrast & Aesthetics -->
+      <div class="absolute inset-0 bg-gradient-to-br from-[#541A1A]/92 via-[#6e1335]/85 to-[#810B38]/92"></div>
+      
       
       <!-- Top Branding Bar -->
       <div class="relative z-10">
