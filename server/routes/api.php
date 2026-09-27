@@ -242,6 +242,8 @@ class Router {
                         $msgCtrl->clear();
                     } elseif (($id === 'read' || $id === 'mark-read' || $id === 'read-all') && ($method === 'POST' || $method === 'PUT' || $method === 'PATCH')) {
                         $msgCtrl->markRead();
+                    } elseif ($id === 'stream' && $method === 'GET') {
+                        $msgCtrl->stream();
                     } elseif ($id === 'unread-count' && $method === 'GET') {
                         $msgCtrl->unreadCount();
                     } elseif (is_numeric($id) && $method === 'DELETE') {

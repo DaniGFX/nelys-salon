@@ -17,6 +17,7 @@ let totalUnreadCount = 0;
 
 // Real-time synchronization state
 let adminPollTimer = null;
+let adminEventSource = null;
 let lastRenderedAdminHash = '';
 
 function initMessages() {
@@ -31,13 +32,14 @@ function initMessages() {
   setupEventListeners();
   fetchConversationsData();
   fetchSidebarStats();
+  initAdminSSE();
   startAdminRealtimePolling();
 }
 
 function startAdminRealtimePolling() {
   stopAdminRealtimePolling();
-  // 1.2s interval while active for instantaneous real-time sync without page reload
-  const interval = document.hidden ? 4000 : 1200;
+  // With SSE active, fallback polling runs gently every 15s (or 30s when hidden)
+  const interval = document.hidden ? 30000 : 15000;
   adminPollTimer = setInterval(() => {
     fetchConversationsData(true);
     fetchSidebarStats();
@@ -48,6 +50,39 @@ function stopAdminRealtimePolling() {
   if (adminPollTimer) {
     clearInterval(adminPollTimer);
     adminPollTimer = null;
+  }
+}
+
+function initAdminSSE() {
+  const token = localStorage.getItem('nelys_token') || sessionStorage.getItem('nelys_token');
+  if (!token || !window.EventSource) return;
+
+  if (adminEventSource) {
+    try { adminEventSource.close(); } catch (_) {}
+    adminEventSource = null;
+  }
+
+  try {
+    const sseUrl = `../api/messages/stream?token=${encodeURIComponent(token)}`;
+    adminEventSource = new EventSource(sseUrl);
+
+    adminEventSource.addEventListener('update', (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload && (Array.isArray(payload.conversations) || payload.unread_total !== undefined)) {
+          fetchConversationsData(true);
+          fetchSidebarStats();
+        }
+      } catch (e) {
+        console.warn('Admin SSE update parse error:', e);
+      }
+    });
+
+    adminEventSource.onerror = () => {
+      // EventSource auto-reconnects natively
+    };
+  } catch (err) {
+    console.warn('Admin SSE connection error, fallback polling active:', err);
   }
 }
 

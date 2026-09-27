@@ -31,6 +31,7 @@ let messageToDeleteId = null;
 
 // Real-time synchronization state
 let customerPollTimer = null;
+let customerEventSource = null;
 let searchQuery = '';
 
 // Immediate 0ms Hydration
@@ -79,13 +80,14 @@ function initCustomerMessagesPage() {
   loadAppointmentContext();
   loadNotificationBadges();
   setupDialogBackdropClicks();
+  initCustomerSSE();
   startCustomerRealtimePolling();
 }
 
 function startCustomerRealtimePolling() {
   stopCustomerRealtimePolling();
-  // 1.2s interval while active for instantaneous real-time sync without page reload
-  const interval = document.hidden ? 4000 : 1200;
+  // With SSE active, fallback polling runs gently every 15s (or 30s when hidden)
+  const interval = document.hidden ? 30000 : 15000;
   customerPollTimer = setInterval(() => {
     loadCustomerChatData();
   }, interval);
@@ -95,6 +97,38 @@ function stopCustomerRealtimePolling() {
   if (customerPollTimer) {
     clearInterval(customerPollTimer);
     customerPollTimer = null;
+  }
+}
+
+function initCustomerSSE() {
+  const token = localStorage.getItem('nelys_token') || sessionStorage.getItem('nelys_token');
+  if (!token || !window.EventSource) return;
+
+  if (customerEventSource) {
+    try { customerEventSource.close(); } catch (_) {}
+    customerEventSource = null;
+  }
+
+  try {
+    const sseUrl = `../api/messages/stream?token=${encodeURIComponent(token)}`;
+    customerEventSource = new EventSource(sseUrl);
+
+    customerEventSource.addEventListener('update', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data && Array.isArray(data.messages)) {
+          applyCustomerMessagesData(data.messages);
+        }
+      } catch (e) {
+        console.warn('Customer SSE update parse error:', e);
+      }
+    });
+
+    customerEventSource.onerror = () => {
+      // EventSource automatically handles reconnection
+    };
+  } catch (err) {
+    console.warn('Customer SSE connection error, fallback polling active:', err);
   }
 }
 
@@ -181,7 +215,6 @@ function getStorageKey() {
 // 3. Load Chat Data from Backend API (with LocalStorage cache fallback)
 async function loadCustomerChatData() {
   const token = localStorage.getItem('nelys_token');
-  const key = getStorageKey();
 
   // If user is logged in, fetch authoritative chat stream from backend with cache-busting
   if (token) {
@@ -197,23 +230,7 @@ async function loadCustomerChatData() {
       if (res.ok) {
         const json = await res.json();
         if ((json.success || json.status === 'success') && Array.isArray(json.data)) {
-          const newHash = JSON.stringify(json.data);
-          if (newHash !== lastRendered_cust_messages_Hash || customerChatData.messages.length === 0) {
-            lastRendered_cust_messages_Hash = newHash;
-            const prevCount = customerChatData.messages.length;
-            if (json.data.length > 0) {
-              customerChatData.messages = json.data.map(mapBackendMessage);
-              isEmptyState = false;
-            } else {
-              customerChatData.messages = [];
-              isEmptyState = true;
-            }
-            saveCustomerChatData();
-            renderChatStream();
-            if (customerChatData.messages.length > prevCount || prevCount === 0) {
-              scrollChatToBottom(true);
-            }
-          }
+          applyCustomerMessagesData(json.data);
           return;
         }
       }
@@ -221,6 +238,28 @@ async function loadCustomerChatData() {
       console.warn('Backend messages API unreachable, continuing with cached chat:', err);
     }
   }
+}
+
+function applyCustomerMessagesData(rawData) {
+  if (!Array.isArray(rawData)) return;
+  const newHash = JSON.stringify(rawData);
+  if (newHash !== lastRendered_cust_messages_Hash || customerChatData.messages.length === 0) {
+    lastRendered_cust_messages_Hash = newHash;
+    const prevCount = customerChatData.messages.length;
+    if (rawData.length > 0) {
+      customerChatData.messages = rawData.map(mapBackendMessage);
+      isEmptyState = false;
+    } else {
+      customerChatData.messages = [];
+      isEmptyState = true;
+    }
+    saveCustomerChatData();
+    renderChatStream();
+    if (customerChatData.messages.length > prevCount || prevCount === 0) {
+      scrollChatToBottom(true);
+    }
+  }
+}
 
   // If no backend data and no cache, keep clean empty state
   if (customerChatData.messages.length === 0) {

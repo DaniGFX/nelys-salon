@@ -301,4 +301,119 @@ class MessageController {
             Response::success(['unread_count' => 0]);
         }
     }
+
+    /**
+     * Real-time Server-Sent Events (SSE) Stream endpoint
+     * GET /api/messages/stream?token=<jwt>&conversation_id=<targetUserId>
+     */
+    public function stream(): void {
+        try {
+            $user = AuthMiddleware::check();
+            $role = strtolower(trim($user['role'] ?? ''));
+            $userId = (int)($user['id'] ?? 0);
+
+            // Turn off all output buffering so events flush immediately
+            while (ob_get_level() > 0) {
+                ob_end_flush();
+            }
+
+            // SSE headers
+            header('Content-Type: text/event-stream');
+            header('Cache-Control: no-cache, no-transform');
+            header('Connection: keep-alive');
+            header('X-Accel-Buffering: no');
+
+            // Prevent PHP script timeout
+            set_time_limit(35);
+            ignore_user_abort(false);
+
+            // Send initial connection event
+            echo "event: connected\n";
+            echo "data: " . json_encode(['status' => 'connected', 'role' => $role, 'user_id' => $userId]) . "\n\n";
+            if (ob_get_level() > 0) ob_flush();
+            flush();
+
+            $lastHash = '';
+            $startTime = time();
+            $maxDuration = 25; // Hold open for 25s max, then browser EventSource auto-reconnects
+
+            while ((time() - $startTime) < $maxDuration) {
+                if (connection_aborted()) {
+                    break;
+                }
+
+                try {
+                    if ($role === 'admin') {
+                        // Admin stream: monitor all conversations
+                        $conversations = Message::getAdminConversations();
+                        $unreadTotal = Message::getAdminUnreadCount();
+                        $freshHash = md5(json_encode([
+                            'convs' => array_map(function($c) {
+                                return [
+                                    'id'     => $c['id'] ?? '',
+                                    'count'  => count($c['messages'] ?? []),
+                                    'last'   => !empty($c['messages']) ? end($c['messages'])['id'] : 0,
+                                    'unread' => $c['unreadCount'] ?? 0
+                                ];
+                            }, $conversations),
+                            'unread' => $unreadTotal
+                        ]));
+
+                        if ($freshHash !== $lastHash) {
+                            $lastHash = $freshHash;
+                            echo "event: update\n";
+                            echo "data: " . json_encode([
+                                'conversations' => $conversations,
+                                'unread_total'  => $unreadTotal
+                            ]) . "\n\n";
+                        }
+                    } else {
+                        // Customer stream: monitor their own chat
+                        $messages = Message::findByUser($userId);
+                        $unreadCount = Message::getUnreadCount($userId);
+                        $freshHash = md5(json_encode([
+                            'count'  => count($messages),
+                            'last'   => !empty($messages) ? end($messages)['id'] : 0,
+                            'unread' => $unreadCount
+                        ]));
+
+                        if ($freshHash !== $lastHash) {
+                            $lastHash = $freshHash;
+                            echo "event: update\n";
+                            echo "data: " . json_encode([
+                                'messages'     => $messages,
+                                'unread_count' => $unreadCount
+                            ]) . "\n\n";
+                        }
+                    }
+                } catch (Throwable $e) {
+                    error_log('SSE Stream Loop Error: ' . $e->getMessage());
+                }
+
+                // Flush out buffer to client immediately
+                if (ob_get_level() > 0) ob_flush();
+                flush();
+
+                // Send heartbeat ping every 8s to prevent proxy timeouts
+                if ((time() - $startTime) % 8 === 0) {
+                    echo ": ping\n\n";
+                    if (ob_get_level() > 0) ob_flush();
+                    flush();
+                }
+
+                // Sleep 1 second between checks
+                sleep(1);
+            }
+
+            // Close cleanly; EventSource client will reconnect automatically
+            echo "event: reconnect\n";
+            echo "data: {\"reconnect\":true}\n\n";
+            if (ob_get_level() > 0) ob_flush();
+            flush();
+            exit;
+        } catch (Throwable $e) {
+            error_log('MessageController::stream Error: ' . $e->getMessage());
+            exit;
+        }
+    }
 }

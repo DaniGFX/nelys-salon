@@ -49,6 +49,14 @@ class AuthMiddleware {
             }
         }
 
+        // 3. Check query parameter token (used for EventSource SSE connections)
+        if (!empty($_GET['token'])) {
+            $decoded = self::validateToken(trim($_GET['token']));
+            if ($decoded) {
+                return $decoded;
+            }
+        }
+
         return null;
     }
 
