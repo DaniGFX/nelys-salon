@@ -14,6 +14,7 @@ require_once dirname(__DIR__) . '/models/Payment.php';
 require_once dirname(__DIR__) . '/models/Sale.php';
 require_once dirname(__DIR__) . '/services/BookingReferenceService.php';
 require_once dirname(__DIR__) . '/services/NotificationService.php';
+require_once dirname(__DIR__) . '/models/Notification.php';
 require_once dirname(__DIR__) . '/models/User.php';
 require_once dirname(__DIR__) . '/models/CustomerProfile.php';
 require_once dirname(__DIR__) . '/middleware/AuthMiddleware.php';
@@ -144,88 +145,105 @@ class BookingController {
         ]);
 
         // Create alert notification for customer
-        NotificationService::create(
-            $customerId,
-            'Booking Received',
-            "Your appointment for {$service['name']} on {$bookingDate} at {$bookingTime} has been registered.",
-            $bookingId
-        );
+        try {
+            NotificationService::create(
+                $customerId,
+                'Booking Received',
+                "Your appointment for {$service['name']} on {$bookingDate} at {$bookingTime} has been registered.",
+                $bookingId
+            );
+        } catch (Throwable $notifErr) {
+            error_log('[Nely\'s Salon] NotificationService error: ' . $notifErr->getMessage());
+        }
 
         // Also create notification entry for admin panel
-        $isRebook = !empty($input['notes']) && str_contains(strtolower($input['notes']), 're-book');
-        Notification::create([
-            'user_id'    => $customerId,
-            'booking_id' => $bookingId,
-            'category'   => 'appointments',
-            'title'      => $isRebook ? 'Appointment Re-booked' : 'New Appointment Booked',
-            'message'    => "Appointment Ref: {$referenceNo} for {$service['name']} on {$bookingDate} at {$bookingTime} requires review/confirmation.",
-            'action_url' => 'admin-appointments.html',
-            'channel'    => 'email',
-            'status'     => 'sent'
-        ]);
+        try {
+            $isRebook = !empty($input['notes']) && str_contains(strtolower($input['notes']), 're-book');
+            Notification::create([
+                'user_id'    => $customerId,
+                'booking_id' => $bookingId,
+                'category'   => 'appointments',
+                'title'      => $isRebook ? 'Appointment Re-booked' : 'New Appointment Booked',
+                'message'    => "Appointment Ref: {$referenceNo} for {$service['name']} on {$bookingDate} at {$bookingTime} requires review/confirmation.",
+                'action_url' => 'admin-appointments.html',
+                'channel'    => 'email',
+                'status'     => 'sent'
+            ]);
+        } catch (Throwable $notifErr) {
+            error_log('[Nely\'s Salon] Notification::create error: ' . $notifErr->getMessage());
+        }
 
         $booking = Booking::findById($bookingId);
         Response::success($booking, 'Appointment booked successfully.', 201);
     }
 
     public function index(): void {
-        $auth = AuthMiddleware::checkOptional();
+        try {
+            $auth = AuthMiddleware::checkOptional();
 
-        if ($auth && ($auth['role'] ?? '') === 'admin') {
-            $filters = [
-                'status' => $_GET['status'] ?? null,
-                'date'   => $_GET['date'] ?? null,
-                'search' => $_GET['search'] ?? null,
-            ];
-            $bookings = Booking::all($filters);
+            if ($auth && ($auth['role'] ?? '') === 'admin') {
+                $filters = [
+                    'status' => $_GET['status'] ?? null,
+                    'date'   => $_GET['date'] ?? null,
+                    'search' => $_GET['search'] ?? null,
+                ];
+                $bookings = Booking::all($filters);
 
-            // Summary metrics
-            $pdo = Database::getConnection();
-            $today = date('Y-m-d');
-            $summary = [
-                'today'     => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE booking_date = '$today'")->fetchColumn(),
-                'pending'   => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'pending'")->fetchColumn(),
-                'confirmed' => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'confirmed'")->fetchColumn(),
-                'completed' => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'completed'")->fetchColumn(),
-                'cancelled' => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status IN ('cancelled', 'no_show')")->fetchColumn(),
-                'total'     => (int)$pdo->query("SELECT COUNT(*) FROM bookings")->fetchColumn(),
-            ];
-
-            // Services & Staff lists for dropdown filters & modal selects
-            $services = Service::all(true);
-            $staff = $pdo->query("SELECT id, name, role FROM staff WHERE is_active = 1 ORDER BY name ASC")->fetchAll();
-            $customers = $pdo->query("
-                SELECT u.id as user_id, u.email, u.phone, cp.full_name 
-                FROM users u 
-                LEFT JOIN customer_profiles cp ON u.id = cp.user_id 
-                WHERE u.role = 'customer' 
-                ORDER BY cp.full_name ASC, u.email ASC
-            ")->fetchAll();
-
-            Response::success([
-                'bookings'  => $bookings,
-                'summary'   => $summary,
-                'services'  => $services,
-                'staff'     => $staff,
-                'customers' => $customers,
-            ]);
-        } else {
-            $customerId = $auth ? (int)$auth['id'] : null;
-            if (!$customerId) {
-                if (session_status() === PHP_SESSION_NONE) {
-                    session_start();
-                }
-                if (!empty($_SESSION['user_id'])) {
-                    $customerId = (int)$_SESSION['user_id'];
-                }
-            }
-            if (!$customerId) {
+                // Summary metrics
                 $pdo = Database::getConnection();
-                $demoId = $pdo->query("SELECT id FROM users WHERE role = 'customer' ORDER BY id ASC LIMIT 1")->fetchColumn();
-                $customerId = $demoId ? (int)$demoId : 0;
+                $today = date('Y-m-d');
+                $summary = [
+                    'today'     => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE booking_date = '$today'")->fetchColumn(),
+                    'pending'   => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'pending'")->fetchColumn(),
+                    'confirmed' => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'confirmed'")->fetchColumn(),
+                    'completed' => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'completed'")->fetchColumn(),
+                    'cancelled' => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status IN ('cancelled', 'no_show')")->fetchColumn(),
+                    'total'     => (int)$pdo->query("SELECT COUNT(*) FROM bookings")->fetchColumn(),
+                ];
+
+                // Services & Staff lists for dropdown filters & modal selects
+                $services = Service::all(true);
+                $staff = $pdo->query("SELECT id, name, role FROM staff WHERE is_active = 1 ORDER BY name ASC")->fetchAll();
+                $customers = $pdo->query("
+                    SELECT u.id as user_id, u.email, u.phone, cp.full_name 
+                    FROM users u 
+                    LEFT JOIN customer_profiles cp ON u.id = cp.user_id 
+                    WHERE u.role = 'customer' 
+                    ORDER BY cp.full_name ASC, u.email ASC
+                ")->fetchAll();
+
+                Response::success([
+                    'bookings'  => $bookings,
+                    'summary'   => $summary,
+                    'services'  => $services,
+                    'staff'     => $staff,
+                    'customers' => $customers,
+                ]);
+            } else {
+                $customerId = $auth ? (int)$auth['id'] : null;
+                if (!$customerId) {
+                    if (session_status() === PHP_SESSION_NONE) {
+                        session_start();
+                    }
+                    if (!empty($_SESSION['user_id'])) {
+                        $customerId = (int)$_SESSION['user_id'];
+                    }
+                }
+                if (!$customerId) {
+                    try {
+                        $pdo = Database::getConnection();
+                        $demoId = $pdo->query("SELECT id FROM users WHERE role = 'customer' ORDER BY id ASC LIMIT 1")->fetchColumn();
+                        $customerId = $demoId ? (int)$demoId : 0;
+                    } catch (Throwable $e) {
+                        $customerId = 0;
+                    }
+                }
+                $bookings = $customerId > 0 ? Booking::findByCustomer($customerId, $_GET['status'] ?? null) : [];
+                Response::success($bookings);
             }
-            $bookings = Booking::findByCustomer($customerId, $_GET['status'] ?? null);
-            Response::success($bookings);
+        } catch (Throwable $e) {
+            error_log('[Nely\'s Salon] BookingController::index Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            Response::success([]);
         }
     }
 

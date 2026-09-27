@@ -274,4 +274,159 @@ class CustomerController {
         CustomerProfile::delete($id);
         Response::success([], 'Customer account deleted successfully.');
     }
+
+    /**
+     * Alias for create
+     */
+    public function store(): void {
+        $this->create();
+    }
+
+    /**
+     * Add admin note to customer profile
+     * POST /api/customers/{id}/notes
+     */
+    public function addNote(int $id): void {
+        RoleMiddleware::requireAdmin();
+
+        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $noteText = trim($input['note'] ?? $input['text'] ?? '');
+        if (empty($noteText)) {
+            Response::badRequest('Note content cannot be empty.');
+            return;
+        }
+
+        $profile = CustomerProfile::findByUserId($id);
+        if (!$profile) {
+            Response::notFound('Customer record not found.');
+            return;
+        }
+
+        $notesList = [];
+        if (!empty($profile['notes'])) {
+            $decoded = json_decode($profile['notes'], true);
+            if (is_array($decoded)) {
+                $notesList = $decoded;
+            } else {
+                $notesList[] = [
+                    'id' => 'n_' . $id . '_1',
+                    'text' => $profile['notes'],
+                    'date' => date('M d, Y'),
+                    'author' => 'Admin'
+                ];
+            }
+        }
+
+        array_unshift($notesList, [
+            'id' => 'n_' . time(),
+            'text' => $noteText,
+            'date' => date('M d, Y'),
+            'author' => 'Admin'
+        ]);
+
+        CustomerProfile::update($id, ['notes' => json_encode($notesList)]);
+        Response::success(['notes' => $notesList], 'Customer note added successfully.');
+    }
+
+    /**
+     * Get authenticated customer's own profile
+     * GET /api/customers/profile
+     */
+    public function getProfile(): void {
+        $auth = AuthMiddleware::check();
+        $userId = (int)($auth['id'] ?? 0);
+        if ($userId <= 0) {
+            Response::unauthorized('Authentication required.');
+            return;
+        }
+
+        $profile = CustomerProfile::findByUserId($userId);
+        if (!$profile) {
+            $user = User::findById($userId);
+            if (!$user) {
+                Response::notFound('User record not found.');
+                return;
+            }
+            $name = explode('@', $user['email'] ?? 'Customer')[0];
+            CustomerProfile::create(
+                $userId,
+                $name,
+                null,
+                null,
+                'Female',
+                null,
+                'Active',
+                'Quezon City'
+            );
+            $profile = CustomerProfile::findByUserId($userId);
+        }
+
+        if (!$profile) {
+            Response::serverError('Unable to load customer profile.');
+            return;
+        }
+
+        // Return profile payload with backward-compatible aliases
+        $profile['name'] = $profile['full_name'] ?? '';
+        $profile['address'] = $profile['home_address'] ?? '';
+
+        Response::success($profile, 'Profile retrieved successfully.');
+    }
+
+    /**
+     * Update authenticated customer's own profile
+     * PUT /api/customers/profile
+     */
+    public function updateProfile(): void {
+        $auth = AuthMiddleware::check();
+        $userId = (int)($auth['id'] ?? 0);
+        if ($userId <= 0) {
+            Response::unauthorized('Authentication required.');
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = $_POST;
+        }
+        $input = Sanitizer::cleanArray($input);
+
+        $profile = CustomerProfile::findByUserId($userId);
+        $fullName = trim($input['full_name'] ?? $input['name'] ?? ($profile['full_name'] ?? ''));
+        $phone = !empty($input['phone']) ? Sanitizer::cleanPhone($input['phone']) : ($profile['phone'] ?? null);
+        $address = trim($input['home_address'] ?? $input['address'] ?? ($profile['home_address'] ?? ''));
+        $city = trim($input['city'] ?? ($profile['city'] ?? 'Quezon City'));
+        $dob = !empty($input['dob']) ? $input['dob'] : ($profile['dob'] ?? null);
+        $gender = !empty($input['gender']) ? $input['gender'] : ($profile['gender'] ?? 'Female');
+
+        // Check unique phone if changed
+        if ($phone) {
+            $existingPhone = User::findByPhone($phone);
+            if ($existingPhone && (int)$existingPhone['id'] !== $userId) {
+                Response::error('This phone number is already registered to another account.', 422);
+                return;
+            }
+            User::update($userId, ['phone' => $phone]);
+        }
+
+        // Create or update customer profile
+        CustomerProfile::create(
+            $userId,
+            $fullName,
+            $address,
+            $dob,
+            $gender,
+            $profile['notes'] ?? null,
+            $profile['status'] ?? 'Active',
+            $city
+        );
+
+        $updated = CustomerProfile::findByUserId($userId);
+        if ($updated) {
+            $updated['name'] = $updated['full_name'] ?? '';
+            $updated['address'] = $updated['home_address'] ?? '';
+        }
+
+        Response::success($updated, 'Profile updated successfully.');
+    }
 }

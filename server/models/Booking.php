@@ -47,8 +47,8 @@ class Booking {
                    st.name as staff_name,
                    p.payment_method, COALESCE(p.status, 'unpaid') as payment_status, p.reference_number as payment_ref
             FROM bookings b
-            JOIN services s ON b.service_id = s.id
-            JOIN users u ON b.customer_id = u.id
+            LEFT JOIN services s ON b.service_id = s.id
+            LEFT JOIN users u ON b.customer_id = u.id
             LEFT JOIN customer_profiles cp ON u.id = cp.user_id
             LEFT JOIN staff st ON b.staff_id = st.id
             LEFT JOIN payments p ON b.id = p.booking_id
@@ -66,8 +66,8 @@ class Booking {
                    COALESCE(cp.full_name, u.email, 'Valued Client') as customer_name, u.phone as customer_phone,
                    p.payment_method, COALESCE(p.status, 'unpaid') as payment_status
             FROM bookings b
-            JOIN services s ON b.service_id = s.id
-            JOIN users u ON b.customer_id = u.id
+            LEFT JOIN services s ON b.service_id = s.id
+            LEFT JOIN users u ON b.customer_id = u.id
             LEFT JOIN customer_profiles cp ON u.id = cp.user_id
             LEFT JOIN payments p ON b.id = p.booking_id
             WHERE b.reference_no = :ref
@@ -84,8 +84,8 @@ class Booking {
                    COALESCE(cp.full_name, u.email, 'Valued Client') as customer_name, u.phone as customer_phone,
                    st.name as staff_name, COALESCE(p.status, 'unpaid') as payment_status, p.payment_method
             FROM bookings b
-            JOIN services s ON b.service_id = s.id
-            JOIN users u ON b.customer_id = u.id
+            LEFT JOIN services s ON b.service_id = s.id
+            LEFT JOIN users u ON b.customer_id = u.id
             LEFT JOIN customer_profiles cp ON u.id = cp.user_id
             LEFT JOIN staff st ON b.staff_id = st.id
             LEFT JOIN payments p ON b.id = p.booking_id
@@ -116,8 +116,8 @@ class Booking {
                    COALESCE(p.status, 'unpaid') as payment_status, 
                    p.payment_method
             FROM bookings b
-            JOIN services s ON b.service_id = s.id
-            JOIN users u ON b.customer_id = u.id
+            LEFT JOIN services s ON b.service_id = s.id
+            LEFT JOIN users u ON b.customer_id = u.id
             LEFT JOIN customer_profiles cp ON u.id = cp.user_id
             LEFT JOIN staff st ON b.staff_id = st.id
             LEFT JOIN payments p ON b.id = p.booking_id
