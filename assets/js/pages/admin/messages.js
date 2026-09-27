@@ -1185,6 +1185,7 @@ function renderMessageStream(conv) {
           </div>
         </div>
       `;
+    }
   });
 
   const isCurrentTyping = conv && (
