@@ -253,23 +253,48 @@ class Message {
         self::checkAndTrigger10MinBusyReplies();
         $pdo = Database::getConnection();
 
-        // 1. Fetch all customer users with profiles
+        // 1. Fetch all customer users with profiles (and any users with messages or bookings)
         $sql = "
             SELECT 
                 u.id as user_id,
                 u.email,
                 u.phone,
-                u.created_at as user_created_at,
+                COALESCE(u.created_at, NOW()) as user_created_at,
                 cp.full_name,
                 cp.home_address,
                 cp.city,
                 cp.notes
             FROM users u
             LEFT JOIN customer_profiles cp ON u.id = cp.user_id
-            WHERE u.role = 'customer'
+            WHERE (u.role != 'admin' AND u.role IS NOT NULL)
+               OR u.id IN (SELECT DISTINCT user_id FROM messages WHERE user_id > 0)
+               OR u.id IN (SELECT DISTINCT customer_id FROM bookings WHERE customer_id > 0)
             ORDER BY u.id ASC
         ";
         $customers = $pdo->query($sql)->fetchAll();
+
+        // Also ensure any message user_id without a users record is included
+        $existingUserIds = array_map('intval', array_column($customers, 'user_id'));
+        try {
+            $orphanMsgStmt = $pdo->query("SELECT DISTINCT user_id, sender_name FROM messages WHERE user_id > 0");
+            $orphanRows = $orphanMsgStmt->fetchAll();
+            foreach ($orphanRows as $or) {
+                $ouid = (int)$or['user_id'];
+                if (!in_array($ouid, $existingUserIds, true)) {
+                    $customers[] = [
+                        'user_id'         => $ouid,
+                        'email'           => '',
+                        'phone'           => '',
+                        'user_created_at' => date('Y-m-d H:i:s'),
+                        'full_name'       => $or['sender_name'] ?: ('Client #' . $ouid),
+                        'home_address'    => '',
+                        'city'            => 'Lagro, Quezon City',
+                        'notes'           => ''
+                    ];
+                    $existingUserIds[] = $ouid;
+                }
+            }
+        } catch (Throwable $e) {}
 
         $conversations = [];
 

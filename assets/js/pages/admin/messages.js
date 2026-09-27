@@ -167,32 +167,28 @@ async function fetchConversationsData(silent = false) {
         newConversations = json.data;
       }
 
-      const newHash = JSON.stringify(newConversations);
-      if (newHash !== lastRenderedAdminHash || conversationsData.length === 0) {
-        lastRenderedAdminHash = newHash;
-        conversationsData = newConversations;
+      conversationsData = newConversations;
 
-        if (json.data.unread_total !== undefined) {
-          totalUnreadCount = json.data.unread_total;
-        } else {
-          totalUnreadCount = conversationsData.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
-        }
-
-        // Update unread badge in column header & sidebar
-        updateUnreadBadges();
-
-        // Select first conversation if none selected
-        if (conversationsData.length > 0) {
-          if (!currentConversationId || !conversationsData.some(c => c.id == currentConversationId)) {
-            currentConversationId = conversationsData[0].id;
-          }
-        } else {
-          currentConversationId = null;
-        }
-
-        renderConversationsList();
-        renderActiveConversation();
+      if (json.data.unread_total !== undefined) {
+        totalUnreadCount = json.data.unread_total;
+      } else {
+        totalUnreadCount = conversationsData.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
       }
+
+      // Update unread badge in column header & sidebar
+      updateUnreadBadges();
+
+      // Select first conversation if none selected
+      if (conversationsData.length > 0) {
+        if (!currentConversationId || !conversationsData.some(c => String(c.id) === String(currentConversationId))) {
+          currentConversationId = conversationsData[0].id;
+        }
+      } else {
+        currentConversationId = null;
+      }
+
+      renderConversationsList();
+      renderActiveConversation();
     }
 
   } catch (err) {
@@ -356,13 +352,14 @@ function renderConversationsList() {
 
   const filtered = conversationsData.filter(conv => {
     // Search match
-    const matchesSearch = conv.name.toLowerCase().includes(searchQuery) ||
-      (conv.messages && conv.messages.some(m => (m.text || '').toLowerCase().includes(searchQuery)));
+    const nameStr = (conv.name || 'Customer').toLowerCase();
+    const matchesSearch = !searchQuery || nameStr.includes(searchQuery) ||
+      (Array.isArray(conv.messages) && conv.messages.some(m => (m.text || '').toLowerCase().includes(searchQuery)));
 
     // Filter match
     if (!matchesSearch) return false;
-    if (currentFilter === 'unread') return conv.isUnread;
-    if (currentFilter === 'appointments') return conv.hasAppointment;
+    if (currentFilter === 'unread') return !!conv.isUnread;
+    if (currentFilter === 'appointments') return !!conv.hasAppointment;
     return true;
   });
 
@@ -380,8 +377,8 @@ function renderConversationsList() {
   }
 
   container.innerHTML = filtered.map(conv => {
-    const isActive = conv.id == currentConversationId;
-    const lastMsg = conv.messages && conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
+    const isActive = String(conv.id) === String(currentConversationId);
+    const lastMsg = Array.isArray(conv.messages) && conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
     const previewText = lastMsg 
       ? (lastMsg.sender === 'admin' ? `You: ${lastMsg.text}` : lastMsg.text) 
       : 'No messages yet';
@@ -396,7 +393,7 @@ function renderConversationsList() {
         <!-- Avatar -->
         <div class="relative shrink-0">
           <div class="w-11 h-11 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-sm flex items-center justify-center border border-[#DCC3AA] shadow-sm">
-            ${escapeHtml(conv.avatar)}
+            ${escapeHtml(conv.avatar || 'C')}
           </div>
           ${conv.status === 'online'
         ? '<span class="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white rounded-full"></span>'
@@ -408,7 +405,7 @@ function renderConversationsList() {
         <div class="flex-1 min-w-0">
           <div class="flex items-center justify-between gap-1 mb-1">
             <h4 class="text-sm font-bold text-[#541A1A] truncate flex items-center gap-1.5">
-              <span>${escapeHtml(conv.name)}</span>
+              <span>${escapeHtml(conv.name || 'Customer')}</span>
               ${conv.isMuted ? '<i class="fa-solid fa-bell-slash text-[10px] text-[#735e5e]/60" title="Muted"></i>' : ''}
             </h4>
             <span class="text-[11px] font-semibold text-[#735e5e]/70 shrink-0">${escapeHtml(conv.lastTime || '')}</span>
