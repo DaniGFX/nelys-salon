@@ -431,7 +431,7 @@ function applyCustomerMessagesData(payload) {
     saveCustomerChatData();
     renderChatStream();
     if (customerChatData.messages.length > prevCount || prevCount === 0) {
-      scrollChatToBottom(true);
+      scrollChatToBottom(false);
     }
 
     // Automatically mark incoming salon messages as read when viewing chat
@@ -1016,10 +1016,11 @@ function renderAttachmentBubble(attachment, isCustomer) {
 function scrollChatToBottom(smooth = false) {
   const container = document.getElementById('customerChatStream');
   if (container) {
-    container.scrollTo({
-      top: container.scrollHeight,
-      behavior: smooth ? 'smooth' : 'auto'
-    });
+    if (smooth) {
+      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
+    } else {
+      container.scrollTop = container.scrollHeight;
+    }
   }
 }
 
@@ -1072,7 +1073,7 @@ async function handleSendMessage(e) {
   clearAttachedFile();
   lastRendered_cust_messages_Hash = '';
   renderChatStream();
-  scrollChatToBottom(true);
+  scrollChatToBottom(false);
 
   // Post message to live Backend API
   if (token) {

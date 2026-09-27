@@ -520,6 +520,7 @@ class MessageController {
             $lastHash = '';
             $lastTypingStatus = false;
             $startTime = time();
+            $lastPingTime = time();
             $maxDuration = 25; // Hold open for 25s max, then browser EventSource auto-reconnects
 
             while ((time() - $startTime) < $maxDuration) {
@@ -607,14 +608,15 @@ class MessageController {
                 flush();
 
                 // Send heartbeat ping every 8s to prevent proxy timeouts
-                if ((time() - $startTime) % 8 === 0) {
+                if ((time() - $lastPingTime) >= 8) {
+                    $lastPingTime = time();
                     echo ": ping\n\n";
                     if (ob_get_level() > 0) ob_flush();
                     flush();
                 }
 
-                // Sleep 1 second between checks
-                sleep(1);
+                // Ultra-low latency polling loop: checks every 50ms for near-instant real-time updates
+                usleep(50000);
             }
 
             // Close cleanly; EventSource client will reconnect automatically

@@ -187,7 +187,8 @@ function initAdminSSE() {
       try {
         const payload = JSON.parse(event.data);
         if (payload && (Array.isArray(payload.conversations) || payload.unread_total !== undefined)) {
-          fetchConversationsData(true);
+          // Zero-delay instantaneous render directly from SSE event payload
+          applyAdminConversationsPayload(payload, true);
           fetchSidebarStats();
         }
       } catch (e) {
@@ -390,135 +391,149 @@ async function fetchConversationsData(silent = false) {
         }
       }
 
-      // Calculate composite signature to detect any new incoming/outgoing chats or unread changes
-      const newHash = JSON.stringify({
-        search: searchQuery,
-        filter: currentFilter,
-        currentId: String(currentConversationId || ''),
-        convs: newConversations.map(c => ({
-          id: String(c.id),
-          unread: c.unreadCount,
-          lastTime: c.lastTime,
-          msgsCount: (c.messages || []).length,
-          lastMsgId: (c.messages && c.messages.length) ? c.messages[c.messages.length - 1].id : null,
-          lastMsgText: (c.messages && c.messages.length) ? c.messages[c.messages.length - 1].text : '',
-          status: c.status
-        }))
-      });
-
-      // If silent polling and data hasn't changed at all, avoid touching the DOM
-      if (silent && newHash === lastRenderedAdminHash && conversationsData.length > 0) {
-        return;
-      }
-
-      const prevActiveConv = conversationsData.find(c => String(c.id) === String(currentConversationId));
-      const prevMsgCount = prevActiveConv && prevActiveConv.messages ? prevActiveConv.messages.length : 0;
-      const isInitialRender = (lastRenderedAdminHash === '' || conversationsData.length === 0);
-
-      // Check for newly arrived customer messages across all conversations
-      if (lastSeenAdminMessageId > 0) {
-        let latestNewMsg = null;
-        let matchedConv = null;
-
-        newConversations.forEach(c => {
-          (c.messages || []).forEach(m => {
-            if (m.sender === 'customer' && m.id > lastSeenAdminMessageId) {
-              if (!latestNewMsg || m.id > latestNewMsg.id) {
-                latestNewMsg = m;
-                matchedConv = c;
-              }
-            }
-          });
-        });
-
-        if (latestNewMsg && matchedConv) {
-          playMessageNotificationSound();
-          const senderName = matchedConv.name || 'Customer';
-          showBrowserNotification(senderName, latestNewMsg.text || 'Sent an attachment', () => selectConversation(matchedConv.id));
-          if (document.hidden) {
-            startTabTitleFlash(senderName);
-          } else if (String(currentConversationId) !== String(matchedConv.id)) {
-            showToast(`New message from ${senderName}: "${latestNewMsg.text || 'Sent an attachment'}"`, 'info');
-          }
-        }
-      }
-
-      // Update max seen customer message ID
-      newConversations.forEach(c => {
-        (c.messages || []).forEach(m => {
-          if (m.id > lastSeenAdminMessageId) {
-            lastSeenAdminMessageId = m.id;
-          }
-        });
-      });
-
-      // Preserve prepended older messages for any conversation currently active
-      newConversations.forEach(nc => {
-        const existing = conversationsData.find(c => String(c.id) === String(nc.id));
-        if (existing && existing.messages && existing.messages.length > (nc.messages || []).length) {
-          const newIds = new Set((nc.messages || []).map(m => m.id));
-          const prepended = existing.messages.filter(m => !newIds.has(m.id));
-          nc.messages = [...prepended, ...(nc.messages || [])];
-          nc.has_more = existing.has_more;
-          nc.oldest_id = existing.oldest_id;
-        }
-      });
-
-      lastRenderedAdminHash = newHash;
-      conversationsData = newConversations;
-
-      if (json.data.unread_total !== undefined) {
-        totalUnreadCount = json.data.unread_total;
-      } else {
-        totalUnreadCount = conversationsData.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
-      }
-
-      // Save to cache for instant 0ms pre-hydration
-      try {
-        localStorage.setItem(MESSAGES_CACHE_KEY, JSON.stringify({
-          conversations: conversationsData,
-          unread_total: totalUnreadCount
-        }));
-      } catch (e) {}
-
-      // Update unread badge in column header & sidebar
-      updateUnreadBadges();
-
-      // Prioritize URL user_id if present, else active conversation, else first conversation
-      if (urlUserId && conversationsData.some(c => String(c.id) === String(urlUserId))) {
-        currentConversationId = String(urlUserId);
-      } else if (conversationsData.length > 0) {
-        if (!currentConversationId || !conversationsData.some(c => String(c.id) === String(currentConversationId))) {
-          currentConversationId = conversationsData[0].id;
-        }
-      } else {
-        currentConversationId = null;
-      }
-
-      renderConversationsList();
-      renderActiveConversation();
-
-      const newActiveConv = conversationsData.find(c => String(c.id) === String(currentConversationId));
-      const newMsgCount = newActiveConv && newActiveConv.messages ? newActiveConv.messages.length : 0;
-
-      // If new messages arrived in the active conversation, or initial load, auto scroll smoothly to bottom
-      if (newMsgCount > prevMsgCount || isInitialRender) {
-        const stream = document.getElementById('messagesStream');
-        if (stream) {
-          stream.scrollTo({
-            top: stream.scrollHeight,
-            behavior: isInitialRender ? 'auto' : 'smooth'
-          });
-        }
-      }
+      applyAdminConversationsPayload(json.data, silent, newConversations);
     }
-
   } catch (err) {
     console.error('Error fetching conversations from backend:', err);
-    // If no cached conversations were loaded, ensure clean empty UI renders
     if (conversationsData.length === 0) {
       renderConversationsList();
       renderActiveConversation();
+    }
+  }
+}
+
+// ================= ZERO-LATENCY SYNCHRONOUS CONVERSATIONS RENDERER =================
+function applyAdminConversationsPayload(data, silent = false, customConversations = null) {
+  if (!data) return;
+
+  let newConversations = customConversations || [];
+  if (!customConversations) {
+    if (Array.isArray(data.conversations)) {
+      newConversations = data.conversations;
+    } else if (Array.isArray(data)) {
+      newConversations = data;
+    }
+  }
+
+  // Calculate composite signature to detect any new incoming/outgoing chats or unread changes
+  const newHash = JSON.stringify({
+    search: searchQuery,
+    filter: currentFilter,
+    currentId: String(currentConversationId || ''),
+    convs: newConversations.map(c => ({
+      id: String(c.id),
+      unread: c.unreadCount,
+      lastTime: c.lastTime,
+      msgsCount: (c.messages || []).length,
+      lastMsgId: (c.messages && c.messages.length) ? c.messages[c.messages.length - 1].id : null,
+      lastMsgText: (c.messages && c.messages.length) ? c.messages[c.messages.length - 1].text : '',
+      status: c.status
+    }))
+  });
+
+  // If silent polling and data hasn't changed at all, avoid touching the DOM
+  if (silent && newHash === lastRenderedAdminHash && conversationsData.length > 0) {
+    return;
+  }
+
+  const prevActiveConv = conversationsData.find(c => String(c.id) === String(currentConversationId));
+  const prevMsgCount = prevActiveConv && prevActiveConv.messages ? prevActiveConv.messages.length : 0;
+  const isInitialRender = (lastRenderedAdminHash === '' || conversationsData.length === 0);
+
+  // Check for newly arrived customer messages across all conversations
+  if (lastSeenAdminMessageId > 0) {
+    let latestNewMsg = null;
+    let matchedConv = null;
+
+    newConversations.forEach(c => {
+      (c.messages || []).forEach(m => {
+        if (m.sender === 'customer' && m.id > lastSeenAdminMessageId) {
+          if (!latestNewMsg || m.id > latestNewMsg.id) {
+            latestNewMsg = m;
+            matchedConv = c;
+          }
+        }
+      });
+    });
+
+    if (latestNewMsg && matchedConv) {
+      playMessageNotificationSound();
+      const senderName = matchedConv.name || 'Customer';
+      showBrowserNotification(senderName, latestNewMsg.text || 'Sent an attachment', () => selectConversation(matchedConv.id));
+      if (document.hidden) {
+        startTabTitleFlash(senderName);
+      } else if (String(currentConversationId) !== String(matchedConv.id)) {
+        showToast(`New message from ${senderName}: "${latestNewMsg.text || 'Sent an attachment'}"`, 'info');
+      }
+    }
+  }
+
+  // Update max seen customer message ID
+  newConversations.forEach(c => {
+    (c.messages || []).forEach(m => {
+      if (m.id > lastSeenAdminMessageId) {
+        lastSeenAdminMessageId = m.id;
+      }
+    });
+  });
+
+  // Preserve prepended older messages for any conversation currently active
+  newConversations.forEach(nc => {
+    const existing = conversationsData.find(c => String(c.id) === String(nc.id));
+    if (existing && existing.messages && existing.messages.length > (nc.messages || []).length) {
+      const newIds = new Set((nc.messages || []).map(m => m.id));
+      const prepended = existing.messages.filter(m => !newIds.has(m.id));
+      nc.messages = [...prepended, ...(nc.messages || [])];
+      nc.has_more = existing.has_more;
+      nc.oldest_id = existing.oldest_id;
+    }
+  });
+
+  lastRenderedAdminHash = newHash;
+  conversationsData = newConversations;
+
+  if (data.unread_total !== undefined) {
+    totalUnreadCount = data.unread_total;
+  } else {
+    totalUnreadCount = conversationsData.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+  }
+
+  // Save to cache for instant 0ms pre-hydration
+  try {
+    localStorage.setItem(MESSAGES_CACHE_KEY, JSON.stringify({
+      conversations: conversationsData,
+      unread_total: totalUnreadCount
+    }));
+  } catch (e) {}
+
+  // Update unread badge in column header & sidebar
+  updateUnreadBadges();
+
+  const urlParams = new URLSearchParams(window.location.search);
+  const urlUserId = urlParams.get('user_id');
+
+  // Prioritize URL user_id if present, else active conversation, else first conversation
+  if (urlUserId && conversationsData.some(c => String(c.id) === String(urlUserId))) {
+    currentConversationId = String(urlUserId);
+  } else if (conversationsData.length > 0) {
+    if (!currentConversationId || !conversationsData.some(c => String(c.id) === String(currentConversationId))) {
+      currentConversationId = conversationsData[0].id;
+    }
+  } else {
+    currentConversationId = null;
+  }
+
+  renderConversationsList();
+  renderActiveConversation();
+
+  const newActiveConv = conversationsData.find(c => String(c.id) === String(currentConversationId));
+  const newMsgCount = newActiveConv && newActiveConv.messages ? newActiveConv.messages.length : 0;
+
+  // Instantaneous 0ms scroll to bottom on new message or initial load
+  if (newMsgCount > prevMsgCount || isInitialRender) {
+    const stream = document.getElementById('messagesStream');
+    if (stream) {
+      stream.scrollTop = stream.scrollHeight;
     }
   }
 }
@@ -1421,7 +1436,7 @@ async function sendMessage() {
   renderConversationsList();
 
   const stream = document.getElementById('messagesStream');
-  if (stream) stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
+  if (stream) stream.scrollTop = stream.scrollHeight;
 
   try {
     const res = await fetch('../api/messages', {
