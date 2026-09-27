@@ -679,15 +679,15 @@ function renderAppointmentsTable() {
           </span>
         </td>
 
-        <!-- 7. Receipt -->
-        <td class="py-4 px-4 whitespace-nowrap">
+        <!-- 7. Receipt (Paperclip Icon) -->
+        <td class="py-4 px-4 whitespace-nowrap text-center">
           <button 
             type="button" 
             onclick="openViewDetailsModal(${appt.id})"
-            title="View Receipt for ${escapeHtml(appt.displayId)}"
-            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FAF6F0] hover:bg-[#DCC3AA]/40 text-[#810B38] border border-[#DCC3AA] font-mono text-[11px] font-bold transition-colors cursor-pointer group/rcpt">
-            <i class="fa-solid fa-receipt text-[10px] text-[#810B38]/80 group-hover/rcpt:scale-110 transition-transform"></i>
-            <span>${escapeHtml(appt.displayId)}</span>
+            title="View Receipt (${escapeHtml(appt.displayId)})"
+            class="w-8 h-8 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#810B38] hover:text-white border border-[#DCC3AA] inline-flex items-center justify-center text-xs transition-colors shadow-2xs cursor-pointer group/rcpt"
+            aria-label="View Receipt for ${escapeHtml(appt.displayId)}">
+            <i class="fa-solid fa-paperclip text-sm group-hover/rcpt:rotate-45 transition-transform"></i>
           </button>
         </td>
 
@@ -900,6 +900,11 @@ function openViewDetailsModal(id) {
   const modal = document.getElementById('appointmentDetailsModal');
   if (!modal) return;
 
+  const refEl = document.getElementById('detailRefNumber');
+  if (refEl) refEl.textContent = appt.displayId;
+  const refCodeEl = document.getElementById('detailRefCode');
+  if (refCodeEl) refCodeEl.textContent = appt.displayId;
+
   document.getElementById('detailCustomerName').textContent = appt.customer;
   document.getElementById('detailCustomerPhone').textContent = appt.phone;
   document.getElementById('detailDateTime').textContent = `${appt.dateFormatted} at ${appt.time}`;
@@ -934,6 +939,75 @@ function openViewDetailsModal(id) {
 function closeViewDetailsModal() {
   const modal = document.getElementById('appointmentDetailsModal');
   if (modal) modal.close();
+}
+
+function printAppointmentReceipt() {
+  const appt = appointmentsData.find(a => a.id === currentActionAppointmentId);
+  if (!appt) return;
+
+  const printWindow = window.open('', '_blank', 'width=600,height=700');
+  if (!printWindow) {
+    window.print();
+    return;
+  }
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <title>Receipt - ${appt.displayId}</title>
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 28px; color: #2b1d1d; background: #fff; }
+        .receipt-card { max-width: 440px; margin: 0 auto; border: 1px solid #DCC3AA; padding: 24px; border-radius: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .header { text-align: center; border-bottom: 2px dashed #DCC3AA; padding-bottom: 16px; margin-bottom: 16px; }
+        .salon-title { font-size: 20px; font-weight: 800; color: #541A1A; margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+        .sub { font-size: 11px; color: #735e5e; margin: 4px 0 0; }
+        .ref-box { font-family: monospace; font-size: 13px; font-weight: bold; color: #810B38; background: #FAF6F0; border: 1px solid #DCC3AA; padding: 6px 12px; border-radius: 8px; display: inline-block; margin-top: 10px; }
+        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-size: 12.5px; }
+        .row .lbl { color: #735e5e; font-size: 12px; text-transform: uppercase; font-weight: 600; }
+        .row .val { font-weight: 700; color: #2b1d1d; }
+        .divider { border-top: 1px solid #E8D9CA; margin: 14px 0; }
+        .total-row { display: flex; justify-content: space-between; align-items: center; padding-top: 6px; }
+        .total-lbl { font-size: 14px; font-weight: 800; color: #541A1A; text-transform: uppercase; }
+        .total-val { font-size: 18px; font-weight: 900; color: #810B38; font-family: monospace; }
+        .footer-note { text-align: center; margin-top: 20px; font-size: 11px; color: #735e5e; border-top: 1px dashed #DCC3AA; padding-top: 14px; }
+      </style>
+    </head>
+    <body>
+      <div class="receipt-card">
+        <div class="header">
+          <h1 class="salon-title">Nely's Salon Atelier</h1>
+          <p class="sub">Official Service Receipt & Appointment Record</p>
+          <div class="ref-box">Ref: ${appt.displayId}</div>
+        </div>
+        <div class="row"><span class="lbl">Schedule</span><span class="val">${appt.dateFormatted} at ${appt.time}</span></div>
+        <div class="row"><span class="lbl">Customer</span><span class="val">${appt.customer}</span></div>
+        <div class="row"><span class="lbl">Contact</span><span class="val font-mono">${appt.phone}</span></div>
+        <div class="row"><span class="lbl">Service</span><span class="val">${appt.service}</span></div>
+        <div class="row"><span class="lbl">Stylist</span><span class="val">${appt.staff}</span></div>
+        <div class="row"><span class="lbl">Payment</span><span class="val">${appt.paymentStatus} (${appt.paymentMethod})</span></div>
+        <div class="row"><span class="lbl">Status</span><span class="val">${appt.status.toUpperCase()}</span></div>
+        ${appt.notes ? `<div class="row"><span class="lbl">Notes</span><span class="val" style="font-style:italic;">${appt.notes}</span></div>` : ''}
+        <div class="divider"></div>
+        <div class="total-row">
+          <span class="total-lbl">Total Price</span>
+          <span class="total-val">${appt.priceFormatted}</span>
+        </div>
+        <div class="footer-note">
+          Lagro, Quezon City · Thank you for your patronage!
+        </div>
+      </div>
+      <script>
+        window.onload = function() {
+          window.focus();
+          window.print();
+        };
+      <\/script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
 }
 
 function openEditFromDetails() {
