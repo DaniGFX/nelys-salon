@@ -1381,14 +1381,14 @@ async function handleConfirmDeletion() {
 // ================= SCROLL LOCK PREVENT JITTER ON DIALOGS =================
 function onPreventApptBackgroundWheel(e) {
   const target = e.target;
-  if (!target.closest('dialog[open]')) {
+  if (!target.closest('dialog[open]') && !target.closest('#logoutModal:not(.hidden)')) {
     e.preventDefault();
   }
 }
 
 function onPreventApptBackgroundTouch(e) {
   const target = e.target;
-  if (!target.closest('dialog[open]')) {
+  if (!target.closest('dialog[open]') && !target.closest('#logoutModal:not(.hidden)')) {
     e.preventDefault();
   }
 }
@@ -1396,41 +1396,35 @@ function onPreventApptBackgroundTouch(e) {
 function onPreventApptBackgroundKeys(e) {
   if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' '].includes(e.key)) {
     const target = e.target;
-    if (!target.closest('dialog[open]') || ['input', 'textarea'].includes(target.tagName.toLowerCase())) {
-      if (!target.closest('dialog[open]')) e.preventDefault();
+    if (!target.closest('dialog[open]') && !target.closest('#logoutModal:not(.hidden)')) {
+      if (!['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) {
+        e.preventDefault();
+      }
     }
   }
 }
 
 function lockBodyScroll() {
   if (isApptModalScrollLocked) return;
-  const scrollY = window.scrollY || window.pageYOffset || 0;
-  document.body.style.position = 'fixed';
-  document.body.style.top = `-${scrollY}px`;
-  document.body.style.width = '100%';
-  document.body.style.overflowY = 'scroll';
-  document.body.dataset.savedScrollY = scrollY.toString();
+  isApptModalScrollLocked = true;
+  document.body.classList.add('modal-open');
 
   window.addEventListener('wheel', onPreventApptBackgroundWheel, { passive: false });
   window.addEventListener('touchmove', onPreventApptBackgroundTouch, { passive: false });
   window.addEventListener('keydown', onPreventApptBackgroundKeys, { passive: false });
-  isApptModalScrollLocked = true;
 }
 
 function unlockBodyScroll() {
-  if (!isApptModalScrollLocked) return;
-  const savedScrollY = parseInt(document.body.dataset.savedScrollY || '0', 10);
-  document.body.style.position = '';
-  document.body.style.top = '';
-  document.body.style.width = '';
-  document.body.style.overflowY = '';
-  delete document.body.dataset.savedScrollY;
+  const anyOpen = Array.from(document.querySelectorAll('dialog')).some(d => d.open) ||
+                  document.querySelector('#logoutModal.flex:not(.hidden)');
+  if (anyOpen) return;
+
+  isApptModalScrollLocked = false;
+  document.body.classList.remove('modal-open');
 
   window.removeEventListener('wheel', onPreventApptBackgroundWheel);
   window.removeEventListener('touchmove', onPreventApptBackgroundTouch);
   window.removeEventListener('keydown', onPreventApptBackgroundKeys);
-  isApptModalScrollLocked = false;
-  window.scrollTo(0, savedScrollY);
 }
 
 function setupDialogSteadyListeners() {
@@ -1447,6 +1441,14 @@ function setupDialogSteadyListeners() {
       if (!isInDialog) {
         dlg.close();
       }
+    });
+
+    dlg.addEventListener('close', () => {
+      unlockBodyScroll();
+    });
+
+    dlg.addEventListener('cancel', () => {
+      unlockBodyScroll();
     });
 
     const observer = new MutationObserver(() => {
@@ -1546,6 +1548,7 @@ function openLogoutModal() {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
     modal.style.display = 'flex';
+    lockBodyScroll();
   }
 }
 
@@ -1555,6 +1558,7 @@ function closeLogoutModal() {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
     modal.style.display = 'none';
+    unlockBodyScroll();
   }
 }
 
