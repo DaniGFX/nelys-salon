@@ -178,7 +178,7 @@ function startTabTitleFlash(senderName) {
   stopTabTitleFlash();
   let flash = false;
   titleFlashTimer = setInterval(() => {
-    document.title = flash ? `🔔 New Message from ${senderName}!` : originalPageTitle;
+    document.title = flash ? `[New Message from ${senderName}!]` : originalPageTitle;
     flash = !flash;
   }, 1000);
 }

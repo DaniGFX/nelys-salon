@@ -367,6 +367,125 @@ class MessageController {
     }
 
     /**
+     * Send Broadcast Announcement to All (or Filtered) Customers
+     * POST /api/messages/broadcast
+     */
+    public function broadcast(): void {
+        try {
+            RoleMiddleware::requireAdmin();
+            $user = AuthMiddleware::check();
+
+            $input = json_decode(file_get_contents('php://input'), true);
+            if (!is_array($input)) {
+                $input = $_POST;
+            }
+            $text = trim($input['text'] ?? $input['message'] ?? '');
+            $targetAudience = trim($input['target_audience'] ?? $input['audience'] ?? 'all'); // 'all' or 'with_appointments'
+
+            // Handle file attachments if sent
+            $attachmentName = null;
+            $attachmentUrl = null;
+
+            if (!empty($_FILES['attachment'])) {
+                $uploadResult = FileUpload::saveMessageAttachment($_FILES['attachment']);
+                if ($uploadResult) {
+                    $attachmentName = $uploadResult['name'];
+                    $attachmentUrl = $uploadResult['url'];
+                }
+            } elseif (!empty($input['attachment_url'])) {
+                $attachmentName = $input['attachment_name'] ?? 'attachment';
+                $attachmentUrl = $input['attachment_url'];
+                if (str_starts_with($attachmentUrl, 'data:')) {
+                    $uploadResult = FileUpload::saveBase64Attachment($attachmentUrl, $attachmentName);
+                    if ($uploadResult) {
+                        $attachmentName = $uploadResult['name'];
+                        $attachmentUrl = $uploadResult['url'];
+                    }
+                }
+            }
+
+            if (empty($text) && empty($attachmentUrl)) {
+                Response::badRequest('Broadcast message text or attachment is required.');
+                return;
+            }
+
+            $pdo = Database::getConnection();
+
+            // Query target customer user IDs
+            if ($targetAudience === 'with_appointments') {
+                $stmt = $pdo->query("
+                    SELECT DISTINCT customer_id 
+                    FROM bookings 
+                    WHERE status IN ('pending', 'confirmed') AND customer_id IS NOT NULL AND customer_id > 1
+                ");
+                $userIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            } else {
+                $stmt = $pdo->query("SELECT id FROM users WHERE role != 'admin' AND id > 1");
+                $userIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            }
+
+            if (empty($userIds)) {
+                Response::success([
+                    'status'  => 'ok',
+                    'count'   => 0,
+                    'message' => 'No matching customers found for this broadcast target.'
+                ]);
+                return;
+            }
+
+            $pdo->beginTransaction();
+            $msgStmt = $pdo->prepare("
+                INSERT INTO messages (user_id, sender, sender_name, text, attachment_name, attachment_url, status, created_at)
+                VALUES (:user_id, 'admin', :sender_name, :text, :attachment_name, :attachment_url, 'sent', NOW())
+            ");
+
+            $notifStmt = $pdo->prepare("
+                INSERT INTO notifications (user_id, category, title, message, type, action_link, is_read, created_at)
+                VALUES (:user_id, 'system', 'Salon Announcement', :message, 'info', 'messages.html', 0, NOW())
+            ");
+
+            $count = 0;
+            $snippet = mb_substr($text ?: 'New announcement from Nely\'s Salon', 0, 100);
+
+            foreach ($userIds as $uid) {
+                $uid = (int)$uid;
+                if ($uid <= 1) continue;
+
+                $msgStmt->execute([
+                    ':user_id'         => $uid,
+                    ':sender_name'     => "Nely's Salon",
+                    ':text'            => $text,
+                    ':attachment_name' => $attachmentName,
+                    ':attachment_url'  => $attachmentUrl
+                ]);
+
+                try {
+                    $notifStmt->execute([
+                        ':user_id' => $uid,
+                        ':message' => $snippet
+                    ]);
+                } catch (Throwable $e) {}
+
+                $count++;
+            }
+
+            $pdo->commit();
+
+            Response::success([
+                'status'  => 'ok',
+                'count'   => $count,
+                'message' => "Broadcast successfully sent to {$count} customers."
+            ]);
+        } catch (Throwable $e) {
+            if (isset($pdo) && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            error_log('MessageController::broadcast Error: ' . $e->getMessage());
+            Response::serverError('Failed to send broadcast: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Real-time Server-Sent Events (SSE) Stream endpoint
      * GET /api/messages/stream?token=<jwt>&conversation_id=<targetUserId>
      */

@@ -246,6 +246,8 @@ class Router {
                         $msgCtrl->stream();
                     } elseif ($id === 'typing' && ($method === 'POST' || $method === 'PUT')) {
                         $msgCtrl->typing();
+                    } elseif ($id === 'broadcast' && ($method === 'POST' || $method === 'PUT')) {
+                        $msgCtrl->broadcast();
                     } elseif ($id === 'unread-count' && $method === 'GET') {
                         $msgCtrl->unreadCount();
                     } elseif (is_numeric($id) && $method === 'DELETE') {
