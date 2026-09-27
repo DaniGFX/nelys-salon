@@ -301,6 +301,18 @@ async function fetchConversationsData(silent = false) {
       const prevMsgCount = prevActiveConv && prevActiveConv.messages ? prevActiveConv.messages.length : 0;
       const isInitialRender = (lastRenderedAdminHash === '' || conversationsData.length === 0);
 
+      // Preserve prepended older messages for any conversation currently active
+      newConversations.forEach(nc => {
+        const existing = conversationsData.find(c => String(c.id) === String(nc.id));
+        if (existing && existing.messages && existing.messages.length > (nc.messages || []).length) {
+          const newIds = new Set((nc.messages || []).map(m => m.id));
+          const prepended = existing.messages.filter(m => !newIds.has(m.id));
+          nc.messages = [...prepended, ...(nc.messages || [])];
+          nc.has_more = existing.has_more;
+          nc.oldest_id = existing.oldest_id;
+        }
+      });
+
       lastRenderedAdminHash = newHash;
       conversationsData = newConversations;
 
@@ -845,6 +857,78 @@ function formatMessageTime(d) {
   return `${hours}:${minutes} ${ampm}`;
 }
 
+let isLoadingOlderAdminMessages = false;
+
+async function loadOlderAdminMessages(convId) {
+  if (isLoadingOlderAdminMessages) return;
+  const conv = conversationsData.find(c => String(c.id) === String(convId) || String(c.userId) === String(convId));
+  if (!conv || !conv.oldest_id) return;
+
+  isLoadingOlderAdminMessages = true;
+  const btn = document.getElementById('btnAdminLoadOlder');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i><span>Loading...</span>';
+  }
+
+  try {
+    const res = await fetch(`../api/messages?user_id=${encodeURIComponent(conv.userId || conv.id)}&before_id=${encodeURIComponent(conv.oldest_id)}&limit=50&_t=${Date.now()}`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+      credentials: 'include',
+      cache: 'no-store'
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      const data = json.data || json;
+      const olderMsgs = Array.isArray(data.messages) ? data.messages : (Array.isArray(data) ? data : []);
+
+      conv.has_more = data.has_more ?? false;
+      if (olderMsgs.length > 0) {
+        conv.oldest_id = data.oldest_id ?? olderMsgs[0].id;
+
+        const stream = document.getElementById('messagesStream');
+        const prevScrollHeight = stream ? stream.scrollHeight : 0;
+        const prevScrollTop = stream ? stream.scrollTop : 0;
+
+        // Format older messages
+        const formattedOlder = olderMsgs.map(m => {
+          const d = parseMessageDate(m.created_at);
+          return {
+            id: parseInt(m.id, 10),
+            sender: (m.sender === 'admin' || m.sender === 'salon') ? 'admin' : 'customer',
+            senderName: (m.sender === 'admin' || m.sender === 'salon') ? "Nely's Salon" : (m.sender_name || conv.name || 'Customer'),
+            text: m.text || '',
+            time: m.time || formatMessageTime(d),
+            date: m.date || formatMessageDateHeader(d),
+            created_at: m.created_at || d.toISOString(),
+            status: m.status || 'sent',
+            attachment: m.attachment_name ? { name: m.attachment_name, url: m.attachment_url } : null
+          };
+        });
+
+        conv.messages = [...formattedOlder, ...(conv.messages || [])];
+        lastRenderedAdminHash = '';
+        renderMessageStream(conv);
+
+        // Preserve scroll position so reading view doesn't jump
+        if (stream) {
+          const newScrollHeight = stream.scrollHeight;
+          stream.scrollTop = prevScrollTop + (newScrollHeight - prevScrollHeight);
+        }
+      } else {
+        conv.has_more = false;
+        renderMessageStream(conv);
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to load older messages for admin:', err);
+  } finally {
+    isLoadingOlderAdminMessages = false;
+  }
+}
+
 // Render Message Bubbles in Center Column
 function renderMessageStream(conv) {
   const container = document.getElementById('messagesStream');
@@ -864,6 +948,22 @@ function renderMessageStream(conv) {
   }
 
   let html = '';
+
+  if (conv.has_more) {
+    html += `
+      <div id="adminLoadOlderContainer" class="flex justify-center my-3">
+        <button 
+          type="button" 
+          id="btnAdminLoadOlder" 
+          onclick="loadOlderAdminMessages('${conv.id}')"
+          class="px-4 py-1.5 rounded-full bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#810B38] border border-[#DCC3AA] text-xs font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer hover:shadow-sm">
+          <i class="fa-solid fa-clock-rotate-left text-[11px]"></i>
+          <span>Load earlier messages</span>
+        </button>
+      </div>
+    `;
+  }
+
   let lastDateGroupKey = null;
 
   conv.messages.forEach(msg => {

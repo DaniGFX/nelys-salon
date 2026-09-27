@@ -33,7 +33,15 @@ class MessageController {
             if ($role === 'admin' || !empty($_GET['admin_view'])) {
                 $search = $_GET['search'] ?? '';
                 $filter = $_GET['filter'] ?? 'all';
-                $priorityUserId = !empty($_GET['user_id']) ? (int)$_GET['user_id'] : null;
+                $beforeId = !empty($_GET['before_id']) ? (int)$_GET['before_id'] : null;
+                $limit = !empty($_GET['limit']) ? (int)$_GET['limit'] : 50;
+
+                // If admin is requesting older paginated messages for a specific conversation
+                if ($priorityUserId && $beforeId !== null) {
+                    $paginated = Message::findByUser($priorityUserId, $limit, $beforeId);
+                    Response::success($paginated);
+                    return;
+                }
 
                 $conversations = [];
                 try {
@@ -71,23 +79,30 @@ class MessageController {
                 return;
             }
 
-            // Customer Flow
+            // Customer Flow with cursor pagination
             $userId = (int)($user['id'] ?? 0);
-            $messages = [];
+            $limit = !empty($_GET['limit']) ? (int)$_GET['limit'] : 50;
+            $beforeId = !empty($_GET['before_id']) ? (int)$_GET['before_id'] : null;
+
+            $result = [
+                'messages'  => [],
+                'has_more'  => false,
+                'oldest_id' => null
+            ];
+
             if ($userId > 0) {
                 try {
                     Message::markDeliveredForCustomer($userId);
-                    $messages = Message::findByUser($userId);
-                    if (!empty($messages)) {
+                    $result = Message::findByUser($userId, $limit, $beforeId);
+                    if (!empty($result['messages'])) {
                         Message::markAllReadForUser($userId);
                     }
                 } catch (Throwable $e) {
                     error_log('MessageController::index findByUser Error: ' . $e->getMessage());
-                    $messages = [];
                 }
             }
 
-            Response::success($messages);
+            Response::success($result);
         } catch (Throwable $e) {
             error_log('MessageController::index Error: ' . $e->getMessage());
             Response::success([
@@ -423,7 +438,8 @@ class MessageController {
                     } else {
                         // Customer stream: monitor their own chat
                         try { Message::markDeliveredForCustomer($userId); } catch (Throwable $e) {}
-                        $messages = Message::findByUser($userId);
+                        $chatData = Message::findByUser($userId, 50);
+                        $messages = $chatData['messages'] ?? [];
                         $unreadCount = Message::getUnreadCount($userId);
                         $freshHash = md5(json_encode([
                             'count'  => count($messages),
@@ -437,6 +453,8 @@ class MessageController {
                             echo "event: update\n";
                             echo "data: " . json_encode([
                                 'messages'     => $messages,
+                                'has_more'     => $chatData['has_more'] ?? false,
+                                'oldest_id'    => $chatData['oldest_id'] ?? null,
                                 'unread_count' => $unreadCount
                             ]) . "\n\n";
                         }

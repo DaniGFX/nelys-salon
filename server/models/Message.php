@@ -138,23 +138,51 @@ class Message {
     }
 
     /**
-     * Retrieve conversation stream for a user
+     * Retrieve conversation stream for a user with cursor pagination
      */
-    public static function findByUser(int $userId, int $limit = 100): array {
+    public static function findByUser(int $userId, int $limit = 50, ?int $beforeId = null): array {
         self::ensureSchema();
         self::checkAndTrigger10MinBusyReplies($userId);
 
+        $limit = max(1, min(100, $limit));
+        $fetchCount = $limit + 1;
+
         $pdo = Database::getConnection();
-        $stmt = $pdo->prepare("
-            SELECT * FROM messages 
-            WHERE user_id = :uid 
-            ORDER BY created_at ASC, id ASC 
-            LIMIT :limit
-        ");
+        if ($beforeId !== null && $beforeId > 0) {
+            $stmt = $pdo->prepare("
+                SELECT * FROM messages 
+                WHERE user_id = :uid AND id < :before_id
+                ORDER BY id DESC 
+                LIMIT :fetch_count
+            ");
+            $stmt->bindValue(':before_id', $beforeId, PDO::PARAM_INT);
+        } else {
+            $stmt = $pdo->prepare("
+                SELECT * FROM messages 
+                WHERE user_id = :uid 
+                ORDER BY id DESC 
+                LIMIT :fetch_count
+            ");
+        }
         $stmt->bindValue(':uid', $userId, PDO::PARAM_INT);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':fetch_count', $fetchCount, PDO::PARAM_INT);
         $stmt->execute();
-        return $stmt->fetchAll();
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $hasMore = false;
+        if (count($rows) > $limit) {
+            $hasMore = true;
+            array_pop($rows);
+        }
+
+        // Return chronological order (oldest to newest)
+        $rows = array_reverse($rows);
+
+        return [
+            'messages'  => $rows,
+            'has_more'  => $hasMore,
+            'oldest_id' => !empty($rows) ? (int)$rows[0]['id'] : null
+        ];
     }
 
     /**
@@ -513,6 +541,10 @@ class Message {
                 : mb_substr($fullName, 0, 2);
             $avatar = strtoupper($avatar) ?: 'NS';
 
+            $hasMoreMessages = count($rawMessages) > 50;
+            $slicedRawMessages = $hasMoreMessages ? array_slice($rawMessages, -50) : $rawMessages;
+            $oldestMessageId = !empty($slicedRawMessages) ? (int)$slicedRawMessages[0]['id'] : null;
+
             // Format message list
             $formattedMessages = array_map(function($m) {
                 $timeTs = !empty($m['created_at']) ? strtotime($m['created_at']) : time();
@@ -530,7 +562,7 @@ class Message {
                         'url'  => $m['attachment_url'] ?? null
                     ] : null
                 ];
-            }, $rawMessages);
+            }, $slicedRawMessages);
 
             $conversations[] = [
                 'id'                  => (string)$userId,
@@ -551,6 +583,8 @@ class Message {
                 'upcomingAppointment' => $upcomingAppointment,
                 'history'             => $history,
                 'messages'            => $formattedMessages,
+                'has_more'            => $hasMoreMessages,
+                'oldest_id'           => $oldestMessageId,
             ];
         }
 

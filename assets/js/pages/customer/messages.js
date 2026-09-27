@@ -39,6 +39,11 @@ let isSalonTyping = false;
 let salonTypingDismissTimer = null;
 let customerTypingThrottleTimer = null;
 
+// Pagination State
+let customerHasMore = false;
+let customerOldestId = null;
+let isLoadingOlderMessages = false;
+
 // Immediate 0ms Hydration
 function hydrateCustomerMessagesFromCache() {
   purgeLegacyMockStorage();
@@ -233,7 +238,7 @@ async function loadCustomerChatData() {
   // If user is logged in, fetch authoritative chat stream from backend with cache-busting
   if (token) {
     try {
-      const res = await fetch(`../api/messages?_t=${Date.now()}`, {
+      const res = await fetch(`../api/messages?limit=50&_t=${Date.now()}`, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Accept': 'application/json'
@@ -243,7 +248,7 @@ async function loadCustomerChatData() {
 
       if (res.ok) {
         const json = await res.json();
-        if ((json.success || json.status === 'success') && Array.isArray(json.data)) {
+        if (json.success || json.status === 'success') {
           applyCustomerMessagesData(json.data);
           return;
         }
@@ -254,19 +259,47 @@ async function loadCustomerChatData() {
   }
 }
 
-function applyCustomerMessagesData(rawData) {
-  if (!Array.isArray(rawData)) return;
+function applyCustomerMessagesData(payload) {
+  if (!payload) return;
+  const rawData = Array.isArray(payload) ? payload : (Array.isArray(payload.messages) ? payload.messages : []);
+  if (payload.has_more !== undefined) {
+    customerHasMore = !!payload.has_more;
+  }
+  if (payload.oldest_id !== undefined) {
+    customerOldestId = payload.oldest_id;
+  } else if (rawData.length > 0 && !customerOldestId) {
+    customerOldestId = rawData[0].id;
+  }
+
   const newHash = JSON.stringify(rawData);
   if (newHash !== lastRendered_cust_messages_Hash || customerChatData.messages.length === 0) {
     lastRendered_cust_messages_Hash = newHash;
     const prevCount = customerChatData.messages.length;
+
     if (rawData.length > 0) {
-      customerChatData.messages = rawData.map(mapBackendMessage);
+      if (customerChatData.messages.length > rawData.length) {
+        // Keep previously loaded older pages, merge any new incoming messages
+        const existingIds = new Set(customerChatData.messages.map(m => m.id));
+        const newIncoming = rawData.filter(m => !existingIds.has(m.id)).map(mapBackendMessage);
+        if (newIncoming.length > 0) {
+          customerChatData.messages.push(...newIncoming);
+        }
+        // Update statuses of existing messages (e.g. read receipts)
+        const statusMap = new Map(rawData.map(m => [m.id, m.status]));
+        customerChatData.messages.forEach(m => {
+          if (statusMap.has(m.id)) {
+            m.status = statusMap.get(m.id);
+          }
+        });
+      } else {
+        customerChatData.messages = rawData.map(mapBackendMessage);
+      }
       isEmptyState = false;
     } else {
       customerChatData.messages = [];
       isEmptyState = true;
     }
+
     saveCustomerChatData();
     renderChatStream();
     if (customerChatData.messages.length > prevCount || prevCount === 0) {
@@ -278,6 +311,69 @@ function applyCustomerMessagesData(rawData) {
     if (hasUnread) {
       markCustomerMessagesRead();
     }
+  }
+}
+
+async function loadOlderCustomerMessages() {
+  if (isLoadingOlderMessages || !customerOldestId) return;
+  isLoadingOlderMessages = true;
+
+  const btn = document.getElementById('btnLoadOlderMessages');
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i><span>Loading...</span>';
+  }
+
+  const token = localStorage.getItem('nelys_token') || sessionStorage.getItem('nelys_token');
+  if (!token) {
+    isLoadingOlderMessages = false;
+    return;
+  }
+
+  try {
+    const res = await fetch(`../api/messages?limit=50&before_id=${customerOldestId}&_t=${Date.now()}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Accept': 'application/json'
+      },
+      cache: 'no-store'
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      const data = json.data || json;
+      const olderMsgs = Array.isArray(data.messages) ? data.messages : (Array.isArray(data) ? data : []);
+
+      customerHasMore = data.has_more ?? false;
+      if (olderMsgs.length > 0) {
+        customerOldestId = data.oldest_id ?? olderMsgs[0].id;
+
+        const container = document.getElementById('customerChatStream');
+        const prevScrollHeight = container ? container.scrollHeight : 0;
+        const prevScrollTop = container ? container.scrollTop : 0;
+
+        // Prepend older messages
+        const mappedOlder = olderMsgs.map(mapBackendMessage);
+        customerChatData.messages = [...mappedOlder, ...customerChatData.messages];
+        saveCustomerChatData();
+        lastRendered_cust_messages_Hash = JSON.stringify(customerChatData.messages);
+
+        renderChatStream();
+
+        // Restore scroll position so user doesn't jump
+        if (container) {
+          const newScrollHeight = container.scrollHeight;
+          container.scrollTop = prevScrollTop + (newScrollHeight - prevScrollHeight);
+        }
+      } else {
+        customerHasMore = false;
+        renderChatStream();
+      }
+    }
+  } catch (err) {
+    console.warn('Failed to load older customer messages:', err);
+  } finally {
+    isLoadingOlderMessages = false;
   }
 }
 
@@ -635,6 +731,22 @@ function renderChatStream() {
   }
 
   let html = '';
+
+  if (customerHasMore && !searchQuery) {
+    html += `
+      <div id="loadOlderContainer" class="flex justify-center my-3">
+        <button 
+          type="button" 
+          id="btnLoadOlderMessages" 
+          onclick="loadOlderCustomerMessages()"
+          class="px-4 py-1.5 rounded-full bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#810B38] border border-[#DCC3AA] text-xs font-semibold shadow-xs transition-all flex items-center gap-2 cursor-pointer hover:shadow-sm">
+          <i class="fa-solid fa-clock-rotate-left text-[11px]"></i>
+          <span>Load earlier messages</span>
+        </button>
+      </div>
+    `;
+  }
+
   let lastDateGroupKey = null;
 
   filtered.forEach(msg => {
