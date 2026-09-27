@@ -659,7 +659,7 @@ function updateActiveChatTypingBubble() {
     if (!existing) {
       const bubbleEl = document.createElement('div');
       bubbleEl.id = 'customerTypingIndicator';
-      bubbleEl.className = 'flex items-start gap-2.5 mb-3.5 transition-all duration-300';
+      bubbleEl.className = 'flex items-start gap-2.5 mb-3.5';
       bubbleEl.innerHTML = `
         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xs flex items-center justify-center shrink-0 border border-[#DCC3AA] mt-1 shadow-xs">
           ${escapeHtml(conv.avatar || 'C')}
@@ -667,9 +667,9 @@ function updateActiveChatTypingBubble() {
         <div class="max-w-[78%] sm:max-w-[70%]">
           <div class="text-[11px] font-bold text-[#541A1A] mb-1 pl-1">${escapeHtml(conv.name || 'Customer')}</div>
           <div class="bg-white border border-[#DCC3AA]/70 text-[#2b1d1d] px-4 py-2.5 rounded-2xl rounded-tl-xs shadow-sm flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.3s]"></span>
-            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.15s]"></span>
-            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38]" style="animation: bounce 0.45s infinite; animation-delay: -0.3s;"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38]" style="animation: bounce 0.45s infinite; animation-delay: -0.15s;"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38]" style="animation: bounce 0.45s infinite;"></span>
             <span class="text-xs text-[#735e5e] font-medium ml-1.5">typing...</span>
           </div>
         </div>
@@ -708,7 +708,7 @@ function handleAdminTypingInput() {
   emitAdminTyping(true);
   adminTypingThrottleTimer = setTimeout(() => {
     adminTypingThrottleTimer = null;
-  }, 2000);
+  }, 600);
 }
 
 // Setup Event Listeners
@@ -1200,16 +1200,16 @@ function renderMessageStream(conv) {
 
   if (isCurrentTyping) {
     html += `
-      <div id="customerTypingIndicator" class="flex items-start gap-2.5 mb-3.5 transition-all duration-300">
+      <div id="customerTypingIndicator" class="flex items-start gap-2.5 mb-3.5">
         <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xs flex items-center justify-center shrink-0 border border-[#DCC3AA] mt-1 shadow-xs">
           ${escapeHtml(conv.avatar || 'C')}
         </div>
         <div class="max-w-[78%] sm:max-w-[70%]">
           <div class="text-[11px] font-bold text-[#541A1A] mb-1 pl-1">${escapeHtml(conv.name || 'Customer')}</div>
           <div class="bg-white border border-[#DCC3AA]/70 text-[#2b1d1d] px-4 py-2.5 rounded-2xl rounded-tl-xs shadow-sm flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.3s]"></span>
-            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.15s]"></span>
-            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38]" style="animation: bounce 0.45s infinite; animation-delay: -0.3s;"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38]" style="animation: bounce 0.45s infinite; animation-delay: -0.15s;"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38]" style="animation: bounce 0.45s infinite;"></span>
             <span class="text-xs text-[#735e5e] font-medium ml-1.5">typing...</span>
           </div>
         </div>

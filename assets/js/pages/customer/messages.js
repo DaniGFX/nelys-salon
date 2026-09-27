@@ -547,7 +547,7 @@ function handleCustomerTypingInput() {
   emitCustomerTyping(true);
   customerTypingThrottleTimer = setTimeout(() => {
     customerTypingThrottleTimer = null;
-  }, 2000);
+  }, 600);
 }
 
 function setSalonTypingStatus(isTyping) {
@@ -566,20 +566,20 @@ function setSalonTypingStatus(isTyping) {
     if (!existing) {
       const bubbleEl = document.createElement('div');
       bubbleEl.id = 'salonTypingIndicator';
-      bubbleEl.className = 'flex items-start gap-2.5 sm:gap-3 mb-3.5 transition-all duration-300';
+      bubbleEl.className = 'flex items-start gap-2.5 sm:gap-3 mb-3.5';
       bubbleEl.innerHTML = `
         <div class="w-8 h-8 rounded-full bg-[#541A1A] text-[#F1E2D1] font-bold text-xs flex items-center justify-center border border-[#DCC3AA] shrink-0 mt-1 shadow-xs">
           NS
         </div>
         <div class="bg-white text-[#2b1d1d] border border-[#DCC3AA]/80 px-4 py-2.5 rounded-2xl rounded-tl-xs shadow-sm flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.3s]"></span>
-          <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.15s]"></span>
-          <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-[#810B38]" style="animation: bounce 0.45s infinite; animation-delay: -0.3s;"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-[#810B38]" style="animation: bounce 0.45s infinite; animation-delay: -0.15s;"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-[#810B38]" style="animation: bounce 0.45s infinite;"></span>
           <span class="text-xs text-[#735e5e] font-medium ml-1.5">Nely's Salon is typing...</span>
         </div>
       `;
       container.appendChild(bubbleEl);
-      scrollChatToBottom(true);
+      scrollChatToBottom(false);
     }
     salonTypingDismissTimer = setTimeout(() => {
       setSalonTypingStatus(false);
