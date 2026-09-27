@@ -205,7 +205,7 @@ async function fetchAppointments() {
   if (tbody && appointmentsData.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="7" class="py-12 text-center text-[#735e5e]">
+        <td colspan="8" class="py-12 text-center text-[#735e5e]">
           <div class="inline-flex items-center gap-2 font-semibold">
             <i class="fa-solid fa-spinner fa-spin text-[#810B38]"></i>
             <span>Loading live appointments from database...</span>
@@ -640,10 +640,7 @@ function renderAppointmentsTable() {
               ${escapeHtml(initials)}
             </div>
             <div>
-              <div class="flex items-center gap-2">
-                <span class="font-bold text-xs text-[#541A1A]">${escapeHtml(appt.customer)}</span>
-                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA]/50 font-semibold">${escapeHtml(appt.displayId)}</span>
-              </div>
+              <span class="font-bold text-xs text-[#541A1A] block">${escapeHtml(appt.customer)}</span>
               <span class="text-[11px] text-[#735e5e] block font-mono mt-0.5">${escapeHtml(appt.phone)}</span>
             </div>
           </div>
@@ -682,7 +679,19 @@ function renderAppointmentsTable() {
           </span>
         </td>
 
-        <!-- 7. Action -->
+        <!-- 7. Receipt -->
+        <td class="py-4 px-4 whitespace-nowrap">
+          <button 
+            type="button" 
+            onclick="openViewDetailsModal(${appt.id})"
+            title="View Receipt for ${escapeHtml(appt.displayId)}"
+            class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FAF6F0] hover:bg-[#DCC3AA]/40 text-[#810B38] border border-[#DCC3AA] font-mono text-[11px] font-bold transition-colors cursor-pointer group/rcpt">
+            <i class="fa-solid fa-receipt text-[10px] text-[#810B38]/80 group-hover/rcpt:scale-110 transition-transform"></i>
+            <span>${escapeHtml(appt.displayId)}</span>
+          </button>
+        </td>
+
+        <!-- 8. Action -->
         <td class="py-4 px-4 whitespace-nowrap text-right relative">
           <div class="flex items-center justify-end gap-1.5">
             ${appt.status === 'pending' ? `
