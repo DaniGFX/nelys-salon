@@ -325,6 +325,7 @@ function mapBackendMessage(item) {
     status: item.status || 'sent',
     attachment: item.attachment_name ? {
       name: item.attachment_name,
+      url: item.attachment_url || null,
       dataUrl: item.attachment_url || null
     } : null
   };
@@ -612,7 +613,12 @@ function renderChatStream() {
 function renderAttachmentBubble(attachment, isCustomer) {
   if (!attachment) return '';
 
-  const isImg = attachment.dataUrl && (attachment.dataUrl.startsWith('data:image') || attachment.dataUrl.includes('image'));
+  const fileUrl = attachment.url || attachment.dataUrl || '';
+  const isImg = fileUrl && (
+    fileUrl.startsWith('data:image') || 
+    fileUrl.includes('/uploads/messages/') && /\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(fileUrl) ||
+    /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(attachment.name || '')
+  );
   const textColor = isCustomer ? 'text-white' : 'text-[#541A1A]';
   const subColor = isCustomer ? 'text-white/80' : 'text-[#735e5e]';
   const bgBox = isCustomer ? 'bg-black/10' : 'bg-[#FAF6F0] border border-[#DCC3AA]';
@@ -620,24 +626,30 @@ function renderAttachmentBubble(attachment, isCustomer) {
   if (isImg) {
     return `
       <div class="mt-2 rounded-xl overflow-hidden border border-black/10 max-w-xs shadow-xs">
-        <img src="${attachment.dataUrl}" alt="${escapeHtml(attachment.name)}" class="w-full h-auto object-cover max-h-48">
-        <div class="p-1.5 text-[10px] ${textColor} ${bgBox} truncate">
-          ${escapeHtml(attachment.name)}
+        <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="block cursor-pointer group/img">
+          <img src="${fileUrl}" alt="${escapeHtml(attachment.name)}" class="w-full h-auto object-cover max-h-48 transition-transform group-hover/img:scale-102">
+        </a>
+        <div class="p-1.5 text-[10px] ${textColor} ${bgBox} flex items-center justify-between gap-1 truncate">
+          <span class="truncate">${escapeHtml(attachment.name)}</span>
+          <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="shrink-0 hover:underline font-semibold" title="Open full view">
+            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+          </a>
         </div>
       </div>
     `;
   }
 
   return `
-    <div class="mt-2 flex items-center gap-2.5 p-2 rounded-xl ${bgBox}">
+    <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="mt-2 flex items-center gap-2.5 p-2 rounded-xl ${bgBox} hover:opacity-90 transition-opacity">
       <div class="w-8 h-8 rounded-lg bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-sm shrink-0 border border-[#DCC3AA]/40">
         <i class="fa-solid fa-file"></i>
       </div>
       <div class="min-w-0 flex-1">
         <div class="text-xs font-semibold ${textColor} truncate">${escapeHtml(attachment.name)}</div>
-        <div class="text-[10px] ${subColor}">Attachment</div>
+        <div class="text-[10px] ${subColor}">Click to view / download</div>
       </div>
-    </div>
+      <i class="fa-solid fa-arrow-up-right-from-square text-[10px] ${subColor} pr-1"></i>
+    </a>
   `;
 }
 

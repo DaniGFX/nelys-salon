@@ -282,14 +282,15 @@ tokens/
 # ==========================================
 # 7. User Uploads, Customer Attachments & Storage
 # ==========================================
-/uploads/
+/uploads/*
+!/uploads/.gitkeep
+!/uploads/**/.gitkeep
 /storage/
 /attachments/
 /public/uploads/
 /assets/uploads/
 /media/uploads/
 /artifacts/
-!/uploads/.gitkeep
 !/assets/images/
 !/assets/icons/
 

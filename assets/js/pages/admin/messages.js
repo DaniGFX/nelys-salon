@@ -775,12 +775,7 @@ function renderMessageStream(conv) {
           <div class="max-w-[78%] sm:max-w-[70%]">
             <div class="bg-[#810B38] text-white px-4 py-3 rounded-2xl rounded-tr-xs shadow-md space-y-1">
               <p class="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(msg.text)}</p>
-              ${msg.attachment ? `
-                <div class="mt-2 p-2 rounded-xl bg-black/20 flex items-center gap-2 text-xs">
-                  <i class="fa-solid fa-paperclip text-[#DCC3AA]"></i>
-                  <span class="truncate underline font-mono">${escapeHtml(msg.attachment.name)}</span>
-                </div>
-              ` : ''}
+              ${renderAdminAttachmentBubble(msg.attachment, true)}
             </div>
             <div class="flex items-center justify-end gap-1.5 mt-1 text-[10px] text-[#735e5e]">
               <span>${escapeHtml(displayTime)}</span>
@@ -802,12 +797,7 @@ function renderMessageStream(conv) {
             <div class="text-[11px] font-bold text-[#541A1A] mb-1 pl-1">${escapeHtml(conv.name)}</div>
             <div class="bg-white border border-[#DCC3AA]/70 text-[#2b1d1d] px-4 py-3 rounded-2xl rounded-tl-xs shadow-sm space-y-1">
               <p class="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(msg.text)}</p>
-              ${msg.attachment ? `
-                <div class="mt-2 p-2 rounded-xl bg-[#FAF6F0] flex items-center gap-2 text-xs border border-[#DCC3AA]/40">
-                  <i class="fa-solid fa-paperclip text-[#810B38]"></i>
-                  <span class="truncate underline font-mono text-[#810B38]">${escapeHtml(msg.attachment.name)}</span>
-                </div>
-              ` : ''}
+              ${renderAdminAttachmentBubble(msg.attachment, false)}
             </div>
             <div class="flex items-center gap-1.5 mt-1 text-[10px] text-[#735e5e] pl-1">
               <span>${escapeHtml(displayTime)}</span>
@@ -821,6 +811,44 @@ function renderMessageStream(conv) {
   container.innerHTML = html;
   // Scroll to bottom
   container.scrollTop = container.scrollHeight;
+}
+
+function renderAdminAttachmentBubble(attachment, isAdmin) {
+  if (!attachment) return '';
+  const fileUrl = attachment.url || attachment.dataUrl || '';
+  const isImg = fileUrl && (
+    fileUrl.startsWith('data:image') || 
+    fileUrl.includes('/uploads/messages/') && /\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(fileUrl) ||
+    /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(attachment.name || '')
+  );
+
+  const textColor = isAdmin ? 'text-white' : 'text-[#541A1A]';
+  const subColor = isAdmin ? 'text-white/80' : 'text-[#735e5e]';
+  const bgBox = isAdmin ? 'bg-black/20' : 'bg-[#FAF6F0] border border-[#DCC3AA]/40';
+
+  if (isImg) {
+    return `
+      <div class="mt-2 rounded-xl overflow-hidden border border-black/10 max-w-xs shadow-xs">
+        <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="block cursor-pointer group/img">
+          <img src="${fileUrl}" alt="${escapeHtml(attachment.name)}" class="w-full h-auto object-cover max-h-48 transition-transform group-hover/img:scale-102">
+        </a>
+        <div class="p-1.5 text-[10px] ${textColor} ${bgBox} flex items-center justify-between gap-1 truncate">
+          <span class="truncate">${escapeHtml(attachment.name)}</span>
+          <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="shrink-0 hover:underline font-semibold" title="Open full view">
+            <i class="fa-solid fa-arrow-up-right-from-square text-[9px]"></i>
+          </a>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" class="mt-2 flex items-center gap-2 p-2 rounded-xl ${bgBox} hover:opacity-90 transition-opacity text-xs">
+      <i class="fa-solid fa-paperclip ${isAdmin ? 'text-[#DCC3AA]' : 'text-[#810B38]'}"></i>
+      <span class="truncate font-mono underline ${textColor}">${escapeHtml(attachment.name)}</span>
+      <i class="fa-solid fa-arrow-up-right-from-square text-[10px] ${textColor} opacity-70 ml-auto"></i>
+    </a>
+  `;
 }
 
 // Render Customer Info (Right Column)

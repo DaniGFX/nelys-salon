@@ -8,6 +8,7 @@
 require_once dirname(__DIR__) . '/helpers/Response.php';
 require_once dirname(__DIR__) . '/helpers/Validator.php';
 require_once dirname(__DIR__) . '/helpers/Sanitizer.php';
+require_once dirname(__DIR__) . '/helpers/FileUpload.php';
 require_once dirname(__DIR__) . '/middleware/AuthMiddleware.php';
 require_once dirname(__DIR__) . '/middleware/RoleMiddleware.php';
 require_once dirname(__DIR__) . '/models/Message.php';
@@ -98,12 +99,23 @@ class MessageController {
         try {
             $user = AuthMiddleware::check();
             $role = strtolower(trim($user['role'] ?? ''));
-            $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-            $input = Sanitizer::cleanArray($input);
+            $rawInput = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $input = Sanitizer::cleanArray($rawInput);
 
             $text = trim($input['text'] ?? '');
             $attachmentName = !empty($input['attachment_name']) ? trim($input['attachment_name']) : null;
-            $attachmentUrl = !empty($input['attachment_url']) ? $input['attachment_url'] : null;
+            $rawAttachment = !empty($_FILES['attachment']) 
+                ? $_FILES['attachment'] 
+                : (!empty($_FILES['file']) ? $_FILES['file'] : (!empty($rawInput['attachment_url']) ? $rawInput['attachment_url'] : null));
+
+            $attachmentUrl = null;
+            if ($rawAttachment) {
+                $savedAtt = FileUpload::saveAttachment($rawAttachment, $attachmentName);
+                if ($savedAtt) {
+                    $attachmentName = $savedAtt['name'];
+                    $attachmentUrl = $savedAtt['url'];
+                }
+            }
 
             if (empty($text) && empty($attachmentName)) {
                 Response::error('Message text or attachment is required.', 422);
