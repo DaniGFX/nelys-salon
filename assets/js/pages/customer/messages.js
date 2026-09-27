@@ -16,7 +16,7 @@ let customerChatData = {
   salon: {
     name: "Nely's Salon",
     status: 'online',
-    tagline: 'Official Salon Concierge · Lagro, QC',
+    tagline: 'Admin · Customer Support',
     avatar: 'NS',
     phone: '0917 123 4567',
     hours: 'Mon - Sat: 9:00 AM - 6:00 PM',
@@ -28,6 +28,9 @@ let customerChatData = {
 let attachedFile = null;
 let isEmptyState = false;
 let messageToDeleteId = null;
+
+// Real-time synchronization state
+let customerPollTimer = null;
 let searchQuery = '';
 
 // Immediate 0ms Hydration
@@ -52,6 +55,11 @@ function hydrateCustomerMessagesFromCache() {
         (m.text || '').includes('change my service to Brazilian')
       );
       if (!isLegacyMock) {
+        preloaded.forEach(m => {
+          if (m.sender === 'salon' || (m.senderName && m.senderName.includes('Concierge'))) {
+            m.senderName = "Nely's Salon";
+          }
+        });
         customerChatData.messages = preloaded;
         isEmptyState = false;
         lastRendered_cust_messages_Hash = JSON.stringify(preloaded);
@@ -63,15 +71,6 @@ function hydrateCustomerMessagesFromCache() {
   }
 }
 
-// Lifecycle Bootstrapping
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initCustomerMessagesPage);
-} else {
-  initCustomerMessagesPage();
-}
-
-// Real-time synchronization state
-let customerPollTimer = null;
 
 function initCustomerMessagesPage() {
   hydrateCustomerMessagesFromCache();
@@ -277,7 +276,9 @@ function mapBackendMessage(item) {
   return {
     id: item.id,
     sender: item.sender || 'customer',
-    senderName: item.sender_name || (item.sender === 'salon' ? "Nely's Salon Concierge" : 'You'),
+    senderName: (item.sender === 'salon' || (item.sender_name && item.sender_name.includes('Concierge')))
+      ? "Nely's Salon"
+      : (item.sender_name || (item.sender === 'salon' ? "Nely's Salon" : 'You')),
     text: item.text || '',
     time: timeStr,
     date: dateStr,
@@ -549,7 +550,7 @@ function renderChatStream() {
           </div>
           <div class="max-w-[85%] sm:max-w-[70%]">
             <div class="flex items-center gap-2 mb-1 pl-1">
-              <span class="text-[11px] font-bold text-[#541A1A]">${escapeHtml(msg.senderName || "Nely's Salon Concierge")}</span>
+              <span class="text-[11px] font-bold text-[#541A1A]">${escapeHtml(msg.senderName || "Nely's Salon")}</span>
               <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200 font-semibold">Official</span>
             </div>
             <div class="bg-white text-[#2b1d1d] border border-[#DCC3AA]/80 px-4 py-3 rounded-2xl rounded-tl-xs shadow-sm space-y-1">
@@ -1092,3 +1093,11 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+// Lifecycle Bootstrapping
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCustomerMessagesPage);
+} else {
+  initCustomerMessagesPage();
+}
+

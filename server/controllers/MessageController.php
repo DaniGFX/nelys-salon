@@ -127,7 +127,10 @@ class MessageController {
                     } catch (Throwable $e) {}
                 }
 
-                $adminName = !empty($input['sender_name']) ? trim($input['sender_name']) : "Nely's Salon Concierge";
+                $adminName = !empty($input['sender_name']) ? trim($input['sender_name']) : "Nely's Salon";
+                if ($adminName === "Nely's Salon Concierge" || str_contains($adminName, 'Concierge')) {
+                    $adminName = "Nely's Salon";
+                }
 
                 $msgId = Message::create([
                     'user_id'         => $targetUserId,

@@ -244,9 +244,9 @@ try {
         $pdo->exec("
             INSERT INTO `messages` (`user_id`, `sender`, `sender_name`, `text`, `status`, `created_at`) VALUES
             (2, 'customer', 'Maria Santos', 'Hello po! May available slot po ba tomorrow for Brazilian blowout?', 'read', DATE_SUB(NOW(), INTERVAL 2 HOUR)),
-            (2, 'salon', 'Nely\'s Salon Concierge', 'Good day Maria! Yes, we have an open slot with Nely at 10:00 AM tomorrow. Would you like us to book it for you?', 'read', DATE_SUB(NOW(), INTERVAL 1 HOUR)),
+            (2, 'salon', 'Nely\'s Salon', 'Good day Maria! Yes, we have an open slot with Nely at 10:00 AM tomorrow. Would you like us to book it for you?', 'read', DATE_SUB(NOW(), INTERVAL 1 HOUR)),
             (2, 'customer', 'Maria Santos', 'Yes please! Thank you so much.', 'read', DATE_SUB(NOW(), INTERVAL 45 MINUTE)),
-            (2, 'salon', 'Nely\'s Salon Concierge', 'Your appointment has been confirmed for tomorrow at 10:00 AM. See you at Nely\'s Salon!', 'sent', DATE_SUB(NOW(), INTERVAL 30 MINUTE))
+            (2, 'salon', 'Nely\'s Salon', 'Your appointment has been confirmed for tomorrow at 10:00 AM. See you at Nely\'s Salon!', 'sent', DATE_SUB(NOW(), INTERVAL 30 MINUTE))
         ");
         echo "[OK] Initial concierge messages seeded successfully.\n";
     } else {

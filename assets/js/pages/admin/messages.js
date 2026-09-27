@@ -914,7 +914,7 @@ async function sendMessage() {
 
   const payload = {
     user_id: conv.userId,
-    sender_name: "Nely's Salon Concierge",
+    sender_name: "Nely's Salon",
     text: text,
     attachment_name: fileRef ? fileRef.name : null,
     attachment_url: fileDataUrl
@@ -929,7 +929,7 @@ async function sendMessage() {
   const tempMsg = {
     id: Date.now(),
     sender: 'admin',
-    senderName: "Nely's Salon Concierge",
+    senderName: "Nely's Salon",
     text: text,
     time: formatMessageTime(now),
     date: formatMessageDateHeader(now),
