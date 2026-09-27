@@ -25,7 +25,119 @@ let activeTypingCustomerIds = [];
 let adminTypingThrottleTimer = null;
 let adminTypingDismissTimer = null;
 
+// Push Notification & Audio Alerts State
+let audioCtx = null;
+let originalPageTitle = document.title;
+let titleFlashTimer = null;
+let lastSeenAdminMessageId = 0;
+
+function unlockAudioContextOnUserGesture() {
+  const unlock = () => {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass && !audioCtx) {
+        audioCtx = new AudioContextClass();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    } catch (_) {}
+    document.removeEventListener('click', unlock);
+    document.removeEventListener('keydown', unlock);
+  };
+  document.addEventListener('click', unlock, { once: true });
+  document.addEventListener('keydown', unlock, { once: true });
+}
+
+function playMessageNotificationSound() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    if (!audioCtx) {
+      audioCtx = new AudioContextClass();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+
+    const now = audioCtx.currentTime;
+
+    // Tone 1: 1046.5 Hz (C6)
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(1046.5, now);
+    gain1.gain.setValueAtTime(0.08, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.35);
+
+    // Tone 2: 1318.5 Hz (E6) - 0.12s delayed harmonic
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1318.5, now + 0.12);
+    gain2.gain.setValueAtTime(0.09, now + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.55);
+  } catch (_) {}
+}
+
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
+  }
+}
+
+function showBrowserNotification(title, body, onClickAction = null) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!document.hidden && window.document.hasFocus()) return;
+
+  try {
+    const notif = new Notification(title, {
+      body: body || 'You have received a new message.',
+      icon: '../assets/images/logo.jfif',
+      badge: '../assets/images/logo.jfif',
+      tag: 'nelys-admin-msg',
+      renotify: true
+    });
+
+    notif.onclick = function() {
+      window.focus();
+      this.close();
+      if (typeof onClickAction === 'function') {
+        onClickAction();
+      }
+    };
+  } catch (e) {
+    console.warn('Browser notification error:', e);
+  }
+}
+
+function startTabTitleFlash(senderName) {
+  stopTabTitleFlash();
+  let flash = false;
+  titleFlashTimer = setInterval(() => {
+    document.title = flash ? `🔔 New Message from ${senderName}!` : originalPageTitle;
+    flash = !flash;
+  }, 1000);
+}
+
+function stopTabTitleFlash() {
+  if (titleFlashTimer) {
+    clearInterval(titleFlashTimer);
+    titleFlashTimer = null;
+    document.title = originalPageTitle;
+  }
+}
+
 function initMessages() {
+  unlockAudioContextOnUserGesture();
   const urlParams = new URLSearchParams(window.location.search);
   const targetUserId = urlParams.get('user_id');
   if (targetUserId) {
@@ -104,6 +216,7 @@ function initAdminSSE() {
 
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
+    stopTabTitleFlash();
     fetchConversationsData(true);
     fetchSidebarStats();
   }
@@ -111,6 +224,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 window.addEventListener('focus', () => {
+  stopTabTitleFlash();
   fetchConversationsData(true);
   fetchSidebarStats();
   startAdminRealtimePolling();
@@ -300,6 +414,43 @@ async function fetchConversationsData(silent = false) {
       const prevActiveConv = conversationsData.find(c => String(c.id) === String(currentConversationId));
       const prevMsgCount = prevActiveConv && prevActiveConv.messages ? prevActiveConv.messages.length : 0;
       const isInitialRender = (lastRenderedAdminHash === '' || conversationsData.length === 0);
+
+      // Check for newly arrived customer messages across all conversations
+      if (lastSeenAdminMessageId > 0) {
+        let latestNewMsg = null;
+        let matchedConv = null;
+
+        newConversations.forEach(c => {
+          (c.messages || []).forEach(m => {
+            if (m.sender === 'customer' && m.id > lastSeenAdminMessageId) {
+              if (!latestNewMsg || m.id > latestNewMsg.id) {
+                latestNewMsg = m;
+                matchedConv = c;
+              }
+            }
+          });
+        });
+
+        if (latestNewMsg && matchedConv) {
+          playMessageNotificationSound();
+          const senderName = matchedConv.name || 'Customer';
+          showBrowserNotification(senderName, latestNewMsg.text || 'Sent an attachment', () => selectConversation(matchedConv.id));
+          if (document.hidden) {
+            startTabTitleFlash(senderName);
+          } else if (String(currentConversationId) !== String(matchedConv.id)) {
+            showToast(`New message from ${senderName}: "${latestNewMsg.text || 'Sent an attachment'}"`, 'info');
+          }
+        }
+      }
+
+      // Update max seen customer message ID
+      newConversations.forEach(c => {
+        (c.messages || []).forEach(m => {
+          if (m.id > lastSeenAdminMessageId) {
+            lastSeenAdminMessageId = m.id;
+          }
+        });
+      });
 
       // Preserve prepended older messages for any conversation currently active
       newConversations.forEach(nc => {
@@ -584,6 +735,9 @@ function setupEventListeners() {
   // Textarea Enter key (Shift+Enter for newline) and typing listeners
   const messageInput = document.getElementById('messageInput');
   if (messageInput) {
+    messageInput.addEventListener('focus', () => {
+      requestNotificationPermission();
+    }, { once: true });
     messageInput.addEventListener('input', handleAdminTypingInput);
     messageInput.addEventListener('blur', () => {
       if (!messageInput.value.trim()) {

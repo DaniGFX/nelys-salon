@@ -44,6 +44,12 @@ let customerHasMore = false;
 let customerOldestId = null;
 let isLoadingOlderMessages = false;
 
+// Push Notification & Audio Alerts State
+let audioCtx = null;
+let originalPageTitle = document.title;
+let titleFlashTimer = null;
+let lastSeenCustomerMessageId = 0;
+
 // Immediate 0ms Hydration
 function hydrateCustomerMessagesFromCache() {
   purgeLegacyMockStorage();
@@ -83,7 +89,110 @@ function hydrateCustomerMessagesFromCache() {
 }
 
 
+function unlockAudioContextOnUserGesture() {
+  const unlock = () => {
+    try {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass && !audioCtx) {
+        audioCtx = new AudioContextClass();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    } catch (_) {}
+    document.removeEventListener('click', unlock);
+    document.removeEventListener('keydown', unlock);
+  };
+  document.addEventListener('click', unlock, { once: true });
+  document.addEventListener('keydown', unlock, { once: true });
+}
+
+function playMessageNotificationSound() {
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    if (!audioCtx) {
+      audioCtx = new AudioContextClass();
+    }
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+
+    const now = audioCtx.currentTime;
+
+    // Tone 1: 1046.5 Hz (C6)
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(1046.5, now);
+    gain1.gain.setValueAtTime(0.08, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.35);
+
+    // Tone 2: 1318.5 Hz (E6) - 0.12s delayed harmonic
+    const osc2 = audioCtx.createOscillator();
+    const gain2 = audioCtx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(1318.5, now + 0.12);
+    gain2.gain.setValueAtTime(0.09, now + 0.12);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    osc2.connect(gain2);
+    gain2.connect(audioCtx.destination);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.55);
+  } catch (_) {}
+}
+
+function requestNotificationPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
+  }
+}
+
+function showBrowserNotification(title, body) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  if (!document.hidden && window.document.hasFocus()) return;
+
+  try {
+    const notif = new Notification(title, {
+      body: body || 'You have received a new message.',
+      icon: '../assets/images/logo.jfif',
+      badge: '../assets/images/logo.jfif',
+      tag: 'nelys-customer-msg',
+      renotify: true
+    });
+
+    notif.onclick = function() {
+      window.focus();
+      this.close();
+    };
+  } catch (e) {
+    console.warn('Browser notification error:', e);
+  }
+}
+
+function startTabTitleFlash(senderName) {
+  stopTabTitleFlash();
+  let flash = false;
+  titleFlashTimer = setInterval(() => {
+    document.title = flash ? `🔔 New Message from ${senderName}!` : originalPageTitle;
+    flash = !flash;
+  }, 1000);
+}
+
+function stopTabTitleFlash() {
+  if (titleFlashTimer) {
+    clearInterval(titleFlashTimer);
+    titleFlashTimer = null;
+    document.title = originalPageTitle;
+  }
+}
+
 function initCustomerMessagesPage() {
+  unlockAudioContextOnUserGesture();
   hydrateCustomerMessagesFromCache();
   loadCustomerChatData();
   setupEventListeners();
@@ -275,6 +384,25 @@ function applyCustomerMessagesData(payload) {
   if (newHash !== lastRendered_cust_messages_Hash || customerChatData.messages.length === 0) {
     lastRendered_cust_messages_Hash = newHash;
     const prevCount = customerChatData.messages.length;
+
+    // Detect new incoming salon messages for sound chime & desktop notification
+    if (lastSeenCustomerMessageId > 0 && rawData.length > 0) {
+      const newIncomingSalonMsg = rawData.find(m => (m.sender === 'admin' || m.sender === 'salon') && m.id > lastSeenCustomerMessageId);
+      if (newIncomingSalonMsg) {
+        playMessageNotificationSound();
+        showBrowserNotification("Nely's Salon", newIncomingSalonMsg.text || 'Sent an attachment');
+        if (document.hidden) {
+          startTabTitleFlash("Nely's Salon");
+        }
+      }
+    }
+
+    if (rawData.length > 0) {
+      const maxId = Math.max(...rawData.map(m => m.id || 0));
+      if (maxId > lastSeenCustomerMessageId) {
+        lastSeenCustomerMessageId = maxId;
+      }
+    }
 
     if (rawData.length > 0) {
       if (customerChatData.messages.length > rawData.length) {
@@ -667,9 +795,11 @@ function setupEventListeners() {
     messageForm.addEventListener('submit', handleSendMessage);
   }
 
-  // Keydown and typing input listeners for enter to send
   const msgInput = document.getElementById('customerMessageInput');
   if (msgInput) {
+    msgInput.addEventListener('focus', () => {
+      requestNotificationPermission();
+    }, { once: true });
     msgInput.addEventListener('input', handleCustomerTypingInput);
     msgInput.addEventListener('blur', () => {
       if (!msgInput.value.trim()) {
