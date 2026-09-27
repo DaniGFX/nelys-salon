@@ -167,6 +167,32 @@ async function fetchConversationsData(silent = false) {
         newConversations = json.data;
       }
 
+      // Calculate composite signature to detect any new incoming/outgoing chats or unread changes
+      const newHash = JSON.stringify({
+        search: searchQuery,
+        filter: currentFilter,
+        currentId: String(currentConversationId || ''),
+        convs: newConversations.map(c => ({
+          id: String(c.id),
+          unread: c.unreadCount,
+          lastTime: c.lastTime,
+          msgsCount: (c.messages || []).length,
+          lastMsgId: (c.messages && c.messages.length) ? c.messages[c.messages.length - 1].id : null,
+          lastMsgText: (c.messages && c.messages.length) ? c.messages[c.messages.length - 1].text : '',
+          status: c.status
+        }))
+      });
+
+      // If silent polling and data hasn't changed at all, avoid touching the DOM
+      if (silent && newHash === lastRenderedAdminHash && conversationsData.length > 0) {
+        return;
+      }
+
+      const prevActiveConv = conversationsData.find(c => String(c.id) === String(currentConversationId));
+      const prevMsgCount = prevActiveConv && prevActiveConv.messages ? prevActiveConv.messages.length : 0;
+      const isInitialRender = (lastRenderedAdminHash === '' || conversationsData.length === 0);
+
+      lastRenderedAdminHash = newHash;
       conversationsData = newConversations;
 
       if (json.data.unread_total !== undefined) {
@@ -189,6 +215,20 @@ async function fetchConversationsData(silent = false) {
 
       renderConversationsList();
       renderActiveConversation();
+
+      const newActiveConv = conversationsData.find(c => String(c.id) === String(currentConversationId));
+      const newMsgCount = newActiveConv && newActiveConv.messages ? newActiveConv.messages.length : 0;
+
+      // If new messages arrived in the active conversation, or initial load, auto scroll smoothly to bottom
+      if (newMsgCount > prevMsgCount || isInitialRender) {
+        const stream = document.getElementById('messagesStream');
+        if (stream) {
+          stream.scrollTo({
+            top: stream.scrollHeight,
+            behavior: isInitialRender ? 'auto' : 'smooth'
+          });
+        }
+      }
     }
 
   } catch (err) {
@@ -770,13 +810,43 @@ async function sendMessage() {
   const conv = conversationsData.find(c => c.id == currentConversationId);
   if (!conv) return;
 
+  const fileRef = attachedFile;
   const payload = {
     user_id: conv.userId,
     sender_name: "Nely's Salon Concierge",
     text: text,
-    attachment_name: attachedFile ? attachedFile.name : null,
+    attachment_name: fileRef ? fileRef.name : null,
     attachment_url: null
   };
+
+  // Immediate UI clearing
+  input.value = '';
+  clearAttachment();
+
+  // Optimistic UI append
+  const now = new Date();
+  const tempMsg = {
+    id: Date.now(),
+    sender: 'admin',
+    senderName: "Nely's Salon Concierge",
+    text: text,
+    time: formatMessageTime(now),
+    date: formatMessageDateHeader(now),
+    created_at: now.toISOString(),
+    status: 'sent',
+    attachment: payload.attachment_name ? { name: payload.attachment_name, url: null } : null
+  };
+
+  if (!conv.messages) conv.messages = [];
+  conv.messages.push(tempMsg);
+  conv.lastTime = tempMsg.time;
+
+  lastRenderedAdminHash = '';
+  renderMessageStream(conv);
+  renderConversationsList();
+
+  const stream = document.getElementById('messagesStream');
+  if (stream) stream.scrollTo({ top: stream.scrollHeight, behavior: 'smooth' });
 
   try {
     const res = await fetch('../api/messages', {
@@ -793,18 +863,15 @@ async function sendMessage() {
     const json = await res.json();
     const sentMsg = json.data;
 
-    // Append to local state
-    if (!conv.messages) conv.messages = [];
-    conv.messages.push(sentMsg);
+    // Replace optimistic placeholder with authoritative server record
+    const idx = conv.messages.findIndex(m => m.id === tempMsg.id);
+    if (idx !== -1) {
+      conv.messages[idx] = sentMsg;
+    }
     conv.lastTime = sentMsg.time;
 
-    // Clear input & attachment
-    input.value = '';
-    clearAttachment();
-
-    // Re-render
-    renderMessageStream(conv);
-    renderConversationsList();
+    lastRenderedAdminHash = '';
+    fetchConversationsData(true);
     fetchSidebarStats();
 
     showToast('Message sent to ' + conv.name, 'success');

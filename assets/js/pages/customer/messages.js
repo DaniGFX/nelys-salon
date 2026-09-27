@@ -211,7 +211,7 @@ async function loadCustomerChatData() {
             }
             saveCustomerChatData();
             renderChatStream();
-            if (customerChatData.messages.length > prevCount) {
+            if (customerChatData.messages.length > prevCount || prevCount === 0) {
               scrollChatToBottom(true);
             }
           }
@@ -651,7 +651,9 @@ async function handleSendMessage(e) {
   // Reset inputs
   input.value = '';
   clearAttachedFile();
+  lastRendered_cust_messages_Hash = '';
   renderChatStream();
+  scrollChatToBottom(true);
 
   // Post message to live Backend API
   if (token) {
@@ -672,8 +674,13 @@ async function handleSendMessage(e) {
       if (res.ok) {
         const result = await res.json();
         if (result.success || result.status === 'success') {
-          localMsg.id = result.data ? result.data.id : localMsg.id;
+          if (result.data && result.data.id) {
+            localMsg.id = result.data.id;
+            localMsg.created_at = result.data.created_at || localMsg.created_at;
+            localMsg.time = result.data.time || localMsg.time;
+          }
           saveCustomerChatData();
+          lastRendered_cust_messages_Hash = '';
           await loadCustomerChatData();
         }
       }
