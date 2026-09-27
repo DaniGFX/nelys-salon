@@ -63,6 +63,7 @@ function normalizeBookingItem(b) {
     email: b.customer_email || b.email || '',
     service_id: b.service_id,
     service: b.service_name || 'Salon Service',
+    serviceCategory: b.service_category || '',
     price: priceNum,
     priceFormatted: '₱' + priceNum.toLocaleString('en-PH', { minimumFractionDigits: 2 }),
     staff_id: b.staff_id,
@@ -623,7 +624,16 @@ function renderAppointmentsTable() {
 
     return `
       <tr class="hover:bg-[#FAF6F0]/60 transition-colors group">
-        <!-- Reference & Customer -->
+        <!-- 1. Date & Time -->
+        <td class="py-4 px-4 whitespace-nowrap">
+          <div class="flex items-center gap-1.5">
+            <i class="fa-regular fa-calendar text-[#810B38] text-xs"></i>
+            <span class="text-xs font-bold text-[#541A1A]">${escapeHtml(appt.dateFormatted)}</span>
+          </div>
+          <span class="text-[11px] text-[#735e5e] block font-mono pl-4 mt-0.5">${escapeHtml(appt.time)}</span>
+        </td>
+
+        <!-- 2. Customer -->
         <td class="py-4 px-4 whitespace-nowrap">
           <div class="flex items-center gap-3">
             <div class="w-9 h-9 rounded-full bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA] flex items-center justify-center font-bold text-xs shrink-0 shadow-2xs">
@@ -639,22 +649,13 @@ function renderAppointmentsTable() {
           </div>
         </td>
 
-        <!-- Service & Price -->
+        <!-- 3. Service -->
         <td class="py-4 px-4 whitespace-nowrap">
           <span class="text-xs font-bold text-[#541A1A] block">${escapeHtml(appt.service)}</span>
-          <span class="text-[11px] font-bold text-[#810B38] block font-mono mt-0.5">${escapeHtml(appt.priceFormatted)}</span>
+          <span class="text-[11px] text-[#735e5e] block mt-0.5">${escapeHtml(appt.serviceCategory || (appt.visit_type === 'home' ? 'Home Service' : 'Salon Service'))}</span>
         </td>
 
-        <!-- Schedule Time -->
-        <td class="py-4 px-4 whitespace-nowrap">
-          <div class="flex items-center gap-1.5">
-            <i class="fa-regular fa-calendar text-[#810B38] text-xs"></i>
-            <span class="text-xs font-bold text-[#541A1A]">${escapeHtml(appt.dateFormatted)}</span>
-          </div>
-          <span class="text-[11px] text-[#735e5e] block font-mono pl-4">${escapeHtml(appt.time)}</span>
-        </td>
-
-        <!-- Stylist / Staff -->
+        <!-- 4. Staff -->
         <td class="py-4 px-4 whitespace-nowrap">
           <span class="text-xs font-medium text-[#541A1A] flex items-center gap-1.5">
             <i class="fa-solid fa-user-tie text-[#DCC3AA] text-[11px]"></i>
@@ -662,7 +663,18 @@ function renderAppointmentsTable() {
           </span>
         </td>
 
-        <!-- Status -->
+        <!-- 5. Price -->
+        <td class="py-4 px-4 whitespace-nowrap">
+          <span class="text-xs font-bold text-[#810B38] block font-mono">${escapeHtml(appt.priceFormatted)}</span>
+          <div class="flex items-center gap-1 mt-0.5">
+            <span class="text-[10px] font-semibold ${appt.paymentStatus === 'Paid' ? 'text-emerald-700 font-bold' : 'text-amber-800'}">
+              ${escapeHtml(appt.paymentStatus)}
+            </span>
+            <span class="text-[10px] text-[#735e5e] uppercase">· ${escapeHtml(appt.paymentMethod)}</span>
+          </div>
+        </td>
+
+        <!-- 6. Status -->
         <td class="py-4 px-4 whitespace-nowrap">
           <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${statusClass}">
             <i class="fa-solid ${statusIcon} text-[9px]"></i>
@@ -670,15 +682,7 @@ function renderAppointmentsTable() {
           </span>
         </td>
 
-        <!-- Payment -->
-        <td class="py-4 px-4 whitespace-nowrap">
-          <span class="text-xs font-semibold ${appt.paymentStatus === 'Paid' ? 'text-emerald-700 font-bold' : 'text-amber-800'} block">
-            ${escapeHtml(appt.paymentStatus)}
-          </span>
-          <span class="text-[10px] text-[#735e5e] block uppercase">${escapeHtml(appt.paymentMethod)}</span>
-        </td>
-
-        <!-- Quick Actions & Kebab Menu -->
+        <!-- 7. Action -->
         <td class="py-4 px-4 whitespace-nowrap text-right relative">
           <div class="flex items-center justify-end gap-1.5">
             ${appt.status === 'pending' ? `
