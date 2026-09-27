@@ -371,16 +371,6 @@ function setupEventListeners() {
     });
   }
 
-  // Quick Action Chips
-  document.querySelectorAll('.quick-reply-chip').forEach(chip => {
-    chip.addEventListener('click', () => {
-      const prompt = chip.getAttribute('data-prompt');
-      if (prompt) {
-        sendQuickPrompt(prompt);
-      }
-    });
-  });
-
   // File Attachment input
   const fileInput = (document.getElementById('chatFileInput') || document.getElementById('customerFileInput'));
   if (fileInput) {
@@ -620,7 +610,7 @@ function sendQuickPrompt(promptText) {
   if (input) {
     input.value = promptText;
     autoResizeTextarea(input);
-    handleSendMessage();
+    input.focus();
   }
 }
 

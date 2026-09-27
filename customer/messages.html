@@ -353,69 +353,6 @@
             <!-- Rendered dynamically by messages.js -->
           </div>
 
-          <!-- Typing Indicator (Animated live dots) -->
-          <div id="typingIndicator" class="hidden px-4 sm:px-6 py-2 flex items-center gap-2 text-xs text-[#735e5e] bg-white/70 border-t border-[#DCC3AA]/30 shrink-0">
-            <div class="w-6 h-6 rounded-full bg-[#810B38] text-white flex items-center justify-center text-[10px] shadow-2xs">
-              <i class="fa-solid fa-scissors"></i>
-            </div>
-            <span class="text-[11px] font-medium text-[#541A1A]">Nely's Salon Concierge is typing</span>
-            <span class="flex items-center gap-1 ml-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce"></span>
-              <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:0.2s]"></span>
-              <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:0.4s]"></span>
-            </span>
-          </div>
-
-          <!-- Quick Message Topics ("What would you like help with?") -->
-          <div class="px-4 py-2 border-t border-[#DCC3AA]/40 bg-white/95 backdrop-blur-xs shrink-0">
-            <div class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] mb-1.5 flex items-center gap-1.5">
-              <i class="fa-solid fa-hand-holding-heart text-[#810B38]"></i>
-              <span>What would you like help with?</span>
-            </div>
-            
-            <div class="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-              <button 
-                type="button" 
-                onclick="applyQuickTopic('appointment')"
-                class="group px-2.5 py-1.5 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA]/60 text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 shadow-2xs">
-                <i class="fa-solid fa-calendar-days text-[#810B38] group-hover:text-white text-[11px] transition-colors"></i>
-                <span>Appointment</span>
-              </button>
-
-              <button 
-                type="button" 
-                onclick="applyQuickTopic('services')"
-                class="group px-2.5 py-1.5 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA]/60 text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 shadow-2xs">
-                <i class="fa-solid fa-scissors text-[#810B38] group-hover:text-white text-[11px] transition-colors"></i>
-                <span>Services</span>
-              </button>
-
-              <button 
-                type="button" 
-                onclick="applyQuickTopic('pricing')"
-                class="group px-2.5 py-1.5 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA]/60 text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 shadow-2xs">
-                <i class="fa-solid fa-tag text-[#810B38] group-hover:text-white text-[11px] transition-colors"></i>
-                <span>Pricing</span>
-              </button>
-
-              <button 
-                type="button" 
-                onclick="applyQuickTopic('availability')"
-                class="group px-2.5 py-1.5 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA]/60 text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 shadow-2xs">
-                <i class="fa-solid fa-clock text-[#810B38] group-hover:text-white text-[11px] transition-colors"></i>
-                <span>Availability</span>
-              </button>
-
-              <button 
-                type="button" 
-                onclick="applyQuickTopic('info')"
-                class="group px-2.5 py-1.5 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA]/60 text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 shadow-2xs">
-                <i class="fa-solid fa-location-dot text-[#810B38] group-hover:text-white text-[11px] transition-colors"></i>
-                <span>Salon Info</span>
-              </button>
-            </div>
-          </div>
-
           <!-- Attachment Preview Pill -->
           <div id="customerAttachmentPreview" class="hidden px-4 py-2 bg-[#FAF6F0] border-t border-[#DCC3AA]/40 flex items-center justify-between text-xs">
             <div class="flex items-center gap-2 text-[#810B38] font-medium truncate">
