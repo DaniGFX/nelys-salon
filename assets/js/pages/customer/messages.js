@@ -70,6 +70,9 @@ if (document.readyState === 'loading') {
   initCustomerMessagesPage();
 }
 
+// Real-time synchronization state
+let customerPollTimer = null;
+
 function initCustomerMessagesPage() {
   hydrateCustomerMessagesFromCache();
   loadCustomerChatData();
@@ -77,12 +80,42 @@ function initCustomerMessagesPage() {
   loadAppointmentContext();
   loadNotificationBadges();
   setupDialogBackdropClicks();
+  startCustomerRealtimePolling();
+}
 
-  // Periodic polling for live messages & 10-minute auto-reply sync
-  if (!window.__messages_poll_interval) {
-    window.__messages_poll_interval = setInterval(loadCustomerChatData, 5000);
+function startCustomerRealtimePolling() {
+  stopCustomerRealtimePolling();
+  // 1.5s polling interval while active for instantaneous real-time sync
+  const interval = document.hidden ? 6000 : 1500;
+  customerPollTimer = setInterval(() => {
+    if (!document.hidden) {
+      loadCustomerChatData();
+    }
+  }, interval);
+}
+
+function stopCustomerRealtimePolling() {
+  if (customerPollTimer) {
+    clearInterval(customerPollTimer);
+    customerPollTimer = null;
   }
 }
+
+// Immediate refresh on tab focus / visibility
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    loadCustomerChatData();
+    loadNotificationBadges();
+    loadAppointmentContext();
+  }
+  startCustomerRealtimePolling();
+});
+
+window.addEventListener('focus', () => {
+  loadCustomerChatData();
+  loadNotificationBadges();
+  startCustomerRealtimePolling();
+});
 
 // Purge any old hardcoded demo messages lingering in browser storage from legacy versions
 function purgeLegacyMockStorage() {
@@ -594,6 +627,7 @@ async function handleSendMessage(e) {
         if (result.success || result.status === 'success') {
           localMsg.id = result.data ? result.data.id : localMsg.id;
           saveCustomerChatData();
+          await loadCustomerChatData();
         }
       }
     } catch (err) {

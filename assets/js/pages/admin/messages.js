@@ -22,20 +22,50 @@ if (document.readyState === 'loading') {
   initMessages();
 }
 
+// Real-time synchronization state
+let adminPollTimer = null;
+let lastRenderedAdminHash = '';
+
 function initMessages() {
   hydrateMessagesFromCache();
   checkAdminAuth();
   setupEventListeners();
   fetchConversationsData();
   fetchSidebarStats();
+  startAdminRealtimePolling();
+}
 
-  if (!window.__admin_messages_poll) {
-    window.__admin_messages_poll = setInterval(() => {
+function startAdminRealtimePolling() {
+  stopAdminRealtimePolling();
+  const interval = document.hidden ? 6000 : 1500;
+  adminPollTimer = setInterval(() => {
+    if (!document.hidden) {
       fetchConversationsData(true);
       fetchSidebarStats();
-    }, 6000);
+    }
+  }, interval);
+}
+
+function stopAdminRealtimePolling() {
+  if (adminPollTimer) {
+    clearInterval(adminPollTimer);
+    adminPollTimer = null;
   }
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    fetchConversationsData(true);
+    fetchSidebarStats();
+  }
+  startAdminRealtimePolling();
+});
+
+window.addEventListener('focus', () => {
+  fetchConversationsData(true);
+  fetchSidebarStats();
+  startAdminRealtimePolling();
+});
 
 function hydrateMessagesFromCache() {
   try {
@@ -712,6 +742,7 @@ async function sendMessage() {
     // Re-render
     renderMessageStream(conv);
     renderConversationsList();
+    fetchSidebarStats();
 
     showToast('Message sent to ' + conv.name, 'success');
   } catch (err) {
