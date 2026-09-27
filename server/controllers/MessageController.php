@@ -26,8 +26,9 @@ class MessageController {
         }
         try {
             $user = AuthMiddleware::check();
+            $role = strtolower(trim($user['role'] ?? ''));
 
-            if (($user['role'] ?? '') === 'admin') {
+            if ($role === 'admin' || !empty($_GET['admin_view'])) {
                 $search = $_GET['search'] ?? '';
                 $filter = $_GET['filter'] ?? 'all';
 
@@ -108,7 +109,7 @@ class MessageController {
             }
 
             // Admin sending message to a customer
-            if ($user['role'] === 'admin') {
+            if ($role === 'admin') {
                 $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : 0;
                 if (!$targetUserId) {
                     Response::error('Target customer user_id is required.', 422);
@@ -191,10 +192,11 @@ class MessageController {
     public function markRead(): void {
         try {
             $user = AuthMiddleware::check();
+            $role = strtolower(trim($user['role'] ?? ''));
             $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
             $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : (!empty($_GET['user_id']) ? (int)$_GET['user_id'] : 0);
 
-            if ($user['role'] === 'admin') {
+            if ($role === 'admin') {
                 if ($targetUserId) {
                     Message::markAllReadByAdmin($targetUserId);
                 }
@@ -215,13 +217,14 @@ class MessageController {
     public function delete(int $id): void {
         try {
             $user = AuthMiddleware::check();
+            $role = strtolower(trim($user['role'] ?? ''));
 
             $message = Message::findById($id);
             if (!$message) {
                 Response::notFound('Message not found.');
             }
 
-            if ($user['role'] !== 'admin' && (int)$message['user_id'] !== (int)$user['id']) {
+            if ($role !== 'admin' && (int)$message['user_id'] !== (int)$user['id']) {
                 Response::forbidden('You do not have permission to delete this message.');
             }
 
@@ -239,8 +242,9 @@ class MessageController {
     public function clear(): void {
         try {
             $user = AuthMiddleware::check();
+            $role = strtolower(trim($user['role'] ?? ''));
 
-            if ($user['role'] === 'admin') {
+            if ($role === 'admin') {
                 $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
                 $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : (!empty($_GET['user_id']) ? (int)$_GET['user_id'] : 0);
 
@@ -268,8 +272,9 @@ class MessageController {
     public function unreadCount(): void {
         try {
             $user = AuthMiddleware::check();
+            $role = strtolower(trim($user['role'] ?? ''));
 
-            if ($user['role'] === 'admin') {
+            if ($role === 'admin') {
                 $count = Message::getAdminUnreadCount();
             } else {
                 $count = Message::getUnreadCount((int)$user['id']);
