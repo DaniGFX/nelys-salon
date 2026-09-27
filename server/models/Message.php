@@ -250,7 +250,6 @@ class Message {
      */
     public static function getAdminConversations(string $search = '', string $filter = 'all'): array {
         self::ensureSchema();
-        self::checkAndTrigger10MinBusyReplies();
         
         try {
             $pdo = Database::getConnection();
@@ -259,61 +258,98 @@ class Message {
             return [];
         }
 
-        $customers = [];
-        try {
-            // 1. Fetch all customer users with profiles (and any users with messages or bookings)
-            $sql = "
-                SELECT 
-                    u.id as user_id,
-                    COALESCE(u.email, '') as email,
-                    COALESCE(u.phone, '') as phone,
-                    COALESCE(u.created_at, NOW()) as user_created_at,
-                    COALESCE(cp.full_name, '') as full_name,
-                    COALESCE(cp.home_address, '') as home_address,
-                    COALESCE(cp.city, 'Lagro, Quezon City') as city,
-                    COALESCE(cp.notes, '') as notes
-                FROM users u
-                LEFT JOIN customer_profiles cp ON u.id = cp.user_id
-                WHERE (u.role != 'admin' AND u.role IS NOT NULL)
-                   OR u.id IN (SELECT DISTINCT user_id FROM messages WHERE user_id > 0)
-                ORDER BY u.id ASC
-            ";
-            $customers = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
-        } catch (Throwable $e) {
-            error_log('Message::getAdminConversations initial query error: ' . $e->getMessage());
-            $customers = [];
-        }
+        // Collect all distinct user IDs that should have conversations
+        $conversationMap = [];
 
-        // Also ensure any message user_id without a users record is included
-        $existingUserIds = array_map('intval', array_column($customers, 'user_id'));
+        // 1. Gather all unique user IDs from messages table
         try {
-            $orphanMsgStmt = $pdo->query("SELECT DISTINCT user_id, sender_name FROM messages WHERE user_id > 0");
-            $orphanRows = $orphanMsgStmt ? $orphanMsgStmt->fetchAll(PDO::FETCH_ASSOC) : [];
-            foreach ($orphanRows as $or) {
-                $ouid = (int)$or['user_id'];
-                if (!in_array($ouid, $existingUserIds, true)) {
-                    $customers[] = [
-                        'user_id'         => $ouid,
+            $msgUsersStmt = $pdo->query("SELECT DISTINCT user_id FROM messages WHERE user_id IS NOT NULL");
+            $msgUserIds = $msgUsersStmt ? $msgUsersStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+            foreach ($msgUserIds as $uid) {
+                $uid = (int)$uid;
+                if ($uid > 0) {
+                    $conversationMap[$uid] = [
+                        'user_id'         => $uid,
                         'email'           => '',
                         'phone'           => '',
                         'user_created_at' => date('Y-m-d H:i:s'),
-                        'full_name'       => !empty($or['sender_name']) ? $or['sender_name'] : ('Client #' . $ouid),
+                        'full_name'       => '',
                         'home_address'    => '',
                         'city'            => 'Lagro, Quezon City',
                         'notes'           => ''
                     ];
-                    $existingUserIds[] = $ouid;
                 }
             }
         } catch (Throwable $e) {
-            error_log('Message::getAdminConversations orphan lookup error: ' . $e->getMessage());
+            error_log('Message::getAdminConversations messages user scan error: ' . $e->getMessage());
         }
+
+        // 2. Gather all registered customer users from users table
+        try {
+            $usersStmt = $pdo->query("
+                SELECT u.id as user_id, u.email, u.phone, u.created_at, u.role,
+                       cp.full_name, cp.home_address, cp.city, cp.notes
+                FROM users u
+                LEFT JOIN customer_profiles cp ON u.id = cp.user_id
+                WHERE u.role != 'admin' OR u.role IS NULL
+            ");
+            $userRows = $usersStmt ? $usersStmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            foreach ($userRows as $u) {
+                $uid = (int)$u['user_id'];
+                if ($uid > 0) {
+                    $conversationMap[$uid] = [
+                        'user_id'         => $uid,
+                        'email'           => $u['email'] ?? '',
+                        'phone'           => $u['phone'] ?? '',
+                        'user_created_at' => $u['created_at'] ?? date('Y-m-d H:i:s'),
+                        'full_name'       => $u['full_name'] ?? '',
+                        'home_address'    => $u['home_address'] ?? '',
+                        'city'            => !empty($u['city']) ? $u['city'] : 'Lagro, Quezon City',
+                        'notes'           => $u['notes'] ?? ''
+                    ];
+                }
+            }
+        } catch (Throwable $e) {
+            error_log('Message::getAdminConversations users scan error: ' . $e->getMessage());
+        }
+
+        // 3. For any user IDs found only in messages without full profile info, enrich from customer_profiles or messages
+        foreach ($conversationMap as $uid => &$data) {
+            if (empty($data['full_name'])) {
+                try {
+                    $pStmt = $pdo->prepare("SELECT full_name, home_address, city, notes FROM customer_profiles WHERE user_id = ?");
+                    $pStmt->execute([$uid]);
+                    $pRow = $pStmt->fetch(PDO::FETCH_ASSOC);
+                    if ($pRow && !empty($pRow['full_name'])) {
+                        $data['full_name'] = $pRow['full_name'];
+                        if (!empty($pRow['home_address'])) $data['home_address'] = $pRow['home_address'];
+                        if (!empty($pRow['city'])) $data['city'] = $pRow['city'];
+                        if (!empty($pRow['notes'])) $data['notes'] = $pRow['notes'];
+                    }
+                } catch (Throwable $e) {}
+            }
+
+            if (empty($data['full_name'])) {
+                try {
+                    $nameStmt = $pdo->prepare("SELECT sender_name FROM messages WHERE user_id = ? AND sender = 'customer' AND sender_name != '' AND sender_name != 'Client' ORDER BY id DESC LIMIT 1");
+                    $nameStmt->execute([$uid]);
+                    $nRow = $nameStmt->fetch(PDO::FETCH_ASSOC);
+                    if ($nRow && !empty($nRow['sender_name'])) {
+                        $data['full_name'] = $nRow['sender_name'];
+                    }
+                } catch (Throwable $e) {}
+            }
+
+            if (empty($data['full_name'])) {
+                $data['full_name'] = !empty($data['email']) ? explode('@', $data['email'])[0] : ('Client #' . $uid);
+            }
+        }
+        unset($data);
 
         $conversations = [];
 
-        foreach ($customers as $c) {
-            $userId = (int)$c['user_id'];
-            $fullName = trim($c['full_name'] ?: ($c['email'] ? explode('@', $c['email'])[0] : ('Client #' . $userId)));
+        foreach ($conversationMap as $userId => $c) {
+            $fullName = trim($c['full_name']);
 
             // Fetch messages for this user
             $rawMessages = [];
