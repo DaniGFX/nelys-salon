@@ -40,6 +40,8 @@ class Message {
             try { $pdo->exec("ALTER TABLE `messages` MODIFY COLUMN `attachment_url` LONGTEXT NULL"); } catch (Throwable $e) {}
             try { $pdo->exec("ALTER TABLE `messages` ADD COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'sent' AFTER `attachment_url`"); } catch (Throwable $e) {}
             try { $pdo->exec("ALTER TABLE `messages` ADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER `created_at`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `messages` MODIFY COLUMN `sender` ENUM('customer', 'admin', 'salon') NOT NULL DEFAULT 'customer'"); } catch (Throwable $e) {}
+            try { $pdo->exec("UPDATE `messages` SET `sender` = 'admin' WHERE `sender` = 'salon'"); } catch (Throwable $e) {}
 
             // Seed initial conversation messages for demo customer (Maria Santos, user_id=2) if table is empty
             $msgCount = (int)$pdo->query("SELECT COUNT(*) FROM `messages`")->fetchColumn();
@@ -56,9 +58,9 @@ class Message {
                 $pdo->exec("
                     INSERT INTO `messages` (`user_id`, `sender`, `sender_name`, `text`, `status`, `created_at`) VALUES
                     (2, 'customer', 'Maria Santos', 'Hello po! May available slot po ba tomorrow for Brazilian blowout?', 'read', DATE_SUB(NOW(), INTERVAL 2 HOUR)),
-                    (2, 'salon', 'Nely\'s Salon', 'Good day Maria! Yes, we have an open slot with Nely at 10:00 AM tomorrow. Would you like us to book it for you?', 'read', DATE_SUB(NOW(), INTERVAL 1 HOUR)),
+                    (2, 'admin', 'Nely\'s Salon', 'Good day Maria! Yes, we have an open slot with Nely at 10:00 AM tomorrow. Would you like us to book it for you?', 'read', DATE_SUB(NOW(), INTERVAL 1 HOUR)),
                     (2, 'customer', 'Maria Santos', 'Yes please! Thank you so much.', 'read', DATE_SUB(NOW(), INTERVAL 45 MINUTE)),
-                    (2, 'salon', 'Nely\'s Salon', 'Your appointment has been confirmed for tomorrow at 10:00 AM. See you at Nely\'s Salon!', 'sent', DATE_SUB(NOW(), INTERVAL 30 MINUTE))
+                    (2, 'admin', 'Nely\'s Salon', 'Your appointment has been confirmed for tomorrow at 10:00 AM. See you at Nely\'s Salon!', 'sent', DATE_SUB(NOW(), INTERVAL 30 MINUTE))
                 ");
             }
         } catch (Throwable $e) {
@@ -106,7 +108,7 @@ class Message {
                         $checkStmt = $pdo->prepare("
                             SELECT COUNT(*) FROM messages 
                             WHERE user_id = :uid 
-                              AND sender = 'salon' 
+                              AND sender IN ('admin', 'salon') 
                               AND (created_at >= :after_time OR id > :after_id)
                         ");
                         $checkStmt->execute([
@@ -120,7 +122,7 @@ class Message {
                             // Insert the automated "we're busy" response
                             self::create([
                                 'user_id'     => $uid,
-                                'sender'      => 'salon',
+                                'sender'      => 'admin',
                                 'sender_name' => "Nely's Salon",
                                 'text'        => $busyText,
                                 'status'      => 'sent',
@@ -225,7 +227,7 @@ class Message {
         $stmt = $pdo->prepare("
             UPDATE messages 
             SET status = 'read' 
-            WHERE user_id = :uid AND sender = 'salon' AND status != 'read'
+            WHERE user_id = :uid AND sender IN ('admin', 'salon') AND status != 'read'
         ");
         return $stmt->execute(['uid' => $userId]);
     }
@@ -250,7 +252,7 @@ class Message {
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare("
             SELECT COUNT(*) FROM messages 
-            WHERE user_id = :uid AND sender = 'salon' AND status != 'read'
+            WHERE user_id = :uid AND sender IN ('admin', 'salon') AND status != 'read'
         ");
         $stmt->execute(['uid' => $userId]);
         return (int)$stmt->fetchColumn();
@@ -485,8 +487,8 @@ class Message {
                 $timeTs = !empty($m['created_at']) ? strtotime($m['created_at']) : time();
                 return [
                     'id'         => (int)($m['id'] ?? 0),
-                    'sender'     => ($m['sender'] ?? '') === 'salon' ? 'admin' : 'customer',
-                    'senderName' => $m['sender_name'] ?? 'Client',
+                    'sender'     => in_array($m['sender'] ?? '', ['admin', 'salon']) ? 'admin' : 'customer',
+                    'senderName' => in_array($m['sender'] ?? '', ['admin', 'salon']) ? "Nely's Salon" : ($m['sender_name'] ?? 'Client'),
                     'text'       => $m['text'] ?? '',
                     'time'       => date('g:i A', $timeTs),
                     'date'       => date('M j, Y', $timeTs),

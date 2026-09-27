@@ -134,7 +134,7 @@ class MessageController {
 
                 $msgId = Message::create([
                     'user_id'         => $targetUserId,
-                    'sender'          => 'salon',
+                    'sender'          => 'admin',
                     'sender_name'     => $adminName,
                     'text'            => $text ?: "Shared attachment: {$attachmentName}",
                     'attachment_name' => $attachmentName,

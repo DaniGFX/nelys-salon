@@ -1317,7 +1317,7 @@ async function loadSidebarBadgeCounters() {
       if (res.ok) {
         const json = await res.json();
         if ((json.success || json.status === 'success') && Array.isArray(json.data)) {
-          const unreadMsgs = json.data.filter(m => m.sender === 'salon' && !m.is_read).length;
+          const unreadMsgs = json.data.filter(m => (m.sender === 'admin' || m.sender === 'salon') && !m.is_read).length;
           const msgBadge = document.getElementById('sidebarMessagesBadge');
           if (msgBadge) {
             if (unreadMsgs > 0) {

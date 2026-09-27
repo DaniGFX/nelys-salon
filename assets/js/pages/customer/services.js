@@ -719,7 +719,7 @@ async function loadLiveBadges() {
       if (savedMessages) {
         const msgs = JSON.parse(savedMessages);
         if (Array.isArray(msgs)) {
-          unreadMsgs = msgs.filter(m => m.sender === 'salon' && m.status !== 'read').length;
+          unreadMsgs = msgs.filter(m => (m.sender === 'admin' || m.sender === 'salon') && m.status !== 'read').length;
         }
       }
     }

@@ -198,7 +198,7 @@ DROP TABLE IF EXISTS `messages`;
 CREATE TABLE `messages` (
   `id` INT AUTO_INCREMENT PRIMARY KEY,
   `user_id` INT NOT NULL,
-  `sender` ENUM('customer', 'salon') NOT NULL DEFAULT 'customer',
+  `sender` ENUM('customer', 'admin', 'salon') NOT NULL DEFAULT 'customer',
   `sender_name` VARCHAR(150) NOT NULL,
   `text` TEXT NOT NULL,
   `attachment_name` VARCHAR(255) NULL,
