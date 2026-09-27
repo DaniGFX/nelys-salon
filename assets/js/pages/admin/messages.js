@@ -666,6 +666,7 @@ function renderMessageStream(conv) {
     }
   });
 
+  container.innerHTML = html;
   // Scroll to bottom
   container.scrollTop = container.scrollHeight;
 }
