@@ -23,6 +23,7 @@
 # ==========================================
 .env
 .env.*
+.env*.local
 .env.local
 .env.development
 .env.staging
@@ -34,6 +35,14 @@
 .env.dist.local
 *.env
 *.env.php
+*.env.json
+*.env.yaml
+*.env.yml
+env.json
+env.yaml
+env.yml
+.secrets
+.secrets.*
 !/.env.example
 
 # Local server configurations & database overrides
@@ -45,16 +54,29 @@ server/config/config.local.php
 server/config/env.local.php
 config.local.php
 database.local.php
+database.json
+db.json
 .htaccess.local
 .htaccess.bak
 web.config.local
 web.config.bak
+nginx.conf.local
+vhosts.conf.local
 my.ini
 my.cnf
 *.cnf
 
+# Container & Docker overrides
+docker-compose.override.yml
+docker-compose.override.yaml
+docker-compose.local.yml
+docker-compose.local.yaml
+docker-compose.*.local.yml
+docker-compose.*.local.yaml
+.docker/
+
 # ==========================================
-# 2. Authentication Tokens, Keys & Certificates
+# 2. Authentication Tokens, Keys, Credentials & Certificates
 # ==========================================
 *.token
 *.jwt
@@ -74,6 +96,9 @@ my.cnf
 *.kdbx
 *.jks
 *.keystore
+*.keypair
+*.pkcs8
+*.ppk
 *.ovpn
 id_rsa*
 id_dsa*
@@ -93,18 +118,41 @@ authorized_keys
 *htpasswd
 auth.json
 secrets.json
+secrets.yaml
+secrets.yml
 credentials.json
+credentials.yaml
+credentials.yml
+credentials.csv
+credentials.txt
+passwords.txt
+passwords.json
+*password*.json
+*accounts*.json
+*account*.json
 client_secret*.json
 service-account*.json
 google-services.json
 firebase-adminsdk*.json
+supabase*.json
 oauth*.json
 token*.json
+tokens.json
+token.txt
+api_keys.json
+apikey.json
 credentials/
 secrets/
 keys/
 certs/
 certificates/
+
+# Developer / Package Manager / CLI Credentials
+.npmrc
+.yarnrc
+.pypirc
+.netrc
+.git-credentials
 
 # ==========================================
 # 3. Payment Gateway, SMS, Webhooks & Mailer Credentials
@@ -123,6 +171,7 @@ certificates/
 *sendgrid*.json
 *mailgun*.json
 *webhook_secret*
+webhook-secrets.json
 *.postman_environment.json
 *thunder-client*.json
 *insomnia*.json
@@ -132,8 +181,8 @@ certificates/
 # ==========================================
 # 4. Database Dumps, Backups & Local DBs
 # ==========================================
-# Root-level & exported database files
-/*.sql
+# All database dump and data files across any directory
+*.sql
 *.dump
 *.sql.bak
 *.sql.gz
@@ -162,12 +211,15 @@ certificates/
 /backups/
 /database_backups/
 /db_backups/
+/db-dumps/
 /dumps/
+/sql_backups/
 
 # Whitelist core database migrations and seed templates for deployment
 !server/db/schema.sql
 !server/db/seeds.sql
 !server/db/migrations/*.sql
+!server/db/migrations/**/*.sql
 
 # ==========================================
 # 5. Customer Data, Financial Exports, Receipts & Invoices
@@ -178,6 +230,8 @@ certificates/
 /reports/export/
 /downloads/
 /data/
+/financial/
+/financials/
 *customer_export*
 *sales_export*
 *financial_report*
@@ -211,6 +265,7 @@ certificates/
 # Allow static assets and documentation
 !assets/**
 !docs/**
+!public/**
 
 # ==========================================
 # 6. Session Files & Auth Cache
@@ -221,6 +276,8 @@ cookies.txt
 .sessions/
 /sessions/
 /php_session/
+session/
+tokens/
 
 # ==========================================
 # 7. User Uploads, Customer Attachments & Storage
@@ -234,24 +291,42 @@ cookies.txt
 /artifacts/
 !/uploads/.gitkeep
 !/assets/images/
+!/assets/icons/
 
 # ==========================================
 # 8. Scratch, Test, Audit & Debugging Scripts
 # ==========================================
 /scratch/
 scratch_*
+scratch-*
+scratch.*
 test_*.php
 test_*.js
+test-*.php
+test-*.js
 debug_*.php
 debug_*.js
+debug-*.php
+debug-*.js
 audit_*.js
 audit_*.php
+audit-*.js
+audit-*.php
 apply_*.js
+apply-*.js
 check_*.js
+check-*.js
 build_*.js
 temp_*.js
 temp_*.php
 simulate_*.js
+simulate_*.php
+simulate-*.js
+simulate-*.php
+phpinfo.php
+info.php
+adminer.php
+adminer-*.php
 *.patch
 *.diff
 
@@ -268,6 +343,10 @@ xdebug.log
 access_log
 access.log
 debug.log
+mysql.log
+mysql_error.log
+mysqld.log
+mariadb.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -278,6 +357,21 @@ pnpm-debug.log*
 .phpunit.result.cache
 core
 core.*
+
+# Test coverage & runner configs
+coverage/
+.nyc_output/
+phpunit.xml
+!phpunit.xml.dist
+.pest/
+
+# Shell & terminal command history
+.bash_history
+.zsh_history
+.history/
+*.history
+ConsoleHost_history.txt
+psreadline_history.txt
 
 # ==========================================
 # 10. Local Server (XAMPP / Apache / PHP) Overrides
@@ -290,6 +384,7 @@ xampp/
 mysql/
 apache/
 phpmyadmin/
+phpmyadmin.config.php
 
 # ==========================================
 # 11. Dependencies & Vendor Directories
@@ -308,11 +403,14 @@ tmp/
 temp/
 *.tmp
 *.bak
+*.backup
 *.old
+*.save
 *.orig
 *.swp
 *.swo
 *~
+*.crswap
 *.zip
 *.tar
 *.tar.gz
@@ -335,7 +433,6 @@ temp/
 .ssh/
 .gcloud/
 .azure/
-.docker/
 
 # ==========================================
 # 14. IDEs, Editors, Database Tools & AI Workspaces
@@ -365,6 +462,8 @@ scratchpad_*.md
 .dbeaver/
 .navicat/
 .tableplus/
+.heidi/
+*.sqlclient*
 
 # ==========================================
 # 15. Operating System Files
@@ -375,6 +474,9 @@ scratchpad_*.md
 .Spotlight-V100
 .Trashes
 ehthumbs.db
+ehthumbs_vista.db
 Thumbs.db
 Desktop.ini
 [Dd]esktop.ini
+$RECYCLE.BIN/
+System Volume Information/

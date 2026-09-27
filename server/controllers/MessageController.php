@@ -31,10 +31,11 @@ class MessageController {
             if ($role === 'admin' || !empty($_GET['admin_view'])) {
                 $search = $_GET['search'] ?? '';
                 $filter = $_GET['filter'] ?? 'all';
+                $priorityUserId = !empty($_GET['user_id']) ? (int)$_GET['user_id'] : null;
 
                 $conversations = [];
                 try {
-                    $conversations = Message::getAdminConversations($search, $filter);
+                    $conversations = Message::getAdminConversations($search, $filter, $priorityUserId);
                 } catch (Throwable $e) {
                     error_log('MessageController::index getAdminConversations Error: ' . $e->getMessage());
                     $conversations = [];
@@ -50,10 +51,9 @@ class MessageController {
                 }
 
                 // If a specific user_id was requested to view & mark as read
-                if (!empty($_GET['user_id'])) {
-                    $targetUserId = (int)$_GET['user_id'];
+                if ($priorityUserId) {
                     try {
-                        Message::markAllReadByAdmin($targetUserId);
+                        Message::markAllReadByAdmin($priorityUserId);
                     } catch (Throwable $e) {}
                 }
 
@@ -97,6 +97,7 @@ class MessageController {
     public function send(): void {
         try {
             $user = AuthMiddleware::check();
+            $role = strtolower(trim($user['role'] ?? ''));
             $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
             $input = Sanitizer::cleanArray($input);
 
@@ -113,6 +114,17 @@ class MessageController {
                 $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : 0;
                 if (!$targetUserId) {
                     Response::error('Target customer user_id is required.', 422);
+                }
+
+                // Ensure target customer exists if it's default customer (user_id=2)
+                $targetUser = User::findById($targetUserId);
+                if (!$targetUser && $targetUserId === 2) {
+                    $hash = '$2y$10$RsV0QKdMFYQmHQC8su9L..YYEC9Q3L2Y.3pdDymk28EfK4ZWPfSkK';
+                    try {
+                        $pdo = Database::getConnection();
+                        $pdo->prepare("INSERT INTO `users` (`id`, `email`, `phone`, `password_hash`, `role`) VALUES (2, 'maria@email.com', '09178889999', :h, 'customer') ON DUPLICATE KEY UPDATE `role` = 'customer'")->execute([':h' => $hash]);
+                        $pdo->exec("INSERT INTO `customer_profiles` (`user_id`, `full_name`, `home_address`, `city`, `gender`, `status`, `notes`) VALUES (2, 'Maria Santos', 'Blk 12 Lot 4, Lagro Subd., Quezon City', 'Quezon City', 'Female', 'Active', 'Prefers organic shampoos and scalp massages.') ON DUPLICATE KEY UPDATE `full_name` = 'Maria Santos'");
+                    } catch (Throwable $e) {}
                 }
 
                 $adminName = !empty($input['sender_name']) ? trim($input['sender_name']) : "Nely's Salon Concierge";

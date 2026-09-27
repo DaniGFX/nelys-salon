@@ -193,6 +193,66 @@ try {
 
     echo "[OK] Account role identifier verified: role = 'admin'\n";
 
+    // Always ensure default demo customer account exists
+    echo "[INFO] Syncing customer demo account (maria@email.com)...\n";
+    $custEmail = 'maria@email.com';
+    $custHash  = '$2y$10$RsV0QKdMFYQmHQC8su9L..YYEC9Q3L2Y.3pdDymk28EfK4ZWPfSkK'; // password123
+    $syncCustomer = $pdo->prepare("
+        INSERT INTO `users` (`id`, `email`, `phone`, `password_hash`, `role`)
+        VALUES (2, :email, '09178889999', :hash, 'customer')
+        ON DUPLICATE KEY UPDATE 
+            `email` = :email_update,
+            `role` = 'customer'
+    ");
+    $syncCustomer->execute([
+        ':email'        => $custEmail,
+        ':hash'         => $custHash,
+        ':email_update' => $custEmail,
+    ]);
+
+    // Ensure customer profile for user 2
+    $syncProfile = $pdo->prepare("
+        INSERT INTO `customer_profiles` (`user_id`, `full_name`, `home_address`, `city`, `dob`, `gender`, `status`, `notification_preference`, `notes`)
+        VALUES (2, 'Maria Santos', 'Blk 12 Lot 4, Lagro Subd., Quezon City', 'Quezon City', '1995-05-15', 'Female', 'Active', 'all', 'Prefers organic shampoos and scalp massages.')
+        ON DUPLICATE KEY UPDATE 
+            `full_name` = 'Maria Santos'
+    ");
+    $syncProfile->execute();
+    echo "[OK] Customer account & profile verified: Maria Santos (ID: 2)\n";
+
+    // Ensure messages table schema & seed conversations
+    echo "[INFO] Initializing messages table...\n";
+    $pdo->exec("CREATE TABLE IF NOT EXISTS `messages` (
+        `id` INT AUTO_INCREMENT PRIMARY KEY,
+        `user_id` INT NOT NULL,
+        `sender` VARCHAR(50) NOT NULL DEFAULT 'customer',
+        `sender_name` VARCHAR(255) NOT NULL DEFAULT 'Client',
+        `text` TEXT NOT NULL,
+        `attachment_name` VARCHAR(255) NULL,
+        `attachment_url` LONGTEXT NULL,
+        `status` VARCHAR(50) NOT NULL DEFAULT 'sent',
+        `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        INDEX `idx_messages_user` (`user_id`),
+        INDEX `idx_messages_status` (`status`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    try { $pdo->exec("ALTER TABLE `messages` MODIFY COLUMN `attachment_url` LONGTEXT NULL"); } catch (Exception $e) {}
+
+    $msgCount = (int)$pdo->query("SELECT COUNT(*) FROM `messages`")->fetchColumn();
+    if ($msgCount === 0) {
+        $pdo->exec("
+            INSERT INTO `messages` (`user_id`, `sender`, `sender_name`, `text`, `status`, `created_at`) VALUES
+            (2, 'customer', 'Maria Santos', 'Hello po! May available slot po ba tomorrow for Brazilian blowout?', 'read', DATE_SUB(NOW(), INTERVAL 2 HOUR)),
+            (2, 'salon', 'Nely\'s Salon Concierge', 'Good day Maria! Yes, we have an open slot with Nely at 10:00 AM tomorrow. Would you like us to book it for you?', 'read', DATE_SUB(NOW(), INTERVAL 1 HOUR)),
+            (2, 'customer', 'Maria Santos', 'Yes please! Thank you so much.', 'read', DATE_SUB(NOW(), INTERVAL 45 MINUTE)),
+            (2, 'salon', 'Nely\'s Salon Concierge', 'Your appointment has been confirmed for tomorrow at 10:00 AM. See you at Nely\'s Salon!', 'sent', DATE_SUB(NOW(), INTERVAL 30 MINUTE))
+        ");
+        echo "[OK] Initial concierge messages seeded successfully.\n";
+    } else {
+        echo "[INFO] Messages table ready with {$msgCount} existing records.\n";
+    }
+
     echo "\n========================================\n";
     echo " Database setup & admin sync complete!\n";
     echo " Admin Account Credentials:\n";

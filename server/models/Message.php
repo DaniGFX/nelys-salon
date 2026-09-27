@@ -26,7 +26,7 @@ class Message {
                 `sender_name` VARCHAR(255) NOT NULL DEFAULT 'Client',
                 `text` TEXT NOT NULL,
                 `attachment_name` VARCHAR(255) NULL,
-                `attachment_url` VARCHAR(255) NULL,
+                `attachment_url` LONGTEXT NULL,
                 `status` VARCHAR(50) NOT NULL DEFAULT 'sent',
                 `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -34,13 +34,33 @@ class Message {
                 INDEX `idx_messages_status` (`status`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
-            // Ensure columns exist
+            // Ensure columns exist and have correct definitions
             try { $pdo->exec("ALTER TABLE `messages` ADD COLUMN `sender_name` VARCHAR(255) NOT NULL DEFAULT 'Client' AFTER `sender`"); } catch (Throwable $e) {}
             try { $pdo->exec("ALTER TABLE `messages` ADD COLUMN `attachment_name` VARCHAR(255) NULL AFTER `text`"); } catch (Throwable $e) {}
-            try { $pdo->exec("ALTER TABLE `messages` ADD COLUMN `attachment_url` VARCHAR(255) NULL AFTER `attachment_name`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `messages` MODIFY COLUMN `attachment_url` LONGTEXT NULL"); } catch (Throwable $e) {}
             try { $pdo->exec("ALTER TABLE `messages` ADD COLUMN `status` VARCHAR(50) NOT NULL DEFAULT 'sent' AFTER `attachment_url`"); } catch (Throwable $e) {}
             try { $pdo->exec("ALTER TABLE `messages` ADD COLUMN `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER `created_at`"); } catch (Throwable $e) {}
 
+            // Seed initial conversation messages for demo customer (Maria Santos, user_id=2) if table is empty
+            $msgCount = (int)$pdo->query("SELECT COUNT(*) FROM `messages`")->fetchColumn();
+            if ($msgCount === 0) {
+                // Check if user 2 exists
+                $hasUser2 = (int)$pdo->query("SELECT COUNT(*) FROM `users` WHERE `id` = 2")->fetchColumn();
+                if (!$hasUser2) {
+                    $hash = '$2y$10$RsV0QKdMFYQmHQC8su9L..YYEC9Q3L2Y.3pdDymk28EfK4ZWPfSkK'; // password123
+                    try {
+                        $pdo->prepare("INSERT INTO `users` (`id`, `email`, `phone`, `password_hash`, `role`) VALUES (2, 'maria@email.com', '09178889999', :h, 'customer') ON DUPLICATE KEY UPDATE `role` = 'customer'")->execute([':h' => $hash]);
+                        $pdo->exec("INSERT INTO `customer_profiles` (`user_id`, `full_name`, `home_address`, `city`, `gender`, `status`, `notes`) VALUES (2, 'Maria Santos', 'Blk 12 Lot 4, Lagro Subd., Quezon City', 'Quezon City', 'Female', 'Active', 'Prefers organic shampoos and scalp massages.') ON DUPLICATE KEY UPDATE `full_name` = 'Maria Santos'");
+                    } catch (Throwable $e) {}
+                }
+                $pdo->exec("
+                    INSERT INTO `messages` (`user_id`, `sender`, `sender_name`, `text`, `status`, `created_at`) VALUES
+                    (2, 'customer', 'Maria Santos', 'Hello po! May available slot po ba tomorrow for Brazilian blowout?', 'read', DATE_SUB(NOW(), INTERVAL 2 HOUR)),
+                    (2, 'salon', 'Nely\'s Salon Concierge', 'Good day Maria! Yes, we have an open slot with Nely at 10:00 AM tomorrow. Would you like us to book it for you?', 'read', DATE_SUB(NOW(), INTERVAL 1 HOUR)),
+                    (2, 'customer', 'Maria Santos', 'Yes please! Thank you so much.', 'read', DATE_SUB(NOW(), INTERVAL 45 MINUTE)),
+                    (2, 'salon', 'Nely\'s Salon Concierge', 'Your appointment has been confirmed for tomorrow at 10:00 AM. See you at Nely\'s Salon!', 'sent', DATE_SUB(NOW(), INTERVAL 30 MINUTE))
+                ");
+            }
         } catch (Throwable $e) {
             error_log('Message::ensureSchema Error: ' . $e->getMessage());
         }
@@ -248,8 +268,11 @@ class Message {
     /**
      * Retrieve all customer conversations for Admin Dashboard
      */
-    public static function getAdminConversations(string $search = '', string $filter = 'all'): array {
+    public static function getAdminConversations(string $search = '', string $filter = 'all', ?int $priorityUserId = null): array {
         self::ensureSchema();
+        if (class_exists('CustomerProfile')) {
+            CustomerProfile::ensureSchema();
+        }
         
         try {
             $pdo = Database::getConnection();
@@ -287,6 +310,7 @@ class Message {
                        cp.full_name, cp.home_address, cp.city, cp.notes
                 FROM users u
                 LEFT JOIN customer_profiles cp ON u.id = cp.user_id
+                WHERE u.role != 'admin'
             ");
             $uRows = $uStmt ? $uStmt->fetchAll(PDO::FETCH_ASSOC) : [];
             foreach ($uRows as $ur) {
@@ -298,7 +322,7 @@ class Message {
         } catch (Throwable $e) {
             // Fallback simpler query if customer_profiles columns vary
             try {
-                $uStmt = $pdo->query("SELECT id, email, phone, created_at, role FROM users");
+                $uStmt = $pdo->query("SELECT id, email, phone, created_at, role FROM users WHERE role != 'admin'");
                 $uRows = $uStmt ? $uStmt->fetchAll(PDO::FETCH_ASSOC) : [];
                 foreach ($uRows as $ur) {
                     $uid = (int)$ur['id'];
@@ -311,17 +335,19 @@ class Message {
 
         // Collect all distinct user IDs: those who have messages + registered customer users
         $allUserIds = array_unique(array_merge(array_keys($groupedMessages), array_keys($usersMap)));
+        if ($priorityUserId && $priorityUserId > 0 && !in_array($priorityUserId, $allUserIds)) {
+            $allUserIds[] = $priorityUserId;
+        }
 
         $conversations = [];
 
         foreach ($allUserIds as $userId) {
             $userData = $usersMap[$userId] ?? null;
             $userRole = strtolower(trim($userData['role'] ?? ''));
-
             $rawMessages = $groupedMessages[$userId] ?? [];
 
-            // Skip admin accounts only if they have no customer messages sent to them
-            if ($userRole === 'admin' && empty($rawMessages)) {
+            // Do not show the admin's own account as a customer conversation
+            if ($userRole === 'admin' || $userId === 1) {
                 continue;
             }
 
@@ -495,8 +521,12 @@ class Message {
             ];
         }
 
-        // Sort conversations: latest message / activity on top
-        usort($conversations, function($a, $b) {
+        // Sort conversations: priority user first, then latest message / activity on top
+        usort($conversations, function($a, $b) use ($priorityUserId) {
+            if ($priorityUserId) {
+                if ((int)$a['userId'] === (int)$priorityUserId) return -1;
+                if ((int)$b['userId'] === (int)$priorityUserId) return 1;
+            }
             return strtotime($b['lastTimestamp']) <=> strtotime($a['lastTimestamp']);
         });
 

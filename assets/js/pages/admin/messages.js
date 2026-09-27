@@ -27,6 +27,12 @@ let adminPollTimer = null;
 let lastRenderedAdminHash = '';
 
 function initMessages() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const targetUserId = urlParams.get('user_id');
+  if (targetUserId) {
+    currentConversationId = String(targetUserId);
+  }
+
   hydrateMessagesFromCache();
   checkAdminAuth();
   setupEventListeners();
@@ -68,6 +74,9 @@ window.addEventListener('focus', () => {
 
 function hydrateMessagesFromCache() {
   try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetUserId = urlParams.get('user_id');
+
     const cached = window.__PRELOADED_MESSAGES__ || JSON.parse(localStorage.getItem(MESSAGES_CACHE_KEY) || 'null');
     if (cached) {
       if (Array.isArray(cached.conversations)) {
@@ -80,9 +89,13 @@ function hydrateMessagesFromCache() {
       } else {
         totalUnreadCount = conversationsData.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
       }
-      if (conversationsData.length > 0 && !currentConversationId) {
+
+      if (targetUserId && conversationsData.some(c => String(c.id) === String(targetUserId))) {
+        currentConversationId = String(targetUserId);
+      } else if (conversationsData.length > 0 && !currentConversationId) {
         currentConversationId = conversationsData[0].id;
       }
+
       updateUnreadBadges();
       renderConversationsList();
       renderActiveConversation();
@@ -141,7 +154,11 @@ function getAuthHeaders() {
 // ================= FETCH DATA FROM BACKEND =================
 async function fetchConversationsData(silent = false) {
   try {
-    const res = await fetch(`../api/messages?admin_view=1&search=${encodeURIComponent(searchQuery)}&filter=${encodeURIComponent(currentFilter)}&_t=${Date.now()}`, {
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlUserId = urlParams.get('user_id');
+    const userParam = urlUserId ? `&user_id=${encodeURIComponent(urlUserId)}` : '';
+
+    const res = await fetch(`../api/messages?admin_view=1&search=${encodeURIComponent(searchQuery)}&filter=${encodeURIComponent(currentFilter)}${userParam}&_t=${Date.now()}`, {
       method: 'GET',
       headers: getAuthHeaders(),
       credentials: 'include',
@@ -165,6 +182,54 @@ async function fetchConversationsData(silent = false) {
         newConversations = json.data.conversations;
       } else if (Array.isArray(json.data)) {
         newConversations = json.data;
+      }
+
+      // If a specific customer user_id was requested in URL but has 0 messages and wasn't in conversations
+      if (urlUserId && !newConversations.some(c => String(c.id) === String(urlUserId))) {
+        try {
+          const custRes = await fetch(`../api/customers/${urlUserId}`, {
+            headers: getAuthHeaders(),
+            cache: 'no-store'
+          });
+          if (custRes.ok) {
+            const custJson = await custRes.json();
+            const cust = custJson.data || custJson;
+            if (cust) {
+              const nameParts = (cust.full_name || cust.name || 'Customer').split(' ');
+              const avatar = nameParts.length > 1
+                ? (nameParts[0][0] + nameParts[1][0]).toUpperCase()
+                : (cust.full_name || cust.name || 'C').substring(0, 2).toUpperCase();
+
+              newConversations.unshift({
+                id: String(urlUserId),
+                userId: parseInt(urlUserId, 10),
+                name: cust.full_name || cust.name || `Customer #${urlUserId}`,
+                avatar: avatar,
+                phone: cust.phone || '0917 123 4567',
+                email: cust.email || '',
+                location: cust.home_address || cust.city || 'Lagro, Quezon City',
+                memberSince: cust.created_at ? `Member since ${new Date(cust.created_at).getFullYear()}` : 'Member',
+                status: 'online',
+                isUnread: false,
+                unreadCount: 0,
+                isMuted: false,
+                hasAppointment: false,
+                lastTime: 'No activity',
+                lastTimestamp: new Date().toISOString(),
+                upcomingAppointment: null,
+                history: {
+                  totalVisits: cust.total_visits || 0,
+                  totalSpent: '₱' + (cust.total_spent || '0'),
+                  lastVisit: 'Member record verified',
+                  notes: cust.notes || 'No notes available.'
+                },
+                messages: []
+              });
+            }
+          }
+        } catch (e) {
+          console.warn('Could not fetch customer profile shell:', e);
+        }
       }
 
       // Calculate composite signature to detect any new incoming/outgoing chats or unread changes
@@ -212,8 +277,10 @@ async function fetchConversationsData(silent = false) {
       // Update unread badge in column header & sidebar
       updateUnreadBadges();
 
-      // Select first conversation if none selected
-      if (conversationsData.length > 0) {
+      // Prioritize URL user_id if present, else active conversation, else first conversation
+      if (urlUserId && conversationsData.some(c => String(c.id) === String(urlUserId))) {
+        currentConversationId = String(urlUserId);
+      } else if (conversationsData.length > 0) {
         if (!currentConversationId || !conversationsData.some(c => String(c.id) === String(currentConversationId))) {
           currentConversationId = conversationsData[0].id;
         }
@@ -819,16 +886,45 @@ async function sendMessage() {
   const text = input.value.trim();
   if (!text && !attachedFile) return;
 
-  const conv = conversationsData.find(c => c.id == currentConversationId);
-  if (!conv) return;
+  let conv = conversationsData.find(c => String(c.id) === String(currentConversationId) || String(c.userId) === String(currentConversationId));
+
+  if (!conv && currentConversationId) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const targetUid = urlParams.get('user_id') || currentConversationId;
+    conv = {
+      id: String(targetUid),
+      userId: parseInt(targetUid, 10),
+      name: 'Customer #' + targetUid,
+      avatar: 'C',
+      messages: []
+    };
+    conversationsData.unshift(conv);
+  }
+
+  if (!conv) {
+    showToast('Please select a customer conversation from the list to send a message.', 'error');
+    return;
+  }
 
   const fileRef = attachedFile;
+  let fileDataUrl = null;
+  if (fileRef) {
+    try {
+      fileDataUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => resolve(null);
+        reader.readAsDataURL(fileRef);
+      });
+    } catch (_) {}
+  }
+
   const payload = {
     user_id: conv.userId,
     sender_name: "Nely's Salon Concierge",
     text: text,
     attachment_name: fileRef ? fileRef.name : null,
-    attachment_url: null
+    attachment_url: fileDataUrl
   };
 
   // Immediate UI clearing
@@ -846,7 +942,7 @@ async function sendMessage() {
     date: formatMessageDateHeader(now),
     created_at: now.toISOString(),
     status: 'sent',
-    attachment: payload.attachment_name ? { name: payload.attachment_name, url: null } : null
+    attachment: payload.attachment_name ? { name: payload.attachment_name, url: fileDataUrl } : null
   };
 
   if (!conv.messages) conv.messages = [];
@@ -869,7 +965,8 @@ async function sendMessage() {
     });
 
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: Failed to send message`);
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.message || `HTTP ${res.status}: Failed to send message`);
     }
 
     const json = await res.json();
@@ -877,10 +974,12 @@ async function sendMessage() {
 
     // Replace optimistic placeholder with authoritative server record
     const idx = conv.messages.findIndex(m => m.id === tempMsg.id);
-    if (idx !== -1) {
+    if (idx !== -1 && sentMsg) {
       conv.messages[idx] = sentMsg;
     }
-    conv.lastTime = sentMsg.time;
+    if (sentMsg && sentMsg.time) {
+      conv.lastTime = sentMsg.time;
+    }
 
     lastRenderedAdminHash = '';
     fetchConversationsData(true);
@@ -889,7 +988,7 @@ async function sendMessage() {
     showToast('Message sent to ' + conv.name, 'success');
   } catch (err) {
     console.error('Error sending message:', err);
-    showToast('Failed to send message to customer.', 'error');
+    showToast(err.message || 'Failed to send message to customer.', 'error');
   }
 }
 
