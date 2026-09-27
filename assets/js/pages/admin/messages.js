@@ -37,12 +37,11 @@ function initMessages() {
 
 function startAdminRealtimePolling() {
   stopAdminRealtimePolling();
-  const interval = document.hidden ? 6000 : 1500;
+  // 1.2s interval while active for instantaneous real-time sync without page reload
+  const interval = document.hidden ? 4000 : 1200;
   adminPollTimer = setInterval(() => {
-    if (!document.hidden) {
-      fetchConversationsData(true);
-      fetchSidebarStats();
-    }
+    fetchConversationsData(true);
+    fetchSidebarStats();
   }, interval);
 }
 
@@ -142,10 +141,11 @@ function getAuthHeaders() {
 // ================= FETCH DATA FROM BACKEND =================
 async function fetchConversationsData(silent = false) {
   try {
-    const res = await fetch(`../api/messages?search=${encodeURIComponent(searchQuery)}&filter=${encodeURIComponent(currentFilter)}`, {
+    const res = await fetch(`../api/messages?search=${encodeURIComponent(searchQuery)}&filter=${encodeURIComponent(currentFilter)}&_t=${Date.now()}`, {
       method: 'GET',
       headers: getAuthHeaders(),
-      credentials: 'include'
+      credentials: 'include',
+      cache: 'no-store'
     });
 
     if (res.status === 401 || res.status === 403) {
@@ -160,33 +160,40 @@ async function fetchConversationsData(silent = false) {
 
     const json = await res.json();
     if (json.data) {
+      let newConversations = [];
       if (Array.isArray(json.data.conversations)) {
-        conversationsData = json.data.conversations;
+        newConversations = json.data.conversations;
       } else if (Array.isArray(json.data)) {
-        conversationsData = json.data;
+        newConversations = json.data;
       }
 
-      if (json.data.unread_total !== undefined) {
-        totalUnreadCount = json.data.unread_total;
-      } else {
-        totalUnreadCount = conversationsData.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+      const newHash = JSON.stringify(newConversations);
+      if (newHash !== lastRenderedAdminHash || conversationsData.length === 0) {
+        lastRenderedAdminHash = newHash;
+        conversationsData = newConversations;
+
+        if (json.data.unread_total !== undefined) {
+          totalUnreadCount = json.data.unread_total;
+        } else {
+          totalUnreadCount = conversationsData.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
+        }
+
+        // Update unread badge in column header & sidebar
+        updateUnreadBadges();
+
+        // Select first conversation if none selected
+        if (conversationsData.length > 0) {
+          if (!currentConversationId || !conversationsData.some(c => c.id == currentConversationId)) {
+            currentConversationId = conversationsData[0].id;
+          }
+        } else {
+          currentConversationId = null;
+        }
+
+        renderConversationsList();
+        renderActiveConversation();
       }
     }
-
-    // Update unread badge in column header & sidebar
-    updateUnreadBadges();
-
-    // Select first conversation if none selected
-    if (conversationsData.length > 0) {
-      if (!currentConversationId || !conversationsData.some(c => c.id == currentConversationId)) {
-        currentConversationId = conversationsData[0].id;
-      }
-    } else {
-      currentConversationId = null;
-    }
-
-    renderConversationsList();
-    renderActiveConversation();
 
   } catch (err) {
     console.error('Error fetching conversations from backend:', err);
@@ -197,10 +204,11 @@ async function fetchConversationsData(silent = false) {
 // Fetch sidebar badge counts
 async function fetchSidebarStats() {
   try {
-    const res = await fetch('../api/dashboard/stats', {
+    const res = await fetch(`../api/dashboard/stats?_t=${Date.now()}`, {
       method: 'GET',
       headers: getAuthHeaders(),
-      credentials: 'include'
+      credentials: 'include',
+      cache: 'no-store'
     });
 
     if (res.ok) {

@@ -20,6 +20,10 @@ class MessageController {
      * If Customer: Returns message stream for the authenticated customer.
      */
     public function index(): void {
+        if (!headers_sent()) {
+            header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+            header('Pragma: no-cache');
+        }
         try {
             $user = AuthMiddleware::check();
 

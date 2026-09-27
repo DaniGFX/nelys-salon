@@ -85,12 +85,10 @@ function initCustomerMessagesPage() {
 
 function startCustomerRealtimePolling() {
   stopCustomerRealtimePolling();
-  // 1.5s polling interval while active for instantaneous real-time sync
-  const interval = document.hidden ? 6000 : 1500;
+  // 1.2s interval while active for instantaneous real-time sync without page reload
+  const interval = document.hidden ? 4000 : 1200;
   customerPollTimer = setInterval(() => {
-    if (!document.hidden) {
-      loadCustomerChatData();
-    }
+    loadCustomerChatData();
   }, interval);
 }
 
@@ -186,11 +184,15 @@ async function loadCustomerChatData() {
   const token = localStorage.getItem('nelys_token');
   const key = getStorageKey();
 
-  // If user is logged in, fetch authoritative chat stream from backend
+  // If user is logged in, fetch authoritative chat stream from backend with cache-busting
   if (token) {
     try {
-      const res = await fetch('../api/messages', {
-        headers: { 'Authorization': `Bearer ${token}` }
+      const res = await fetch(`../api/messages?_t=${Date.now()}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'application/json'
+        },
+        cache: 'no-store'
       });
 
       if (res.ok) {
@@ -199,6 +201,7 @@ async function loadCustomerChatData() {
           const newHash = JSON.stringify(json.data);
           if (newHash !== lastRendered_cust_messages_Hash || customerChatData.messages.length === 0) {
             lastRendered_cust_messages_Hash = newHash;
+            const prevCount = customerChatData.messages.length;
             if (json.data.length > 0) {
               customerChatData.messages = json.data.map(mapBackendMessage);
               isEmptyState = false;
@@ -208,6 +211,9 @@ async function loadCustomerChatData() {
             }
             saveCustomerChatData();
             renderChatStream();
+            if (customerChatData.messages.length > prevCount) {
+              scrollChatToBottom(true);
+            }
           }
           return;
         }
