@@ -51,6 +51,11 @@ class MessageController {
                     }, 0);
                 }
 
+                // Mark customer messages as delivered since admin is active
+                try {
+                    Message::markDeliveredForAdmin();
+                } catch (Throwable $e) {}
+
                 // If a specific user_id was requested to view & mark as read
                 if ($priorityUserId) {
                     try {
@@ -70,6 +75,7 @@ class MessageController {
             $messages = [];
             if ($userId > 0) {
                 try {
+                    Message::markDeliveredForCustomer($userId);
                     $messages = Message::findByUser($userId);
                     if (!empty($messages)) {
                         Message::markAllReadForUser($userId);
@@ -357,6 +363,7 @@ class MessageController {
                 try {
                     if ($role === 'admin') {
                         // Admin stream: monitor all conversations
+                        try { Message::markDeliveredForAdmin(); } catch (Throwable $e) {}
                         $conversations = Message::getAdminConversations();
                         $unreadTotal = Message::getAdminUnreadCount();
                         $freshHash = md5(json_encode([
@@ -365,6 +372,7 @@ class MessageController {
                                     'id'     => $c['id'] ?? '',
                                     'count'  => count($c['messages'] ?? []),
                                     'last'   => !empty($c['messages']) ? end($c['messages'])['id'] : 0,
+                                    'status' => !empty($c['messages']) ? end($c['messages'])['status'] : '',
                                     'unread' => $c['unreadCount'] ?? 0
                                 ];
                             }, $conversations),
@@ -381,11 +389,13 @@ class MessageController {
                         }
                     } else {
                         // Customer stream: monitor their own chat
+                        try { Message::markDeliveredForCustomer($userId); } catch (Throwable $e) {}
                         $messages = Message::findByUser($userId);
                         $unreadCount = Message::getUnreadCount($userId);
                         $freshHash = md5(json_encode([
                             'count'  => count($messages),
                             'last'   => !empty($messages) ? end($messages)['id'] : 0,
+                            'status' => !empty($messages) ? end($messages)['status'] : '',
                             'unread' => $unreadCount
                         ]));
 

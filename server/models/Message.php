@@ -246,6 +246,37 @@ class Message {
     }
 
     /**
+     * Mark unread messages as delivered when pulled by recipient
+     */
+    public static function markDeliveredForCustomer(int $userId): bool {
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare("
+            UPDATE messages 
+            SET status = 'delivered' 
+            WHERE user_id = :uid AND sender IN ('admin', 'salon') AND status = 'sent'
+        ");
+        return $stmt->execute(['uid' => $userId]);
+    }
+
+    public static function markDeliveredForAdmin(?int $userId = null): bool {
+        $pdo = Database::getConnection();
+        if ($userId) {
+            $stmt = $pdo->prepare("
+                UPDATE messages 
+                SET status = 'delivered' 
+                WHERE user_id = :uid AND sender = 'customer' AND status = 'sent'
+            ");
+            return $stmt->execute(['uid' => $userId]);
+        } else {
+            return (bool)$pdo->exec("
+                UPDATE messages 
+                SET status = 'delivered' 
+                WHERE sender = 'customer' AND status = 'sent'
+            ");
+        }
+    }
+
+    /**
      * Count unread messages from salon for a customer
      */
     public static function getUnreadCount(int $userId): int {

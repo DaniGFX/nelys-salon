@@ -258,7 +258,37 @@ function applyCustomerMessagesData(rawData) {
     if (customerChatData.messages.length > prevCount || prevCount === 0) {
       scrollChatToBottom(true);
     }
+
+    // Automatically mark incoming salon messages as read when viewing chat
+    const hasUnread = rawData.some(m => (m.sender === 'admin' || m.sender === 'salon') && m.status !== 'read');
+    if (hasUnread) {
+      markCustomerMessagesRead();
+    }
   }
+}
+
+async function markCustomerMessagesRead() {
+  const token = localStorage.getItem('nelys_token') || sessionStorage.getItem('nelys_token');
+  if (!token) return;
+  try {
+    await fetch('../api/messages/mark-read', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+  } catch (_) {}
+}
+
+function renderTickIcon(status) {
+  if (status === 'read') {
+    return '<span title="Read"><i class="fa-solid fa-check-double text-emerald-400 text-[10px]"></i></span>';
+  }
+  if (status === 'delivered') {
+    return '<span title="Delivered"><i class="fa-solid fa-check-double text-stone-300 text-[10px]"></i></span>';
+  }
+  return '<span title="Sent"><i class="fa-solid fa-check text-stone-300 text-[10px]"></i></span>';
 }
 
   // If no backend data and no cache, keep clean empty state
@@ -573,10 +603,7 @@ function renderChatStream() {
             </div>
             <div class="flex items-center justify-end gap-1.5 mt-1 text-[10px] text-[#735e5e]">
               <span>${escapeHtml(msg.time || formatTime(msgDate))}</span>
-              ${msg.status === 'read' 
-                ? '<span title="Read"><i class="fa-solid fa-check-double text-emerald-600 text-[10px]"></i></span>'
-                : '<span title="Sent"><i class="fa-solid fa-check text-stone-400 text-[10px]"></i></span>'
-              }
+              ${renderTickIcon(msg.status)}
             </div>
           </div>
         </div>

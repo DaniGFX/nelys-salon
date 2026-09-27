@@ -577,7 +577,7 @@ function renderConversationsList() {
 async function selectConversation(id) {
   currentConversationId = id;
   const conv = conversationsData.find(c => c.id == id);
-  if (conv && conv.isUnread) {
+  if (conv && (conv.unreadCount > 0 || conv.isUnread)) {
     const unreadCount = conv.unreadCount || 1;
     conv.isUnread = false;
     conv.unreadCount = 0;
@@ -779,9 +779,7 @@ function renderMessageStream(conv) {
             </div>
             <div class="flex items-center justify-end gap-1.5 mt-1 text-[10px] text-[#735e5e]">
               <span>${escapeHtml(displayTime)}</span>
-              <span title="Read">
-                <i class="fa-solid fa-check-double text-emerald-600 text-[10px]"></i>
-              </span>
+              ${renderAdminTickIcon(msg.status)}
             </div>
           </div>
         </div>
@@ -849,6 +847,16 @@ function renderAdminAttachmentBubble(attachment, isAdmin) {
       <i class="fa-solid fa-arrow-up-right-from-square text-[10px] ${textColor} opacity-70 ml-auto"></i>
     </a>
   `;
+}
+
+function renderAdminTickIcon(status) {
+  if (status === 'read') {
+    return '<span title="Read"><i class="fa-solid fa-check-double text-emerald-400 text-[10px]"></i></span>';
+  }
+  if (status === 'delivered') {
+    return '<span title="Delivered"><i class="fa-solid fa-check-double text-stone-300 text-[10px]"></i></span>';
+  }
+  return '<span title="Sent"><i class="fa-solid fa-check text-stone-300 text-[10px]"></i></span>';
 }
 
 // Render Customer Info (Right Column)
