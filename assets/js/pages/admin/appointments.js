@@ -705,14 +705,6 @@ function renderAppointmentsTable() {
               </button>
             ` : ''}
 
-            <button 
-              type="button" 
-              onclick="openViewDetailsModal(${appt.id})"
-              class="w-7 h-7 rounded-lg bg-[#FAF6F0] hover:bg-[#810B38] text-[#541A1A] hover:text-white border border-[#DCC3AA] flex items-center justify-center text-xs transition-colors"
-              title="View Full Details">
-              <i class="fa-regular fa-eye"></i>
-            </button>
-
             <!-- Kebab Action Button -->
             <button 
               type="button" 
