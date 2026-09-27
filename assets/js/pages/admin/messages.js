@@ -141,7 +141,7 @@ function getAuthHeaders() {
 // ================= FETCH DATA FROM BACKEND =================
 async function fetchConversationsData(silent = false) {
   try {
-    const res = await fetch(`../api/messages?search=${encodeURIComponent(searchQuery)}&filter=${encodeURIComponent(currentFilter)}&_t=${Date.now()}`, {
+    const res = await fetch(`../api/messages?admin_view=1&search=${encodeURIComponent(searchQuery)}&filter=${encodeURIComponent(currentFilter)}&_t=${Date.now()}`, {
       method: 'GET',
       headers: getAuthHeaders(),
       credentials: 'include',
