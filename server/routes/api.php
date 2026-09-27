@@ -244,6 +244,8 @@ class Router {
                         $msgCtrl->markRead();
                     } elseif ($id === 'stream' && $method === 'GET') {
                         $msgCtrl->stream();
+                    } elseif ($id === 'typing' && ($method === 'POST' || $method === 'PUT')) {
+                        $msgCtrl->typing();
                     } elseif ($id === 'unread-count' && $method === 'GET') {
                         $msgCtrl->unreadCount();
                     } elseif (is_numeric($id) && $method === 'DELETE') {

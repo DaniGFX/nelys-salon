@@ -34,6 +34,11 @@ let customerPollTimer = null;
 let customerEventSource = null;
 let searchQuery = '';
 
+// Typing Indicator State
+let isSalonTyping = false;
+let salonTypingDismissTimer = null;
+let customerTypingThrottleTimer = null;
+
 // Immediate 0ms Hydration
 function hydrateCustomerMessagesFromCache() {
   purgeLegacyMockStorage();
@@ -121,6 +126,15 @@ function initCustomerSSE() {
         }
       } catch (e) {
         console.warn('Customer SSE update parse error:', e);
+      }
+    });
+
+    customerEventSource.addEventListener('typing', (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        setSalonTypingStatus(!!data.is_typing);
+      } catch (e) {
+        console.warn('Customer SSE typing parse error:', e);
       }
     });
 
@@ -291,10 +305,65 @@ function renderTickIcon(status) {
   return '<span title="Sent"><i class="fa-solid fa-check text-stone-300 text-[10px]"></i></span>';
 }
 
-  // If no backend data and no cache, keep clean empty state
-  if (customerChatData.messages.length === 0) {
-    isEmptyState = true;
-    renderChatStream();
+function emitCustomerTyping(isTyping) {
+  const token = localStorage.getItem('nelys_token') || sessionStorage.getItem('nelys_token');
+  if (!token) return;
+  fetch('../api/messages/typing', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ is_typing: isTyping })
+  }).catch(() => {});
+}
+
+function handleCustomerTypingInput() {
+  if (customerTypingThrottleTimer) return;
+  emitCustomerTyping(true);
+  customerTypingThrottleTimer = setTimeout(() => {
+    customerTypingThrottleTimer = null;
+  }, 2000);
+}
+
+function setSalonTypingStatus(isTyping) {
+  isSalonTyping = isTyping;
+  if (salonTypingDismissTimer) {
+    clearTimeout(salonTypingDismissTimer);
+    salonTypingDismissTimer = null;
+  }
+
+  const container = document.getElementById('customerChatStream');
+  if (!container) return;
+
+  const existing = document.getElementById('salonTypingIndicator');
+
+  if (isTyping) {
+    if (!existing) {
+      const bubbleEl = document.createElement('div');
+      bubbleEl.id = 'salonTypingIndicator';
+      bubbleEl.className = 'flex items-start gap-2.5 sm:gap-3 mb-3.5 transition-all duration-300';
+      bubbleEl.innerHTML = `
+        <div class="w-8 h-8 rounded-full bg-[#541A1A] text-[#F1E2D1] font-bold text-xs flex items-center justify-center border border-[#DCC3AA] shrink-0 mt-1 shadow-xs">
+          NS
+        </div>
+        <div class="bg-white text-[#2b1d1d] border border-[#DCC3AA]/80 px-4 py-2.5 rounded-2xl rounded-tl-xs shadow-sm flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.3s]"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.15s]"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce"></span>
+          <span class="text-xs text-[#735e5e] font-medium ml-1.5">Nely's Salon is typing...</span>
+        </div>
+      `;
+      container.appendChild(bubbleEl);
+      scrollChatToBottom(true);
+    }
+    salonTypingDismissTimer = setTimeout(() => {
+      setSalonTypingStatus(false);
+    }, 4000);
+  } else {
+    if (existing) {
+      existing.remove();
+    }
   }
 }
 
@@ -502,9 +571,15 @@ function setupEventListeners() {
     messageForm.addEventListener('submit', handleSendMessage);
   }
 
-  // Keydown for enter to send
+  // Keydown and typing input listeners for enter to send
   const msgInput = document.getElementById('customerMessageInput');
   if (msgInput) {
+    msgInput.addEventListener('input', handleCustomerTypingInput);
+    msgInput.addEventListener('blur', () => {
+      if (!msgInput.value.trim()) {
+        emitCustomerTyping(false);
+      }
+    });
     msgInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -633,6 +708,22 @@ function renderChatStream() {
     }
   });
 
+  if (isSalonTyping) {
+    html += `
+      <div id="salonTypingIndicator" class="flex items-start gap-2.5 sm:gap-3 mb-3.5 transition-all duration-300">
+        <div class="w-8 h-8 rounded-full bg-[#541A1A] text-[#F1E2D1] font-bold text-xs flex items-center justify-center border border-[#DCC3AA] shrink-0 mt-1 shadow-xs">
+          NS
+        </div>
+        <div class="bg-white text-[#2b1d1d] border border-[#DCC3AA]/80 px-4 py-2.5 rounded-2xl rounded-tl-xs shadow-sm flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.3s]"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.15s]"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce"></span>
+          <span class="text-xs text-[#735e5e] font-medium ml-1.5">Nely's Salon is typing...</span>
+        </div>
+      </div>
+    `;
+  }
+
   container.innerHTML = html;
   scrollChatToBottom();
 }
@@ -701,6 +792,13 @@ async function handleSendMessage(e) {
   const fileAttachment = attachedFile;
 
   if (!text && !fileAttachment) return;
+
+  // Clear typing indicator status immediately
+  if (customerTypingThrottleTimer) {
+    clearTimeout(customerTypingThrottleTimer);
+    customerTypingThrottleTimer = null;
+  }
+  emitCustomerTyping(false);
 
   const token = localStorage.getItem('nelys_token');
   const now = new Date();

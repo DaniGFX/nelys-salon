@@ -20,6 +20,11 @@ let adminPollTimer = null;
 let adminEventSource = null;
 let lastRenderedAdminHash = '';
 
+// Typing Indicator State
+let activeTypingCustomerIds = [];
+let adminTypingThrottleTimer = null;
+let adminTypingDismissTimer = null;
+
 function initMessages() {
   const urlParams = new URLSearchParams(window.location.search);
   const targetUserId = urlParams.get('user_id');
@@ -75,6 +80,17 @@ function initAdminSSE() {
         }
       } catch (e) {
         console.warn('Admin SSE update parse error:', e);
+      }
+    });
+
+    adminEventSource.addEventListener('typing', (event) => {
+      try {
+        const payload = JSON.parse(event.data);
+        if (payload && Array.isArray(payload.typing_user_ids)) {
+          handleAdminTypingUpdate(payload.typing_user_ids);
+        }
+      } catch (e) {
+        console.warn('Admin SSE typing parse error:', e);
       }
     });
 
@@ -425,6 +441,98 @@ function updateUnreadBadges() {
   }
 }
 
+function handleAdminTypingUpdate(typingUserIds) {
+  activeTypingCustomerIds = (typingUserIds || []).map(Number);
+  
+  if (adminTypingDismissTimer) {
+    clearTimeout(adminTypingDismissTimer);
+    adminTypingDismissTimer = null;
+  }
+
+  // Update center chat stream if viewing an active typing customer
+  updateActiveChatTypingBubble();
+
+  // Update left column conversation preview
+  renderConversationsList();
+
+  // Safety auto-clear after 4s
+  if (activeTypingCustomerIds.length > 0) {
+    adminTypingDismissTimer = setTimeout(() => {
+      activeTypingCustomerIds = [];
+      updateActiveChatTypingBubble();
+      renderConversationsList();
+    }, 4000);
+  }
+}
+
+function updateActiveChatTypingBubble() {
+  const stream = document.getElementById('messagesStream');
+  if (!stream) return;
+
+  const conv = conversationsData.find(c => String(c.id) === String(currentConversationId) || String(c.userId) === String(currentConversationId));
+  const isCurrentTyping = conv && (
+    activeTypingCustomerIds.includes(Number(conv.id)) || 
+    activeTypingCustomerIds.includes(Number(conv.userId))
+  );
+
+  const existing = document.getElementById('customerTypingIndicator');
+
+  if (isCurrentTyping) {
+    if (!existing) {
+      const bubbleEl = document.createElement('div');
+      bubbleEl.id = 'customerTypingIndicator';
+      bubbleEl.className = 'flex items-start gap-2.5 mb-3.5 transition-all duration-300';
+      bubbleEl.innerHTML = `
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xs flex items-center justify-center shrink-0 border border-[#DCC3AA] mt-1 shadow-xs">
+          ${escapeHtml(conv.avatar || 'C')}
+        </div>
+        <div class="max-w-[78%] sm:max-w-[70%]">
+          <div class="text-[11px] font-bold text-[#541A1A] mb-1 pl-1">${escapeHtml(conv.name || 'Customer')}</div>
+          <div class="bg-white border border-[#DCC3AA]/70 text-[#2b1d1d] px-4 py-2.5 rounded-2xl rounded-tl-xs shadow-sm flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.3s]"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.15s]"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce"></span>
+            <span class="text-xs text-[#735e5e] font-medium ml-1.5">typing...</span>
+          </div>
+        </div>
+      `;
+      stream.appendChild(bubbleEl);
+      stream.scrollTop = stream.scrollHeight;
+    }
+  } else {
+    if (existing) {
+      existing.remove();
+    }
+  }
+}
+
+function emitAdminTyping(isTyping) {
+  const token = localStorage.getItem('nelys_token') || sessionStorage.getItem('nelys_token');
+  if (!token || !currentConversationId) return;
+
+  const conv = conversationsData.find(c => String(c.id) === String(currentConversationId) || String(c.userId) === String(currentConversationId));
+  const targetId = conv ? (conv.userId || conv.id) : currentConversationId;
+
+  fetch('../api/messages/typing', {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    credentials: 'include',
+    body: JSON.stringify({
+      user_id: targetId,
+      is_typing: isTyping
+    })
+  }).catch(() => {});
+}
+
+function handleAdminTypingInput() {
+  if (!currentConversationId) return;
+  if (adminTypingThrottleTimer) return;
+  emitAdminTyping(true);
+  adminTypingThrottleTimer = setTimeout(() => {
+    adminTypingThrottleTimer = null;
+  }, 2000);
+}
+
 // Setup Event Listeners
 function setupEventListeners() {
   // Search input
@@ -461,9 +569,15 @@ function setupEventListeners() {
     });
   }
 
-  // Textarea Enter key (Shift+Enter for newline)
+  // Textarea Enter key (Shift+Enter for newline) and typing listeners
   const messageInput = document.getElementById('messageInput');
   if (messageInput) {
+    messageInput.addEventListener('input', handleAdminTypingInput);
+    messageInput.addEventListener('blur', () => {
+      if (!messageInput.value.trim()) {
+        emitAdminTyping(false);
+      }
+    });
     messageInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
@@ -529,6 +643,7 @@ function renderConversationsList() {
     const previewText = lastMsg 
       ? (lastMsg.sender === 'admin' ? `You: ${lastMsg.text}` : lastMsg.text) 
       : 'No messages yet';
+    const isTyping = activeTypingCustomerIds.includes(Number(conv.id)) || activeTypingCustomerIds.includes(Number(conv.userId));
 
     return `
       <div 
@@ -559,7 +674,10 @@ function renderConversationsList() {
           </div>
 
           <p class="text-xs truncate ${conv.isUnread ? 'font-bold text-[#2b1d1d]' : 'text-[#735e5e]'}">
-            ${escapeHtml(previewText)}
+            ${isTyping 
+              ? `<span class="text-[#810B38] font-bold italic flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-ping"></span>Typing...</span>` 
+              : escapeHtml(previewText)
+            }
           </p>
         </div>
 
@@ -803,8 +921,31 @@ function renderMessageStream(conv) {
           </div>
         </div>
       `;
-    }
   });
+
+  const isCurrentTyping = conv && (
+    activeTypingCustomerIds.includes(Number(conv.id)) || 
+    activeTypingCustomerIds.includes(Number(conv.userId))
+  );
+
+  if (isCurrentTyping) {
+    html += `
+      <div id="customerTypingIndicator" class="flex items-start gap-2.5 mb-3.5 transition-all duration-300">
+        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xs flex items-center justify-center shrink-0 border border-[#DCC3AA] mt-1 shadow-xs">
+          ${escapeHtml(conv.avatar || 'C')}
+        </div>
+        <div class="max-w-[78%] sm:max-w-[70%]">
+          <div class="text-[11px] font-bold text-[#541A1A] mb-1 pl-1">${escapeHtml(conv.name || 'Customer')}</div>
+          <div class="bg-white border border-[#DCC3AA]/70 text-[#2b1d1d] px-4 py-2.5 rounded-2xl rounded-tl-xs shadow-sm flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.3s]"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.15s]"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-bounce"></span>
+            <span class="text-xs text-[#735e5e] font-medium ml-1.5">typing...</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }
 
   container.innerHTML = html;
   // Scroll to bottom
@@ -994,6 +1135,13 @@ async function sendMessage() {
   // Immediate UI clearing
   input.value = '';
   clearAttachment();
+
+  // Clear typing indicator status immediately
+  if (adminTypingThrottleTimer) {
+    clearTimeout(adminTypingThrottleTimer);
+    adminTypingThrottleTimer = null;
+  }
+  emitAdminTyping(false);
 
   // Optimistic UI append
   const now = new Date();

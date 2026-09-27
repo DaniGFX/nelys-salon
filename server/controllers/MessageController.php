@@ -9,6 +9,7 @@ require_once dirname(__DIR__) . '/helpers/Response.php';
 require_once dirname(__DIR__) . '/helpers/Validator.php';
 require_once dirname(__DIR__) . '/helpers/Sanitizer.php';
 require_once dirname(__DIR__) . '/helpers/FileUpload.php';
+require_once dirname(__DIR__) . '/helpers/TypingTracker.php';
 require_once dirname(__DIR__) . '/middleware/AuthMiddleware.php';
 require_once dirname(__DIR__) . '/middleware/RoleMiddleware.php';
 require_once dirname(__DIR__) . '/models/Message.php';
@@ -321,6 +322,36 @@ class MessageController {
     }
 
     /**
+     * Broadcast typing status
+     * POST /api/messages/typing
+     */
+    public function typing(): void {
+        try {
+            $user = AuthMiddleware::check();
+            $role = strtolower(trim($user['role'] ?? ''));
+            $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $isTyping = !empty($input['is_typing']);
+
+            if ($role === 'admin') {
+                $targetUserId = !empty($input['user_id']) ? (int)$input['user_id'] : 0;
+                if ($targetUserId > 0) {
+                    TypingTracker::setTyping($targetUserId, 'admin', $isTyping);
+                }
+            } else {
+                $userId = (int)($user['id'] ?? 0);
+                if ($userId > 0) {
+                    TypingTracker::setTyping($userId, 'customer', $isTyping);
+                }
+            }
+
+            Response::success(['status' => 'ok']);
+        } catch (Throwable $e) {
+            error_log('MessageController::typing Error: ' . $e->getMessage());
+            Response::success(['status' => 'ok']);
+        }
+    }
+
+    /**
      * Real-time Server-Sent Events (SSE) Stream endpoint
      * GET /api/messages/stream?token=<jwt>&conversation_id=<targetUserId>
      */
@@ -329,6 +360,7 @@ class MessageController {
             $user = AuthMiddleware::check();
             $role = strtolower(trim($user['role'] ?? ''));
             $userId = (int)($user['id'] ?? 0);
+            $targetUserId = !empty($_GET['conversation_id']) ? (int)$_GET['conversation_id'] : (!empty($_GET['user_id']) ? (int)$_GET['user_id'] : 0);
 
             // Turn off all output buffering so events flush immediately
             while (ob_get_level() > 0) {
@@ -352,6 +384,7 @@ class MessageController {
             flush();
 
             $lastHash = '';
+            $lastTypingStatus = false;
             $startTime = time();
             $maxDuration = 25; // Hold open for 25s max, then browser EventSource auto-reconnects
 
@@ -406,6 +439,26 @@ class MessageController {
                                 'messages'     => $messages,
                                 'unread_count' => $unreadCount
                             ]) . "\n\n";
+                        }
+                    }
+
+                    // Check and broadcast real-time typing indicators
+                    if ($role === 'admin') {
+                        $typingCustomerIds = TypingTracker::getTypingCustomerIds();
+                        $typingHash = implode(',', $typingCustomerIds);
+                        if ($typingHash !== $lastTypingStatus) {
+                            $lastTypingStatus = $typingHash;
+                            echo "event: typing\n";
+                            echo "data: " . json_encode([
+                                'typing_user_ids' => $typingCustomerIds
+                            ]) . "\n\n";
+                        }
+                    } else {
+                        $isTypingNow = TypingTracker::isTyping($userId, 'admin');
+                        if ($isTypingNow !== $lastTypingStatus) {
+                            $lastTypingStatus = $isTypingNow;
+                            echo "event: typing\n";
+                            echo "data: " . json_encode(['is_typing' => $isTypingNow]) . "\n\n";
                         }
                     }
                 } catch (Throwable $e) {
