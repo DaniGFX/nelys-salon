@@ -13,7 +13,6 @@ let currentConversationId = null;
 let currentFilter = 'all';
 let searchQuery = '';
 let attachedFile = null;
-let broadcastAttachedFile = null;
 let totalUnreadCount = 0;
 
 // Real-time synchronization state
@@ -757,15 +756,6 @@ function setupEventListeners() {
   const fileInput = document.getElementById('fileAttachmentInput');
   if (fileInput) {
     fileInput.addEventListener('change', handleFileSelected);
-  }
-
-  // Broadcast Message Character Counter
-  const broadcastMsgInput = document.getElementById('broadcastMessage');
-  const broadcastCharCount = document.getElementById('broadcastCharCount');
-  if (broadcastMsgInput && broadcastCharCount) {
-    broadcastMsgInput.addEventListener('input', () => {
-      broadcastCharCount.textContent = `${broadcastMsgInput.value.length} / 2000`;
-    });
   }
 
   // Handle Window Resize to keep layouts consistent across breakpoints
@@ -1815,135 +1805,6 @@ function toggleMobileSidebar(show) {
   }
 }
 
-// ================= BROADCAST ANNOUNCEMENT HANDLERS =================
-function openBroadcastModal() {
-  const modal = document.getElementById('broadcastModal');
-  const form = document.getElementById('broadcastForm');
-  const charCount = document.getElementById('broadcastCharCount');
-  const msgInput = document.getElementById('broadcastMessage');
-
-  if (form) form.reset();
-  clearBroadcastFile();
-  if (charCount) charCount.textContent = '0 / 2000';
-
-  if (modal) {
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-    modal.style.display = 'flex';
-  }
-
-  if (msgInput) {
-    setTimeout(() => msgInput.focus(), 50);
-  }
-}
-
-function closeBroadcastModal() {
-  const modal = document.getElementById('broadcastModal');
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    modal.style.display = 'none';
-  }
-  clearBroadcastFile();
-}
-
-function handleBroadcastFileSelect(event) {
-  const file = event.target.files && event.target.files[0];
-  if (!file) return;
-
-  // Max 10MB limit check
-  if (file.size > 10 * 1024 * 1024) {
-    showToast('Attachment exceeds 10MB limit.', 'info');
-    event.target.value = '';
-    return;
-  }
-
-  broadcastAttachedFile = file;
-  const preview = document.getElementById('broadcastFilePreview');
-  const nameEl = document.getElementById('broadcastFileName');
-  if (preview && nameEl) {
-    nameEl.textContent = file.name;
-    preview.classList.remove('hidden');
-    preview.classList.add('flex');
-  }
-}
-
-function clearBroadcastFile() {
-  broadcastAttachedFile = null;
-  const fileInput = document.getElementById('broadcastFileInput');
-  if (fileInput) fileInput.value = '';
-  const preview = document.getElementById('broadcastFilePreview');
-  if (preview) {
-    preview.classList.add('hidden');
-    preview.classList.remove('flex');
-  }
-}
-
-async function handleBroadcastSubmit(event) {
-  if (event) event.preventDefault();
-
-  const msgInput = document.getElementById('broadcastMessage');
-  const text = msgInput ? msgInput.value.trim() : '';
-  const audienceRadio = document.querySelector('input[name="broadcastAudience"]:checked');
-  const audience = audienceRadio ? audienceRadio.value : 'all';
-  const submitBtn = document.getElementById('btnSendBroadcast');
-
-  if (!text && !broadcastAttachedFile) {
-    showToast('Please enter an announcement message or attach a file.', 'info');
-    return;
-  }
-
-  const token = localStorage.getItem('nelys_token') || sessionStorage.getItem('nelys_token');
-  if (!token) {
-    showToast('Your session has expired. Please log in again.', 'info');
-    return;
-  }
-
-  if (submitBtn) {
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-xs"></i> <span>Sending...</span>';
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append('message', text);
-    formData.append('audience', audience);
-    if (broadcastAttachedFile) {
-      formData.append('attachment', broadcastAttachedFile);
-    }
-
-    const res = await fetch('../api/messages/broadcast', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Accept': 'application/json'
-      },
-      credentials: 'include',
-      body: formData
-    });
-
-    const data = await res.json().catch(() => ({}));
-
-    if (res.ok && data.success) {
-      closeBroadcastModal();
-      showToast(data.message || 'Broadcast announcement delivered successfully.', 'success');
-      // Silently refresh conversations data
-      fetchConversationsData(true);
-      fetchSidebarStats();
-    } else {
-      showToast(data.message || 'Failed to send broadcast announcement.', 'info');
-    }
-  } catch (err) {
-    console.error('Error sending broadcast:', err);
-    showToast('Network error while dispatching broadcast announcement.', 'info');
-  } finally {
-    if (submitBtn) {
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<i class="fa-solid fa-paper-plane text-xs"></i> <span>Send Broadcast</span>';
-    }
-  }
-}
-
 // ================= GLOBAL WINDOW EXPORTS =================
 window.toggleMobileSidebar = toggleMobileSidebar;
 window.selectConversation = selectConversation;
@@ -1962,11 +1823,6 @@ window.closeLogoutModal = closeLogoutModal;
 window.handleConfirmLogout = handleConfirmLogout;
 window.confirmLogout = confirmLogout;
 window.showToast = showToast;
-window.openBroadcastModal = openBroadcastModal;
-window.closeBroadcastModal = closeBroadcastModal;
-window.handleBroadcastFileSelect = handleBroadcastFileSelect;
-window.clearBroadcastFile = clearBroadcastFile;
-window.handleBroadcastSubmit = handleBroadcastSubmit;
 
 // ================= DOM INITIALIZATION & AUTH =================
 if (document.readyState === 'loading') {

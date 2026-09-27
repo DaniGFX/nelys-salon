@@ -73,7 +73,7 @@
       }
     })();
   </script>
-  <script defer src="../assets/js/pages/admin/messages.js?v=7.9"></script>
+  <script defer src="../assets/js/pages/admin/messages.js?v=8.1"></script>
 </head>
 
 <body
@@ -297,18 +297,7 @@
               <i class="fa-solid fa-comments text-[#810B38] text-sm"></i>
               <span>Conversations</span>
             </h3>
-            <div class="flex items-center gap-2">
-              <span id="totalUnreadBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#810B38]/10 text-[#810B38]"></span>
-              <button 
-                type="button" 
-                id="btnOpenBroadcast"
-                onclick="openBroadcastModal()"
-                title="Broadcast Announcement"
-                class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#810B38] hover:bg-[#541A1A] text-white flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer">
-                <i class="fa-solid fa-bullhorn text-[11px]"></i>
-                <span class="hidden sm:inline">Broadcast</span>
-              </button>
-            </div>
+            <span id="totalUnreadBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#810B38]/10 text-[#810B38]"></span>
           </div>
 
           <!-- Search Messages Input -->
@@ -715,132 +704,6 @@
           Logout
         </button>
       </div>
-    </div>
-  </div>
-
-  <!-- ================= BROADCAST ANNOUNCEMENT MODAL ================= -->
-  <div 
-    id="broadcastModal"
-    onclick="if(event.target === this) closeBroadcastModal();"
-    class="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="broadcastModalTitle">
-    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-lg w-full shadow-2xl overflow-hidden relative" onclick="event.stopPropagation();">
-      
-      <!-- Modal Header -->
-      <div class="px-6 py-4 border-b border-[#DCC3AA]/50 bg-[#FAF6F0] flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <div class="w-9 h-9 rounded-xl bg-[#810B38]/10 border border-[#810B38]/20 text-[#810B38] flex items-center justify-center shadow-xs">
-            <i class="fa-solid fa-bullhorn text-sm"></i>
-          </div>
-          <div>
-            <h3 id="broadcastModalTitle" class="font-serif text-base font-bold text-[#541A1A]">Broadcast Announcement</h3>
-            <p class="text-[11px] text-stone-500">Send a direct message to your customers</p>
-          </div>
-        </div>
-        <button 
-          type="button" 
-          onclick="closeBroadcastModal()"
-          class="w-8 h-8 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100 flex items-center justify-center transition-colors cursor-pointer">
-          <i class="fa-solid fa-xmark text-sm"></i>
-        </button>
-      </div>
-
-      <!-- Modal Form Body -->
-      <form id="broadcastForm" onsubmit="handleBroadcastSubmit(event)" class="p-6 space-y-4">
-        
-        <!-- Target Audience Selection -->
-        <div>
-          <label class="block text-xs font-bold text-[#541A1A] mb-1.5">
-            <i class="fa-solid fa-users text-[#810B38] mr-1"></i> Target Audience
-          </label>
-          <div class="grid grid-cols-2 gap-2.5">
-            <label class="relative flex items-center gap-2.5 p-3 rounded-xl border border-[#DCC3AA]/70 hover:border-[#810B38] cursor-pointer bg-white transition-all has-[:checked]:border-[#810B38] has-[:checked]:bg-[#FAF6F0]/60 has-[:checked]:ring-1 has-[:checked]:ring-[#810B38]">
-              <input type="radio" name="broadcastAudience" value="all" checked class="text-[#810B38] focus:ring-[#810B38]">
-              <div>
-                <p class="text-xs font-bold text-[#2b1d1d]">All Customers</p>
-                <p class="text-[10px] text-stone-500">Every registered customer</p>
-              </div>
-            </label>
-            <label class="relative flex items-center gap-2.5 p-3 rounded-xl border border-[#DCC3AA]/70 hover:border-[#810B38] cursor-pointer bg-white transition-all has-[:checked]:border-[#810B38] has-[:checked]:bg-[#FAF6F0]/60 has-[:checked]:ring-1 has-[:checked]:ring-[#810B38]">
-              <input type="radio" name="broadcastAudience" value="with_appointments" class="text-[#810B38] focus:ring-[#810B38]">
-              <div>
-                <p class="text-xs font-bold text-[#2b1d1d]">Active Clients</p>
-                <p class="text-[10px] text-stone-500">With appointment history</p>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <!-- Announcement Content -->
-        <div>
-          <div class="flex items-center justify-between mb-1.5">
-            <label for="broadcastMessage" class="text-xs font-bold text-[#541A1A]">
-              <i class="fa-solid fa-message text-[#810B38] mr-1"></i> Message Body
-            </label>
-            <span id="broadcastCharCount" class="text-[10px] text-stone-400 font-mono">0 / 2000</span>
-          </div>
-          <textarea 
-            id="broadcastMessage"
-            rows="4" 
-            maxlength="2000"
-            required
-            placeholder="Type your announcement, promotion, holiday notice, or update here..."
-            class="w-full px-3.5 py-2.5 rounded-xl border border-[#DCC3AA]/70 text-xs text-[#2b1d1d] placeholder-[#735e5e]/50 focus:outline-none focus:ring-2 focus:ring-[#810B38] focus:border-transparent transition-all resize-none"></textarea>
-        </div>
-
-        <!-- Optional Attachment -->
-        <div>
-          <label class="block text-xs font-bold text-[#541A1A] mb-1.5">
-            <i class="fa-solid fa-paperclip text-[#810B38] mr-1"></i> Optional Attachment
-          </label>
-          <div class="flex items-center gap-2">
-            <input 
-              type="file" 
-              id="broadcastFileInput" 
-              accept="image/jpeg,image/png,image/webp,image/gif,application/pdf"
-              class="hidden"
-              onchange="handleBroadcastFileSelect(event)">
-            <button 
-              type="button" 
-              onclick="document.getElementById('broadcastFileInput').click()"
-              class="px-3 py-2 rounded-xl border border-dashed border-[#DCC3AA] hover:border-[#810B38] bg-stone-50/50 hover:bg-[#FAF6F0] text-xs font-semibold text-stone-600 transition-colors flex items-center gap-1.5 cursor-pointer">
-              <i class="fa-solid fa-upload text-xs text-[#810B38]"></i>
-              <span>Choose Image or PDF</span>
-            </button>
-            <div id="broadcastFilePreview" class="hidden items-center gap-2 px-2.5 py-1.5 rounded-xl bg-stone-100 border border-stone-200 text-xs text-stone-700">
-              <i class="fa-solid fa-file text-[#810B38]"></i>
-              <span id="broadcastFileName" class="max-w-[160px] truncate text-[11px] font-medium"></span>
-              <button 
-                type="button" 
-                onclick="clearBroadcastFile()"
-                class="text-stone-400 hover:text-rose-600 transition-colors cursor-pointer">
-                <i class="fa-solid fa-xmark text-xs"></i>
-              </button>
-            </div>
-          </div>
-          <p class="text-[10px] text-stone-400 mt-1">Supported: JPG, PNG, WEBP, GIF, PDF (Max 10MB)</p>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex items-center justify-end gap-3 pt-3 border-t border-[#DCC3AA]/40">
-          <button 
-            type="button" 
-            onclick="closeBroadcastModal()"
-            class="px-4 py-2.5 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors cursor-pointer">
-            Cancel
-          </button>
-          <button 
-            type="submit" 
-            id="btnSendBroadcast"
-            class="px-5 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#541A1A] text-white text-xs font-semibold transition-all shadow-sm flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-            <i class="fa-solid fa-paper-plane text-xs"></i>
-            <span>Send Broadcast</span>
-          </button>
-        </div>
-
-      </form>
     </div>
   </div>
 
