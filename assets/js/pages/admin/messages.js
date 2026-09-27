@@ -28,6 +28,13 @@ function initMessages() {
   setupEventListeners();
   fetchConversationsData();
   fetchSidebarStats();
+
+  if (!window.__admin_messages_poll) {
+    window.__admin_messages_poll = setInterval(() => {
+      fetchConversationsData(true);
+      fetchSidebarStats();
+    }, 6000);
+  }
 }
 
 function hydrateMessagesFromCache() {
@@ -103,7 +110,7 @@ function getAuthHeaders() {
 }
 
 // ================= FETCH DATA FROM BACKEND =================
-async function fetchConversationsData() {
+async function fetchConversationsData(silent = false) {
   try {
     const res = await fetch(`../api/messages?search=${encodeURIComponent(searchQuery)}&filter=${encodeURIComponent(currentFilter)}`, {
       method: 'GET',
@@ -153,7 +160,7 @@ async function fetchConversationsData() {
 
   } catch (err) {
     console.error('Error fetching conversations from backend:', err);
-    showToast('Failed to load conversations from server.', 'error');
+    if (!silent) showToast('Failed to load conversations from server.', 'error');
   }
 }
 

@@ -47,15 +47,86 @@ class Message {
     }
 
     /**
+     * Check if a customer has an unanswered message that has been waiting for 10 minutes (600s) without an admin reply.
+     * If so, automatically generate a salon auto-reply message: "We're currently busy, please leave a message..."
+     */
+    public static function checkAndTrigger10MinBusyReplies(?int $targetUserId = null): void {
+        self::ensureSchema();
+        try {
+            $pdo = Database::getConnection();
+
+            if ($targetUserId !== null) {
+                $userIds = [$targetUserId];
+            } else {
+                $userStmt = $pdo->query("SELECT DISTINCT user_id FROM messages");
+                $userIds = $userStmt->fetchAll(PDO::FETCH_COLUMN);
+            }
+
+            foreach ($userIds as $uid) {
+                $uid = (int)$uid;
+                if ($uid <= 0) continue;
+
+                // Get the very last message in this conversation
+                $stmt = $pdo->prepare("SELECT * FROM messages WHERE user_id = :uid ORDER BY created_at DESC, id DESC LIMIT 1");
+                $stmt->execute(['uid' => $uid]);
+                $lastMsg = $stmt->fetch();
+
+                if (!$lastMsg) continue;
+
+                // Only trigger if the latest message was sent by the customer
+                if ($lastMsg['sender'] === 'customer') {
+                    $createdTs = strtotime($lastMsg['created_at']);
+                    $elapsedSeconds = time() - $createdTs;
+
+                    // If 10 minutes (600 seconds) have elapsed without an admin reply
+                    if ($elapsedSeconds >= 600) {
+                        $busyText = "We're currently busy attending to clients, please leave your message and inquiries here and we will get back to you as soon as possible.";
+
+                        // Check if a salon message was already sent on or after this customer message
+                        $checkStmt = $pdo->prepare("
+                            SELECT COUNT(*) FROM messages 
+                            WHERE user_id = :uid 
+                              AND sender = 'salon' 
+                              AND (created_at >= :after_time OR id > :after_id)
+                        ");
+                        $checkStmt->execute([
+                            'uid'        => $uid,
+                            'after_time' => $lastMsg['created_at'],
+                            'after_id'   => $lastMsg['id']
+                        ]);
+                        $alreadySent = (int)$checkStmt->fetchColumn();
+
+                        if ($alreadySent === 0) {
+                            // Insert the automated "we're busy" response
+                            self::create([
+                                'user_id'     => $uid,
+                                'sender'      => 'salon',
+                                'sender_name' => "Nely's Salon",
+                                'text'        => $busyText,
+                                'status'      => 'sent',
+                                'created_at'  => date('Y-m-d H:i:s')
+                            ]);
+                        }
+                    }
+                }
+            }
+        } catch (Throwable $e) {
+            error_log('Message::checkAndTrigger10MinBusyReplies Error: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Retrieve conversation stream for a user
      */
     public static function findByUser(int $userId, int $limit = 100): array {
         self::ensureSchema();
+        self::checkAndTrigger10MinBusyReplies($userId);
+
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare("
             SELECT * FROM messages 
             WHERE user_id = :uid 
-            ORDER BY created_at ASC 
+            ORDER BY created_at ASC, id ASC 
             LIMIT :limit
         ");
         $stmt->bindValue(':uid', $userId, PDO::PARAM_INT);
@@ -179,6 +250,7 @@ class Message {
      */
     public static function getAdminConversations(string $search = '', string $filter = 'all'): array {
         self::ensureSchema();
+        self::checkAndTrigger10MinBusyReplies();
         $pdo = Database::getConnection();
 
         // 1. Fetch all customer users with profiles

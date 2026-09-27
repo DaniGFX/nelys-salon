@@ -47,24 +47,7 @@ class MessageController {
             $userId = (int)$user['id'];
             $messages = Message::findByUser($userId);
 
-            // If fresh conversation with no messages yet, seed personalized welcome greeting
-            if (empty($messages)) {
-                $profile = CustomerProfile::findByUserId($userId);
-                $fullName = $profile['full_name'] ?? ($user['email'] ? explode('@', $user['email'])[0] : 'there');
-                $firstName = explode(' ', trim($fullName))[0] ?: 'there';
-
-                $welcomeText = "Hello {$firstName}! Welcome to Nely's Salon official support. How can we assist you today with appointments, treatments, or beauty questions?";
-
-                Message::create([
-                    'user_id'     => $userId,
-                    'sender'      => 'salon',
-                    'sender_name' => "Nely's Salon Concierge",
-                    'text'        => $welcomeText,
-                    'status'      => 'read',
-                ]);
-
-                $messages = Message::findByUser($userId);
-            } else {
+            if (!empty($messages)) {
                 // Mark salon messages as read when fetched by customer
                 Message::markAllReadForUser($userId);
             }
@@ -82,7 +65,7 @@ class MessageController {
     /**
      * Send a message
      * If Admin: Sends message to target user_id (sender = 'salon').
-     * If Customer: Sends message and receives automated concierge response.
+     * If Customer: Sends message to salon (sender = 'customer') without bot replies.
      */
     public function send(): void {
         try {
@@ -136,12 +119,12 @@ class MessageController {
                 return;
             }
 
-            // Customer sending message to Salon
+            // Customer sending message to Salon (No bot reply)
             $userId = (int)$user['id'];
             $profile = CustomerProfile::findByUserId($userId);
-            $customerName = $profile['full_name'] ?? 'Client';
+            $customerName = $profile['full_name'] ?? ($user['email'] ? explode('@', $user['email'])[0] : 'Client');
 
-            // 1. Save customer outgoing message
+            // Save customer outgoing message
             $custMsgId = Message::create([
                 'user_id'         => $userId,
                 'sender'          => 'customer',
@@ -153,23 +136,19 @@ class MessageController {
             ]);
 
             $customerMessage = Message::findById($custMsgId);
-
-            // 2. Generate intelligent automated concierge response
-            $replyText = self::generateConciergeReply($text);
-
-            $salonMsgId = Message::create([
-                'user_id'     => $userId,
-                'sender'      => 'salon',
-                'sender_name' => "Nely's Salon Concierge",
-                'text'        => $replyText,
-                'status'      => 'read',
-            ]);
-
-            $salonMessage = Message::findById($salonMsgId);
+            $timeTs = strtotime($customerMessage['created_at']);
 
             Response::success([
-                'customer_message' => $customerMessage,
-                'salon_reply'      => $salonMessage,
+                'id'              => (int)$customerMessage['id'],
+                'sender'          => 'customer',
+                'sender_name'     => $customerMessage['sender_name'],
+                'text'            => $customerMessage['text'],
+                'time'            => date('g:i A', $timeTs),
+                'date'            => date('M j, Y', $timeTs),
+                'status'          => $customerMessage['status'],
+                'attachment_name' => $customerMessage['attachment_name'],
+                'attachment_url'  => $customerMessage['attachment_url'],
+                'customer_message'=> $customerMessage,
             ], 'Message sent successfully.', 201);
         } catch (Throwable $e) {
             error_log('MessageController::send Error: ' . $e->getMessage());
@@ -272,42 +251,5 @@ class MessageController {
             error_log('MessageController::unreadCount Error: ' . $e->getMessage());
             Response::success(['unread_count' => 0]);
         }
-    }
-
-    /**
-     * Intelligent Concierge Reply Generator
-     */
-    private static function generateConciergeReply(string $query): string {
-        $q = strtolower($query);
-
-        if (str_contains($q, 'appointment') || str_contains($q, 'booking') || str_contains($q, 'sched')) {
-            return "You can view or manage all your bookings under 'My Appointments', or schedule a new one right away under 'Book Appointment'!";
-        }
-
-        if (str_contains($q, 'price') || str_contains($q, 'cost') || str_contains($q, 'magkano') || str_contains($q, 'rate') || str_contains($q, 'how much')) {
-            return "Our full updated price list is available under 'Services & Prices'. Brazilian treatment starts at ₱1,999, haircuts at ₱150, classic manicure at ₱150, and gel nails at ₱499.";
-        }
-
-        if (str_contains($q, 'hour') || str_contains($q, 'time') || str_contains($q, 'open') || str_contains($q, 'closing') || str_contains($q, 'schedule')) {
-            return "Nely's Salon is open Monday through Saturday from 9:00 AM to 6:00 PM in Lagro, Quezon City.";
-        }
-
-        if (str_contains($q, 'location') || str_contains($q, 'address') || str_contains($q, 'saan') || str_contains($q, 'where')) {
-            return "We are located at BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City. We also offer Home Service for select hair and nail treatments!";
-        }
-
-        if (str_contains($q, 'service') || str_contains($q, 'rebond') || str_contains($q, 'brazilian') || str_contains($q, 'nail') || str_contains($q, 'spa')) {
-            return "We offer 13 signature hair, nail, and foot spa treatments! Check out the 'Services & Prices' tab to view full details, inclusions, and book.";
-        }
-
-        if (str_contains($q, 'stylist') || str_contains($q, 'staff') || str_contains($q, 'nely')) {
-            return "Our salon is led by Nely and certified senior stylists with over 15 years of beauty heritage in Lagro, QC.";
-        }
-
-        if (str_contains($q, 'hello') || str_contains($q, 'hi') || str_contains($q, 'good morning') || str_contains($q, 'good afternoon')) {
-            return "Hello! Thank you for contacting Nely's Salon Concierge. How can we assist with your beauty treatment or booking today?";
-        }
-
-        return "Thank you for reaching out to Nely's Salon! Our front desk staff has received your message and will assist you shortly.";
     }
 }

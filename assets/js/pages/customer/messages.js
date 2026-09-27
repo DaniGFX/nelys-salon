@@ -77,6 +77,11 @@ function initCustomerMessagesPage() {
   loadAppointmentContext();
   loadNotificationBadges();
   setupDialogBackdropClicks();
+
+  // Periodic polling for live messages & 10-minute auto-reply sync
+  if (!window.__messages_poll_interval) {
+    window.__messages_poll_interval = setInterval(loadCustomerChatData, 5000);
+  }
 }
 
 // Purge any old hardcoded demo messages lingering in browser storage from legacy versions
@@ -179,29 +184,9 @@ async function loadCustomerChatData() {
     }
   }
 
-  // If no backend data and no cache, initialize default clean concierge greeting
-  if (customerChatData.messages.length === 0 && !isEmptyState) {
-    const firstName = currentUser && currentUser.full_name && currentUser.id !== 'guest'
-      ? currentUser.full_name.split(' ')[0]
-      : '';
-
-    const greetingText = firstName
-      ? `Hello ${firstName}! Welcome to Nely's Salon official support. How can we assist you today with appointments, treatments, or questions?`
-      : `Hello! Welcome to Nely's Salon official support. How can we assist you today with appointments, treatments, or beauty questions?`;
-
-    customerChatData.messages = [
-      {
-        id: Date.now(),
-        sender: 'salon',
-        senderName: "Nely's Salon Concierge",
-        text: greetingText,
-        time: formatTime(new Date()),
-        date: 'Today',
-        status: 'read'
-      }
-    ];
-    isEmptyState = false;
-    saveCustomerChatData();
+  // If no backend data and no cache, keep clean empty state
+  if (customerChatData.messages.length === 0) {
+    isEmptyState = true;
     renderChatStream();
   }
 }
@@ -626,104 +611,40 @@ async function handleSendMessage(e) {
     }
   }
 
-  // Simulate concierge response
-  triggerConciergeSmartReply(text);
+  // (No bot replies for customer messages)
 }
 
-// 10. Quick Action Chips
+// 10. Quick Action Chips & Topic Starters
 function sendQuickPrompt(promptText) {
   const input = document.getElementById('customerMessageInput');
   if (input) {
     input.value = promptText;
+    autoResizeTextarea(input);
     handleSendMessage();
   }
 }
 
-// 11. Simulated Intelligent Salon Concierge Auto-Reply
-function triggerConciergeSmartReply(userText) {
-  showTypingIndicator();
+function applyQuickTopic(topic) {
+  const input = document.getElementById('customerMessageInput');
+  if (!input) return;
 
-  setTimeout(async () => {
-    hideTypingIndicator();
+  const topics = {
+    'appointment': 'Hi! I would like to inquire about booking an appointment.',
+    'services': 'Hi! I would like to ask about your available salon services and packages.',
+    'pricing': 'Hi! Could you please share the pricing and rates for your treatments?',
+    'availability': 'Hi! Are there available slots for today or this week?',
+    'info': "Hi! I would like to ask for more information regarding Nely's Salon."
+  };
 
-    const lower = (userText || '').toLowerCase();
-    let reply = "Thank you for reaching out! Our reception desk has received your message and a salon coordinator will get back to you shortly.";
-
-    if (lower.includes('book') || lower.includes('appointment') || lower.includes('schedule') || lower.includes('reserve')) {
-      reply = "We would love to welcome you! You can easily book an appointment through our Book Appointment page or let us know your preferred date, time, and service right here.";
-    } else if (lower.includes('price') || lower.includes('cost') || lower.includes('rate') || lower.includes('how much') || lower.includes('brazilian') || lower.includes('rebond')) {
-      reply = "Our Brazilian treatment starts at ₱1,999, Keratin treatment at ₱499, Hair Rebonding at ₱1,499, and Hair Dye at ₱699. You can also view the full catalog in our 'Services & Prices' tab!";
-    } else if (lower.includes('hour') || lower.includes('open') || lower.includes('time') || lower.includes('location') || lower.includes('where')) {
-      reply = "We are located at BLK 42 Lot 59 Ascension Rd, Lagro, Quezon City. We are open Monday through Saturday from 9:00 AM to 6:00 PM.";
-    } else if (lower.includes('home') || lower.includes('service')) {
-      reply = "Yes! We offer home service across Lagro, Fairview, Novaliches, and nearby QC areas. You can select 'Home Service' when booking your appointment.";
-    } else if (lower.includes('hello') || lower.includes('hi') || lower.includes('good morning') || lower.includes('good afternoon')) {
-      const firstName = currentUser && currentUser.full_name && currentUser.id !== 'guest' ? currentUser.full_name.split(' ')[0] : 'there';
-      reply = `Hello ${firstName}! How can we assist you today at Nely's Salon?`;
-    }
-
-    const salonMsg = {
-      id: Date.now() + 1,
-      sender: 'salon',
-      senderName: "Nely's Salon Concierge",
-      text: reply,
-      time: formatTime(new Date()),
-      date: 'Today',
-      status: 'read'
-    };
-
-    customerChatData.messages.push(salonMsg);
-    saveCustomerChatData();
-    renderChatStream();
-
-    const token = localStorage.getItem('nelys_token');
-    if (token) {
-      try {
-        await fetch('../api/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({
-            sender: 'salon',
-            sender_name: "Nely's Salon Concierge",
-            text: reply
-          })
-        });
-      } catch (_) {}
-    }
-  }, 1400);
+  input.value = topics[topic] || 'Hello! I would like to inquire about your salon services.';
+  input.focus();
+  autoResizeTextarea(input);
 }
 
-function showTypingIndicator() {
-  const container = document.getElementById('customerChatStream');
-  if (!container) return;
-
-  const existing = (document.getElementById('conciergeTypingIndicator') || document.getElementById('typingIndicator'));
-  if (existing) existing.remove();
-
-  const typingEl = document.createElement('div');
-  typingEl.id = 'conciergeTypingIndicator';
-  typingEl.className = 'flex items-center gap-3 mb-3.5';
-  typingEl.innerHTML = `
-    <div class="w-8 h-8 rounded-full bg-[#541A1A] text-[#F1E2D1] font-bold text-xs flex items-center justify-center border border-[#DCC3AA] shrink-0 shadow-xs">
-      NS
-    </div>
-    <div class="bg-white border border-[#DCC3AA]/80 px-4 py-3 rounded-2xl rounded-tl-xs shadow-xs flex items-center gap-1.5">
-      <span class="w-2 h-2 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.3s]"></span>
-      <span class="w-2 h-2 rounded-full bg-[#810B38] animate-bounce [animation-delay:-0.15s]"></span>
-      <span class="w-2 h-2 rounded-full bg-[#810B38] animate-bounce"></span>
-    </div>
-  `;
-
-  container.appendChild(typingEl);
-  scrollChatToBottom(true);
-}
-
-function hideTypingIndicator() {
-  const el = (document.getElementById('conciergeTypingIndicator') || document.getElementById('typingIndicator'));
-  if (el) el.remove();
+function autoResizeTextarea(el) {
+  if (!el) return;
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
 // 12. File Attachment Handling
@@ -1020,6 +941,23 @@ window.openLogoutModal = openLogoutModal;
 window.closeLogoutModal = closeLogoutModal;
 window.confirmLogout = confirmLogout;
 window.handleLogout = handleLogout;
+window.applyQuickTopic = applyQuickTopic;
+window.autoResizeTextarea = autoResizeTextarea;
+window.triggerCustomerFileInput = triggerFileInput;
+window.triggerFileInput = triggerFileInput;
+window.clearCustomerAttachment = clearAttachedFile;
+window.clearAttachedFile = clearAttachedFile;
+window.toggleSalonInfoDrawer = toggleSalonInfoDrawer;
+window.promptClearChat = promptClearChat;
+window.closeClearChatModal = closeClearChatModal;
+window.confirmClearChat = confirmClearChat;
+window.promptDeleteMessage = promptDeleteMessage;
+window.closeDeleteMessageModal = closeDeleteMessageModal;
+window.confirmDeleteMessage = confirmDeleteMessage;
+window.clearMessageSearch = clearMessageSearch;
+window.toggleMobileSearch = toggleMobileSearch;
+window.startNewConversation = startNewConversation;
+window.toggleMobileSidebar = toggleMobileSidebar;
 
 // 19. Toast Notification Helper
 function showToast(message, type = 'success') {
