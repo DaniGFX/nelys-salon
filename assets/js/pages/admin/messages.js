@@ -529,6 +529,52 @@ function renderActiveConversation() {
   renderMobileCustomerInfo(conv);
 }
 
+// Date and Time Parsing & Formatting Helpers
+function parseMessageDate(dateStr) {
+  if (!dateStr) return new Date();
+  if (dateStr instanceof Date) return dateStr;
+  try {
+    const s = String(dateStr).trim();
+    const isoCandidate = s.includes(' ') && !s.includes('T') ? s.replace(' ', 'T') : s;
+    let d = new Date(isoCandidate);
+    if (!isNaN(d.getTime())) return d;
+
+    d = new Date(s.replace(/-/g, '/'));
+    if (!isNaN(d.getTime())) return d;
+  } catch (_) {}
+  return new Date();
+}
+
+function formatMessageDateHeader(d) {
+  if (!(d instanceof Date) || isNaN(d.getTime())) d = new Date();
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  
+  const diffTime = today.getTime() - targetDate.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  if (diffDays === 0) {
+    return `Today, ${formattedDate}`;
+  } else if (diffDays === 1) {
+    return `Yesterday, ${formattedDate}`;
+  } else {
+    return formattedDate;
+  }
+}
+
+function formatMessageTime(d) {
+  if (!(d instanceof Date) || isNaN(d.getTime())) return '';
+  let hours = d.getHours();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const minutes = d.getMinutes().toString().padStart(2, '0');
+  return `${hours}:${minutes} ${ampm}`;
+}
+
 // Render Message Bubbles in Center Column
 function renderMessageStream(conv) {
   const container = document.getElementById('messagesStream');
@@ -547,25 +593,36 @@ function renderMessageStream(conv) {
     return;
   }
 
-  const dateHeading = conv.messages[0]?.date || 'Today';
+  let html = '';
+  let lastDateGroupKey = null;
 
-  container.innerHTML = `
-    <!-- Date Header Pill -->
-    <div class="flex items-center justify-center my-4">
-      <span class="px-3.5 py-1 rounded-full bg-[#FAF6F0] border border-[#DCC3AA]/70 text-[11px] font-semibold text-[#735e5e] shadow-xs">
-        ${escapeHtml(dateHeading)}
-      </span>
-    </div>
-  ` + conv.messages.map(msg => {
+  conv.messages.forEach(msg => {
+    const msgDate = parseMessageDate(msg.created_at || msg.date);
+    const groupKey = `${msgDate.getFullYear()}-${String(msgDate.getMonth() + 1).padStart(2, '0')}-${String(msgDate.getDate()).padStart(2, '0')}`;
+
+    if (groupKey !== lastDateGroupKey) {
+      lastDateGroupKey = groupKey;
+      const headerText = formatMessageDateHeader(msgDate);
+      html += `
+        <!-- Date Header Pill -->
+        <div class="flex items-center justify-center my-4">
+          <span class="px-3.5 py-1 rounded-full bg-[#FAF6F0] border border-[#DCC3AA]/70 text-[11px] font-semibold text-[#735e5e] shadow-xs">
+            ${escapeHtml(headerText)}
+          </span>
+        </div>
+      `;
+    }
+
     const isAdmin = msg.sender === 'admin' || msg.sender === 'salon';
+    const displayTime = msg.time || formatMessageTime(msgDate);
 
     if (isAdmin) {
-      return `
+      html += `
         <!-- Admin Outgoing Bubble -->
         <div class="flex items-end justify-end gap-2 mb-3.5 group">
           <div class="max-w-[78%] sm:max-w-[70%]">
             <div class="bg-[#810B38] text-white px-4 py-3 rounded-2xl rounded-tr-xs shadow-md space-y-1">
-              <p class="text-xs sm:text-sm leading-relaxed">${escapeHtml(msg.text)}</p>
+              <p class="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(msg.text)}</p>
               ${msg.attachment ? `
                 <div class="mt-2 p-2 rounded-xl bg-black/20 flex items-center gap-2 text-xs">
                   <i class="fa-solid fa-paperclip text-[#DCC3AA]"></i>
@@ -574,7 +631,7 @@ function renderMessageStream(conv) {
               ` : ''}
             </div>
             <div class="flex items-center justify-end gap-1.5 mt-1 text-[10px] text-[#735e5e]">
-              <span>${escapeHtml(msg.time)}</span>
+              <span>${escapeHtml(displayTime)}</span>
               <span title="Read">
                 <i class="fa-solid fa-check-double text-emerald-600 text-[10px]"></i>
               </span>
@@ -583,7 +640,7 @@ function renderMessageStream(conv) {
         </div>
       `;
     } else {
-      return `
+      html += `
         <!-- Customer Incoming Bubble -->
         <div class="flex items-start gap-2.5 mb-3.5 group">
           <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xs flex items-center justify-center shrink-0 border border-[#DCC3AA] mt-1 shadow-xs">
@@ -592,7 +649,7 @@ function renderMessageStream(conv) {
           <div class="max-w-[78%] sm:max-w-[70%]">
             <div class="text-[11px] font-bold text-[#541A1A] mb-1 pl-1">${escapeHtml(conv.name)}</div>
             <div class="bg-white border border-[#DCC3AA]/70 text-[#2b1d1d] px-4 py-3 rounded-2xl rounded-tl-xs shadow-sm space-y-1">
-              <p class="text-xs sm:text-sm leading-relaxed">${escapeHtml(msg.text)}</p>
+              <p class="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(msg.text)}</p>
               ${msg.attachment ? `
                 <div class="mt-2 p-2 rounded-xl bg-[#FAF6F0] flex items-center gap-2 text-xs border border-[#DCC3AA]/40">
                   <i class="fa-solid fa-paperclip text-[#810B38]"></i>
@@ -601,13 +658,13 @@ function renderMessageStream(conv) {
               ` : ''}
             </div>
             <div class="flex items-center gap-1.5 mt-1 text-[10px] text-[#735e5e] pl-1">
-              <span>${escapeHtml(msg.time)}</span>
+              <span>${escapeHtml(displayTime)}</span>
             </div>
           </div>
         </div>
       `;
     }
-  }).join('');
+  });
 
   // Scroll to bottom
   container.scrollTop = container.scrollHeight;

@@ -393,6 +393,7 @@ class Message {
                     'text'       => $m['text'],
                     'time'       => date('g:i A', $timeTs),
                     'date'       => date('M j, Y', $timeTs),
+                    'created_at' => $m['created_at'],
                     'status'     => $m['status'],
                     'attachment' => !empty($m['attachment_name']) ? [
                         'name' => $m['attachment_name'],

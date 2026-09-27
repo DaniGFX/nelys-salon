@@ -6,6 +6,8 @@
 
 require_once __DIR__ . '/env.php';
 
+date_default_timezone_set('Asia/Manila');
+
 class Database {
     private static ?PDO $instance = null;
 
@@ -43,6 +45,9 @@ class Database {
 
             try {
                 self::$instance = new PDO($dsn, $user, $pass, $options);
+                try {
+                    self::$instance->exec("SET time_zone = '+08:00'");
+                } catch (Exception $ignored) {}
                 try {
                     self::$instance->exec("SET SESSION sql_mode=(SELECT REPLACE(@@sql_mode,'ONLY_FULL_GROUP_BY',''))");
                 } catch (Exception $ignored) {}

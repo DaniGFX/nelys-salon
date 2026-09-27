@@ -224,18 +224,49 @@ async function loadCustomerChatData() {
   }
 }
 
+// Date and Time Parsing & Formatting Helpers
+function parseMessageDate(dateStr) {
+  if (!dateStr) return new Date();
+  if (dateStr instanceof Date) return dateStr;
+  try {
+    const s = String(dateStr).trim();
+    // Handle MySQL "YYYY-MM-DD HH:mm:ss" by replacing space with T for ISO-like parsing
+    const isoCandidate = s.includes(' ') && !s.includes('T') ? s.replace(' ', 'T') : s;
+    let d = new Date(isoCandidate);
+    if (!isNaN(d.getTime())) return d;
+
+    // Fallback replace dashes with slashes
+    d = new Date(s.replace(/-/g, '/'));
+    if (!isNaN(d.getTime())) return d;
+  } catch (_) {}
+  return new Date();
+}
+
+function formatMessageDateHeader(d) {
+  if (!(d instanceof Date) || isNaN(d.getTime())) d = new Date();
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const targetDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  
+  const diffTime = today.getTime() - targetDate.getTime();
+  const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+  const formattedDate = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  if (diffDays === 0) {
+    return `Today, ${formattedDate}`;
+  } else if (diffDays === 1) {
+    return `Yesterday, ${formattedDate}`;
+  } else {
+    return formattedDate;
+  }
+}
+
 // Map backend DB message record to UI model
 function mapBackendMessage(item) {
-  let timeStr = '';
-  if (item.created_at) {
-    try {
-      const d = new Date(item.created_at.replace(/-/g, '/'));
-      if (!isNaN(d.getTime())) {
-        timeStr = formatTime(d);
-      }
-    } catch (_) {}
-  }
-  if (!timeStr) timeStr = formatTime(new Date());
+  const d = parseMessageDate(item.created_at);
+  const timeStr = formatTime(d);
+  const dateStr = formatMessageDateHeader(d);
 
   return {
     id: item.id,
@@ -243,7 +274,8 @@ function mapBackendMessage(item) {
     senderName: item.sender_name || (item.sender === 'salon' ? "Nely's Salon Concierge" : 'You'),
     text: item.text || '',
     time: timeStr,
-    date: 'Today',
+    date: dateStr,
+    created_at: item.created_at || d.toISOString(),
     status: item.status || 'sent',
     attachment: item.attachment_name ? {
       name: item.attachment_name,
@@ -451,22 +483,29 @@ function renderChatStream() {
   }
 
   let html = '';
-  const todayDateStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  let lastDateGroupKey = null;
 
-  html += `
-    <div class="flex items-center justify-center my-4">
-      <span class="px-3.5 py-1 rounded-full bg-[#FAF6F0] border border-[#DCC3AA]/70 text-[11px] font-semibold text-[#735e5e] shadow-xs">
-        Today, ${todayDateStr}
-      </span>
-    </div>
-  `;
+  filtered.forEach(msg => {
+    const msgDate = parseMessageDate(msg.created_at);
+    const groupKey = `${msgDate.getFullYear()}-${String(msgDate.getMonth() + 1).padStart(2, '0')}-${String(msgDate.getDate()).padStart(2, '0')}`;
 
-  html += filtered.map(msg => {
+    if (groupKey !== lastDateGroupKey) {
+      lastDateGroupKey = groupKey;
+      const headerText = formatMessageDateHeader(msgDate);
+      html += `
+        <div class="flex items-center justify-center my-4">
+          <span class="px-3.5 py-1 rounded-full bg-[#FAF6F0] border border-[#DCC3AA]/70 text-[11px] font-semibold text-[#735e5e] shadow-xs">
+            ${escapeHtml(headerText)}
+          </span>
+        </div>
+      `;
+    }
+
     const isCustomer = msg.sender === 'customer';
 
     if (isCustomer) {
       // Outgoing customer bubble (Burgundy)
-      return `
+      html += `
         <div class="flex items-end justify-end gap-2 mb-3.5 group" id="msg-${msg.id}">
           <!-- Hover action button: Delete message -->
           <div class="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 mb-2">
@@ -486,7 +525,7 @@ function renderChatStream() {
               ${renderAttachmentBubble(msg.attachment, true)}
             </div>
             <div class="flex items-center justify-end gap-1.5 mt-1 text-[10px] text-[#735e5e]">
-              <span>${msg.time}</span>
+              <span>${escapeHtml(msg.time || formatTime(msgDate))}</span>
               ${msg.status === 'read' 
                 ? '<span title="Read"><i class="fa-solid fa-check-double text-emerald-600 text-[10px]"></i></span>'
                 : '<span title="Sent"><i class="fa-solid fa-check text-stone-400 text-[10px]"></i></span>'
@@ -497,7 +536,7 @@ function renderChatStream() {
       `;
     } else {
       // Incoming salon bubble (White card)
-      return `
+      html += `
         <div class="flex items-start gap-2.5 sm:gap-3 mb-3.5" id="msg-${msg.id}">
           <div class="w-8 h-8 rounded-full bg-[#541A1A] text-[#F1E2D1] font-bold text-xs flex items-center justify-center border border-[#DCC3AA] shrink-0 mt-1 shadow-xs">
             NS
@@ -512,13 +551,13 @@ function renderChatStream() {
               ${renderAttachmentBubble(msg.attachment, false)}
             </div>
             <div class="flex items-center gap-1.5 mt-1 pl-1 text-[10px] text-[#735e5e]">
-              <span>${msg.time}</span>
+              <span>${escapeHtml(msg.time || formatTime(msgDate))}</span>
             </div>
           </div>
         </div>
       `;
     }
-  }).join('');
+  });
 
   container.innerHTML = html;
   scrollChatToBottom();
@@ -581,6 +620,7 @@ async function handleSendMessage(e) {
   const token = localStorage.getItem('nelys_token');
   const now = new Date();
   const timeStr = formatTime(now);
+  const dateStr = formatMessageDateHeader(now);
 
   const localMsg = {
     id: Date.now(),
@@ -588,7 +628,8 @@ async function handleSendMessage(e) {
     senderName: currentUser && currentUser.full_name ? currentUser.full_name : 'You',
     text: text,
     time: timeStr,
-    date: 'Today',
+    date: dateStr,
+    created_at: now.toISOString(),
     status: 'sent',
     attachment: fileAttachment ? {
       name: fileAttachment.name,

@@ -4,6 +4,8 @@
  * Environment Variables Loader
  */
 
+date_default_timezone_set('Asia/Manila');
+
 function loadEnv($path = null) {
     if ($path === null) {
         $path = dirname(__DIR__, 2) . '/.env';

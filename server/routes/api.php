@@ -4,7 +4,8 @@
  * REST API Router
  */
 
-// Global headers & CORS
+// Global headers & CORS & Timezone
+date_default_timezone_set('Asia/Manila');
 if (!headers_sent()) {
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-Token');

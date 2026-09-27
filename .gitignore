@@ -45,6 +45,13 @@ server/config/config.local.php
 server/config/env.local.php
 config.local.php
 database.local.php
+.htaccess.local
+.htaccess.bak
+web.config.local
+web.config.bak
+my.ini
+my.cnf
+*.cnf
 
 # ==========================================
 # 2. Authentication Tokens, Keys & Certificates
@@ -132,10 +139,22 @@ certificates/
 *.sql.gz
 *.sql.bz2
 *.sql.tar.gz
+*.sql.tar
+*.sql.zip
+*.sql.7z
 *.sqlite
 *.sqlite3
+*.sqlite-journal
+*.sqlite-wal
+*.sqlite-shm
 *.db
+*.s3db
 *.rdb
+*.ibd
+*.frm
+*.myd
+*.myi
+*.opt
 *backup*.sql
 *dump*.sql
 *export*.sql
@@ -166,12 +185,28 @@ certificates/
 *payout*.xlsx
 *customer_dump*
 *users_export*
+*export*.json
+*backup*.json
+*audit*.json
+*report*.json
+*customer*.json
+*client*.json
+*user*.json
+*transaction*.json
+*appointment*.json
+*booking*.json
+*sales*.json
+*revenue*.json
+*summary*.json
 *.csv
 *.xlsx
 *.xls
 *.pdf
 *.tsv
 *.ods
+*.docx
+*.doc
+*.rtf
 
 # Allow static assets and documentation
 !assets/**
@@ -196,6 +231,7 @@ cookies.txt
 /public/uploads/
 /assets/uploads/
 /media/uploads/
+/artifacts/
 !/uploads/.gitkeep
 !/assets/images/
 
@@ -220,11 +256,15 @@ simulate_*.js
 *.diff
 
 # ==========================================
-# 9. Logs, PID & Debugging Output
+# 9. Logs, PID, Core Dumps & Debugging Output
 # ==========================================
 *.log
 error_log
 php_errors.log
+php_error.log
+php-errors.log
+php_error_log
+xdebug.log
 access_log
 access.log
 debug.log
@@ -236,6 +276,8 @@ pnpm-debug.log*
 *.seed
 *.pid.lock
 .phpunit.result.cache
+core
+core.*
 
 # ==========================================
 # 10. Local Server (XAMPP / Apache / PHP) Overrides
@@ -314,6 +356,12 @@ temp/
 .windsurf/
 .claude/
 .copilot/
+.antigravity/
+.cline/
+.roo/
+.chatgpt/
+*.prompt.md
+scratchpad_*.md
 .dbeaver/
 .navicat/
 .tableplus/
