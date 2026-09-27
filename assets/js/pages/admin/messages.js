@@ -1,6 +1,6 @@
 // Seamless 0ms Cache Preload
 const MESSAGES_CACHE_KEY = 'nelys_admin_messages_cache';
-let lastRendered_messages_Hash = '';
+
 /**
  * Admin Messages Page Controller
  * Nely's Salon Management System
@@ -14,13 +14,6 @@ let currentFilter = 'all';
 let searchQuery = '';
 let attachedFile = null;
 let totalUnreadCount = 0;
-
-// ================= DOM INITIALIZATION & AUTH =================
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initMessages);
-} else {
-  initMessages();
-}
 
 // Real-time synchronization state
 let adminPollTimer = null;
@@ -1356,3 +1349,11 @@ window.closeLogoutModal = closeLogoutModal;
 window.handleConfirmLogout = handleConfirmLogout;
 window.confirmLogout = confirmLogout;
 window.showToast = showToast;
+
+// ================= DOM INITIALIZATION & AUTH =================
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initMessages);
+} else {
+  initMessages();
+}
+
