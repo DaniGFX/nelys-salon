@@ -159,7 +159,7 @@ async function fetchConversationsData(silent = false) {
     }
 
     const json = await res.json();
-    if (json.data) {
+    if (json && json.data) {
       let newConversations = [];
       if (Array.isArray(json.data.conversations)) {
         newConversations = json.data.conversations;
@@ -201,6 +201,14 @@ async function fetchConversationsData(silent = false) {
         totalUnreadCount = conversationsData.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
       }
 
+      // Save to cache for instant 0ms pre-hydration
+      try {
+        localStorage.setItem(MESSAGES_CACHE_KEY, JSON.stringify({
+          conversations: conversationsData,
+          unread_total: totalUnreadCount
+        }));
+      } catch (e) {}
+
       // Update unread badge in column header & sidebar
       updateUnreadBadges();
 
@@ -233,7 +241,11 @@ async function fetchConversationsData(silent = false) {
 
   } catch (err) {
     console.error('Error fetching conversations from backend:', err);
-    if (!silent) showToast('Failed to load conversations from server.', 'error');
+    // If no cached conversations were loaded, ensure clean empty UI renders
+    if (conversationsData.length === 0) {
+      renderConversationsList();
+      renderActiveConversation();
+    }
   }
 }
 

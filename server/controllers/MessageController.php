@@ -27,17 +27,33 @@ class MessageController {
         try {
             $user = AuthMiddleware::check();
 
-            if ($user['role'] === 'admin') {
+            if (($user['role'] ?? '') === 'admin') {
                 $search = $_GET['search'] ?? '';
                 $filter = $_GET['filter'] ?? 'all';
 
-                $conversations = Message::getAdminConversations($search, $filter);
-                $unreadTotal = Message::getAdminUnreadCount();
+                $conversations = [];
+                try {
+                    $conversations = Message::getAdminConversations($search, $filter);
+                } catch (Throwable $e) {
+                    error_log('MessageController::index getAdminConversations Error: ' . $e->getMessage());
+                    $conversations = [];
+                }
+
+                $unreadTotal = 0;
+                try {
+                    $unreadTotal = Message::getAdminUnreadCount();
+                } catch (Throwable $e) {
+                    $unreadTotal = array_reduce($conversations, function($acc, $c) {
+                        return $acc + ($c['unreadCount'] ?? 0);
+                    }, 0);
+                }
 
                 // If a specific user_id was requested to view & mark as read
                 if (!empty($_GET['user_id'])) {
                     $targetUserId = (int)$_GET['user_id'];
-                    Message::markAllReadByAdmin($targetUserId);
+                    try {
+                        Message::markAllReadByAdmin($targetUserId);
+                    } catch (Throwable $e) {}
                 }
 
                 Response::success([
@@ -48,12 +64,18 @@ class MessageController {
             }
 
             // Customer Flow
-            $userId = (int)$user['id'];
-            $messages = Message::findByUser($userId);
-
-            if (!empty($messages)) {
-                // Mark salon messages as read when fetched by customer
-                Message::markAllReadForUser($userId);
+            $userId = (int)($user['id'] ?? 0);
+            $messages = [];
+            if ($userId > 0) {
+                try {
+                    $messages = Message::findByUser($userId);
+                    if (!empty($messages)) {
+                        Message::markAllReadForUser($userId);
+                    }
+                } catch (Throwable $e) {
+                    error_log('MessageController::index findByUser Error: ' . $e->getMessage());
+                    $messages = [];
+                }
             }
 
             Response::success($messages);
