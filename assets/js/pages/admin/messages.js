@@ -41,7 +41,7 @@ function unlockAudioContextOnUserGesture() {
       if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
-    } catch (_) {}
+    } catch (_) { }
     document.removeEventListener('click', unlock);
     document.removeEventListener('keydown', unlock);
   };
@@ -85,12 +85,12 @@ function playMessageNotificationSound() {
     gain2.connect(audioCtx.destination);
     osc2.start(now + 0.12);
     osc2.stop(now + 0.55);
-  } catch (_) {}
+  } catch (_) { }
 }
 
 function requestNotificationPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
-    Notification.requestPermission().catch(() => {});
+    Notification.requestPermission().catch(() => { });
   }
 }
 
@@ -107,7 +107,7 @@ function showBrowserNotification(title, body, onClickAction = null) {
       renotify: true
     });
 
-    notif.onclick = function() {
+    notif.onclick = function () {
       window.focus();
       this.close();
       if (typeof onClickAction === 'function') {
@@ -175,7 +175,7 @@ function initAdminSSE() {
   if (!token || !window.EventSource) return;
 
   if (adminEventSource) {
-    try { adminEventSource.close(); } catch (_) {}
+    try { adminEventSource.close(); } catch (_) { }
     adminEventSource = null;
   }
 
@@ -504,7 +504,7 @@ function applyAdminConversationsPayload(data, silent = false, customConversation
       conversations: conversationsData,
       unread_total: totalUnreadCount
     }));
-  } catch (e) {}
+  } catch (e) { }
 
   // Update unread badge in column header & sidebar
   updateUnreadBadges();
@@ -621,7 +621,7 @@ function updateUnreadBadges() {
 
 function handleAdminTypingUpdate(typingUserIds) {
   activeTypingCustomerIds = (typingUserIds || []).map(Number);
-  
+
   if (adminTypingDismissTimer) {
     clearTimeout(adminTypingDismissTimer);
     adminTypingDismissTimer = null;
@@ -649,7 +649,7 @@ function updateActiveChatTypingBubble() {
 
   const conv = conversationsData.find(c => String(c.id) === String(currentConversationId) || String(c.userId) === String(currentConversationId));
   const isCurrentTyping = conv && (
-    activeTypingCustomerIds.includes(Number(conv.id)) || 
+    activeTypingCustomerIds.includes(Number(conv.id)) ||
     activeTypingCustomerIds.includes(Number(conv.userId))
   );
 
@@ -699,7 +699,7 @@ function emitAdminTyping(isTyping) {
       user_id: targetId,
       is_typing: isTyping
     })
-  }).catch(() => {});
+  }).catch(() => { });
 }
 
 function handleAdminTypingInput() {
@@ -821,8 +821,8 @@ function renderConversationsList() {
   container.innerHTML = filtered.map(conv => {
     const isActive = String(conv.id) === String(currentConversationId);
     const lastMsg = Array.isArray(conv.messages) && conv.messages.length > 0 ? conv.messages[conv.messages.length - 1] : null;
-    const previewText = lastMsg 
-      ? (lastMsg.sender === 'admin' ? `You: ${lastMsg.text}` : lastMsg.text) 
+    const previewText = lastMsg
+      ? (lastMsg.sender === 'admin' ? `You: ${lastMsg.text}` : lastMsg.text)
       : 'No messages yet';
     const isTyping = activeTypingCustomerIds.includes(Number(conv.id)) || activeTypingCustomerIds.includes(Number(conv.userId));
 
@@ -855,10 +855,10 @@ function renderConversationsList() {
           </div>
 
           <p class="text-xs truncate ${conv.isUnread ? 'font-bold text-[#2b1d1d]' : 'text-[#735e5e]'}">
-            ${isTyping 
-              ? `<span class="text-[#810B38] font-bold italic flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-ping"></span>Typing...</span>` 
-              : escapeHtml(previewText)
-            }
+            ${isTyping
+        ? `<span class="text-[#810B38] font-bold italic flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-[#810B38] animate-ping"></span>Typing...</span>`
+        : escapeHtml(previewText)
+      }
           </p>
         </div>
 
@@ -992,7 +992,7 @@ function parseMessageDate(dateStr) {
 
     d = new Date(s.replace(/-/g, '/'));
     if (!isNaN(d.getTime())) return d;
-  } catch (_) {}
+  } catch (_) { }
   return new Date();
 }
 
@@ -1001,7 +1001,7 @@ function formatMessageDateHeader(d) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const targetDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  
+
   const diffTime = today.getTime() - targetDate.getTime();
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
@@ -1194,7 +1194,7 @@ function renderMessageStream(conv) {
   });
 
   const isCurrentTyping = conv && (
-    activeTypingCustomerIds.includes(Number(conv.id)) || 
+    activeTypingCustomerIds.includes(Number(conv.id)) ||
     activeTypingCustomerIds.includes(Number(conv.userId))
   );
 
@@ -1226,7 +1226,7 @@ function renderAdminAttachmentBubble(attachment, isAdmin) {
   if (!attachment) return '';
   const fileUrl = attachment.url || attachment.dataUrl || '';
   const isImg = fileUrl && (
-    fileUrl.startsWith('data:image') || 
+    fileUrl.startsWith('data:image') ||
     fileUrl.includes('/uploads/messages/') && /\.(jpg|jpeg|png|webp|gif|svg)(\?.*)?$/i.test(fileUrl) ||
     /\.(jpg|jpeg|png|webp|gif|svg)$/i.test(attachment.name || '')
   );
@@ -1391,7 +1391,7 @@ async function sendMessage() {
         reader.onerror = () => resolve(null);
         reader.readAsDataURL(fileRef);
       });
-    } catch (_) {}
+    } catch (_) { }
   }
 
   const payload = {
@@ -1792,7 +1792,7 @@ function handleConfirmLogout() {
     localStorage.removeItem('nelys_token');
     localStorage.removeItem('nelys_user');
     sessionStorage.clear();
-  } catch(e) {}
+  } catch (e) { }
   window.location.href = '../login.html';
 }
 
