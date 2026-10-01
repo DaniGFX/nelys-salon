@@ -344,7 +344,7 @@ function populateRecordModalDropdowns() {
   const srvSelect = document.getElementById('recordServiceSelect');
 
   if (custSelect) {
-    let custOptions = '<option value="0" data-name="Walk-in Client (Counter Guest)" selected>🚶 Walk-in Client (Counter Guest)</option>';
+    let custOptions = '<option value="0" data-name="Walk-in Client (Counter Guest)" selected>Walk-in Client (Counter Guest)</option>';
     if (customersList && customersList.length > 0) {
       custOptions += '<optgroup label="Registered Customers">';
       custOptions += customersList.map(c => {
@@ -997,13 +997,13 @@ function openPaymentDetailsModal(paymentId) {
 
   if (statusEl) {
     if (p.status === 'Paid') {
-      statusEl.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">🟢 Paid</span>`;
+      statusEl.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-[10px]"></i>Paid</span>`;
     } else if (p.status === 'Partial') {
-      statusEl.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200">🟡 Partial</span>`;
+      statusEl.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1.5"><i class="fa-solid fa-clock text-[10px]"></i>Partial</span>`;
     } else if (p.status === 'Unpaid') {
-      statusEl.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200">🔴 Unpaid</span>`;
+      statusEl.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-800 border border-rose-200 flex items-center gap-1.5"><i class="fa-solid fa-circle-exclamation text-[10px]"></i>Unpaid</span>`;
     } else {
-      statusEl.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-stone-100 text-stone-600 border border-stone-300">⚪ Refunded</span>`;
+      statusEl.innerHTML = `<span class="px-3 py-1 rounded-full text-xs font-bold bg-stone-100 text-stone-600 border border-stone-300 flex items-center gap-1.5"><i class="fa-solid fa-arrow-rotate-left text-[10px]"></i>Refunded</span>`;
     }
   }
 
