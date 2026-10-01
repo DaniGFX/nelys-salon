@@ -7,8 +7,11 @@
 require_once dirname(__DIR__) . '/helpers/Response.php';
 require_once dirname(__DIR__) . '/helpers/Validator.php';
 require_once dirname(__DIR__) . '/helpers/Sanitizer.php';
+require_once dirname(__DIR__) . '/helpers/Mailer.php';
+require_once dirname(__DIR__) . '/helpers/SmsService.php';
 require_once dirname(__DIR__) . '/middleware/RateLimitMiddleware.php';
 require_once dirname(__DIR__) . '/models/TokenBlacklist.php';
+require_once dirname(__DIR__) . '/models/Otp.php';
 require_once dirname(__DIR__) . '/models/User.php';
 require_once dirname(__DIR__) . '/models/CustomerProfile.php';
 require_once dirname(__DIR__) . '/models/Notification.php';
@@ -52,10 +55,159 @@ class AuthController {
             }
         }
 
-        // Clear rate limiter upon successful login
+        // Clear rate limiter upon successful password verification
         RateLimitMiddleware::clear('login', $identifier);
 
-        // Start session & save
+        // Check if 2FA (OTP) is enabled
+        $otpEnabled = env('OTP_ENABLED', 'true');
+        $isOtpActive = ($otpEnabled === 'true' || $otpEnabled === true || $otpEnabled === '1');
+
+        // Optional bypass flag for testing or if explicitly disabled
+        if ($isOtpActive) {
+            $ticket = self::generate2faTicket($user);
+            $profile = CustomerProfile::findByUserId($user['id']);
+            $fullName = $profile['full_name'] ?? ($user['role'] === 'admin' ? 'Admin' : 'Valued Patron');
+
+            // Default auto-dispatch to Email on initial password verification
+            $maskedEmail = self::maskEmail($user['email'] ?? '');
+            $maskedPhone = self::maskPhone($user['phone'] ?? '');
+
+            // Dispatch OTP to default channel (email)
+            $code = Otp::generate($user['email'], 'email', (int)$user['id'], (int)env('OTP_EXPIRY_SECONDS', 300));
+            $mailRes = Mailer::sendOtp($user['email'], $fullName, $code);
+
+            Response::success([
+                'requires_2fa'    => true,
+                'ticket'          => $ticket,
+                'masked_email'    => $maskedEmail,
+                'masked_phone'    => $maskedPhone,
+                'default_channel' => 'email',
+                'channels'        => ['email', 'sms'],
+                'dev_code'        => $mailRes['dev_code'] ?? null,
+                'message'         => 'Verification code sent. Please enter the 6-digit code to complete login.'
+            ], 'Two-factor authentication required');
+            return;
+        }
+
+        // Standard direct session creation if OTP is disabled
+        self::establishSessionAndRespond($user);
+    }
+
+    /**
+     * Re-send or switch channel for OTP delivery (Email vs SMS)
+     */
+    public function sendOtp(): void {
+        $raw = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $ticket = trim($raw['ticket'] ?? '');
+        $channel = strtolower(trim($raw['channel'] ?? 'email'));
+
+        if (empty($ticket)) {
+            Response::error('Session expired or invalid 2FA ticket. Please log in again.', 401);
+        }
+
+        $ticketData = self::verify2faTicket($ticket);
+        if (!$ticketData) {
+            Response::error('2FA ticket has expired or is invalid. Please log in again.', 401);
+        }
+
+        $user = User::findById($ticketData['uid']);
+        if (!$user) {
+            Response::error('User account not found.', 404);
+        }
+
+        // Rate limit OTP resend (max 5 requests per 5 minutes per user)
+        RateLimitMiddleware::check('send_otp', 5, 300, (string)$user['id']);
+
+        $profile = CustomerProfile::findByUserId($user['id']);
+        $fullName = $profile['full_name'] ?? ($user['role'] === 'admin' ? 'Admin' : 'Valued Patron');
+        $expirySeconds = (int)env('OTP_EXPIRY_SECONDS', 300);
+
+        if ($channel === 'sms') {
+            $phone = $user['phone'] ?? '';
+            if (empty($phone)) {
+                Response::error('No phone number is registered to this account. Please use Gmail.', 422);
+            }
+            $code = Otp::generate($phone, 'sms', (int)$user['id'], $expirySeconds);
+            $smsRes = SmsService::sendOtp($phone, $code);
+
+            Response::success([
+                'channel'      => 'sms',
+                'masked_phone' => self::maskPhone($phone),
+                'dev_code'     => $smsRes['dev_code'] ?? null,
+            ], 'Verification code dispatched to your phone number.');
+            return;
+        }
+
+        // Default Email channel
+        $email = $user['email'] ?? '';
+        $code = Otp::generate($email, 'email', (int)$user['id'], $expirySeconds);
+        $mailRes = Mailer::sendOtp($email, $fullName, $code);
+
+        Response::success([
+            'channel'      => 'email',
+            'masked_email' => self::maskEmail($email),
+            'dev_code'     => $mailRes['dev_code'] ?? null,
+        ], 'Verification code dispatched to your Gmail address.');
+    }
+
+    /**
+     * Verify the 6-digit OTP code and complete authentication
+     */
+    public function verifyOtp(): void {
+        $raw = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+        $ticket = trim($raw['ticket'] ?? '');
+        $code = trim($raw['code'] ?? '');
+        $channel = strtolower(trim($raw['channel'] ?? ''));
+
+        if (empty($ticket) || empty($code)) {
+            Response::error('Please enter the 6-digit verification code.', 422);
+        }
+
+        $ticketData = self::verify2faTicket($ticket);
+        if (!$ticketData) {
+            Response::error('2FA session expired. Please sign in again.', 401);
+        }
+
+        $user = User::findById($ticketData['uid']);
+        if (!$user) {
+            Response::error('User account not found.', 404);
+        }
+
+        // Rate limit verification attempts (5 failed attempts per 5 minutes per user)
+        RateLimitMiddleware::check('verify_otp', 5, 300, (string)$user['id']);
+
+        // Determine target identifier based on channel or check both email and phone
+        $targetIdentifier = $user['email'];
+        if ($channel === 'sms' && !empty($user['phone'])) {
+            $targetIdentifier = $user['phone'];
+        }
+
+        $res = Otp::verify($targetIdentifier, $code);
+
+        // If not found under current identifier, check alternate (e.g. if sent to phone but channel omitted)
+        if (!$res['valid'] && !empty($user['phone']) && $targetIdentifier !== $user['phone']) {
+            $altRes = Otp::verify($user['phone'], $code);
+            if ($altRes['valid']) {
+                $res = $altRes;
+            }
+        }
+
+        if (!$res['valid']) {
+            Response::error($res['message'], 400);
+        }
+
+        // Clear rate limiters upon successful OTP verification
+        RateLimitMiddleware::clear('verify_otp', (string)$user['id']);
+        RateLimitMiddleware::clear('send_otp', (string)$user['id']);
+
+        // Complete login
+        self::establishSessionAndRespond($user);
+    }
+
+    /**
+     * Establish user session and return authenticated token payload
+     */
+    private static function establishSessionAndRespond(array $user): void {
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -63,7 +215,6 @@ class AuthController {
         $_SESSION['user_role'] = $user['role'];
         $_SESSION['user_email'] = $user['email'];
 
-        // Build token
         $token = self::generateToken($user);
         $profile = CustomerProfile::findByUserId($user['id']);
 
@@ -76,7 +227,69 @@ class AuthController {
                 'role'      => $user['role'],
                 'full_name' => $profile['full_name'] ?? ($user['role'] === 'admin' ? 'Admin' : 'Valued Patron'),
             ]
-        ], 'Login successful');
+        ], 'Login verified and authenticated successfully.');
+    }
+
+    /**
+     * Generate temporary signed 2FA ticket valid for 10 minutes
+     */
+    private static function generate2faTicket(array $user): string {
+        $payload = base64_encode(json_encode([
+            'uid'  => (int)$user['id'],
+            'exp'  => time() + 600,
+            'type' => '2fa_challenge'
+        ]));
+        $secret = env('JWT_SECRET', 'nelys_salon_secret_key_2fa');
+        $signature = hash_hmac('sha256', $payload, $secret);
+        return "{$payload}.{$signature}";
+    }
+
+    /**
+     * Verify and decode temporary 2FA ticket
+     */
+    private static function verify2faTicket(string $ticket): ?array {
+        $parts = explode('.', $ticket);
+        if (count($parts) !== 2) return null;
+
+        list($payload, $signature) = $parts;
+        $secret = env('JWT_SECRET', 'nelys_salon_secret_key_2fa');
+        $expected = hash_hmac('sha256', $payload, $secret);
+
+        if (!hash_equals($expected, $signature)) return null;
+
+        $data = json_decode(base64_decode($payload), true);
+        if (!$data || ($data['type'] ?? '') !== '2fa_challenge' || ($data['exp'] ?? 0) < time()) {
+            return null;
+        }
+
+        return $data;
+    }
+
+    /**
+     * Mask email (e.g. maria.santos@email.com -> m***s@email.com)
+     */
+    private static function maskEmail(string $email): string {
+        if (!str_contains($email, '@')) return $email;
+        list($name, $domain) = explode('@', $email, 2);
+        $len = strlen($name);
+        if ($len <= 2) {
+            $maskedName = substr($name, 0, 1) . '*';
+        } else {
+            $maskedName = substr($name, 0, 1) . str_repeat('*', max(3, $len - 2)) . substr($name, -1);
+        }
+        return "{$maskedName}@{$domain}";
+    }
+
+    /**
+     * Mask phone (e.g. 09178889999 -> 0917 ••• ••99)
+     */
+    private static function maskPhone(string $phone): string {
+        $clean = preg_replace('/[^\d]/', '', $phone);
+        $len = strlen($clean);
+        if ($len < 7) return $phone;
+        $start = substr($clean, 0, 4);
+        $end = substr($clean, -2);
+        return "{$start} ••• ••{$end}";
     }
 
     public function register(): void {

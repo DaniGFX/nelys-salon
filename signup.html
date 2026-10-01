@@ -402,7 +402,114 @@
                 Log in here
               </a>
             </p>
-          </form>
+          <!-- ================= FORM 3: TWO-FACTOR OTP VERIFICATION ================= -->
+          <div id="formOtp" class="space-y-4 hidden text-left">
+            <div class="mb-5">
+              <span class="inline-block text-[10px] font-bold uppercase tracking-widest text-[#810B38] bg-[#810B38]/10 px-3 py-1 rounded-full mb-2">
+                <i class="fa-solid fa-shield-halved mr-1"></i> Two-Factor Authentication
+              </span>
+              <h2 class="font-serif text-2xl sm:text-3xl font-bold text-[#541A1A] mb-1">
+                Security Verification
+              </h2>
+              <p class="text-xs text-[#735e5e]">
+                Choose your preferred channel below to receive your 6-digit verification code.
+              </p>
+            </div>
+
+            <!-- Dual Channel Option Selector (Gmail vs Phone Number) -->
+            <div class="space-y-2.5">
+              <label class="block text-xs font-bold uppercase tracking-wider text-[#541A1A]">
+                Send Verification Code To:
+              </label>
+
+              <!-- Option 1: Gmail -->
+              <div id="channelCardEmail" onclick="selectOtpChannel('email')" class="flex items-center justify-between p-3.5 rounded-2xl border-2 border-[#810B38] bg-[#FAF6F0] cursor-pointer transition-all hover:bg-white shadow-sm">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-[#810B38]/10 text-[#810B38] flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-envelope text-sm"></i>
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-[#541A1A] flex items-center gap-1.5">
+                      <span>Gmail / Email</span>
+                      <span id="badgeEmailActive" class="text-[9px] bg-[#810B38] text-white px-1.5 py-0.5 rounded font-bold">Selected</span>
+                    </div>
+                    <div id="otpMaskedEmail" class="text-xs text-[#735e5e] font-mono mt-0.5">m***a@email.com</div>
+                  </div>
+                </div>
+                <input type="radio" name="otp_channel" value="email" checked class="accent-[#810B38] w-4 h-4 pointer-events-none">
+              </div>
+
+              <!-- Option 2: SMS / Phone -->
+              <div id="channelCardSms" onclick="selectOtpChannel('sms')" class="flex items-center justify-between p-3.5 rounded-2xl border border-[#DCC3AA] bg-[#FAF6F0]/50 cursor-pointer transition-all hover:border-[#810B38] hover:bg-white">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-xl bg-[#810B38]/10 text-[#810B38] flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-mobile-screen text-sm"></i>
+                  </div>
+                  <div>
+                    <div class="text-xs font-bold text-[#541A1A] flex items-center gap-1.5">
+                      <span>Phone Number (SMS)</span>
+                      <span id="badgeSmsActive" class="text-[9px] bg-[#810B38] text-white px-1.5 py-0.5 rounded font-bold hidden">Selected</span>
+                    </div>
+                    <div id="otpMaskedPhone" class="text-xs text-[#735e5e] font-mono mt-0.5">0917 ••• ••99</div>
+                  </div>
+                </div>
+                <input type="radio" name="otp_channel" value="sms" class="accent-[#810B38] w-4 h-4 pointer-events-none">
+              </div>
+            </div>
+
+            <!-- OTP 6-Digit Code Input Section -->
+            <form onsubmit="handleOtpSubmit(event)" class="space-y-4 pt-2">
+              <div>
+                <label class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-2">
+                  Enter 6-Digit Code
+                </label>
+                
+                <div class="flex items-center justify-between gap-2 sm:gap-3" id="otpDigitInputs">
+                  <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="otp-digit w-11 h-13 sm:w-13 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono rounded-xl border border-[#DCC3AA] bg-white focus:border-[#810B38] focus:ring-2 focus:ring-[#810B38]/20 focus:outline-none transition-all" data-index="0">
+                  <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="otp-digit w-11 h-13 sm:w-13 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono rounded-xl border border-[#DCC3AA] bg-white focus:border-[#810B38] focus:ring-2 focus:ring-[#810B38]/20 focus:outline-none transition-all" data-index="1">
+                  <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="otp-digit w-11 h-13 sm:w-13 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono rounded-xl border border-[#DCC3AA] bg-white focus:border-[#810B38] focus:ring-2 focus:ring-[#810B38]/20 focus:outline-none transition-all" data-index="2">
+                  <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="otp-digit w-11 h-13 sm:w-13 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono rounded-xl border border-[#DCC3AA] bg-white focus:border-[#810B38] focus:ring-2 focus:ring-[#810B38]/20 focus:outline-none transition-all" data-index="3">
+                  <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="otp-digit w-11 h-13 sm:w-13 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono rounded-xl border border-[#DCC3AA] bg-white focus:border-[#810B38] focus:ring-2 focus:ring-[#810B38]/20 focus:outline-none transition-all" data-index="4">
+                  <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="otp-digit w-11 h-13 sm:w-13 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono rounded-xl border border-[#DCC3AA] bg-white focus:border-[#810B38] focus:ring-2 focus:ring-[#810B38]/20 focus:outline-none transition-all" data-index="5">
+                </div>
+                
+                <!-- Dev Mode Indicator / Hint if available in response -->
+                <div id="otpDevHint" class="hidden mt-2.5 p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-mono text-center"></div>
+
+                <!-- Error feedback message -->
+                <div id="otpErrorMsg" class="hidden mt-2 text-xs font-semibold text-rose-600 flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-exclamation"></i>
+                  <span id="otpErrorText"></span>
+                </div>
+              </div>
+
+              <!-- Resend Timer -->
+              <div class="flex items-center justify-between text-xs text-[#735e5e] pt-1">
+                <span>Didn't receive the code?</span>
+                <button type="button" id="btnResendOtp" onclick="resendOtpCode()" disabled class="font-bold text-[#810B38] opacity-50 cursor-not-allowed hover:underline transition-opacity">
+                  Resend code in (<span id="resendCountdown">60</span>s)
+                </button>
+              </div>
+
+              <!-- Submit Button -->
+              <button 
+                type="submit" 
+                id="btnVerifyOtp"
+                class="w-full py-3.5 rounded-full bg-[#810B38] text-white text-xs font-bold tracking-wider uppercase hover:bg-[#62082b] transition-all shadow-lg hover:shadow-xl hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 mt-3">
+                <i class="fa-solid fa-shield-check text-xs"></i>
+                <span>VERIFY &amp; ACCESS DASHBOARD</span>
+              </button>
+
+              <!-- Back to Login Button -->
+              <button 
+                type="button" 
+                onclick="cancelOtpAndBackToLogin()"
+                class="w-full py-2 rounded-full bg-transparent text-[#735e5e] hover:text-[#541A1A] text-xs font-semibold tracking-wider transition-colors flex items-center justify-center gap-1.5">
+                <i class="fa-solid fa-arrow-left text-[11px]"></i>
+                <span>Back to Login</span>
+              </button>
+            </form>
+          </div>
 
         </div>
       </div>
@@ -419,13 +526,26 @@
   <!-- Toast Notification Container -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
-  <!-- JavaScript for Password Toggling, Mode Switching and Form Submissions -->
+  <!-- JavaScript for Password Toggling, Mode Switching, 2FA OTP and Form Submissions -->
   <script>
+    // 2FA State Holder
+    const current2faState = {
+      ticket: null,
+      channel: 'email',
+      maskedEmail: '',
+      maskedPhone: '',
+      countdownTimer: null,
+      countdownSeconds: 60
+    };
+
     function switchAuthMode(mode) {
       const loginForm = document.getElementById('formLogin');
       const signupForm = document.getElementById('formSignUp');
+      const otpForm = document.getElementById('formOtp');
       const titleEl = document.getElementById('heroBrandTitle');
       const descEl = document.getElementById('heroBrandDesc');
+
+      if (otpForm) otpForm.classList.add('hidden');
 
       if (mode === 'signup') {
         if (loginForm) loginForm.classList.add('hidden');
@@ -497,6 +617,331 @@
       }, 4500);
     }
 
+    // ==========================================
+    // 2FA OTP SCREEN LOGIC & HANDLERS
+    // ==========================================
+
+    function show2faScreen(data) {
+      current2faState.ticket = data.ticket;
+      current2faState.channel = data.default_channel || 'email';
+      current2faState.maskedEmail = data.masked_email || '';
+      current2faState.maskedPhone = data.masked_phone || '';
+
+      const loginForm = document.getElementById('formLogin');
+      const signupForm = document.getElementById('formSignUp');
+      const otpForm = document.getElementById('formOtp');
+
+      if (loginForm) loginForm.classList.add('hidden');
+      if (signupForm) signupForm.classList.add('hidden');
+      if (otpForm) otpForm.classList.remove('hidden');
+
+      const maskedEmailEl = document.getElementById('otpMaskedEmail');
+      const maskedPhoneEl = document.getElementById('otpMaskedPhone');
+      if (maskedEmailEl) maskedEmailEl.textContent = data.masked_email || 'Registered Gmail';
+      if (maskedPhoneEl) maskedPhoneEl.textContent = data.masked_phone || 'Registered Phone';
+
+      selectOtpChannel(current2faState.channel, false);
+      clearOtpInputs();
+
+      // Show dev mode hint if available
+      const devHint = document.getElementById('otpDevHint');
+      if (devHint) {
+        if (data.dev_code) {
+          devHint.innerHTML = `<i class="fa-solid fa-terminal mr-1"></i> [Dev Mode OTP]: <strong>${data.dev_code}</strong>`;
+          devHint.classList.remove('hidden');
+        } else {
+          devHint.classList.add('hidden');
+        }
+      }
+
+      startResendCountdown(60);
+
+      setTimeout(() => {
+        const firstDigit = document.querySelector('.otp-digit[data-index="0"]');
+        if (firstDigit) firstDigit.focus();
+      }, 150);
+    }
+
+    function selectOtpChannel(channel, triggerDispatch = true) {
+      current2faState.channel = channel;
+      const cardEmail = document.getElementById('channelCardEmail');
+      const cardSms = document.getElementById('channelCardSms');
+      const badgeEmail = document.getElementById('badgeEmailActive');
+      const badgeSms = document.getElementById('badgeSmsActive');
+      const radioEmail = cardEmail ? cardEmail.querySelector('input[type="radio"]') : null;
+      const radioSms = cardSms ? cardSms.querySelector('input[type="radio"]') : null;
+
+      if (channel === 'email') {
+        if (cardEmail) {
+          cardEmail.classList.add('border-2', 'border-[#810B38]', 'bg-[#FAF6F0]');
+          cardEmail.classList.remove('border', 'border-[#DCC3AA]', 'bg-[#FAF6F0]/50');
+        }
+        if (badgeEmail) badgeEmail.classList.remove('hidden');
+        if (cardSms) {
+          cardSms.classList.remove('border-2', 'border-[#810B38]', 'bg-[#FAF6F0]');
+          cardSms.classList.add('border', 'border-[#DCC3AA]', 'bg-[#FAF6F0]/50');
+        }
+        if (badgeSms) badgeSms.classList.add('hidden');
+        if (radioEmail) radioEmail.checked = true;
+        if (radioSms) radioSms.checked = false;
+      } else {
+        if (cardSms) {
+          cardSms.classList.add('border-2', 'border-[#810B38]', 'bg-[#FAF6F0]');
+          cardSms.classList.remove('border', 'border-[#DCC3AA]', 'bg-[#FAF6F0]/50');
+        }
+        if (badgeSms) badgeSms.classList.remove('hidden');
+        if (cardEmail) {
+          cardEmail.classList.remove('border-2', 'border-[#810B38]', 'bg-[#FAF6F0]');
+          cardEmail.classList.add('border', 'border-[#DCC3AA]', 'bg-[#FAF6F0]/50');
+        }
+        if (badgeEmail) badgeEmail.classList.add('hidden');
+        if (radioSms) radioSms.checked = true;
+        if (radioEmail) radioEmail.checked = false;
+      }
+
+      if (triggerDispatch) {
+        resendOtpCode(channel);
+      }
+    }
+
+    async function resendOtpCode(forcedChannel = null) {
+      const channel = forcedChannel || current2faState.channel;
+      if (!current2faState.ticket) {
+        showToast('Session expired. Please sign in again.', 'error');
+        cancelOtpAndBackToLogin();
+        return;
+      }
+
+      const btnResend = document.getElementById('btnResendOtp');
+      if (btnResend && !forcedChannel) {
+        btnResend.disabled = true;
+        btnResend.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+
+      showToast(`Sending verification code via ${channel === 'sms' ? 'SMS' : 'Gmail'}...`, 'info');
+
+      try {
+        const response = await fetch('api/auth/send-otp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            ticket: current2faState.ticket,
+            channel: channel
+          })
+        });
+
+        const result = await response.json();
+        if (!response.ok || result.status === 'error') {
+          showToast(result.message || 'Failed to dispatch code.', 'error');
+          return;
+        }
+
+        showToast(result.message || `Code sent to your ${channel === 'sms' ? 'phone' : 'Gmail'}.`, 'success');
+
+        const devHint = document.getElementById('otpDevHint');
+        if (devHint) {
+          if (result.data?.dev_code) {
+            devHint.innerHTML = `<i class="fa-solid fa-terminal mr-1"></i> [Dev Mode OTP]: <strong>${result.data.dev_code}</strong>`;
+            devHint.classList.remove('hidden');
+          } else {
+            devHint.classList.add('hidden');
+          }
+        }
+
+        clearOtpInputs();
+        startResendCountdown(60);
+
+      } catch (err) {
+        console.error('OTP dispatch error:', err);
+        showToast('Network error while requesting code.', 'error');
+      }
+    }
+
+    function startResendCountdown(seconds = 60) {
+      if (current2faState.countdownTimer) {
+        clearInterval(current2faState.countdownTimer);
+      }
+      current2faState.countdownSeconds = seconds;
+      const btn = document.getElementById('btnResendOtp');
+      const countEl = document.getElementById('resendCountdown');
+
+      if (btn) {
+        btn.disabled = true;
+        btn.classList.add('opacity-50', 'cursor-not-allowed');
+        btn.classList.remove('cursor-pointer');
+      }
+      if (countEl) countEl.textContent = current2faState.countdownSeconds;
+
+      current2faState.countdownTimer = setInterval(() => {
+        current2faState.countdownSeconds--;
+        if (countEl) countEl.textContent = current2faState.countdownSeconds;
+
+        if (current2faState.countdownSeconds <= 0) {
+          clearInterval(current2faState.countdownTimer);
+          if (btn) {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            btn.classList.add('cursor-pointer');
+            btn.innerHTML = '<i class="fa-solid fa-rotate-right mr-1"></i> Resend code now';
+          }
+        }
+      }, 1000);
+    }
+
+    function clearOtpInputs() {
+      const digits = document.querySelectorAll('.otp-digit');
+      digits.forEach(d => {
+        d.value = '';
+        d.classList.remove('border-rose-500', 'bg-rose-50');
+      });
+      const errBox = document.getElementById('otpErrorMsg');
+      if (errBox) errBox.classList.add('hidden');
+    }
+
+    function cancelOtpAndBackToLogin() {
+      if (current2faState.countdownTimer) {
+        clearInterval(current2faState.countdownTimer);
+      }
+      current2faState.ticket = null;
+      const otpForm = document.getElementById('formOtp');
+      const loginForm = document.getElementById('formLogin');
+      if (otpForm) otpForm.classList.add('hidden');
+      if (loginForm) loginForm.classList.remove('hidden');
+    }
+
+    // Auto-advance & paste behavior for 6 digit PIN
+    document.addEventListener('DOMContentLoaded', () => {
+      const digitInputs = document.querySelectorAll('.otp-digit');
+
+      digitInputs.forEach((input, index) => {
+        input.addEventListener('input', (e) => {
+          const val = e.target.value.replace(/\D/g, '');
+          e.target.value = val ? val.slice(-1) : '';
+
+          if (e.target.value && index < digitInputs.length - 1) {
+            digitInputs[index + 1].focus();
+          }
+
+          // Auto-submit when all 6 digits filled
+          const fullCode = Array.from(digitInputs).map(i => i.value).join('');
+          if (fullCode.length === 6) {
+            handleOtpSubmit(new Event('submit'));
+          }
+        });
+
+        input.addEventListener('keydown', (e) => {
+          if (e.key === 'Backspace' && !e.target.value && index > 0) {
+            digitInputs[index - 1].focus();
+          }
+        });
+
+        input.addEventListener('paste', (e) => {
+          e.preventDefault();
+          const pasteData = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+          if (pasteData) {
+            pasteData.split('').forEach((char, i) => {
+              if (digitInputs[i]) digitInputs[i].value = char;
+            });
+            const lastIdx = Math.min(pasteData.length, digitInputs.length) - 1;
+            if (digitInputs[lastIdx]) digitInputs[lastIdx].focus();
+            if (pasteData.length === 6) {
+              handleOtpSubmit(new Event('submit'));
+            }
+          }
+        });
+      });
+    });
+
+    async function handleOtpSubmit(e) {
+      if (e && e.preventDefault) e.preventDefault();
+
+      const digitInputs = document.querySelectorAll('.otp-digit');
+      const code = Array.from(digitInputs).map(i => i.value).join('');
+
+      const errBox = document.getElementById('otpErrorMsg');
+      const errText = document.getElementById('otpErrorText');
+
+      if (code.length < 6) {
+        if (errBox && errText) {
+          errText.textContent = 'Please enter the complete 6-digit code.';
+          errBox.classList.remove('hidden');
+        }
+        return;
+      }
+
+      if (errBox) errBox.classList.add('hidden');
+
+      const btn = document.getElementById('btnVerifyOtp');
+      const origText = btn ? btn.innerHTML : '';
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i> <span>VERIFYING CODE...</span>';
+      }
+
+      try {
+        const response = await fetch('api/auth/verify-otp', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify({
+            ticket: current2faState.ticket,
+            code: code,
+            channel: current2faState.channel
+          })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || result.status === 'error') {
+          const msg = result.message || 'Invalid verification code.';
+          if (errBox && errText) {
+            errText.textContent = msg;
+            errBox.classList.remove('hidden');
+          }
+          digitInputs.forEach(d => {
+            d.classList.add('border-rose-500', 'bg-rose-50');
+          });
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = origText;
+          }
+          return;
+        }
+
+        // OTP Verified successfully!
+        clearAllCustomerCaches();
+
+        const user = result.data.user;
+        const token = result.data.token;
+        localStorage.setItem('nelys_token', token);
+        localStorage.setItem('nelys_user', JSON.stringify(user));
+
+        const displayName = user.full_name || 'Valued Client';
+        showToast(`Verification successful! Welcome, ${displayName}...`, 'success');
+
+        setTimeout(() => {
+          if (user.role === 'admin') {
+            window.location.href = 'admin/dashboard.html';
+          } else {
+            window.location.href = 'customer/dashboard.html';
+          }
+        }, 1000);
+
+      } catch (err) {
+        console.error('Verify OTP connection error:', err);
+        showToast('Unable to connect to verification server.', 'error');
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
+      }
+    }
+
     async function handleLoginSubmit(e) {
       e.preventDefault();
       const identifier = document.getElementById('loginIdentifier').value.trim();
@@ -511,7 +956,7 @@
       const originalBtnContent = submitBtn ? submitBtn.innerHTML : '';
       if (submitBtn) {
         submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i> <span>LOGGING IN...</span>';
+        submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i> <span>CHECKING CREDENTIALS...</span>';
       }
 
       try {
@@ -539,10 +984,18 @@
           return;
         }
 
-        // Clear previous session caches to ensure completely clean account state
-        clearAllCustomerCaches();
+        // Check if 2FA verification challenge is required
+        if (result.data && result.data.requires_2fa) {
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnContent;
+          }
+          show2faScreen(result.data);
+          return;
+        }
 
-        // Login success!
+        // Direct login success (if 2FA disabled)
+        clearAllCustomerCaches();
         const user = result.data.user;
         const token = result.data.token;
         localStorage.setItem('nelys_token', token);

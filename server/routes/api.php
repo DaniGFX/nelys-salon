@@ -65,6 +65,10 @@ class Router {
                     $authCtrl = new AuthController();
                     if ($id === 'login' && $method === 'POST') {
                         $authCtrl->login();
+                    } elseif (($id === 'send-otp' || $id === 'resend-otp') && $method === 'POST') {
+                        $authCtrl->sendOtp();
+                    } elseif ($id === 'verify-otp' && $method === 'POST') {
+                        $authCtrl->verifyOtp();
                     } elseif ($id === 'register' && $method === 'POST') {
                         $authCtrl->register();
                     } elseif ($id === 'me' && $method === 'GET') {

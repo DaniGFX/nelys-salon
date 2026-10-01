@@ -211,4 +211,22 @@ CREATE TABLE `messages` (
   INDEX `idx_messages_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 14. One-Time Passwords (OTP / 2FA)
+DROP TABLE IF EXISTS `otps`;
+CREATE TABLE `otps` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT NULL,
+  `identifier` VARCHAR(191) NOT NULL,
+  `channel` ENUM('email', 'sms') NOT NULL DEFAULT 'email',
+  `code_hash` VARCHAR(255) NOT NULL,
+  `attempts` TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  `max_attempts` TINYINT UNSIGNED NOT NULL DEFAULT 3,
+  `expires_at` INT NOT NULL,
+  `is_used` TINYINT(1) NOT NULL DEFAULT 0,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX `idx_otp_identifier` (`identifier`, `expires_at`),
+  INDEX `idx_otp_user` (`user_id`),
+  CONSTRAINT `fk_otps_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
