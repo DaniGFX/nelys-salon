@@ -423,6 +423,8 @@ function handleRecordServiceChange(serviceId) {
 // Live preview calculator inside Record Payment Modal
 function updateRecordPaymentLivePreview() {
   const custSelect = document.getElementById('recordCustomerSelect');
+  const walkinContainer = document.getElementById('recordWalkinNameContainer');
+  const walkinInput = document.getElementById('recordWalkinName');
   const srvSelect = document.getElementById('recordServiceSelect');
   const amtInput = document.getElementById('recordAmount');
   const methodSelect = document.getElementById('recordMethod');
@@ -436,8 +438,20 @@ function updateRecordPaymentLivePreview() {
   const previewStatus = document.getElementById('recordPreviewStatusBadge');
   const previewRef = document.getElementById('recordPreviewRefBadge');
 
+  const isWalkin = !custSelect || custSelect.value === '0' || !custSelect.value;
+  if (walkinContainer) {
+    if (isWalkin) {
+      walkinContainer.classList.remove('hidden');
+    } else {
+      walkinContainer.classList.add('hidden');
+    }
+  }
+
   if (previewCust) {
-    if (custSelect && custSelect.selectedIndex >= 0) {
+    if (isWalkin) {
+      const customName = walkinInput ? walkinInput.value.trim() : '';
+      previewCust.textContent = customName ? `${customName} (Walk-in)` : 'Walk-in Client (Counter Guest)';
+    } else if (custSelect && custSelect.selectedIndex >= 0) {
       const opt = custSelect.options[custSelect.selectedIndex];
       previewCust.textContent = opt ? (opt.dataset.name || opt.text.split('•')[0].trim()) : 'Walk-in Client';
     } else {
@@ -468,11 +482,11 @@ function updateRecordPaymentLivePreview() {
   if (previewStatus) {
     previewStatus.textContent = statusVal;
     if (statusVal === 'Paid') {
-      previewStatus.className = 'px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-semibold';
+      previewStatus.className = 'px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200';
     } else if (statusVal === 'Partial') {
-      previewStatus.className = 'px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-semibold';
+      previewStatus.className = 'px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold border border-amber-200';
     } else {
-      previewStatus.className = 'px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 text-[10px] font-semibold';
+      previewStatus.className = 'px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold border border-rose-200';
     }
   }
 
@@ -941,6 +955,10 @@ function closeFloatingPaymentActionPortal() {
   }
 }
 
+function closeAllKebabMenus() {
+  closeFloatingPaymentActionPortal();
+}
+
 // Global Click & Scroll listeners
 document.addEventListener('click', (e) => {
   if (!e.target.closest('#floatingPaymentActionPortal') && !e.target.closest('button[onclick*="toggleKebabMenu"]')) {
@@ -1061,6 +1079,9 @@ function openRecordPaymentModal() {
   const form = document.getElementById('recordPaymentForm');
   if (form) form.reset();
 
+  const walkinInput = document.getElementById('recordWalkinName');
+  if (walkinInput) walkinInput.value = '';
+
   populateRecordModalDropdowns();
 
   const srvSelect = document.getElementById('recordServiceSelect');
@@ -1097,6 +1118,7 @@ async function handleSaveRecordPayment(event) {
   if (event) event.preventDefault();
 
   const custSelect = document.getElementById('recordCustomerSelect');
+  const walkinInput = document.getElementById('recordWalkinName');
   const srvSelect = document.getElementById('recordServiceSelect');
   const amtInput = document.getElementById('recordAmount');
   const methodSelect = document.getElementById('recordMethod');
@@ -1106,6 +1128,7 @@ async function handleSaveRecordPayment(event) {
   const submitBtn = document.getElementById('recordPaymentSubmitBtn');
 
   const customerId = custSelect && custSelect.value && custSelect.value !== '0' ? parseInt(custSelect.value, 10) : null;
+  const walkinName = walkinInput ? walkinInput.value.trim() : '';
   const serviceId = srvSelect && srvSelect.value ? parseInt(srvSelect.value, 10) : null;
   const amount = amtInput ? parseFloat(amtInput.value) || 0 : 0;
   const method = methodSelect ? methodSelect.value : 'Cash';
@@ -1121,6 +1144,7 @@ async function handleSaveRecordPayment(event) {
 
   const payload = {
     customer_id: customerId,
+    customer_name: (!customerId && walkinName) ? walkinName : (customerId ? null : 'Walk-in Client'),
     service_id: serviceId,
     amount: amount,
     payment_method: method.toLowerCase().replace(/[^a-z0-9]/g, '_'),
@@ -1479,3 +1503,4 @@ window.fetchPaymentsData = fetchPaymentsData;
 window.showToast = showToast;
 window.escapeHtml = escapeHtml;
 window.closeFloatingPaymentActionPortal = closeFloatingPaymentActionPortal;
+window.closeAllKebabMenus = closeAllKebabMenus;

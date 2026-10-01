@@ -35,18 +35,19 @@ class Payment {
             // Ensure all columns exist on Railway
             try { $pdo->exec("ALTER TABLE `payments` MODIFY COLUMN `booking_id` INT NULL"); } catch (Throwable $e) {}
             try { $pdo->exec("ALTER TABLE `payments` ADD COLUMN `customer_id` INT NULL AFTER `booking_id`"); } catch (Throwable $e) {}
-            try { $pdo->exec("ALTER TABLE `payments` ADD COLUMN `service_id` INT NULL AFTER `customer_id`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `payments` ADD COLUMN `customer_name` VARCHAR(255) NULL AFTER `customer_id`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `payments` ADD COLUMN `service_id` INT NULL AFTER `customer_name`"); } catch (Throwable $e) {}
             try { $pdo->exec("ALTER TABLE `payments` ADD COLUMN `notes` TEXT NULL AFTER `receipt_file`"); } catch (Throwable $e) {}
 
             // Seed default payment records if empty
             $count = (int)$pdo->query("SELECT COUNT(*) FROM `payments`")->fetchColumn();
             if ($count === 0) {
                 $seedStmt = $pdo->prepare("
-                    INSERT INTO `payments` (`id`, `booking_id`, `customer_id`, `service_id`, `amount`, `payment_method`, `reference_number`, `notes`, `status`, `paid_at`, `created_at`)
+                    INSERT INTO `payments` (`id`, `booking_id`, `customer_id`, `customer_name`, `service_id`, `amount`, `payment_method`, `reference_number`, `notes`, `status`, `paid_at`, `created_at`)
                     VALUES 
-                    (1, 1, 1, 1, 1999.00, 'gcash', 'GCASH-982347102938', 'Full settlement for Brazilian Blowout appointment.', 'paid', NOW(), NOW()),
-                    (2, 2, 2, 2, 699.00, 'cash', 'CASH-20260910', 'Direct salon counter payment for Hair Dye.', 'paid', NOW(), NOW()),
-                    (3, 3, 2, 3, 499.00, 'gcash', 'GCASH-881290312389', 'Walk-in settlement for Gel Manicure session.', 'paid', NOW(), NOW())
+                    (1, 1, 1, 'Sarah Johnson', 1, 1999.00, 'gcash', 'GCASH-982347102938', 'Full settlement for Brazilian Blowout appointment.', 'paid', NOW(), NOW()),
+                    (2, 2, 2, 'Maria Santos', 2, 699.00, 'cash', 'CASH-20260910', 'Direct salon counter payment for Hair Dye.', 'paid', NOW(), NOW()),
+                    (3, 3, 2, 'Elena Reyes', 3, 499.00, 'gcash', 'GCASH-881290312389', 'Walk-in settlement for Gel Manicure session.', 'paid', NOW(), NOW())
                     ON DUPLICATE KEY UPDATE `amount` = VALUES(`amount`)
                 ");
                 $seedStmt->execute();
@@ -61,7 +62,7 @@ class Payment {
         $pdo = Database::getConnection();
 
         $sql = "SELECT p.*,
-                       COALESCE(cp.full_name, u.email, 'Walk-in Client') AS customer_name,
+                       COALESCE(p.customer_name, cp.full_name, u.email, 'Walk-in Client') AS customer_name,
                        COALESCE(u.phone, '') AS customer_phone,
                        u.email AS customer_email,
                        COALESCE(s.name, 'Salon Service') AS service_name,
@@ -222,7 +223,7 @@ class Payment {
 
         $stmt = $pdo->prepare("
             SELECT p.*,
-                   COALESCE(cp.full_name, u.email, 'Walk-in Client') AS customer_name,
+                   COALESCE(p.customer_name, cp.full_name, u.email, 'Walk-in Client') AS customer_name,
                    COALESCE(u.phone, '') AS customer_phone,
                    u.email AS customer_email,
                    COALESCE(s.name, 'Salon Service') AS service_name,
@@ -251,6 +252,7 @@ class Payment {
 
         $bookingId = !empty($data['booking_id']) ? (int)$data['booking_id'] : null;
         $customerId = !empty($data['customer_id']) ? (int)$data['customer_id'] : null;
+        $customerName = !empty($data['customer_name']) ? trim($data['customer_name']) : null;
         $serviceId = !empty($data['service_id']) ? (int)$data['service_id'] : null;
         $amount = (float)($data['amount'] ?? 0);
         $method = strtolower(str_replace(' ', '_', $data['payment_method'] ?? 'cash'));
@@ -273,21 +275,22 @@ class Payment {
         $paidAt = ($status === 'paid' || $status === 'partial') ? date('Y-m-d H:i:s') : null;
 
         $stmt = $pdo->prepare("
-            INSERT INTO payments (booking_id, customer_id, service_id, amount, payment_method, reference_number, receipt_file, notes, status, paid_at)
-            VALUES (:booking_id, :customer_id, :service_id, :amount, :method, :ref, :receipt, :notes, :status, :paid_at)
+            INSERT INTO payments (booking_id, customer_id, customer_name, service_id, amount, payment_method, reference_number, receipt_file, notes, status, paid_at)
+            VALUES (:booking_id, :customer_id, :customer_name, :service_id, :amount, :method, :ref, :receipt, :notes, :status, :paid_at)
         ");
 
         $stmt->execute([
-            'booking_id'  => $bookingId,
-            'customer_id' => $customerId,
-            'service_id'  => $serviceId,
-            'amount'      => $amount,
-            'method'      => $method,
-            'ref'         => $ref,
-            'receipt'     => $receipt,
-            'notes'       => $notes,
-            'status'      => $status,
-            'paid_at'     => $paidAt,
+            'booking_id'    => $bookingId,
+            'customer_id'   => $customerId,
+            'customer_name' => $customerName,
+            'service_id'    => $serviceId,
+            'amount'        => $amount,
+            'method'        => $method,
+            'ref'           => $ref,
+            'receipt'       => $receipt,
+            'notes'         => $notes,
+            'status'        => $status,
+            'paid_at'       => $paidAt,
         ]);
 
         $paymentId = (int)$pdo->lastInsertId();
@@ -310,6 +313,7 @@ class Payment {
         }
 
         $ref = isset($data['reference_number']) ? trim($data['reference_number']) : null;
+        $customerName = isset($data['customer_name']) ? trim($data['customer_name']) : null;
         $notes = isset($data['notes']) ? trim($data['notes']) : null;
         $status = isset($data['status']) ? strtolower(trim($data['status'])) : null;
 
@@ -319,6 +323,10 @@ class Payment {
         if ($amount !== null) {
             $fields[] = "amount = :amount";
             $params['amount'] = $amount;
+        }
+        if ($customerName !== null) {
+            $fields[] = "customer_name = :customer_name";
+            $params['customer_name'] = $customerName;
         }
         if ($method !== null) {
             $fields[] = "payment_method = :method";
