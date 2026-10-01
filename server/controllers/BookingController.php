@@ -351,16 +351,7 @@ class BookingController {
                         $customerId = (int)$_SESSION['user_id'];
                     }
                 }
-                if (!$customerId) {
-                    try {
-                        $pdo = Database::getConnection();
-                        $demoId = $pdo->query("SELECT id FROM users WHERE role = 'customer' ORDER BY id ASC LIMIT 1")->fetchColumn();
-                        $customerId = $demoId ? (int)$demoId : 0;
-                    } catch (Throwable $e) {
-                        $customerId = 0;
-                    }
-                }
-                $bookings = $customerId > 0 ? Booking::findByCustomer($customerId, $_GET['status'] ?? null) : [];
+                $bookings = ($customerId && $customerId > 0) ? Booking::findByCustomer($customerId, $_GET['status'] ?? null) : [];
                 Response::success($bookings);
             }
         } catch (Throwable $e) {

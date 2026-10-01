@@ -539,6 +539,9 @@
           return;
         }
 
+        // Clear previous session caches to ensure completely clean account state
+        clearAllCustomerCaches();
+
         // Login success!
         const user = result.data.user;
         const token = result.data.token;
@@ -564,6 +567,20 @@
           submitBtn.innerHTML = originalBtnContent;
         }
       }
+    }
+
+    function clearAllCustomerCaches() {
+      try {
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith('nelys_') || key.startsWith('booking_'))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+        sessionStorage.clear();
+      } catch (e) {}
     }
 
     async function handleSignUpSubmit(e) {
@@ -626,7 +643,9 @@
           return;
         }
 
-        // Successfully registered! Store session/user
+        // Successfully registered! Clear previous caches and store new session/user
+        clearAllCustomerCaches();
+
         if (result.data?.token) {
           localStorage.setItem('nelys_token', result.data.token);
         }

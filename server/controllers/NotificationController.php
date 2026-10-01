@@ -56,7 +56,20 @@ class NotificationController {
             return;
         }
 
-        $userId = $user ? ($user['id'] ?? null) : null;
+        $userId = $user ? (int)($user['id'] ?? 0) : 0;
+        if ($userId <= 0) {
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
+            }
+            if (!empty($_SESSION['user_id'])) {
+                $userId = (int)$_SESSION['user_id'];
+            }
+        }
+        if ($userId <= 0) {
+            Response::success([]);
+            return;
+        }
+
         try {
             Notification::ensureSchema();
             $notifications = Notification::forUser($userId);

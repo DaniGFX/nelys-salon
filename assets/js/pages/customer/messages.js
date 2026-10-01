@@ -1421,9 +1421,17 @@ function closeLogoutModal() {
 }
 
 function confirmLogout() {
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
-  sessionStorage.clear();
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('nelys_') || key.startsWith('booking_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    sessionStorage.clear();
+  } catch (e) {}
   showToast('Logging out...', 'info');
   window.location.href = '../login.html';
 }

@@ -38,7 +38,8 @@
           window.location.replace('../admin/dashboard.html');
           return;
         }
-        var cached = localStorage.getItem('nelys_customer_appointments_cache');
+        var uid = user.id || user.user_id || user.email || '';
+        var cached = localStorage.getItem('nelys_customer_appointments_cache_' + uid);
         if (cached) {
           window.__PRELOADED_CUSTOMER_APPTS__ = JSON.parse(cached);
         }

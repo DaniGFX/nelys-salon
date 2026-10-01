@@ -246,14 +246,13 @@ class Notification {
     }
 
     public static function forUser(?int $userId): array {
-        $pdo = Database::getConnection();
-        if ($userId) {
-            $stmt = $pdo->prepare("SELECT * FROM notifications WHERE user_id = :uid AND (recipient_role = 'customer' OR recipient_role IS NULL) ORDER BY created_at DESC, id DESC LIMIT 50");
-            $stmt->execute(['uid' => $userId]);
-        } else {
-            $stmt = $pdo->prepare("SELECT * FROM notifications WHERE recipient_role = 'customer' ORDER BY created_at DESC, id DESC LIMIT 50");
-            $stmt->execute();
+        if (!$userId || $userId <= 0) {
+            return [];
         }
+        self::ensureSchema();
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare("SELECT * FROM notifications WHERE user_id = :uid AND (recipient_role = 'customer' OR recipient_role IS NULL) ORDER BY created_at DESC, id DESC LIMIT 50");
+        $stmt->execute(['uid' => $userId]);
         $rows = $stmt->fetchAll();
         return array_map([self::class, 'formatRow'], $rows);
     }

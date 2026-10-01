@@ -35,6 +35,7 @@ class MessageController {
                 $filter = $_GET['filter'] ?? 'all';
                 $beforeId = !empty($_GET['before_id']) ? (int)$_GET['before_id'] : null;
                 $limit = !empty($_GET['limit']) ? (int)$_GET['limit'] : 50;
+                $priorityUserId = !empty($_GET['user_id']) ? (int)$_GET['user_id'] : null;
 
                 // If admin is requesting older paginated messages for a specific conversation
                 if ($priorityUserId && $beforeId !== null) {

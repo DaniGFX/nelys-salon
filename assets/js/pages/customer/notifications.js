@@ -7,7 +7,19 @@
  */
 
 // Seamless 0ms Cache Preload & State
-const CUST_NOTIF_CACHE_KEY = 'nelys_customer_notifications_cache';
+// Seamless 0ms Cache Preload & State
+function getCustNotifCacheKey() {
+  try {
+    const saved = localStorage.getItem('nelys_user');
+    if (saved) {
+      const u = JSON.parse(saved);
+      const uid = u.id || u.user_id || u.email;
+      if (uid) return `nelys_customer_notifications_cache_${uid}`;
+    }
+  } catch (e) {}
+  return 'nelys_customer_notifications_cache';
+}
+
 let lastRendered_cust_notif_Hash = '';
 
 let notificationsData = [];
@@ -18,10 +30,11 @@ let currentUserId = 'guest';
 function hydrateCustomerNotificationsFromCache() {
   initPatronProfile();
   
+  const cacheKey = getCustNotifCacheKey();
   let preloaded = window.__PRELOADED_CUSTOMER_NOTIFICATIONS__;
   if (!preloaded) {
     try {
-      const raw = localStorage.getItem(CUST_NOTIF_CACHE_KEY);
+      const raw = localStorage.getItem(cacheKey);
       if (raw) preloaded = JSON.parse(raw);
     } catch (e) {}
   }
@@ -35,6 +48,10 @@ function hydrateCustomerNotificationsFromCache() {
     } catch (e) {
       console.warn('Notifications cache hydration error:', e);
     }
+  } else {
+    notificationsData = [];
+    updateCountsAndBadges();
+    renderNotifications();
   }
 }
 
@@ -137,20 +154,16 @@ async function loadNotifications() {
     console.warn('Bookings endpoint notice:', err);
   }
 
-  // 3. Fallback only if both returned empty
-  if (fetchedNotifs.length === 0) {
-    fetchedNotifs = getDefaultFallbackNotifications(readSet);
-  }
-
-  // Sort by date / recency
+  // 3. Sort by date / recency
   fetchedNotifs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
+  const cacheKey = getCustNotifCacheKey();
   const newHash = JSON.stringify(fetchedNotifs);
   if (newHash !== lastRendered_cust_notif_Hash || notificationsData.length === 0) {
     lastRendered_cust_notif_Hash = newHash;
     notificationsData = fetchedNotifs;
     try {
-      localStorage.setItem(CUST_NOTIF_CACHE_KEY, newHash);
+      localStorage.setItem(cacheKey, newHash);
     } catch (e) {}
     updateCountsAndBadges();
     renderNotifications();
@@ -743,9 +756,17 @@ function closeLogoutModal() {
 }
 
 function confirmLogout() {
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
-  sessionStorage.clear();
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('nelys_') || key.startsWith('booking_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    sessionStorage.clear();
+  } catch (e) {}
   showToast('Logging out...');
   window.location.href = '../login.html';
 }

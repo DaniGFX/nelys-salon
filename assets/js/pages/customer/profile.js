@@ -8,7 +8,18 @@
  */
 
 // Seamless 0ms Cache Preload & State
-const CUST_PROFILE_CACHE_KEY = 'nelys_customer_profile_cache';
+function getCustProfileCacheKey() {
+  try {
+    const saved = localStorage.getItem('nelys_user');
+    if (saved) {
+      const u = JSON.parse(saved);
+      const uid = u.id || u.user_id || u.email;
+      if (uid) return `nelys_customer_profile_cache_${uid}`;
+    }
+  } catch (e) {}
+  return 'nelys_customer_profile_cache';
+}
+
 let lastRendered_cust_profile_Hash = '';
 
 // Global State
@@ -27,10 +38,11 @@ let currentUserId = 'guest';
 function hydrateCustomerProfileFromCache() {
   loadLocalPatronProfile();
   
+  const cacheKey = getCustProfileCacheKey();
   let preloaded = window.__PRELOADED_CUSTOMER_PROFILE__;
   if (!preloaded) {
     try {
-      const raw = localStorage.getItem(CUST_PROFILE_CACHE_KEY);
+      const raw = localStorage.getItem(cacheKey);
       if (raw) preloaded = JSON.parse(raw);
     } catch (e) {}
   }
@@ -267,7 +279,8 @@ async function loadBookingsAndMetrics() {
       metrics,
       bookings
     };
-    localStorage.setItem(CUST_PROFILE_CACHE_KEY, JSON.stringify(cachePayload));
+    const cacheKey = getCustProfileCacheKey();
+    localStorage.setItem(cacheKey, JSON.stringify(cachePayload));
   } catch (e) {
     console.warn('Failed to save customer profile cache:', e);
   }
@@ -802,9 +815,17 @@ function closeLogoutModal() {
 }
 
 function confirmLogout() {
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
-  sessionStorage.clear();
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('nelys_') || key.startsWith('booking_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    sessionStorage.clear();
+  } catch (e) {}
   showToast('Logging out...', 'info');
   window.location.href = '../login.html';
 }

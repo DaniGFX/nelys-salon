@@ -169,6 +169,10 @@ certificates/
 *twilio*.json
 *semaphore*.json
 *promotexter*.json
+*philsms*.json
+*movider*.json
+*itexmo*.json
+*engagespark*.json
 *infobip*.json
 *sendgrid*.json
 *mailgun*.json
@@ -179,7 +183,15 @@ webhook-secrets.json
 *thunder-client*.json
 *insomnia*.json
 *http-client.env.json
+*http-client.private.env.json
 *rest-client.env.json
+*rest-client.private.env.json
+*gcash-receipt*
+*proof_of_payment*
+*proof-of-payment*
+*receipt_upload*
+*.dmp
+*.stackdump
 
 # ==========================================
 # 4. Database Dumps, Backups & Local DB Files

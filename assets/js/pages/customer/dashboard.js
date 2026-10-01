@@ -9,7 +9,18 @@
  */
 
 // Seamless 0ms Cache Preload
-const CUST_DASH_CACHE_KEY = 'nelys_customer_dashboard_cache';
+function getCustDashCacheKey() {
+  try {
+    const saved = localStorage.getItem('nelys_user');
+    if (saved) {
+      const u = JSON.parse(saved);
+      const uid = u.id || u.user_id || u.email;
+      if (uid) return `nelys_customer_dashboard_cache_${uid}`;
+    }
+  } catch (e) {}
+  return 'nelys_customer_dashboard_cache';
+}
+
 let lastRendered_cust_dash_Hash = '';
 
 // Global State
@@ -21,9 +32,10 @@ let currentNotifications = [];
 
 function saveCustomerDashboardCache(partial) {
   try {
-    const existing = JSON.parse(localStorage.getItem(CUST_DASH_CACHE_KEY) || '{}');
+    const key = getCustDashCacheKey();
+    const existing = JSON.parse(localStorage.getItem(key) || '{}');
     const updated = { ...existing, ...partial };
-    localStorage.setItem(CUST_DASH_CACHE_KEY, JSON.stringify(updated));
+    localStorage.setItem(key, JSON.stringify(updated));
   } catch (e) {
     console.warn('Failed to save customer dashboard cache:', e);
   }
@@ -97,13 +109,18 @@ async function initCustomerDashboard() {
 
 function hydrateCustomerDashboardFromCache() {
   try {
-    const data = window.__PRELOADED_CUSTOMER_DASHBOARD__ || JSON.parse(localStorage.getItem(CUST_DASH_CACHE_KEY) || 'null');
+    const key = getCustDashCacheKey();
+    const data = window.__PRELOADED_CUSTOMER_DASHBOARD__ || JSON.parse(localStorage.getItem(key) || 'null');
     if (data && typeof data === 'object') {
       if (data.bookings && Array.isArray(data.bookings) && data.bookings.length > 0) {
         customerBookings = data.bookings;
         updateDashboardMetrics(customerBookings);
         renderDashboardUpcoming(customerBookings);
         renderDashboardRecentTable(customerBookings);
+      } else {
+        customerBookings = [];
+        updateDashboardMetrics([]);
+        handleEmptyBookingState();
       }
       if (data.services && Array.isArray(data.services) && data.services.length > 0) {
         currentServices = data.services;
@@ -1299,9 +1316,17 @@ function closeLogoutModal() {
 }
 
 function confirmLogout() {
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
-  sessionStorage.clear();
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('nelys_') || key.startsWith('booking_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    sessionStorage.clear();
+  } catch (e) {}
   showToast('Logging out...', 'info');
   window.location.href = '../login.html';
 }

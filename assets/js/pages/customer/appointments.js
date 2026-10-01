@@ -8,7 +8,18 @@
  * Zero-glitch SWR pre-hydration & steady dialog management.
  */
 
-const CUST_APPTS_CACHE_KEY = 'nelys_customer_appointments_cache';
+function getCustApptsCacheKey() {
+  try {
+    const saved = localStorage.getItem('nelys_user');
+    if (saved) {
+      const u = JSON.parse(saved);
+      const uid = u.id || u.user_id || u.email;
+      if (uid) return `nelys_customer_appointments_cache_${uid}`;
+    }
+  } catch (e) {}
+  return 'nelys_customer_appointments_cache';
+}
+
 let lastRendered_cust_appts_Hash = '';
 
 // Global appointments state
@@ -21,10 +32,11 @@ let currentRebookAppointment = null;
 function hydrateCustomerAppointmentsFromCache() {
   initPatronProfile();
   
+  const cacheKey = getCustApptsCacheKey();
   let preloaded = window.__PRELOADED_CUSTOMER_APPTS__;
   if (!preloaded) {
     try {
-      const raw = localStorage.getItem(CUST_APPTS_CACHE_KEY);
+      const raw = localStorage.getItem(cacheKey);
       if (raw) preloaded = JSON.parse(raw);
     } catch (e) {}
   }
@@ -38,6 +50,10 @@ function hydrateCustomerAppointmentsFromCache() {
     } catch (e) {
       console.warn('Appointments cache hydration error:', e);
     }
+  } else {
+    appointmentsData = [];
+    updateTabCounters();
+    renderAppointments();
   }
 }
 
@@ -105,13 +121,14 @@ async function loadCustomerAppointments() {
     const res = await fetch('../api/bookings', { headers });
     const result = await res.json();
 
+    const cacheKey = getCustApptsCacheKey();
     if (res.ok && (result.status === 'success' || result.success) && Array.isArray(result.data)) {
       const newHash = JSON.stringify(result.data);
       if (newHash !== lastRendered_cust_appts_Hash || appointmentsData.length === 0) {
         lastRendered_cust_appts_Hash = newHash;
         appointmentsData = result.data.map(mapBookingToAppointment);
         try {
-          localStorage.setItem(CUST_APPTS_CACHE_KEY, newHash);
+          localStorage.setItem(cacheKey, newHash);
         } catch (e) {}
         updateTabCounters();
         renderAppointments();
@@ -121,7 +138,7 @@ async function loadCustomerAppointments() {
         lastRendered_cust_appts_Hash = '[]';
         appointmentsData = [];
         try {
-          localStorage.setItem(CUST_APPTS_CACHE_KEY, '[]');
+          localStorage.setItem(cacheKey, '[]');
         } catch (e) {}
         updateTabCounters();
         renderAppointments();
@@ -1133,9 +1150,17 @@ function closeLogoutModal() {
 }
 
 function confirmLogout() {
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
-  sessionStorage.clear();
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && (key.startsWith('nelys_') || key.startsWith('booking_'))) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    sessionStorage.clear();
+  } catch (e) {}
   showToast('Logging out...', 'info');
   window.location.href = '../login.html';
 }

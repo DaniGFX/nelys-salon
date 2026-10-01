@@ -31,7 +31,8 @@
           window.location.replace('../admin/dashboard.html');
           return;
         }
-        var cached = localStorage.getItem('nelys_customer_notifications_cache');
+        var uid = user.id || user.user_id || user.email || '';
+        var cached = localStorage.getItem('nelys_customer_notifications_cache_' + uid);
         if (cached) {
           window.__PRELOADED_CUSTOMER_NOTIFICATIONS__ = JSON.parse(cached);
         }
