@@ -1,0 +1,32 @@
+# ==============================================================================
+# Nely's Salon Management System - Uploads Security Configuration
+# Prevent all script execution and force static asset delivery
+# ==============================================================================
+
+# Disable directory indexing and CGI execution
+Options -Indexes -ExecCGI
+
+# Disable PHP execution if mod_php is active
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+# Force default static file handler
+SetHandler default-handler
+
+# Block all script and executable file extensions completely
+<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|php8|phps|phar|cgi|pl|py|sh|bat|cmd|exe|dll|jsp|asp|aspx|shtml|htaccess|htpasswd)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order Allow,Deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

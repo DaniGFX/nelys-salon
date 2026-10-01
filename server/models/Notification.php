@@ -32,9 +32,12 @@ class Notification {
 
             // Ensure columns exist
             try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `recipient_role` VARCHAR(20) NOT NULL DEFAULT 'admin' AFTER `user_id`"); } catch (Throwable $e) {}
-            try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `category` VARCHAR(50) NOT NULL DEFAULT 'system' AFTER `recipient_role`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `booking_id` INT NULL AFTER `recipient_role`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `category` VARCHAR(50) NOT NULL DEFAULT 'system' AFTER `booking_id`"); } catch (Throwable $e) {}
             try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `type` VARCHAR(50) NOT NULL DEFAULT 'info' AFTER `message`"); } catch (Throwable $e) {}
             try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `action_link` VARCHAR(255) NULL AFTER `type`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `channel` VARCHAR(50) NULL DEFAULT 'email' AFTER `action_link`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `status` VARCHAR(50) NULL DEFAULT 'sent' AFTER `channel`"); } catch (Throwable $e) {}
 
             // Auto-categorize customer vs admin notifications in existing rows
             try {
@@ -174,6 +177,7 @@ class Notification {
     }
 
     public static function create(array $data): int {
+        self::ensureSchema();
         $pdo = Database::getConnection();
 
         $userId = !empty($data['user_id']) ? (int)$data['user_id'] : null;

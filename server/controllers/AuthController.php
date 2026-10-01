@@ -7,6 +7,8 @@
 require_once dirname(__DIR__) . '/helpers/Response.php';
 require_once dirname(__DIR__) . '/helpers/Validator.php';
 require_once dirname(__DIR__) . '/helpers/Sanitizer.php';
+require_once dirname(__DIR__) . '/middleware/RateLimitMiddleware.php';
+require_once dirname(__DIR__) . '/models/TokenBlacklist.php';
 require_once dirname(__DIR__) . '/models/User.php';
 require_once dirname(__DIR__) . '/models/CustomerProfile.php';
 require_once dirname(__DIR__) . '/models/Notification.php';
@@ -22,6 +24,9 @@ class AuthController {
         if (empty($identifier) || empty($password)) {
             Response::error('Please enter your email or phone number and password.', 422);
         }
+
+        // Security: Rate Limit login attempts (5 failed attempts per 5 minutes per IP + identifier)
+        RateLimitMiddleware::check('login', 5, 300, $identifier);
 
         // Find user by email or by phone
         $user = null;
@@ -46,6 +51,9 @@ class AuthController {
                 Response::error('Invalid email/mobile number or password.', 401);
             }
         }
+
+        // Clear rate limiter upon successful login
+        RateLimitMiddleware::clear('login', $identifier);
 
         // Start session & save
         if (session_status() === PHP_SESSION_NONE) {
@@ -72,6 +80,9 @@ class AuthController {
     }
 
     public function register(): void {
+        // Security: Rate Limit registration (5 signups per hour per IP)
+        RateLimitMiddleware::check('registration', 5, 3600);
+
         $raw = json_decode(file_get_contents('php://input'), true) ?? $_POST;
         $password = (string)($raw['password'] ?? '');
         $input = Sanitizer::cleanArray($raw);
@@ -86,6 +97,12 @@ class AuthController {
 
         if ($validator->fails()) {
             Response::error('Validation failed', 422, $validator->errors());
+        }
+
+        // Check common weak passwords
+        $weakPasswords = ['123456', '12345678', 'password', 'qwerty', 'nelyssalon', 'admin123'];
+        if (in_array(strtolower($password), $weakPasswords)) {
+            Response::error('Please choose a stronger password. Avoid simple sequential numbers or common words.', 422);
         }
 
         if (User::findByEmail($input['email'])) {
@@ -158,6 +175,21 @@ class AuthController {
     }
 
     public function logout(): void {
+        // Extract Bearer token and blacklist it to prevent token reuse after logout
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] 
+            ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] 
+            ?? '';
+
+        if (empty($authHeader) && function_exists('getallheaders')) {
+            $headers = getallheaders();
+            $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+        }
+
+        if (str_starts_with($authHeader, 'Bearer ')) {
+            $token = trim(substr($authHeader, 7));
+            TokenBlacklist::revoke($token, $_SESSION['user_id'] ?? null);
+        }
+
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
@@ -170,6 +202,9 @@ class AuthController {
     public function changePassword(): void {
         require_once dirname(__DIR__) . '/middleware/AuthMiddleware.php';
         $auth = AuthMiddleware::check();
+
+        // Security: Rate limit password changes (5 attempts per 15 mins per user)
+        RateLimitMiddleware::check('change_password', 5, 900, (string)$auth['id']);
 
         $raw = json_decode(file_get_contents('php://input'), true) ?? $_POST;
         $currentPassword = (string)($raw['current_password'] ?? '');
@@ -188,6 +223,12 @@ class AuthController {
             Response::error('Validation failed', 422, $validator->errors());
         }
 
+        // Check common weak passwords
+        $weakPasswords = ['123456', '12345678', 'password', 'qwerty', 'nelyssalon', 'admin123'];
+        if (in_array(strtolower($newPassword), $weakPasswords)) {
+            Response::error('Please choose a stronger password. Avoid simple sequential numbers or common words.', 422);
+        }
+
         $user = User::findByEmail($auth['email']);
         if (!$user || !password_verify($currentPassword, $user['password_hash'])) {
             Response::error('Current password is incorrect.', 401);
@@ -195,6 +236,9 @@ class AuthController {
 
         $newHash = password_hash($newPassword, PASSWORD_BCRYPT);
         User::updatePassword($auth['id'], $newHash);
+
+        // Clear rate limiter on success
+        RateLimitMiddleware::clear('change_password', (string)$auth['id']);
 
         Response::success(null, 'Password updated successfully.');
     }

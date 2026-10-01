@@ -122,6 +122,8 @@ class StaffController {
     }
 
     public function updateAvailability(int $id): void {
+        RoleMiddleware::requireAdmin();
+
         $staff = Staff::findById($id);
         if (!$staff) {
             Response::notFound('Staff member not found.');

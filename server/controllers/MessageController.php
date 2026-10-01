@@ -30,7 +30,7 @@ class MessageController {
             $user = AuthMiddleware::check();
             $role = strtolower(trim($user['role'] ?? ''));
 
-            if ($role === 'admin' || !empty($_GET['admin_view'])) {
+            if ($role === 'admin') {
                 $search = $_GET['search'] ?? '';
                 $filter = $_GET['filter'] ?? 'all';
                 $beforeId = !empty($_GET['before_id']) ? (int)$_GET['before_id'] : null;

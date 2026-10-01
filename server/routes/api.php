@@ -4,12 +4,19 @@
  * REST API Router
  */
 
-// Global headers & CORS & Timezone
+// Global headers & CORS & Timezone & Error Configuration
 date_default_timezone_set('Asia/Manila');
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+
 if (!headers_sent()) {
     header('Access-Control-Allow-Origin: *');
     header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-CSRF-Token');
     header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
+    header('X-Content-Type-Options: nosniff');
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-XSS-Protection: 1; mode=block');
+    header('Referrer-Policy: strict-origin-when-cross-origin');
 }
 
 if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {

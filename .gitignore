@@ -320,6 +320,8 @@ tokens/
 /uploads/*
 !/uploads/.gitkeep
 !/uploads/**/.gitkeep
+!/uploads/.htaccess
+!/uploads/**/.htaccess
 /storage/
 /attachments/
 /public/uploads/
@@ -519,6 +521,25 @@ ehthumbs.db
 ehthumbs_vista.db
 Thumbs.db
 Desktop.ini
-[Dd]esktop.ini
 $RECYCLE.BIN/
 System Volume Information/
+
+# ==========================================
+# 16. Developer Scratch, Test Scripts & Sandbox Files
+# ==========================================
+/scratch/
+scratch/
+scratch_*
+scratch.*
+*_scratch.*
+test_*.php
+test_*.js
+debug_*.php
+debug_*.js
+temp_*.php
+temp_*.js
+tmp_*.php
+tmp_*.js
+*.test.local.*
+*.debug.*
+*.sandbox.*

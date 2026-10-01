@@ -248,6 +248,7 @@ class Payment {
     }
 
     public static function create(array $data): int {
+        self::ensureSchema();
         $pdo = Database::getConnection();
 
         $bookingId = !empty($data['booking_id']) ? (int)$data['booking_id'] : null;

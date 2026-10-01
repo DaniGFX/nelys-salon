@@ -20,286 +20,293 @@ require_once dirname(__DIR__) . '/models/Notification.php';
 require_once dirname(__DIR__) . '/models/User.php';
 require_once dirname(__DIR__) . '/models/CustomerProfile.php';
 require_once dirname(__DIR__) . '/middleware/AuthMiddleware.php';
+require_once dirname(__DIR__) . '/middleware/RateLimitMiddleware.php';
 
 class BookingController {
     public function create(): void {
-        $auth = AuthMiddleware::checkOptional();
-        $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
-        $input = Sanitizer::cleanArray($input);
+        try {
+            RateLimitMiddleware::check('booking_creation', 10, 600);
+            $auth = AuthMiddleware::checkOptional();
+            $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+            $input = Sanitizer::cleanArray($input);
 
-        $validator = Validator::make($input, [
-            'service_id'     => 'required',
-            'booking_date'   => 'required|date',
-            'booking_time'   => 'required',
-            'payment_method' => 'required',
-        ]);
-
-        if ($validator->fails()) {
-            Response::error('Validation failed', 422, $validator->errors());
-        }
-
-        $service = is_numeric($input['service_id'])
-            ? Service::findById((int)$input['service_id'])
-            : Service::findByCode((string)$input['service_id']);
-
-        if (!$service || empty($service['is_active'])) {
-            Response::error('The selected service is not available.', 404);
-        }
-
-        // Determine customer ID
-        $customerId = null;
-        if ($auth && $auth['role'] === 'customer') {
-            $customerId = $auth['id'];
-        } elseif (!empty($input['customer_id'])) {
-            $customerId = (int)$input['customer_id'];
-        } else {
-            // Guest or manual customer
-            $clientName  = trim($input['client_name'] ?? $input['name'] ?? 'Guest Patron');
-            $clientEmail = trim($input['client_email'] ?? $input['email'] ?? '');
-            $clientPhone = trim($input['client_phone'] ?? $input['phone'] ?? '');
-
-            if (empty($clientEmail) && empty($clientPhone) && empty($clientName)) {
-                if ($auth) {
-                    $customerId = $auth['id'];
-                } else {
-                    Response::error('Please provide customer name, phone number, or email for the booking.', 422);
-                }
-            } else {
-                $user = null;
-                if (!empty($clientEmail)) {
-                    $user = User::findByEmail($clientEmail);
-                }
-                if (!$user && !empty($clientPhone)) {
-                    $cleanP = Sanitizer::cleanPhone($clientPhone);
-                    $user = User::findByPhone($cleanP) ?: User::findByPhone($clientPhone);
-                }
-
-                if ($user) {
-                    $customerId = $user['id'];
-                } else {
-                    $guestEmail = !empty($clientEmail) ? $clientEmail : ('guest_' . time() . '_' . rand(100, 999) . '@guest.nelyssalon.com');
-                    $guestPhone = !empty($clientPhone) ? Sanitizer::cleanPhone($clientPhone) : '09170000000';
-                    $tempPassword = password_hash(bin2hex(random_bytes(8)), PASSWORD_BCRYPT);
-                    $customerId = User::create($guestEmail, $guestPhone, $tempPassword, 'customer');
-                    CustomerProfile::create($customerId, $clientName, is_string($input['home_address'] ?? null) ? $input['home_address'] : null);
-                }
-            }
-        }
-
-        $rawVisitType = strtolower($input['visit_type'] ?? 'salon');
-        $visitType = str_contains($rawVisitType, 'home') ? 'home' : 'salon';
-
-        $homeAddress = $input['home_address'] ?? null;
-        if (is_array($homeAddress)) {
-            $parts = array_filter([
-                $homeAddress['building'] ?? '',
-                $homeAddress['street'] ?? '',
-                $homeAddress['barangay'] ?? '',
-                $homeAddress['city'] ?? '',
-                !empty($homeAddress['landmark']) ? 'Landmark: ' . $homeAddress['landmark'] : '',
+            $validator = Validator::make($input, [
+                'service_id'     => 'required',
+                'booking_date'   => 'required|date',
+                'booking_time'   => 'required',
+                'payment_method' => 'required',
             ]);
-            $homeAddress = implode(', ', $parts);
-        }
 
-        $bookingDate = date('Y-m-d', strtotime($input['booking_date']));
-        $bookingTime = date('H:i:s', strtotime($input['booking_time']));
+            if ($validator->fails()) {
+                Response::error('Validation failed', 422, $validator->errors());
+            }
 
-        $today = date('Y-m-d');
-        if ($bookingDate < $today) {
-            Response::error('Appointments cannot be scheduled for past dates. Please select an upcoming date.', 422);
-        }
+            $service = is_numeric($input['service_id'])
+                ? Service::findById((int)$input['service_id'])
+                : Service::findByCode((string)$input['service_id']);
 
-        // 1. Rebooking Same-Slot Check: Prevent rebooking for the exact same slot
-        $rebookedFromId = !empty($input['rebooked_from_id']) ? $input['rebooked_from_id'] : (!empty($input['rebook_from_id']) ? $input['rebook_from_id'] : null);
-        if ($rebookedFromId) {
-            $origBooking = is_numeric($rebookedFromId) 
-                ? Booking::findById((int)$rebookedFromId) 
-                : Booking::findByReference((string)$rebookedFromId);
+            if (!$service || empty($service['is_active'])) {
+                Response::error('The selected service is not available.', 404);
+            }
 
-            if ($origBooking) {
-                $origDate = date('Y-m-d', strtotime($origBooking['booking_date']));
-                $origTime = date('H:i:s', strtotime($origBooking['booking_time']));
+            // Determine customer ID
+            $customerId = null;
+            if ($auth && $auth['role'] === 'customer') {
+                $customerId = $auth['id'];
+            } elseif (!empty($input['customer_id'])) {
+                $customerId = (int)$input['customer_id'];
+            } else {
+                // Guest or manual customer
+                $clientName  = trim($input['client_name'] ?? $input['name'] ?? 'Guest Patron');
+                $clientEmail = trim($input['client_email'] ?? $input['email'] ?? '');
+                $clientPhone = trim($input['client_phone'] ?? $input['phone'] ?? '');
 
-                if ($bookingDate === $origDate && $bookingTime === $origTime) {
-                    Response::error('Please select a new date and time. You cannot rebook for the exact same appointment slot.', 422);
+                if (empty($clientEmail) && empty($clientPhone) && empty($clientName)) {
+                    if ($auth) {
+                        $customerId = $auth['id'];
+                    } else {
+                        Response::error('Please provide customer name, phone number, or email for the booking.', 422);
+                    }
+                } else {
+                    $user = null;
+                    if (!empty($clientEmail)) {
+                        $user = User::findByEmail($clientEmail);
+                    }
+                    if (!$user && !empty($clientPhone)) {
+                        $cleanP = Sanitizer::cleanPhone($clientPhone);
+                        $user = User::findByPhone($cleanP) ?: User::findByPhone($clientPhone);
+                    }
+
+                    if ($user) {
+                        $customerId = $user['id'];
+                    } else {
+                        $guestEmail = !empty($clientEmail) ? $clientEmail : ('guest_' . time() . '_' . rand(100, 999) . '@guest.nelyssalon.com');
+                        $guestPhone = !empty($clientPhone) ? Sanitizer::cleanPhone($clientPhone) : ('09' . str_pad((string)rand(100000000, 999999999), 9, '0', STR_PAD_LEFT));
+                        $tempPassword = password_hash(bin2hex(random_bytes(8)), PASSWORD_BCRYPT);
+                        $customerId = User::create($guestEmail, $guestPhone, $tempPassword, 'customer');
+                        CustomerProfile::create($customerId, $clientName, is_string($input['home_address'] ?? null) ? $input['home_address'] : null);
+                    }
                 }
             }
-        }
 
-        // 2. Double Booking Prevention: Check if customer already has an active appointment at this date & time
-        $pdo = Database::getConnection();
-        $stmtConflict = $pdo->prepare("
-            SELECT id, reference_no 
-            FROM bookings 
-            WHERE customer_id = :cid 
-              AND booking_date = :bdate 
-              AND booking_time = :btime 
-              AND status IN ('pending', 'confirmed')
-            LIMIT 1
-        ");
-        $stmtConflict->execute([
-            'cid'   => $customerId,
-            'bdate' => $bookingDate,
-            'btime' => $bookingTime
-        ]);
-        $existingActive = $stmtConflict->fetch();
-        if ($existingActive) {
-            $timeFormatted = date('g:i A', strtotime($bookingTime));
-            Response::error("You already have an active appointment scheduled for {$bookingDate} at {$timeFormatted} (Ref: {$existingActive['reference_no']}). Please choose a different date or time slot.", 409);
-        }
+            $rawVisitType = strtolower($input['visit_type'] ?? 'salon');
+            $visitType = str_contains($rawVisitType, 'home') ? 'home' : 'salon';
 
-        // 3. Staff Availability & Double-Booking Prevention
-        $timeFormatted = date('g:i A', strtotime($bookingTime));
-        $normalizedTime = date('H:i:s', strtotime($bookingTime));
-
-        if (!empty($input['staff_id'])) {
-            $staffId = (int)$input['staff_id'];
-            $staffRow = Staff::findById($staffId);
-            
-            if (!$staffRow || empty($staffRow['is_active']) || $staffRow['status'] === 'Inactive' || $staffRow['status'] === 'On Leave') {
-                $staffName = $staffRow ? $staffRow['name'] : 'The selected stylist';
-                Response::error("{$staffName} is currently unavailable or inactive. Please choose another stylist.", 422);
+            $homeAddress = $input['home_address'] ?? null;
+            if (is_array($homeAddress)) {
+                $parts = array_filter([
+                    $homeAddress['building'] ?? '',
+                    $homeAddress['street'] ?? '',
+                    $homeAddress['barangay'] ?? '',
+                    $homeAddress['city'] ?? '',
+                    !empty($homeAddress['landmark']) ? 'Landmark: ' . $homeAddress['landmark'] : '',
+                ]);
+                $homeAddress = implode(', ', $parts);
             }
 
-            // Check staff weekly schedule for the day
-            $dayOfWeek = date('l', strtotime($bookingDate));
-            $defaultSchedule = [
-                'Monday'    => '9:00 AM – 6:00 PM',
-                'Tuesday'   => '9:00 AM – 6:00 PM',
-                'Wednesday' => '9:00 AM – 6:00 PM',
-                'Thursday'  => '9:00 AM – 6:00 PM',
-                'Friday'    => '9:00 AM – 6:00 PM',
-                'Saturday'  => '9:00 AM – 6:00 PM',
-                'Sunday'    => 'Day Off'
-            ];
-            $schedule = $defaultSchedule;
-            if (!empty($staffRow['schedule'])) {
-                $decoded = json_decode($staffRow['schedule'], true);
-                if (is_array($decoded)) {
-                    $schedule = array_merge($defaultSchedule, $decoded);
+            $bookingDate = date('Y-m-d', strtotime($input['booking_date']));
+            $bookingTime = date('H:i:s', strtotime($input['booking_time']));
+
+            $today = date('Y-m-d');
+            if ($bookingDate < $today) {
+                Response::error('Appointments cannot be scheduled for past dates. Please select an upcoming date.', 422);
+            }
+
+            // 1. Rebooking Same-Slot Check: Prevent rebooking for the exact same slot
+            $rebookedFromId = !empty($input['rebooked_from_id']) ? $input['rebooked_from_id'] : (!empty($input['rebook_from_id']) ? $input['rebook_from_id'] : null);
+            if ($rebookedFromId) {
+                $origBooking = is_numeric($rebookedFromId) 
+                    ? Booking::findById((int)$rebookedFromId) 
+                    : Booking::findByReference((string)$rebookedFromId);
+
+                if ($origBooking) {
+                    $origDate = date('Y-m-d', strtotime($origBooking['booking_date']));
+                    $origTime = date('H:i:s', strtotime($origBooking['booking_time']));
+
+                    if ($bookingDate === $origDate && $bookingTime === $origTime) {
+                        Response::error('Please select a new date and time. You cannot rebook for the exact same appointment slot.', 422);
+                    }
                 }
             }
-            $daySched = $schedule[$dayOfWeek] ?? '9:00 AM – 6:00 PM';
-            if (strtolower(trim($daySched)) === 'day off' || strtolower(trim($staffRow['availability'] ?? '')) === 'off-duty') {
-                Response::error("{$staffRow['name']} is scheduled off on {$dayOfWeek}s. Please choose a different appointment date or select another stylist.", 422);
-            }
 
-            // Check if staff member already has an active booking at this date & time
-            $stmtStaffConflict = $pdo->prepare("
+            // 2. Double Booking Prevention: Check if customer already has an active appointment at this date & time
+            $pdo = Database::getConnection();
+            $stmtConflict = $pdo->prepare("
                 SELECT id, reference_no 
                 FROM bookings 
-                WHERE staff_id = :sid 
+                WHERE customer_id = :cid 
                   AND booking_date = :bdate 
                   AND booking_time = :btime 
                   AND status IN ('pending', 'confirmed')
                 LIMIT 1
             ");
-            $stmtStaffConflict->execute([
-                'sid'   => $staffId,
+            $stmtConflict->execute([
+                'cid'   => $customerId,
                 'bdate' => $bookingDate,
                 'btime' => $bookingTime
             ]);
-            $conflictingAppt = $stmtStaffConflict->fetch();
-            if ($conflictingAppt) {
-                Response::error("{$staffRow['name']} is already booked on {$bookingDate} at {$timeFormatted} (Ref: {$conflictingAppt['reference_no']}). Please select another time slot or choose a different stylist.", 409);
+            $existingActive = $stmtConflict->fetch();
+            if ($existingActive) {
+                $timeFormatted = date('g:i A', strtotime($bookingTime));
+                Response::error("You already have an active appointment scheduled for {$bookingDate} at {$timeFormatted} (Ref: {$existingActive['reference_no']}). Please choose a different date or time slot.", 409);
             }
-        } else {
-            // "Any Available Stylist" selected: verify that the salon slot has capacity (not fully booked)
-            $availData = AvailabilityService::getAvailabilityData($bookingDate);
-            $slotAvailable = false;
-            foreach ($availData['slots'] as $s) {
-                if ($s['time'] === $normalizedTime) {
-                    $slotAvailable = !empty($s['is_available']);
-                    break;
+
+            // 3. Staff Availability & Double-Booking Prevention
+            $timeFormatted = date('g:i A', strtotime($bookingTime));
+            $normalizedTime = date('H:i:s', strtotime($bookingTime));
+
+            if (!empty($input['staff_id'])) {
+                $staffId = (int)$input['staff_id'];
+                $staffRow = Staff::findById($staffId);
+                
+                if (!$staffRow || empty($staffRow['is_active']) || $staffRow['status'] === 'Inactive' || $staffRow['status'] === 'On Leave') {
+                    $staffName = $staffRow ? $staffRow['name'] : 'The selected stylist';
+                    Response::error("{$staffName} is currently unavailable or inactive. Please choose another stylist.", 422);
+                }
+
+                // Check staff weekly schedule for the day
+                $dayOfWeek = date('l', strtotime($bookingDate));
+                $defaultSchedule = [
+                    'Monday'    => '9:00 AM – 6:00 PM',
+                    'Tuesday'   => '9:00 AM – 6:00 PM',
+                    'Wednesday' => '9:00 AM – 6:00 PM',
+                    'Thursday'  => '9:00 AM – 6:00 PM',
+                    'Friday'    => '9:00 AM – 6:00 PM',
+                    'Saturday'  => '9:00 AM – 6:00 PM',
+                    'Sunday'    => 'Day Off'
+                ];
+                $schedule = $defaultSchedule;
+                if (!empty($staffRow['schedule'])) {
+                    $decoded = json_decode($staffRow['schedule'], true);
+                    if (is_array($decoded)) {
+                        $schedule = array_merge($defaultSchedule, $decoded);
+                    }
+                }
+                $daySched = $schedule[$dayOfWeek] ?? '9:00 AM – 6:00 PM';
+                if (strtolower(trim($daySched)) === 'day off' || strtolower(trim($staffRow['availability'] ?? '')) === 'off-duty') {
+                    Response::error("{$staffRow['name']} is scheduled off on {$dayOfWeek}s. Please choose a different appointment date or select another stylist.", 422);
+                }
+
+                // Check if staff member already has an active booking at this date & time
+                $stmtStaffConflict = $pdo->prepare("
+                    SELECT id, reference_no 
+                    FROM bookings 
+                    WHERE staff_id = :sid 
+                      AND booking_date = :bdate 
+                      AND booking_time = :btime 
+                      AND status IN ('pending', 'confirmed')
+                    LIMIT 1
+                ");
+                $stmtStaffConflict->execute([
+                    'sid'   => $staffId,
+                    'bdate' => $bookingDate,
+                    'btime' => $bookingTime
+                ]);
+                $conflictingAppt = $stmtStaffConflict->fetch();
+                if ($conflictingAppt) {
+                    Response::error("{$staffRow['name']} is already booked on {$bookingDate} at {$timeFormatted} (Ref: {$conflictingAppt['reference_no']}). Please select another time slot or choose a different stylist.", 409);
+                }
+            } else {
+                // "Any Available Stylist" selected: verify that the salon slot has capacity (not fully booked)
+                $availData = AvailabilityService::getAvailabilityData($bookingDate);
+                $slotAvailable = false;
+                foreach ($availData['slots'] as $s) {
+                    if ($s['time'] === $normalizedTime) {
+                        $slotAvailable = !empty($s['is_available']);
+                        break;
+                    }
+                }
+                if (!$slotAvailable) {
+                    Response::error("All stylists are fully booked on {$bookingDate} at {$timeFormatted}. Please select a different time slot or date.", 409);
                 }
             }
-            if (!$slotAvailable) {
-                Response::error("All stylists are fully booked on {$bookingDate} at {$timeFormatted}. Please select a different time slot or date.", 409);
+
+            $rawPayMethod = strtolower($input['payment_method'] ?? 'cash');
+            if (str_contains($rawPayMethod, 'gcash')) {
+                $paymentMethod = 'gcash';
+            } elseif (str_contains($rawPayMethod, 'bank')) {
+                $paymentMethod = 'bank_transfer';
+            } else {
+                $paymentMethod = 'cash';
             }
-        }
 
-        $rawPayMethod = strtolower($input['payment_method'] ?? 'cash');
-        if (str_contains($rawPayMethod, 'gcash')) {
-            $paymentMethod = 'gcash';
-        } elseif (str_contains($rawPayMethod, 'bank')) {
-            $paymentMethod = 'bank_transfer';
-        } else {
-            $paymentMethod = 'cash';
-        }
+            $referenceNo = BookingReferenceService::generate();
+            $totalPrice = (float)$service['price'];
+            if ($visitType === 'home') {
+                $totalPrice += 150.00; // standard home service transport fee
+            }
 
-        $referenceNo = BookingReferenceService::generate();
-        $totalPrice = (float)$service['price'];
-        if ($visitType === 'home') {
-            $totalPrice += 150.00; // standard home service transport fee
-        }
+            $initialStatus = !empty($input['status']) ? strtolower($input['status']) : 'pending';
 
-        $initialStatus = !empty($input['status']) ? strtolower($input['status']) : 'pending';
-
-        $bookingId = Booking::create([
-            'reference_no' => $referenceNo,
-            'customer_id'  => $customerId,
-            'service_id'   => $service['id'],
-            'staff_id'     => !empty($input['staff_id']) ? (int)$input['staff_id'] : null,
-            'booking_date' => $bookingDate,
-            'booking_time' => $bookingTime,
-            'visit_type'   => $visitType,
-            'home_address' => $homeAddress,
-            'status'       => $initialStatus,
-            'notes'        => $input['notes'] ?? null,
-            'total_price'  => $totalPrice,
-        ]);
-
-        // Record payment
-        $paymentStatus = !empty($input['payment_status']) ? strtolower($input['payment_status']) : ($paymentMethod === 'cash' ? 'pending' : 'paid');
-        Payment::create([
-            'booking_id'       => $bookingId,
-            'amount'           => $totalPrice,
-            'payment_method'   => $paymentMethod,
-            'reference_number' => $input['reference_number'] ?? null,
-            'status'           => $paymentStatus,
-            'paid_at'          => $paymentStatus === 'paid' ? date('Y-m-d H:i:s') : null,
-        ]);
-
-        // Create alert notification for customer
-        try {
-            Notification::create([
-                'user_id'        => $customerId,
-                'recipient_role' => 'customer',
-                'booking_id'     => $bookingId,
-                'category'       => 'appointments',
-                'title'          => 'Booking Received',
-                'message'        => "Your appointment for {$service['name']} on {$bookingDate} at {$bookingTime} has been registered (Ref: {$referenceNo}).",
-                'action_url'     => 'appointments.html',
-                'type'           => 'info',
-                'status'         => 'sent'
+            $bookingId = Booking::create([
+                'reference_no' => $referenceNo,
+                'customer_id'  => $customerId,
+                'service_id'   => $service['id'],
+                'staff_id'     => !empty($input['staff_id']) ? (int)$input['staff_id'] : null,
+                'booking_date' => $bookingDate,
+                'booking_time' => $bookingTime,
+                'visit_type'   => $visitType,
+                'home_address' => $homeAddress,
+                'status'       => $initialStatus,
+                'notes'        => $input['notes'] ?? null,
+                'total_price'  => $totalPrice,
             ]);
-        } catch (Throwable $notifErr) {
-            error_log('[Nely\'s Salon] Customer notification error on booking create: ' . $notifErr->getMessage());
-        }
 
-        // Also create notification entry for admin panel
-        try {
-            $isRebook = !empty($input['notes']) && str_contains(strtolower($input['notes']), 're-book');
-            $custProfile = CustomerProfile::findByUserId($customerId);
-            $userRow = User::findById($customerId);
-            $customerDisplayName = !empty($custProfile['full_name']) ? $custProfile['full_name'] : (!empty($clientName) ? $clientName : ($userRow['email'] ?? 'A customer'));
-            Notification::create([
-                'user_id'        => $customerId,
-                'recipient_role' => 'admin',
-                'booking_id'     => $bookingId,
-                'category'       => 'appointments',
-                'title'          => $isRebook ? 'Appointment Re-booked' : 'New Appointment Booked',
-                'message'        => "{$customerDisplayName} booked {$service['name']} for {$bookingDate} at {$bookingTime} (Ref: {$referenceNo}).",
-                'action_url'     => 'appointments.html',
-                'channel'        => 'email',
-                'status'         => 'sent'
+            // Record payment
+            $paymentStatus = !empty($input['payment_status']) ? strtolower($input['payment_status']) : ($paymentMethod === 'cash' ? 'pending' : 'paid');
+            Payment::create([
+                'booking_id'       => $bookingId,
+                'amount'           => $totalPrice,
+                'payment_method'   => $paymentMethod,
+                'reference_number' => $input['reference_number'] ?? null,
+                'status'           => $paymentStatus,
+                'paid_at'          => $paymentStatus === 'paid' ? date('Y-m-d H:i:s') : null,
             ]);
-        } catch (Throwable $notifErr) {
-            error_log('[Nely\'s Salon] Notification::create error: ' . $notifErr->getMessage());
-        }
 
-        $booking = Booking::findById($bookingId);
-        Response::success($booking, 'Appointment booked successfully.', 201);
+            // Create alert notification for customer
+            try {
+                Notification::create([
+                    'user_id'        => $customerId,
+                    'recipient_role' => 'customer',
+                    'booking_id'     => $bookingId,
+                    'category'       => 'appointments',
+                    'title'          => 'Booking Received',
+                    'message'        => "Your appointment for {$service['name']} on {$bookingDate} at {$bookingTime} has been registered (Ref: {$referenceNo}).",
+                    'action_url'     => 'appointments.html',
+                    'type'           => 'info',
+                    'status'         => 'sent'
+                ]);
+            } catch (Throwable $notifErr) {
+                error_log('[Nely\'s Salon] Customer notification error on booking create: ' . $notifErr->getMessage());
+            }
+
+            // Also create notification entry for admin panel
+            try {
+                $isRebook = !empty($input['notes']) && str_contains(strtolower($input['notes']), 're-book');
+                $custProfile = CustomerProfile::findByUserId($customerId);
+                $userRow = User::findById($customerId);
+                $customerDisplayName = !empty($custProfile['full_name']) ? $custProfile['full_name'] : (!empty($clientName) ? $clientName : ($userRow['email'] ?? 'A customer'));
+                Notification::create([
+                    'user_id'        => $customerId,
+                    'recipient_role' => 'admin',
+                    'booking_id'     => $bookingId,
+                    'category'       => 'appointments',
+                    'title'          => $isRebook ? 'Appointment Re-booked' : 'New Appointment Booked',
+                    'message'        => "{$customerDisplayName} booked {$service['name']} for {$bookingDate} at {$bookingTime} (Ref: {$referenceNo}).",
+                    'action_url'     => 'appointments.html',
+                    'channel'        => 'email',
+                    'status'         => 'sent'
+                ]);
+            } catch (Throwable $notifErr) {
+                error_log('[Nely\'s Salon] Notification::create error: ' . $notifErr->getMessage());
+            }
+
+            $booking = Booking::findById($bookingId);
+            Response::success($booking, 'Appointment booked successfully.', 201);
+        } catch (Throwable $e) {
+            error_log('[Nely\'s Salon] BookingController::create Error: ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+            Response::error('Failed to process booking: ' . $e->getMessage(), 500);
+        }
     }
 
     public function index(): void {
@@ -315,10 +322,12 @@ class BookingController {
                 $bookings = Booking::all($filters);
 
                 // Summary metrics
-                $pdo = Database::getConnection();
-                $today = date('Y-m-d');
+                $stmtToday = $pdo->prepare("SELECT COUNT(*) FROM bookings WHERE booking_date = :today");
+                $stmtToday->execute([':today' => $today]);
+                $todayCount = (int)$stmtToday->fetchColumn();
+
                 $summary = [
-                    'today'     => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE booking_date = '$today'")->fetchColumn(),
+                    'today'     => $todayCount,
                     'pending'   => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'pending'")->fetchColumn(),
                     'confirmed' => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'confirmed'")->fetchColumn(),
                     'completed' => (int)$pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'completed'")->fetchColumn(),

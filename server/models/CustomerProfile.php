@@ -282,13 +282,18 @@ class CustomerProfile {
 
         try {
             $total = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'customer'")->fetchColumn();
-            $newThisMonth = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'customer' AND DATE_FORMAT(created_at, '%Y-%m') = '$currentMonthPrefix'")->fetchColumn();
             
-            $withUpcoming = (int)$pdo->query("
+            $stmtNew = $pdo->prepare("SELECT COUNT(*) FROM users WHERE role = 'customer' AND DATE_FORMAT(created_at, '%Y-%m') = :mprefix");
+            $stmtNew->execute([':mprefix' => $currentMonthPrefix]);
+            $newThisMonth = (int)$stmtNew->fetchColumn();
+            
+            $stmtUpcoming = $pdo->prepare("
                 SELECT COUNT(DISTINCT customer_id) 
                 FROM bookings 
-                WHERE status IN ('pending', 'confirmed') AND booking_date >= '$today'
-            ")->fetchColumn();
+                WHERE status IN ('pending', 'confirmed') AND booking_date >= :today
+            ");
+            $stmtUpcoming->execute([':today' => $today]);
+            $withUpcoming = (int)$stmtUpcoming->fetchColumn();
 
             $returning = (int)$pdo->query("
                 SELECT COUNT(*) FROM (

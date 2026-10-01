@@ -88,6 +88,12 @@ class AuthMiddleware {
             return null; // Expired
         }
 
+        // Check if token has been revoked/blacklisted on logout
+        require_once dirname(__DIR__) . '/models/TokenBlacklist.php';
+        if (TokenBlacklist::isRevoked($token)) {
+            return null; // Token revoked on logout
+        }
+
         return [
             'id'    => (int)$payload['uid'],
             'email' => $payload['email'] ?? '',

@@ -1,3 +1,12 @@
-# Deny all direct browser access to the server/ directory.
-# All requests must go through api/index.php gateway.
-Deny from all
+# ==============================================================================
+# Nely's Salon Management System - Server Directory Direct Access Denial
+# All requests must go through the api/index.php gateway.
+# ==============================================================================
+
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order Allow,Deny
+    Deny from all
+</IfModule>
