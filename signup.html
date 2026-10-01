@@ -18,7 +18,7 @@
   <link rel="stylesheet" href="assets/css/output.css">
 
   <!-- Preload Critical Above-the-Fold Images (Zero White Flicker on Reload) -->
-  <link rel="preload" as="image" href="assets/images/login-signup-form.jpg" fetchpriority="high">
+  <link rel="preload" as="image" href="assets/images/frontview1.jpg" fetchpriority="high">
   <link rel="preload" as="image" href="assets/images/logo.jfif">
 </head>
 <body class="h-full bg-[#FDFBF7] text-[#2b1d1d] antialiased selection:bg-[#810B38] selection:text-white flex flex-col justify-between">
@@ -28,21 +28,23 @@
     
     <!-- ================= LEFT SIDE — BRANDING (WEBSITE / DESKTOP VIEW ONLY) ================= -->
     <div 
-      class="hidden lg:flex lg:col-span-5 text-white lg:p-12 xl:p-14 flex-col justify-between relative overflow-hidden bg-[#241719] bg-cover bg-center"
-      style="background-image: url('data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAAoACADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDBtXlaRVYKQSB05rbTTd0gfDYQ8Z6GsuyhMksS5wWYDI+tdRqVldWdhNOl1nZ22ken+NcMU2rnotq9jLnQwrlpMfWsZ7me7uRBF+8LHCgdP/r10Saf9pe0e4cuJGXKjpgrmsrQEVfEcQXGAzY/I0AjB0PVbS3z5pEO1w29sc/lXYXurm50+QsQUnACMvIIwuD9Ov4CvLftEj2MkAfKkAbQBzzXpkukPc+GdPVVdZo4EHyg5BwP8KtLRikkrMadSjEls0svlpE4QZ6MApGc1meGYz/wkUUpllOZCArD5fuk02003VLcXEL27SLtAQ4we+c5rmlvL6OSGK3lSG4iZvM3k5BztzU2ZSszVsbS1gdWSCMODkNt5FeiR3wbThM5G1Fy/U9qKKqJnI56/wDFFisMsltcSC4CYUbcKf1zWZNeTX2mxNOwCTAjNy5Yoc9R6dO/WiiiQ4n/2Q==');">
+      class="hidden lg:flex lg:col-span-5 text-white lg:p-12 xl:p-14 flex-col justify-between relative overflow-hidden bg-[#241719]"
+    >
       
-      <!-- Background Cover Image (Ultra-fast 100KB HD JPG) -->
+      <!-- Background Cover Image (HD Salon Front View with Backdrop Blur) -->
       <img 
-        src="assets/images/login-signup-form.jpg" 
-        alt="Nely's Salon" 
+        src="assets/images/frontview1.jpg" 
+        alt="Nely's Salon Front View" 
         loading="eager"
         fetchpriority="high"
         decoding="sync"
-        class="absolute inset-0 w-full h-full object-cover object-center"
+        class="absolute inset-0 w-full h-full object-cover object-center pointer-events-none"
+        style="filter: blur(8px); -webkit-filter: blur(8px); transform: scale(1.08);"
       >
 
-      <!-- Brand Gradient & Tint Overlay for Contrast & Aesthetics -->
-      <div class="absolute inset-0 bg-gradient-to-t from-black/65 via-black/25 to-black/35 pointer-events-none"></div>
+      <!-- Brand Gradient & Tint Overlay — Darkened for Maximum Legibility -->
+      <div class="absolute inset-0 bg-gradient-to-t from-black/95 via-black/70 to-black/80 pointer-events-none"></div>
+      <div class="absolute inset-0 bg-[#1a0a0a]/50 mix-blend-multiply pointer-events-none"></div>
       
       <!-- Top Branding Bar -->
       <div class="relative z-10">
@@ -59,17 +61,17 @@
             class="w-14 h-14 rounded-full border-2 border-[#DCC3AA] object-cover shadow-xl shrink-0"
           >
           <div>
-            <span class="font-serif text-2xl xl:text-3xl font-bold tracking-widest text-[#F1E2D1] uppercase block">
+            <span class="font-serif text-2xl xl:text-3xl font-bold tracking-widest text-[#F1E2D1] uppercase block drop-shadow-md">
               NELY’S SALON
             </span>
-            <span class="text-xs tracking-[0.25em] uppercase text-[#DCC3AA] font-semibold block">
+            <span class="text-xs tracking-[0.25em] uppercase text-[#DCC3AA] font-semibold block drop-shadow-sm">
               Lagro, Quezon City
             </span>
           </div>
         </div>
 
         <!-- Salon Motto -->
-        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 border border-[#DCC3AA]/40 backdrop-blur-sm mb-5">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-black/40 border border-[#DCC3AA]/50 backdrop-blur-md mb-5 shadow-sm">
           <i class="fa-solid fa-sparkles text-[#DCC3AA] text-xs"></i>
           <span class="font-serif italic text-sm text-[#F1E2D1] tracking-wide">
             “YOUR BEAUTY IS OUR DUTY”
@@ -78,34 +80,34 @@
 
         <!-- Dynamic Welcoming Message (Switches instantly with mode) -->
         <div class="space-y-2.5">
-          <h1 id="heroBrandTitle" class="font-serif text-3xl xl:text-4xl text-[#F1E2D1] font-normal leading-snug drop-shadow-sm">
+          <h1 id="heroBrandTitle" class="font-serif text-3xl xl:text-4xl text-[#F1E2D1] font-normal leading-snug drop-shadow-md">
             Begin Your Beauty Journey With Us
           </h1>
-          <p id="heroBrandDesc" class="text-sm text-[#DCC3AA]/90 leading-relaxed font-light">
+          <p id="heroBrandDesc" class="text-sm text-[#F1E2D1]/90 leading-relaxed font-light drop-shadow-sm">
             Create an account to book your appointments with ease, track your favorite hair and nail rituals, and experience 15 years of personalized beauty care in Lagro, QC.
           </p>
         </div>
       </div>
 
       <!-- Left Bottom Features (Desktop Only) -->
-      <div class="relative z-10 mt-6 pt-4 border-t border-[#DCC3AA]/30 text-xs text-[#DCC3AA]/90 space-y-2.5 bg-white/5 p-4 rounded-2xl border border-[#DCC3AA]/20 backdrop-blur-xs">
+      <div class="relative z-10 mt-6 pt-4 border-t border-[#DCC3AA]/30 text-xs text-[#F1E2D1] space-y-2.5 bg-black/40 p-4 rounded-2xl border border-[#DCC3AA]/30 backdrop-blur-md shadow-lg">
         <div class="flex items-center gap-3">
-          <div class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0">
-            <i class="fa-solid fa-award text-xs"></i>
+          <div class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0 border border-white/20">
+            <i class="fa-solid fa-award text-xs text-[#DCC3AA]"></i>
           </div>
-          <span>15 Years of Beauty & Care in Lagro, Quezon City</span>
+          <span class="font-medium">15 Years of Beauty & Care in Lagro, Quezon City</span>
         </div>
         <div class="flex items-center gap-3">
-          <div class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0">
-            <i class="fa-solid fa-house-laptop text-xs"></i>
+          <div class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0 border border-white/20">
+            <i class="fa-solid fa-house-laptop text-xs text-[#DCC3AA]"></i>
           </div>
-          <span>Seamless In-Salon & Home Service Booking</span>
+          <span class="font-medium">Seamless In-Salon & Home Service Booking</span>
         </div>
         <div class="flex items-center gap-3">
-          <div class="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center text-white shrink-0">
-            <i class="fa-solid fa-bell text-xs"></i>
+          <div class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0 border border-white/20">
+            <i class="fa-solid fa-bell text-xs text-[#DCC3AA]"></i>
           </div>
-          <span>Automated SMS & Email Appointment Reminders</span>
+          <span class="font-medium">Automated SMS & Email Appointment Reminders</span>
         </div>
       </div>
 
