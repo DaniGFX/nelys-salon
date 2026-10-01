@@ -9,6 +9,7 @@ require_once dirname(__DIR__) . '/helpers/Validator.php';
 require_once dirname(__DIR__) . '/helpers/Sanitizer.php';
 require_once dirname(__DIR__) . '/models/User.php';
 require_once dirname(__DIR__) . '/models/CustomerProfile.php';
+require_once dirname(__DIR__) . '/models/Notification.php';
 
 class AuthController {
     public function login(): void {
@@ -100,6 +101,22 @@ class AuthController {
         $userId = User::create($input['email'], $cleanPhone, $passwordHash, 'customer');
 
         CustomerProfile::create($userId, $input['full_name'], $input['address'] ?? null);
+
+        // Notify admin panel of new customer signup
+        try {
+            Notification::create([
+                'user_id'        => $userId,
+                'recipient_role' => 'admin',
+                'category'       => 'customers',
+                'title'          => 'New Customer Registration',
+                'message'        => "{$input['full_name']} ({$input['email']}) registered a new customer profile.",
+                'action_url'     => 'customers.html',
+                'type'           => 'info',
+                'status'         => 'sent'
+            ]);
+        } catch (Throwable $e) {
+            error_log('[Nely\'s Salon] Admin notification error on registration: ' . $e->getMessage());
+        }
 
         $user = User::findById($userId);
 

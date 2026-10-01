@@ -150,7 +150,9 @@ class BookingController {
                 $customerId,
                 'Booking Received',
                 "Your appointment for {$service['name']} on {$bookingDate} at {$bookingTime} has been registered.",
-                $bookingId
+                $bookingId,
+                'email',
+                'customer'
             );
         } catch (Throwable $notifErr) {
             error_log('[Nely\'s Salon] NotificationService error: ' . $notifErr->getMessage());
@@ -159,15 +161,17 @@ class BookingController {
         // Also create notification entry for admin panel
         try {
             $isRebook = !empty($input['notes']) && str_contains(strtolower($input['notes']), 're-book');
+            $customerDisplayName = !empty($customer['full_name']) ? $customer['full_name'] : ($customer['email'] ?? 'A customer');
             Notification::create([
-                'user_id'    => $customerId,
-                'booking_id' => $bookingId,
-                'category'   => 'appointments',
-                'title'      => $isRebook ? 'Appointment Re-booked' : 'New Appointment Booked',
-                'message'    => "Appointment Ref: {$referenceNo} for {$service['name']} on {$bookingDate} at {$bookingTime} requires review/confirmation.",
-                'action_url' => 'admin-appointments.html',
-                'channel'    => 'email',
-                'status'     => 'sent'
+                'user_id'        => $customerId,
+                'recipient_role' => 'admin',
+                'booking_id'     => $bookingId,
+                'category'       => 'appointments',
+                'title'          => $isRebook ? 'Appointment Re-booked' : 'New Appointment Booked',
+                'message'        => "{$customerDisplayName} booked {$service['name']} for {$bookingDate} at {$bookingTime} (Ref: {$referenceNo}).",
+                'action_url'     => 'appointments.html',
+                'channel'        => 'email',
+                'status'         => 'sent'
             ]);
         } catch (Throwable $notifErr) {
             error_log('[Nely\'s Salon] Notification::create error: ' . $notifErr->getMessage());
@@ -292,12 +296,36 @@ class BookingController {
 
         Booking::updateStatus((int)$booking['id'], 'cancelled', $reason);
 
+        // Notify customer
         NotificationService::create(
             (int)$booking['customer_id'],
             'Appointment Cancelled',
             "Your appointment Ref: {$booking['reference_no']} has been cancelled.",
-            (int)$booking['id']
+            (int)$booking['id'],
+            'email',
+            'customer'
         );
+
+        // If cancelled by customer, notify the admin panel
+        if ($auth['role'] !== 'admin') {
+            try {
+                $custName = $booking['customer_name'] ?? 'Customer';
+                Notification::create([
+                    'user_id'        => (int)$booking['customer_id'],
+                    'recipient_role' => 'admin',
+                    'booking_id'     => (int)$booking['id'],
+                    'category'       => 'appointments',
+                    'title'          => 'Appointment Cancelled by Customer',
+                    'message'        => "{$custName} cancelled appointment Ref: {$booking['reference_no']} scheduled for {$booking['booking_date']}.",
+                    'action_url'     => 'appointments.html',
+                    'type'           => 'warning',
+                    'channel'        => 'email',
+                    'status'         => 'sent'
+                ]);
+            } catch (Throwable $e) {
+                error_log('[Nely\'s Salon] Notification create error: ' . $e->getMessage());
+            }
+        }
 
         Response::success(null, 'Appointment has been cancelled successfully.');
     }
@@ -329,7 +357,9 @@ class BookingController {
                 (int)$booking['customer_id'],
                 'Appointment Confirmed',
                 "Your appointment for {$booking['service_name']} on {$booking['booking_date']} has been approved and confirmed by our salon team!",
-                (int)$booking['id']
+                (int)$booking['id'],
+                'email',
+                'customer'
             );
         }
 

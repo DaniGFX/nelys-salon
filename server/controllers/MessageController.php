@@ -440,8 +440,8 @@ class MessageController {
             ");
 
             $notifStmt = $pdo->prepare("
-                INSERT INTO notifications (user_id, category, title, message, type, action_link, is_read, created_at)
-                VALUES (:user_id, 'system', 'Salon Announcement', :message, 'info', 'messages.html', 0, NOW())
+                INSERT INTO notifications (user_id, recipient_role, category, title, message, type, action_link, is_read, created_at)
+                VALUES (:user_id, 'customer', 'system', 'Salon Announcement', :message, 'info', 'messages.html', 0, NOW())
             ");
 
             $count = 0;

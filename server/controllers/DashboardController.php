@@ -32,10 +32,10 @@ class DashboardController {
         } catch (Exception $e) {}
 
         try {
-            $unreadNotifsCount = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE is_read = 0 OR is_read IS NULL")->fetchColumn();
+            $unreadNotifsCount = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE (is_read = 0 OR is_read IS NULL) AND (recipient_role = 'admin' OR recipient_role IS NULL)")->fetchColumn();
         } catch (Exception $e) {
             try {
-                $unreadNotifsCount = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE status = 'pending'")->fetchColumn();
+                $unreadNotifsCount = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE (status = 'pending' OR status IS NULL) AND (recipient_role = 'admin' OR recipient_role IS NULL)")->fetchColumn();
             } catch (Exception $e2) {}
         }
 

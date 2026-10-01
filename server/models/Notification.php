@@ -19,6 +19,7 @@ class Notification {
             $pdo->exec("CREATE TABLE IF NOT EXISTS `notifications` (
                 `id` INT AUTO_INCREMENT PRIMARY KEY,
                 `user_id` INT NULL,
+                `recipient_role` VARCHAR(20) NOT NULL DEFAULT 'admin',
                 `category` VARCHAR(50) NOT NULL DEFAULT 'system',
                 `title` VARCHAR(255) NOT NULL,
                 `message` TEXT NOT NULL,
@@ -30,21 +31,30 @@ class Notification {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
             // Ensure columns exist
-            try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `category` VARCHAR(50) NOT NULL DEFAULT 'system' AFTER `user_id`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `recipient_role` VARCHAR(20) NOT NULL DEFAULT 'admin' AFTER `user_id`"); } catch (Throwable $e) {}
+            try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `category` VARCHAR(50) NOT NULL DEFAULT 'system' AFTER `recipient_role`"); } catch (Throwable $e) {}
             try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `type` VARCHAR(50) NOT NULL DEFAULT 'info' AFTER `message`"); } catch (Throwable $e) {}
             try { $pdo->exec("ALTER TABLE `notifications` ADD COLUMN `action_link` VARCHAR(255) NULL AFTER `type`"); } catch (Throwable $e) {}
 
-            // Seed default notifications if empty
-            $count = (int)$pdo->query("SELECT COUNT(*) FROM `notifications`")->fetchColumn();
+            // Auto-categorize customer vs admin notifications in existing rows
+            try {
+                $pdo->exec("UPDATE `notifications` SET `recipient_role` = 'customer' 
+                            WHERE `title` IN ('Booking Received', 'Appointment Confirmed', 'Appointment Cancelled', 'Appointment Rescheduled')
+                               OR `message` LIKE 'Your %'
+                               OR `channel` IN ('email', 'sms') AND `category` = 'system' AND `message` LIKE 'Your %'");
+            } catch (Throwable $e) {}
+
+            // Seed default admin notifications if empty
+            $count = (int)$pdo->query("SELECT COUNT(*) FROM `notifications` WHERE recipient_role = 'admin'")->fetchColumn();
             if ($count === 0) {
                 $seedStmt = $pdo->prepare("
-                    INSERT INTO `notifications` (`id`, `user_id`, `category`, `title`, `message`, `type`, `action_link`, `is_read`, `created_at`)
+                    INSERT INTO `notifications` (`id`, `user_id`, `recipient_role`, `category`, `title`, `message`, `type`, `action_link`, `is_read`, `created_at`)
                     VALUES 
-                    (1, 1, 'appointments', 'New Appointment Booking', 'Maria Santos booked Brazilian Blowout for today at 2:00 PM.', 'success', 'appointments.html', 0, NOW()),
-                    (2, 1, 'payments', 'Payment Received', 'Received ₱1,999.00 payment via GCash (Ref: GCASH-982347102938).', 'success', 'payments.html', 0, NOW()),
-                    (3, 1, 'customers', 'New Customer Registration', 'Ana Reyes registered a new customer profile.', 'info', 'customers.html', 1, NOW()),
-                    (4, 1, 'system', 'Salon System Update', 'Database performance optimizations and automated backups completed.', 'info', 'settings.html', 1, NOW())
-                    ON DUPLICATE KEY UPDATE `title` = VALUES(`title`)
+                    (1, 1, 'admin', 'appointments', 'New Appointment Booking', 'Maria Santos booked Brazilian Blowout for today at 2:00 PM.', 'success', 'appointments.html', 0, NOW()),
+                    (2, 1, 'admin', 'payments', 'Payment Received', 'Received ₱1,999.00 payment via GCash (Ref: GCASH-982347102938).', 'success', 'payments.html', 0, NOW()),
+                    (3, 1, 'admin', 'customers', 'New Customer Registration', 'Ana Reyes registered a new customer profile.', 'info', 'customers.html', 1, NOW()),
+                    (4, 1, 'admin', 'system', 'Salon System Update', 'Database performance optimizations and automated backups completed.', 'info', 'settings.html', 1, NOW())
+                    ON DUPLICATE KEY UPDATE `title` = VALUES(`title`), `recipient_role` = 'admin'
                 ");
                 $seedStmt->execute();
             }
@@ -57,6 +67,7 @@ class Notification {
         self::ensureSchema();
         $pdo = Database::getConnection();
 
+        // Only query data entering the admin panel (recipient_role = 'admin')
         $sql = "
             SELECT n.*, 
                    u.email AS user_email, 
@@ -64,7 +75,7 @@ class Notification {
             FROM notifications n
             LEFT JOIN users u ON n.user_id = u.id
             LEFT JOIN customer_profiles cp ON u.id = cp.user_id
-            WHERE 1=1
+            WHERE (n.recipient_role = 'admin' OR n.recipient_role IS NULL)
         ";
 
         $params = [];
@@ -107,12 +118,13 @@ class Notification {
 
         try {
             $pdo = Database::getConnection();
-            $total = (int)$pdo->query("SELECT COUNT(*) FROM notifications")->fetchColumn();
-            $unread = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE is_read = 0 OR is_read IS NULL")->fetchColumn();
-            $appointments = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE category = 'appointments'")->fetchColumn();
-            $payments = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE category = 'payments'")->fetchColumn();
-            $customers = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE category = 'customers'")->fetchColumn();
-            $system = (int)$pdo->query("SELECT COUNT(*) FROM notifications WHERE category = 'system'")->fetchColumn();
+            $adminWhere = "WHERE (recipient_role = 'admin' OR recipient_role IS NULL)";
+            $total = (int)$pdo->query("SELECT COUNT(*) FROM notifications $adminWhere")->fetchColumn();
+            $unread = (int)$pdo->query("SELECT COUNT(*) FROM notifications $adminWhere AND (is_read = 0 OR is_read IS NULL)")->fetchColumn();
+            $appointments = (int)$pdo->query("SELECT COUNT(*) FROM notifications $adminWhere AND category = 'appointments'")->fetchColumn();
+            $payments = (int)$pdo->query("SELECT COUNT(*) FROM notifications $adminWhere AND category = 'payments'")->fetchColumn();
+            $customers = (int)$pdo->query("SELECT COUNT(*) FROM notifications $adminWhere AND category = 'customers'")->fetchColumn();
+            $system = (int)$pdo->query("SELECT COUNT(*) FROM notifications $adminWhere AND category = 'system'")->fetchColumn();
         } catch (Throwable $e) {
             error_log('Notification::getSummaryMetrics Error: ' . $e->getMessage());
         }
@@ -146,7 +158,7 @@ class Notification {
 
     public static function markAllRead(): bool {
         $pdo = Database::getConnection();
-        return (bool)$pdo->exec("UPDATE notifications SET is_read = 1 WHERE is_read = 0 OR is_read IS NULL");
+        return (bool)$pdo->exec("UPDATE notifications SET is_read = 1 WHERE (is_read = 0 OR is_read IS NULL) AND (recipient_role = 'admin' OR recipient_role IS NULL)");
     }
 
     public static function delete(int $id): bool {
@@ -158,29 +170,33 @@ class Notification {
     public static function create(array $data): int {
         $pdo = Database::getConnection();
 
-        $userId = !empty($data['user_id']) ? (int)$data['user_id'] : 1;
+        $userId = !empty($data['user_id']) ? (int)$data['user_id'] : null;
+        $recipientRole = !empty($data['recipient_role']) ? strtolower(trim($data['recipient_role'])) : 'admin';
         $bookingId = !empty($data['booking_id']) ? (int)$data['booking_id'] : null;
         $category = strtolower(trim($data['category'] ?? 'appointments'));
         $title = trim($data['title'] ?? 'Notification');
         $message = trim($data['message'] ?? '');
-        $actionUrl = trim($data['action_url'] ?? '');
+        $actionUrl = trim($data['action_url'] ?? $data['action_link'] ?? '');
+        $type = trim($data['type'] ?? 'info');
         $channel = in_array($data['channel'] ?? '', ['email', 'sms']) ? $data['channel'] : 'email';
         $status = in_array($data['status'] ?? '', ['pending', 'sent', 'failed']) ? $data['status'] : 'sent';
 
         $stmt = $pdo->prepare("
-            INSERT INTO notifications (user_id, booking_id, category, title, message, action_url, channel, status, is_read, created_at)
-            VALUES (:user_id, :booking_id, :category, :title, :message, :action_url, :channel, :status, 0, NOW())
+            INSERT INTO notifications (user_id, recipient_role, booking_id, category, title, message, action_link, type, channel, status, is_read, created_at)
+            VALUES (:user_id, :recipient_role, :booking_id, :category, :title, :message, :action_link, :type, :channel, :status, 0, NOW())
         ");
 
         $stmt->execute([
-            'user_id'    => $userId,
-            'booking_id' => $bookingId,
-            'category'   => $category,
-            'title'      => $title,
-            'message'    => $message,
-            'action_url' => $actionUrl,
-            'channel'    => $channel,
-            'status'     => $status,
+            'user_id'        => $userId,
+            'recipient_role' => $recipientRole,
+            'booking_id'     => $bookingId,
+            'category'       => $category,
+            'title'          => $title,
+            'message'        => $message,
+            'action_link'    => $actionUrl,
+            'type'           => $type,
+            'channel'        => $channel,
+            'status'         => $status,
         ]);
 
         return (int)$pdo->lastInsertId();
@@ -232,10 +248,10 @@ class Notification {
     public static function forUser(?int $userId): array {
         $pdo = Database::getConnection();
         if ($userId) {
-            $stmt = $pdo->prepare("SELECT * FROM notifications WHERE user_id = :uid OR user_id IS NULL ORDER BY created_at DESC, id DESC LIMIT 50");
+            $stmt = $pdo->prepare("SELECT * FROM notifications WHERE user_id = :uid AND (recipient_role = 'customer' OR recipient_role IS NULL) ORDER BY created_at DESC, id DESC LIMIT 50");
             $stmt->execute(['uid' => $userId]);
         } else {
-            $stmt = $pdo->prepare("SELECT * FROM notifications ORDER BY created_at DESC, id DESC LIMIT 50");
+            $stmt = $pdo->prepare("SELECT * FROM notifications WHERE recipient_role = 'customer' ORDER BY created_at DESC, id DESC LIMIT 50");
             $stmt->execute();
         }
         $rows = $stmt->fetchAll();

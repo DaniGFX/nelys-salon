@@ -10,6 +10,7 @@ require_once dirname(__DIR__) . '/helpers/Sanitizer.php';
 require_once dirname(__DIR__) . '/models/Payment.php';
 require_once dirname(__DIR__) . '/models/Service.php';
 require_once dirname(__DIR__) . '/models/CustomerProfile.php';
+require_once dirname(__DIR__) . '/models/Notification.php';
 require_once dirname(__DIR__) . '/middleware/RoleMiddleware.php';
 
 class PaymentController {
@@ -80,6 +81,26 @@ class PaymentController {
 
         $id = Payment::create($input);
         $created = Payment::findByIdWithDetails($id);
+
+        // Notify admin panel of payment entry
+        try {
+            $amountFormatted = number_format((float)($created['amount'] ?? 0), 2);
+            $payMethod = $created['payment_method'] ?? 'Cash';
+            $custName = $created['customer_name'] ?? 'Walk-in Patron';
+            Notification::create([
+                'user_id'        => !empty($created['customer_id']) ? (int)$created['customer_id'] : null,
+                'recipient_role' => 'admin',
+                'category'       => 'payments',
+                'title'          => 'Payment Recorded',
+                'message'        => "Payment of ₱{$amountFormatted} ({$payMethod}) recorded for {$custName}.",
+                'action_url'     => 'payments.html',
+                'type'           => 'success',
+                'status'         => 'sent'
+            ]);
+        } catch (Throwable $e) {
+            error_log('[Nely\'s Salon] Admin notification error on payment store: ' . $e->getMessage());
+        }
+
         Response::success($created, 'Payment recorded successfully.', 201);
     }
 
