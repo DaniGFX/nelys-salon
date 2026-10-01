@@ -344,29 +344,67 @@ function populateRecordModalDropdowns() {
   const srvSelect = document.getElementById('recordServiceSelect');
 
   if (custSelect) {
-    if (customersList.length === 0) {
-      custSelect.innerHTML = `<option value="">No registered customers found</option>`;
-    } else {
-      custSelect.innerHTML = `<option value="" disabled selected>Select a customer...</option>` +
-        customersList.map(c => {
-          const name = c.name || c.full_name || c.email || 'Customer';
-          const phone = c.phone ? ` (${c.phone})` : '';
-          return `<option value="${c.id || c.user_id}">${name}${phone}</option>`;
-        }).join('');
+    let custOptions = '<option value="0" data-name="Walk-in Client (Counter Guest)" selected>🚶 Walk-in Client (Counter Guest)</option>';
+    if (customersList && customersList.length > 0) {
+      custOptions += '<optgroup label="Registered Customers">';
+      custOptions += customersList.map(c => {
+        const id = c.id || c.user_id;
+        const name = c.name || c.full_name || c.email || 'Customer';
+        const phone = c.phone ? ` • ${c.phone}` : '';
+        return `<option value="${id}" data-name="${escapeHtml(name)}">${escapeHtml(name)}${escapeHtml(phone)}</option>`;
+      }).join('');
+      custOptions += '</optgroup>';
     }
+    custSelect.innerHTML = custOptions;
   }
 
   if (srvSelect) {
-    if (servicesCatalog.length === 0) {
-      srvSelect.innerHTML = `<option value="">No services available</option>`;
-    } else {
-      srvSelect.innerHTML = `<option value="" disabled selected>Select a service...</option>` +
-        servicesCatalog.map(s => {
-          const price = parseFloat(s.price) || 0;
-          return `<option value="${s.id}" data-price="${price}">${s.name} (₱${price.toLocaleString()})</option>`;
-        }).join('');
+    // Standard fallback services if catalog is still loading or empty
+    const catalog = (servicesCatalog && servicesCatalog.length > 0) ? servicesCatalog : [
+      { id: 1, name: 'Hair Rebonding', category: 'Hair Services', price: 2500 },
+      { id: 2, name: 'Brazilian Blowout', category: 'Hair Services', price: 1999 },
+      { id: 3, name: 'Hair Color / Dye', category: 'Hair Services', price: 1200 },
+      { id: 4, name: 'Keratin Smoothing Therapy', category: 'Hair Treatments', price: 1499 },
+      { id: 5, name: 'Gel Manicure & Polish', category: 'Nail Care', price: 499 },
+      { id: 6, name: 'Classic Spa Pedicure', category: 'Nail Care', price: 350 },
+      { id: 7, name: 'Signature Haircut & Blowdry', category: 'Hair Services', price: 350 },
+      { id: 8, name: 'Hydrating Facial Treatment', category: 'Facial & Skincare', price: 850 }
+    ];
+
+    // Group services by category
+    const categories = {};
+    catalog.forEach(s => {
+      const cat = s.category || 'General Salon Services';
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(s);
+    });
+
+    let srvHtml = '<option value="" disabled selected>Select a salon service...</option>';
+    for (const [catName, items] of Object.entries(categories)) {
+      srvHtml += `<optgroup label="${escapeHtml(catName)}">`;
+      srvHtml += items.map(s => {
+        const price = parseFloat(s.price) || 0;
+        return `<option value="${s.id}" data-price="${price}" data-name="${escapeHtml(s.name)}" data-category="${escapeHtml(catName)}">${escapeHtml(s.name)} — ₱${price.toLocaleString()}</option>`;
+      }).join('');
+      srvHtml += `</optgroup>`;
     }
+    srvSelect.innerHTML = srvHtml;
   }
+}
+
+// Generate automatic transaction reference code
+function generateNewRecordRefCode() {
+  const methodSelect = document.getElementById('recordMethod');
+  const refInput = document.getElementById('recordRefNumber');
+  if (!refInput) return;
+
+  const method = (methodSelect ? methodSelect.value : 'Cash').toUpperCase().replace(/\s+/g, '');
+  const prefix = method.includes('GCASH') ? 'GCASH' : (method.includes('MAYA') ? 'MAYA' : (method.includes('BANK') ? 'BANK' : 'CASH'));
+  const dateStr = new Date().toISOString().slice(0,10).replace(/-/g, '');
+  const randomNum = Math.floor(1000 + Math.random() * 9000);
+  const newRef = `${prefix}-${dateStr}-${randomNum}`;
+  refInput.value = newRef;
+  updateRecordPaymentLivePreview();
 }
 
 // Handle Service selection in Record Modal to auto-fill amount
@@ -377,7 +415,70 @@ function handleRecordServiceChange(serviceId) {
 
   const selectedOpt = srvSelect.options[srvSelect.selectedIndex];
   if (selectedOpt && selectedOpt.dataset.price !== undefined) {
-    amtInput.value = selectedOpt.dataset.price;
+    amtInput.value = parseFloat(selectedOpt.dataset.price) || 0;
+  }
+  updateRecordPaymentLivePreview();
+}
+
+// Live preview calculator inside Record Payment Modal
+function updateRecordPaymentLivePreview() {
+  const custSelect = document.getElementById('recordCustomerSelect');
+  const srvSelect = document.getElementById('recordServiceSelect');
+  const amtInput = document.getElementById('recordAmount');
+  const methodSelect = document.getElementById('recordMethod');
+  const statusSelect = document.getElementById('recordStatus');
+  const refInput = document.getElementById('recordRefNumber');
+
+  const previewCust = document.getElementById('recordPreviewCustomer');
+  const previewSrv = document.getElementById('recordPreviewService');
+  const previewAmt = document.getElementById('recordPreviewAmount');
+  const previewMethod = document.getElementById('recordPreviewMethodBadge');
+  const previewStatus = document.getElementById('recordPreviewStatusBadge');
+  const previewRef = document.getElementById('recordPreviewRefBadge');
+
+  if (previewCust) {
+    if (custSelect && custSelect.selectedIndex >= 0) {
+      const opt = custSelect.options[custSelect.selectedIndex];
+      previewCust.textContent = opt ? (opt.dataset.name || opt.text.split('•')[0].trim()) : 'Walk-in Client';
+    } else {
+      previewCust.textContent = 'Walk-in Client (Counter Guest)';
+    }
+  }
+
+  if (previewSrv) {
+    if (srvSelect && srvSelect.selectedIndex >= 0) {
+      const opt = srvSelect.options[srvSelect.selectedIndex];
+      previewSrv.textContent = (opt && opt.value) ? (opt.dataset.name || opt.text) : 'Select a service...';
+    } else {
+      previewSrv.textContent = 'Select a service...';
+    }
+  }
+
+  const amt = amtInput ? (parseFloat(amtInput.value) || 0) : 0;
+  if (previewAmt) {
+    previewAmt.textContent = `₱${amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+
+  const methodVal = methodSelect ? methodSelect.value : 'Cash';
+  if (previewMethod) {
+    previewMethod.textContent = methodVal;
+  }
+
+  const statusVal = statusSelect ? statusSelect.value : 'Paid';
+  if (previewStatus) {
+    previewStatus.textContent = statusVal;
+    if (statusVal === 'Paid') {
+      previewStatus.className = 'px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-semibold';
+    } else if (statusVal === 'Partial') {
+      previewStatus.className = 'px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-semibold';
+    } else {
+      previewStatus.className = 'px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 text-[10px] font-semibold';
+    }
+  }
+
+  if (previewRef) {
+    const refVal = refInput && refInput.value ? refInput.value.trim() : '';
+    previewRef.textContent = refVal || 'AUTO-GENERATED';
   }
 }
 
@@ -892,6 +993,7 @@ function openPaymentDetailsModal(paymentId) {
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    modal.style.display = 'flex';
   }
 }
 
@@ -900,6 +1002,7 @@ function closePaymentDetailsModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    modal.style.display = 'none';
   }
 }
 
@@ -933,6 +1036,7 @@ function openReceiptModal(paymentId) {
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    modal.style.display = 'flex';
   }
 }
 
@@ -941,6 +1045,7 @@ function closeReceiptModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    modal.style.display = 'none';
   }
 }
 
@@ -958,13 +1063,23 @@ function openRecordPaymentModal() {
 
   populateRecordModalDropdowns();
 
-  const amtInput = document.getElementById('recordAmount');
-  if (amtInput) amtInput.value = '0';
+  const srvSelect = document.getElementById('recordServiceSelect');
+  if (srvSelect && srvSelect.options.length > 1) {
+    srvSelect.selectedIndex = 1;
+    handleRecordServiceChange(srvSelect.value);
+  } else {
+    const amtInput = document.getElementById('recordAmount');
+    if (amtInput) amtInput.value = '0';
+  }
+
+  generateNewRecordRefCode();
+  updateRecordPaymentLivePreview();
 
   const modal = document.getElementById('recordPaymentModal');
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    modal.style.display = 'flex';
   }
 }
 
@@ -973,29 +1088,34 @@ function closeRecordPaymentModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    modal.style.display = 'none';
   }
   activePayment = null;
 }
 
 async function handleSaveRecordPayment(event) {
-  event.preventDefault();
+  if (event) event.preventDefault();
 
   const custSelect = document.getElementById('recordCustomerSelect');
   const srvSelect = document.getElementById('recordServiceSelect');
   const amtInput = document.getElementById('recordAmount');
   const methodSelect = document.getElementById('recordMethod');
   const statusSelect = document.getElementById('recordStatus');
+  const refInput = document.getElementById('recordRefNumber');
   const notesInput = document.getElementById('recordNotes');
+  const submitBtn = document.getElementById('recordPaymentSubmitBtn');
 
-  const customerId = custSelect && custSelect.value ? parseInt(custSelect.value) : null;
-  const serviceId = srvSelect && srvSelect.value ? parseInt(srvSelect.value) : null;
+  const customerId = custSelect && custSelect.value && custSelect.value !== '0' ? parseInt(custSelect.value, 10) : null;
+  const serviceId = srvSelect && srvSelect.value ? parseInt(srvSelect.value, 10) : null;
   const amount = amtInput ? parseFloat(amtInput.value) || 0 : 0;
   const method = methodSelect ? methodSelect.value : 'Cash';
   const status = statusSelect ? statusSelect.value : 'Paid';
+  const refCode = refInput && refInput.value ? refInput.value.trim() : '';
   const notes = notesInput ? notesInput.value.trim() : '';
 
   if (amount <= 0) {
-    showToast('Please enter a valid payment amount.', 'warning');
+    showToast('Please enter a valid payment amount greater than ₱0.', 'warning');
+    if (amtInput) amtInput.focus();
     return;
   }
 
@@ -1003,10 +1123,17 @@ async function handleSaveRecordPayment(event) {
     customer_id: customerId,
     service_id: serviceId,
     amount: amount,
-    payment_method: method.toLowerCase().replace(' ', '_'),
+    payment_method: method.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+    reference_number: refCode || undefined,
     status: status.toLowerCase(),
     notes: notes
   };
+
+  const origBtnContent = submitBtn ? submitBtn.innerHTML : '';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-xs"></i><span>Recording...</span>`;
+  }
 
   try {
     const res = await fetch('../api/payments', {
@@ -1020,7 +1147,7 @@ async function handleSaveRecordPayment(event) {
       throw new Error(json.message || 'Failed to record payment');
     }
 
-    showToast(`Payment of ₱${amount.toLocaleString()} recorded successfully!`, 'success');
+    showToast(`Payment of ₱${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} recorded successfully!`, 'success');
     closeRecordPaymentModal();
     await fetchPaymentsData();
     await fetchSidebarStats();
@@ -1028,6 +1155,11 @@ async function handleSaveRecordPayment(event) {
   } catch (err) {
     console.error('Error saving payment:', err);
     showToast(err.message || 'Failed to record payment.', 'error');
+  } finally {
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = origBtnContent;
+    }
   }
 }
 
@@ -1092,6 +1224,7 @@ function openEditPaymentModal(paymentId) {
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    modal.style.display = 'flex';
   }
 }
 
@@ -1100,6 +1233,7 @@ function closeEditPaymentModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    modal.style.display = 'none';
   }
 }
 
@@ -1170,6 +1304,7 @@ function openRefundModal(paymentId) {
   if (modal) {
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+    modal.style.display = 'flex';
   }
 }
 
@@ -1178,6 +1313,7 @@ function closeRefundModal() {
   if (modal) {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    modal.style.display = 'none';
   }
 }
 
@@ -1308,21 +1444,31 @@ window.openLogoutModal = openLogoutModal;
 window.closeLogoutModal = closeLogoutModal;
 window.handleConfirmLogout = handleConfirmLogout;
 window.confirmLogout = confirmLogout;
+
 window.openRecordPaymentModal = openRecordPaymentModal;
 window.closeRecordPaymentModal = closeRecordPaymentModal;
-window.handleRecordPaymentSubmit = handleRecordPaymentSubmit;
+window.handleSaveRecordPayment = handleSaveRecordPayment;
+window.handleRecordPaymentSubmit = handleSaveRecordPayment;
 window.handleRecordServiceChange = handleRecordServiceChange;
+window.updateRecordPaymentLivePreview = updateRecordPaymentLivePreview;
+window.generateNewRecordRefCode = generateNewRecordRefCode;
+
 window.openPaymentDetailsModal = openPaymentDetailsModal;
 window.closePaymentDetailsModal = closePaymentDetailsModal;
+
 window.openEditPaymentModal = openEditPaymentModal;
 window.closeEditPaymentModal = closeEditPaymentModal;
-window.handleEditPaymentSubmit = handleEditPaymentSubmit;
+window.handleSaveEditPayment = handleSaveEditPayment;
+window.handleEditPaymentSubmit = handleSaveEditPayment;
+
 window.openReceiptModal = openReceiptModal;
 window.closeReceiptModal = closeReceiptModal;
 window.printReceipt = printReceipt;
+
 window.openRefundModal = openRefundModal;
 window.closeRefundModal = closeRefundModal;
 window.handleConfirmRefund = handleConfirmRefund;
+
 window.quickMarkPaid = quickMarkPaid;
 window.toggleKebabMenu = toggleKebabMenu;
 window.filterBySummaryCard = filterBySummaryCard;
@@ -1332,5 +1478,4 @@ window.toggleMobileSidebar = toggleMobileSidebar;
 window.fetchPaymentsData = fetchPaymentsData;
 window.showToast = showToast;
 window.escapeHtml = escapeHtml;
-
 window.closeFloatingPaymentActionPortal = closeFloatingPaymentActionPortal;

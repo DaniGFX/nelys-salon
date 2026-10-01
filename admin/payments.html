@@ -800,132 +800,227 @@
   <!-- ================= 8. RECORD PAYMENT MODAL ================= -->
   <div 
     id="recordPaymentModal" 
-    class="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs hidden items-center justify-center p-4 overflow-y-auto">
-    <div class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-md w-full overflow-hidden my-8 animate-fadeIn">
+    onclick="if(event.target === this) closeRecordPaymentModal();"
+    class="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4 sm:p-6 overflow-y-auto"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="recordPaymentModalTitle">
+    <div 
+      onclick="event.stopPropagation();"
+      class="bg-white rounded-3xl border border-[#DCC3AA] shadow-2xl max-w-lg w-full overflow-hidden my-auto animate-fadeIn relative flex flex-col max-h-[92vh]">
       
       <!-- Header -->
-      <div class="bg-gradient-to-r from-[#541A1A] to-[#810B38] text-white p-5 flex items-center justify-between">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-sm text-[#DCC3AA]">
-            <i class="fa-solid fa-money-bill-wave"></i>
+      <div class="bg-gradient-to-r from-[#541A1A] via-[#6d1130] to-[#810B38] text-white p-5 sm:px-6 flex items-center justify-between shadow-xs shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-white/10 border border-white/20 flex items-center justify-center text-sm text-[#DCC3AA] shadow-inner">
+            <i class="fa-solid fa-cash-register"></i>
           </div>
           <div>
-            <h3 class="font-serif text-lg font-bold tracking-wide">Record Payment</h3>
-            <p class="text-[11px] text-[#DCC3AA]">Register salon booking settlement</p>
+            <h3 id="recordPaymentModalTitle" class="font-serif text-lg sm:text-xl font-bold tracking-wide text-[#F1E2D1]">
+              Record Payment
+            </h3>
+            <p class="text-[11px] text-[#DCC3AA]/90 font-medium">
+              Register verified transaction settlement in salon ledger
+            </p>
           </div>
         </div>
         <button 
           type="button" 
           onclick="closeRecordPaymentModal()"
-          class="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors">
+          aria-label="Close modal"
+          class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-[#F1E2D1] flex items-center justify-center transition-colors focus:outline-none focus:ring-2 focus:ring-[#DCC3AA] cursor-pointer">
           <i class="fa-solid fa-xmark text-sm"></i>
         </button>
       </div>
 
-      <!-- Form -->
-      <form id="recordPaymentForm" onsubmit="handleSaveRecordPayment(event)" class="p-6 space-y-4">
-        
-        <!-- Select Customer -->
-        <div>
-          <label for="recordCustomerSelect" class="block text-xs font-bold text-stone-700 mb-1">
-            Customer <span class="text-rose-500">*</span>
-          </label>
-          <select 
-            id="recordCustomerSelect" 
-            required
-            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
-            <option value="">Loading customers...</option>
-          </select>
-        </div>
-
-        <!-- Select Appointment / Service -->
-        <div>
-          <label for="recordServiceSelect" class="block text-xs font-bold text-stone-700 mb-1">
-            Appointment Service <span class="text-rose-500">*</span>
-          </label>
-          <select 
-            id="recordServiceSelect" 
-            required
-            onchange="handleRecordServiceChange(this.value)"
-            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
-            <option value="">Loading services...</option>
-          </select>
-        </div>
-
-        <!-- Amount -->
-        <div>
-          <label for="recordAmount" class="block text-xs font-bold text-stone-700 mb-1">
-            Amount (₱) <span class="text-rose-500">*</span>
-          </label>
-          <div class="relative">
-            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-500 font-bold text-xs">
-              ₱
-            </span>
-            <input 
-              type="number" 
-              id="recordAmount" 
-              step="1"
-              min="0"
-              value="0"
+      <!-- Form Body (Scrollable) -->
+      <form id="recordPaymentForm" onsubmit="handleSaveRecordPayment(event)" class="flex flex-col flex-1 overflow-hidden">
+        <div class="p-5 sm:p-6 space-y-4 overflow-y-auto flex-1">
+          
+          <!-- Select Customer -->
+          <div>
+            <label for="recordCustomerSelect" class="block text-xs font-bold text-stone-700 mb-1.5 flex items-center justify-between">
+              <span>
+                <i class="fa-solid fa-user text-[#810B38] mr-1.5 text-xs"></i>Customer / Client <span class="text-rose-500">*</span>
+              </span>
+              <span class="text-[10px] text-stone-400 font-normal">Registered or Walk-in</span>
+            </label>
+            <select 
+              id="recordCustomerSelect" 
               required
-              class="w-full pl-8 pr-4 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <!-- Payment Method -->
-          <div>
-            <label for="recordMethod" class="block text-xs font-bold text-stone-700 mb-1">
-              Payment Method
-            </label>
-            <select 
-              id="recordMethod" 
-              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
-              <option value="Cash" selected>Cash</option>
-              <option value="GCash">GCash</option>
-              <option value="Bank Transfer">Bank Transfer</option>
-              <option value="Other">Other</option>
+              onchange="updateRecordPaymentLivePreview()"
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA] rounded-xl text-xs sm:text-sm text-stone-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#810B38] transition-all">
+              <option value="">Loading customer directory...</option>
             </select>
           </div>
 
-          <!-- Payment Status -->
-          <div>
-            <label for="recordStatus" class="block text-xs font-bold text-stone-700 mb-1">
-              Payment Status
-            </label>
-            <select 
-              id="recordStatus" 
-              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 focus:outline-none focus:ring-2 focus:ring-[#810B38]">
-              <option value="Paid" selected>Paid</option>
-              <option value="Partial">Partial</option>
-            </select>
+          <!-- Select Service & Amount (Grid) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <!-- Service -->
+            <div>
+              <label for="recordServiceSelect" class="block text-xs font-bold text-stone-700 mb-1.5 flex items-center gap-1.5">
+                <i class="fa-solid fa-scissors text-[#810B38] text-xs"></i>
+                <span>Service Availed <span class="text-rose-500">*</span></span>
+              </label>
+              <select 
+                id="recordServiceSelect" 
+                required
+                onchange="handleRecordServiceChange(this.value); updateRecordPaymentLivePreview();"
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA] rounded-xl text-xs sm:text-sm text-stone-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#810B38] transition-all">
+                <option value="">Loading services catalog...</option>
+              </select>
+            </div>
+
+            <!-- Amount -->
+            <div>
+              <label for="recordAmount" class="block text-xs font-bold text-stone-700 mb-1.5 flex items-center justify-between">
+                <span>
+                  <i class="fa-solid fa-tag text-[#810B38] mr-1 text-xs"></i>Amount (₱) <span class="text-rose-500">*</span>
+                </span>
+                <span class="text-[10px] text-[#810B38] font-semibold">PHP</span>
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#810B38] font-bold text-sm">
+                  ₱
+                </span>
+                <input 
+                  type="number" 
+                  id="recordAmount" 
+                  step="0.01"
+                  min="0"
+                  value="0"
+                  required
+                  oninput="updateRecordPaymentLivePreview()"
+                  class="w-full pl-8 pr-4 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA] rounded-xl text-xs sm:text-sm font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-[#810B38] transition-all">
+              </div>
+            </div>
           </div>
+
+          <!-- Payment Method & Status (Grid) -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            <!-- Payment Method -->
+            <div>
+              <label for="recordMethod" class="block text-xs font-bold text-stone-700 mb-1.5 flex items-center gap-1.5">
+                <i class="fa-solid fa-credit-card text-[#810B38] text-xs"></i>
+                <span>Payment Method</span>
+              </label>
+              <select 
+                id="recordMethod" 
+                onchange="updateRecordPaymentLivePreview()"
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA] rounded-xl text-xs sm:text-sm text-stone-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#810B38] transition-all">
+                <option value="Cash" selected>💵 Cash</option>
+                <option value="GCash">📱 GCash</option>
+                <option value="Maya">💳 Maya</option>
+                <option value="Bank Transfer">🏦 Bank Transfer</option>
+                <option value="Card">💳 Card / Debit</option>
+                <option value="Other">✨ Other Method</option>
+              </select>
+            </div>
+
+            <!-- Payment Status -->
+            <div>
+              <label for="recordStatus" class="block text-xs font-bold text-stone-700 mb-1.5 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-check text-[#810B38] text-xs"></i>
+                <span>Payment Status</span>
+              </label>
+              <select 
+                id="recordStatus" 
+                onchange="updateRecordPaymentLivePreview()"
+                class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA] rounded-xl text-xs sm:text-sm text-stone-800 font-medium focus:outline-none focus:ring-2 focus:ring-[#810B38] transition-all">
+                <option value="Paid" selected>🟢 Paid (Settled)</option>
+                <option value="Partial">🟡 Partial (Deposit)</option>
+                <option value="Pending">🔴 Pending (Unpaid)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Reference Number -->
+          <div>
+            <div class="flex items-center justify-between mb-1.5">
+              <label for="recordRefNumber" class="block text-xs font-bold text-stone-700 flex items-center gap-1.5">
+                <i class="fa-solid fa-receipt text-[#810B38] text-xs"></i>
+                <span>Reference / Transaction Code</span>
+              </label>
+              <button 
+                type="button" 
+                onclick="generateNewRecordRefCode()"
+                class="text-[10px] text-[#810B38] hover:text-[#541A1A] font-semibold hover:underline flex items-center gap-1 cursor-pointer">
+                <i class="fa-solid fa-arrows-rotate text-[9px]"></i>
+                <span>Auto-Generate</span>
+              </button>
+            </div>
+            <input 
+              type="text" 
+              id="recordRefNumber" 
+              placeholder="e.g. GCASH-982347102938, CASH-COUNTER-01" 
+              oninput="updateRecordPaymentLivePreview()"
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA] rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38] transition-all">
+          </div>
+
+          <!-- Notes -->
+          <div>
+            <label for="recordNotes" class="block text-xs font-bold text-stone-700 mb-1.5 flex items-center gap-1.5">
+              <i class="fa-solid fa-note-sticky text-[#810B38] text-xs"></i>
+              <span>Remarks / Counter Notes</span>
+            </label>
+            <textarea 
+              id="recordNotes" 
+              rows="2" 
+              placeholder="Optional notes (e.g. hair length adjustment, walk-in counter settlement, discount note)..." 
+              class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA] rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38] transition-all"></textarea>
+          </div>
+
+          <!-- Live Transaction Summary Card -->
+          <div class="bg-gradient-to-br from-[#FAF6F0] to-[#f4ebe1] border border-[#DCC3AA] rounded-2xl p-4 shadow-xs">
+            <div class="flex items-center justify-between text-[11px] font-bold text-[#735e5e] uppercase tracking-wider mb-2">
+              <span class="flex items-center gap-1.5">
+                <i class="fa-solid fa-file-invoice-dollar text-[#810B38]"></i>
+                <span>Transaction Summary</span>
+              </span>
+              <span id="recordPreviewRefBadge" class="text-[10px] text-stone-500 font-mono">PAY-AUTO</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <div class="space-y-0.5">
+                <div id="recordPreviewCustomer" class="text-xs font-bold text-stone-800">
+                  Select Customer
+                </div>
+                <div id="recordPreviewService" class="text-[11px] text-stone-500 font-medium">
+                  Select Service
+                </div>
+                <div class="flex items-center gap-2 pt-1">
+                  <span id="recordPreviewMethodBadge" class="px-2 py-0.5 rounded-md bg-white border border-[#DCC3AA] text-[10px] font-semibold text-stone-700">
+                    Cash
+                  </span>
+                  <span id="recordPreviewStatusBadge" class="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-semibold">
+                    Paid
+                  </span>
+                </div>
+              </div>
+              <div class="text-right">
+                <span class="text-[10px] uppercase font-bold text-stone-400 block">Total Amount</span>
+                <span id="recordPreviewAmount" class="font-serif text-xl sm:text-2xl font-bold text-[#810B38]">
+                  ₱0.00
+                </span>
+              </div>
+            </div>
+          </div>
+
         </div>
 
-        <!-- Notes -->
-        <div>
-          <label for="recordNotes" class="block text-xs font-bold text-stone-700 mb-1">
-            Notes
-          </label>
-          <textarea 
-            id="recordNotes" 
-            rows="2" 
-            placeholder="Optional payment notes (reference number, cash counter notes)..." 
-            class="w-full px-3.5 py-2.5 bg-[#FAF6F0] border border-[#DCC3AA]/80 rounded-xl text-xs text-stone-800 placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-[#810B38]"></textarea>
-        </div>
-
-        <!-- Buttons -->
-        <div class="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">
+        <!-- Footer Buttons -->
+        <div class="p-4 sm:px-6 bg-[#FAF6F0]/80 border-t border-[#DCC3AA]/80 flex items-center justify-end gap-3 shrink-0">
           <button 
             type="button" 
             onclick="closeRecordPaymentModal()"
-            class="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-600 font-semibold text-xs hover:bg-stone-100 transition-colors">
+            class="px-5 py-2.5 rounded-xl border border-stone-300 text-stone-700 font-bold text-xs hover:bg-stone-100 transition-colors cursor-pointer">
             Cancel
           </button>
           <button 
             type="submit" 
-            class="px-6 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#63082b] text-white font-semibold text-xs shadow-md shadow-[#810B38]/20 transition-all">
-            Record Payment
+            id="recordPaymentSubmitBtn"
+            class="px-6 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#63082b] text-white font-bold text-xs shadow-md shadow-[#810B38]/20 hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2 cursor-pointer">
+            <i class="fa-solid fa-check text-xs"></i>
+            <span>Record Payment</span>
           </button>
         </div>
 

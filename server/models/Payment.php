@@ -254,7 +254,7 @@ class Payment {
         $serviceId = !empty($data['service_id']) ? (int)$data['service_id'] : null;
         $amount = (float)($data['amount'] ?? 0);
         $method = strtolower(str_replace(' ', '_', $data['payment_method'] ?? 'cash'));
-        if (!in_array($method, ['cash', 'gcash', 'bank_transfer'])) {
+        if (!in_array($method, ['cash', 'gcash', 'bank_transfer', 'maya', 'card', 'credit_card', 'debit_card', 'other'])) {
             $method = 'cash';
         }
 
@@ -305,7 +305,7 @@ class Payment {
 
         $amount = isset($data['amount']) ? (float)$data['amount'] : null;
         $method = isset($data['payment_method']) ? strtolower(str_replace(' ', '_', $data['payment_method'])) : null;
-        if ($method && !in_array($method, ['cash', 'gcash', 'bank_transfer'])) {
+        if ($method && !in_array($method, ['cash', 'gcash', 'bank_transfer', 'maya', 'card', 'credit_card', 'debit_card', 'other'])) {
             $method = 'cash';
         }
 
@@ -362,7 +362,12 @@ class Payment {
         $methodMap = [
             'cash'          => 'Cash',
             'gcash'         => 'GCash',
-            'bank_transfer' => 'Bank Transfer'
+            'bank_transfer' => 'Bank Transfer',
+            'maya'          => 'Maya',
+            'card'          => 'Card / Debit',
+            'credit_card'   => 'Credit Card',
+            'debit_card'    => 'Debit Card',
+            'other'         => 'Other'
         ];
 
         $statusMap = [
