@@ -524,10 +524,40 @@ function openQuickRebookFromModal() {
   }
 }
 
+// Helper to normalize time to minutes from midnight
+function normalizeTimeToMinutes(timeStr) {
+  if (!timeStr) return -1;
+  const str = String(timeStr).trim().toUpperCase();
+  const match12 = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)$/);
+  if (match12) {
+    let hours = parseInt(match12[1], 10);
+    const minutes = parseInt(match12[2], 10);
+    const meridian = match12[4];
+    if (meridian === 'PM' && hours < 12) hours += 12;
+    if (meridian === 'AM' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  }
+  const match24 = str.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (match24) {
+    const hours = parseInt(match24[1], 10);
+    const minutes = parseInt(match24[2], 10);
+    return hours * 60 + minutes;
+  }
+  return -1;
+}
+
+function isSameRebookSlot(date1, time1, date2, time2) {
+  if (!date1 || !date2 || !time1 || !time2) return false;
+  if (String(date1).trim() !== String(date2).trim()) return false;
+  const m1 = normalizeTimeToMinutes(time1);
+  const m2 = normalizeTimeToMinutes(time2);
+  return m1 >= 0 && m2 >= 0 && m1 === m2;
+}
+
 // 7. Quick Re-book Modal
 function openQuickRebookModal(bookingId = null) {
   const targetId = bookingId || currentSelectedAppointmentId;
-  const item = appointmentsData.find(a => a.id === targetId);
+  const item = appointmentsData.find(a => a.id === targetId || a.dbId == targetId);
   if (!item) return;
 
   currentRebookAppointment = item;
@@ -542,22 +572,86 @@ function openQuickRebookModal(bookingId = null) {
   const priceEl = document.getElementById('rebookServicePrice');
   if (priceEl) priceEl.textContent = item.priceFormatted;
 
-  // Set minimum date to tomorrow
-  const dateInput = document.getElementById('rebookDateInput');
-  if (dateInput) {
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const yyyy = tomorrow.getFullYear();
-    const mm = String(tomorrow.getMonth() + 1).padStart(2, '0');
-    const dd = String(tomorrow.getDate()).padStart(2, '0');
-    dateInput.min = `${yyyy}-${mm}-${dd}`;
-    dateInput.value = `${yyyy}-${mm}-${dd}`;
+  const origSlotEl = document.getElementById('rebookOriginalSlotText');
+  if (origSlotEl) {
+    origSlotEl.textContent = `${item.date || item.rawDate} at ${item.time || item.rawTime}`;
   }
+
+  // Set minimum date to today/tomorrow, and leave input empty for required selection
+  const dateInput = document.getElementById('rebookDateInput');
+  const dateWarning = document.getElementById('rebookDateWarning');
+  const slotError = document.getElementById('rebookSlotError');
+  const hiddenTime = document.getElementById('rebookTimeSelected');
+
+  if (dateWarning) dateWarning.classList.add('hidden');
+  if (slotError) slotError.classList.add('hidden');
+  if (hiddenTime) hiddenTime.value = '';
+
+  if (dateInput) {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    dateInput.min = `${yyyy}-${mm}-${dd}`;
+    dateInput.value = ''; // Require explicit date selection
+
+    dateInput.oninput = dateInput.onchange = function() {
+      updateRebookSlotAvailability();
+    };
+  }
+
+  // Reset time buttons to unselected state
+  document.querySelectorAll('.rebook-time-btn').forEach(b => {
+    b.disabled = false;
+    b.className = 'rebook-time-btn py-2 px-3 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-all text-center cursor-pointer';
+  });
 
   const modal = document.getElementById('quickRebookModal');
   if (modal && typeof modal.showModal === 'function') {
     modal.showModal();
   }
+}
+
+function updateRebookSlotAvailability() {
+  if (!currentRebookAppointment) return;
+
+  const dateInput = document.getElementById('rebookDateInput');
+  const dateWarning = document.getElementById('rebookDateWarning');
+  const hiddenTime = document.getElementById('rebookTimeSelected');
+  const selectedDate = dateInput ? dateInput.value.trim() : '';
+
+  const isSameDate = selectedDate && selectedDate === currentRebookAppointment.rawDate;
+
+  if (dateWarning) {
+    if (isSameDate) {
+      dateWarning.textContent = `Original appointment was on this date (${currentRebookAppointment.time}). Please choose a different time slot.`;
+      dateWarning.classList.remove('hidden');
+    } else {
+      dateWarning.classList.add('hidden');
+    }
+  }
+
+  document.querySelectorAll('.rebook-time-btn').forEach(b => {
+    const slotTime = b.dataset.time || b.textContent.trim();
+    const isExactSlot = isSameDate && isSameRebookSlot(selectedDate, slotTime, currentRebookAppointment.rawDate, currentRebookAppointment.rawTime || currentRebookAppointment.time);
+
+    if (isExactSlot) {
+      b.disabled = true;
+      b.className = 'rebook-time-btn py-2 px-3 rounded-xl border border-stone-200 bg-stone-100 text-stone-400 text-xs font-bold transition-all text-center cursor-not-allowed line-through opacity-60';
+      b.title = 'Original appointment slot (cannot rebook for the exact same slot)';
+      if (hiddenTime && hiddenTime.value === slotTime) {
+        hiddenTime.value = '';
+      }
+    } else {
+      b.disabled = false;
+      b.title = '';
+      if (hiddenTime && hiddenTime.value === slotTime) {
+        b.className = 'rebook-time-btn py-2 px-3 rounded-xl border border-[#810B38] bg-[#810B38] text-white text-xs font-bold transition-all text-center cursor-pointer';
+      } else {
+        b.className = 'rebook-time-btn py-2 px-3 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-all text-center cursor-pointer';
+      }
+    }
+  });
 }
 
 function closeQuickRebookModal() {
@@ -568,15 +662,33 @@ function closeQuickRebookModal() {
 }
 
 function selectRebookTime(timeStr, btn) {
+  if (btn && btn.disabled) return;
+
+  const dateInput = document.getElementById('rebookDateInput');
+  const slotError = document.getElementById('rebookSlotError');
+  const selectedDate = dateInput ? dateInput.value.trim() : '';
+
+  if (currentRebookAppointment && selectedDate && isSameRebookSlot(selectedDate, timeStr, currentRebookAppointment.rawDate, currentRebookAppointment.rawTime || currentRebookAppointment.time)) {
+    if (slotError) {
+      slotError.textContent = 'You cannot rebook for the exact same slot as your previous appointment. Please pick another time slot.';
+      slotError.classList.remove('hidden');
+    }
+    showToast('Cannot rebook for the exact same slot. Please select a different time.', 'warning');
+    return;
+  }
+
+  if (slotError) slotError.classList.add('hidden');
+
   const hiddenInput = document.getElementById('rebookTimeSelected');
   if (hiddenInput) hiddenInput.value = timeStr;
 
   document.querySelectorAll('.rebook-time-btn').forEach(b => {
-    b.className = 'rebook-time-btn py-2 px-3 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-all text-center';
+    if (b.disabled) return;
+    b.className = 'rebook-time-btn py-2 px-3 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0] text-[#541A1A] hover:bg-[#F1E2D1] text-xs font-bold transition-all text-center cursor-pointer';
   });
 
   if (btn) {
-    btn.className = 'rebook-time-btn py-2 px-3 rounded-xl border border-[#810B38] bg-[#810B38] text-white text-xs font-bold transition-all text-center';
+    btn.className = 'rebook-time-btn py-2 px-3 rounded-xl border border-[#810B38] bg-[#810B38] text-white text-xs font-bold transition-all text-center cursor-pointer';
   }
 }
 
@@ -586,12 +698,33 @@ async function handleQuickRebookSubmit(e) {
 
   const dateInput = document.getElementById('rebookDateInput');
   const timeInput = document.getElementById('rebookTimeSelected');
+  const slotError = document.getElementById('rebookSlotError');
 
-  const dateVal = dateInput ? dateInput.value : '';
-  const timeVal = timeInput ? timeInput.value : '10:00 AM';
+  const dateVal = dateInput ? dateInput.value.trim() : '';
+  const timeVal = timeInput ? timeInput.value.trim() : '';
 
-  if (!dateVal || !timeVal) {
-    showToast('Please select your preferred date and time slot.', 'warning');
+  if (!dateVal) {
+    showToast('Please select a new appointment date.', 'warning');
+    if (dateInput) dateInput.focus();
+    return;
+  }
+
+  if (!timeVal) {
+    if (slotError) {
+      slotError.textContent = 'Please choose your preferred time slot.';
+      slotError.classList.remove('hidden');
+    }
+    showToast('Please select a time slot.', 'warning');
+    return;
+  }
+
+  // Prevent rebooking exact same slot
+  if (isSameRebookSlot(dateVal, timeVal, currentRebookAppointment.rawDate, currentRebookAppointment.rawTime || currentRebookAppointment.time)) {
+    if (slotError) {
+      slotError.textContent = 'You cannot rebook for the exact same slot as your previous appointment. Please choose a different date or time.';
+      slotError.classList.remove('hidden');
+    }
+    showToast('Cannot rebook for the exact same slot. Please choose another date or time.', 'error');
     return;
   }
 
@@ -599,7 +732,7 @@ async function handleQuickRebookSubmit(e) {
   const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
   if (submitBtn) {
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i> <span>Booking...</span>';
+    submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xs"></i> <span>Re-booking...</span>';
   }
 
   const token = localStorage.getItem('nelys_token');
@@ -614,9 +747,10 @@ async function handleQuickRebookSubmit(e) {
     staff_id: currentRebookAppointment.staffId || null,
     booking_date: dateVal,
     booking_time: timeVal,
+    rebooked_from_id: currentRebookAppointment.dbId || currentRebookAppointment.id,
     visit_type: currentRebookAppointment.visitType === 'Home Service' ? 'home' : 'salon',
     home_address: currentRebookAppointment.visitType === 'Home Service' ? currentRebookAppointment.address : null,
-    payment_method: currentRebookAppointment.paymentMethod.toLowerCase().includes('gcash') ? 'gcash' : 'cash',
+    payment_method: (currentRebookAppointment.paymentMethod || '').toLowerCase().includes('gcash') ? 'gcash' : 'cash',
     notes: currentRebookAppointment.id ? `Re-booked from Ref: ${currentRebookAppointment.id}` : 'Re-booked appointment'
   };
 
@@ -631,12 +765,16 @@ async function handleQuickRebookSubmit(e) {
 
     if (res.ok && (result.status === 'success' || result.success)) {
       closeQuickRebookModal();
-      showToast(`${currentRebookAppointment.service} successfully re-booked!`, 'success');
+      showToast(`${currentRebookAppointment.service} successfully re-booked for ${formatDisplayDate(dateVal)} at ${timeVal}!`, 'success');
       await loadCustomerAppointments();
       switchTab('pending');
     } else {
       const msg = result.message || 'Failed to complete re-booking.';
       showToast(msg, 'error');
+      if (slotError) {
+        slotError.textContent = msg;
+        slotError.classList.remove('hidden');
+      }
     }
   } catch (err) {
     console.error('Rebook network error:', err);

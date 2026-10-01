@@ -102,6 +102,71 @@ class BookingController {
         $bookingDate = date('Y-m-d', strtotime($input['booking_date']));
         $bookingTime = date('H:i:s', strtotime($input['booking_time']));
 
+        $today = date('Y-m-d');
+        if ($bookingDate < $today) {
+            Response::error('Appointments cannot be scheduled for past dates. Please select an upcoming date.', 422);
+        }
+
+        // 1. Rebooking Same-Slot Check: Prevent rebooking for the exact same slot
+        $rebookedFromId = !empty($input['rebooked_from_id']) ? $input['rebooked_from_id'] : (!empty($input['rebook_from_id']) ? $input['rebook_from_id'] : null);
+        if ($rebookedFromId) {
+            $origBooking = is_numeric($rebookedFromId) 
+                ? Booking::findById((int)$rebookedFromId) 
+                : Booking::findByReference((string)$rebookedFromId);
+
+            if ($origBooking) {
+                $origDate = date('Y-m-d', strtotime($origBooking['booking_date']));
+                $origTime = date('H:i:s', strtotime($origBooking['booking_time']));
+
+                if ($bookingDate === $origDate && $bookingTime === $origTime) {
+                    Response::error('Please select a new date and time. You cannot rebook for the exact same appointment slot.', 422);
+                }
+            }
+        }
+
+        // 2. Double Booking Prevention: Check if customer already has an active appointment at this date & time
+        $pdo = Database::getConnection();
+        $stmtConflict = $pdo->prepare("
+            SELECT id, reference_no 
+            FROM bookings 
+            WHERE customer_id = :cid 
+              AND booking_date = :bdate 
+              AND booking_time = :btime 
+              AND status IN ('pending', 'confirmed')
+            LIMIT 1
+        ");
+        $stmtConflict->execute([
+            'cid'   => $customerId,
+            'bdate' => $bookingDate,
+            'btime' => $bookingTime
+        ]);
+        $existingActive = $stmtConflict->fetch();
+        if ($existingActive) {
+            $timeFormatted = date('g:i A', strtotime($bookingTime));
+            Response::error("You already have an active appointment scheduled for {$bookingDate} at {$timeFormatted} (Ref: {$existingActive['reference_no']}). Please choose a different date or time slot.", 409);
+        }
+
+        // 3. Staff Booking Conflict Prevention if a specific staff member is requested
+        if (!empty($input['staff_id'])) {
+            $stmtStaffConflict = $pdo->prepare("
+                SELECT id, reference_no 
+                FROM bookings 
+                WHERE staff_id = :sid 
+                  AND booking_date = :bdate 
+                  AND booking_time = :btime 
+                  AND status IN ('pending', 'confirmed')
+                LIMIT 1
+            ");
+            $stmtStaffConflict->execute([
+                'sid'   => (int)$input['staff_id'],
+                'bdate' => $bookingDate,
+                'btime' => $bookingTime
+            ]);
+            if ($stmtStaffConflict->fetch()) {
+                Response::error("The selected stylist is already booked for this time slot. Please choose another time slot or select 'Any Available Stylist'.", 409);
+            }
+        }
+
         $rawPayMethod = strtolower($input['payment_method'] ?? 'cash');
         if (str_contains($rawPayMethod, 'gcash')) {
             $paymentMethod = 'gcash';
