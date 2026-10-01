@@ -125,8 +125,10 @@ class MessageController {
             $rawInput = json_decode(file_get_contents('php://input'), true) ?? $_POST;
             $input = Sanitizer::cleanArray($rawInput);
 
-            $text = trim($input['text'] ?? '');
-            $attachmentName = !empty($input['attachment_name']) ? trim($input['attachment_name']) : null;
+            $rawText = $rawInput['text'] ?? $input['text'] ?? '';
+            $text = trim(html_entity_decode(strip_tags((string)$rawText), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $rawAttName = $rawInput['attachment_name'] ?? $input['attachment_name'] ?? null;
+            $attachmentName = !empty($rawAttName) ? trim(html_entity_decode(strip_tags((string)$rawAttName), ENT_QUOTES | ENT_HTML5, 'UTF-8')) : null;
             $rawAttachment = !empty($_FILES['attachment']) 
                 ? $_FILES['attachment'] 
                 : (!empty($_FILES['file']) ? $_FILES['file'] : (!empty($rawInput['attachment_url']) ? $rawInput['attachment_url'] : null));
@@ -162,7 +164,7 @@ class MessageController {
                     } catch (Throwable $e) {}
                 }
 
-                $adminName = !empty($input['sender_name']) ? trim($input['sender_name']) : "Nely's Salon";
+                $adminName = !empty($rawInput['sender_name']) ? trim(html_entity_decode(strip_tags((string)$rawInput['sender_name']), ENT_QUOTES | ENT_HTML5, 'UTF-8')) : "Nely's Salon";
                 if ($adminName === "Nely's Salon Concierge" || str_contains($adminName, 'Concierge')) {
                     $adminName = "Nely's Salon";
                 }
@@ -200,7 +202,8 @@ class MessageController {
             // Customer sending message to Salon (No bot reply)
             $userId = (int)$user['id'];
             $profile = CustomerProfile::findByUserId($userId);
-            $customerName = $profile['full_name'] ?? ($user['email'] ? explode('@', $user['email'])[0] : 'Client');
+            $rawCustName = $profile['full_name'] ?? ($user['email'] ? explode('@', $user['email'])[0] : 'Client');
+            $customerName = html_entity_decode((string)$rawCustName, ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
             // Save customer outgoing message
             $custMsgId = Message::create([
@@ -380,7 +383,8 @@ class MessageController {
             if (!is_array($input)) {
                 $input = $_POST;
             }
-            $text = trim($input['text'] ?? $input['message'] ?? '');
+            $rawText = $input['text'] ?? $input['message'] ?? '';
+            $text = trim(html_entity_decode(strip_tags((string)$rawText), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
             $targetAudience = trim($input['target_audience'] ?? $input['audience'] ?? 'all'); // 'all' or 'with_appointments'
 
             // Handle file attachments if sent

@@ -627,6 +627,17 @@ function formatMessageDateHeader(d) {
   } else {
     return formattedDate;
   }
+// Utility: Decode HTML entities for proper punctuation rendering
+function decodeHtmlEntities(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&#0*39;|&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&#0*38;/gi, '&')
+    .replace(/&nbsp;/gi, ' ');
 }
 
 // Map backend DB message record to UI model
@@ -640,14 +651,14 @@ function mapBackendMessage(item) {
     sender: item.sender || 'customer',
     senderName: (item.sender === 'salon' || (item.sender_name && item.sender_name.includes('Concierge')))
       ? "Nely's Salon"
-      : (item.sender_name || (item.sender === 'salon' ? "Nely's Salon" : 'You')),
-    text: item.text || '',
+      : decodeHtmlEntities(item.sender_name || (item.sender === 'salon' ? "Nely's Salon" : 'You')),
+    text: decodeHtmlEntities(item.text || ''),
     time: timeStr,
     date: dateStr,
     created_at: item.created_at || d.toISOString(),
     status: item.status || 'sent',
     attachment: item.attachment_name ? {
-      name: item.attachment_name,
+      name: decodeHtmlEntities(item.attachment_name),
       url: item.attachment_url || null,
       dataUrl: item.attachment_url || null
     } : null
@@ -1510,10 +1521,11 @@ function formatTimeString(timeStr) {
   return `${h}:${m} ${ampm}`;
 }
 
-// Utility: Escape HTML
+// Utility: Escape HTML (decodes pre-encoded entities first to avoid double-encoding code artifacts)
 function escapeHtml(str) {
   if (!str) return '';
-  return String(str)
+  const decoded = decodeHtmlEntities(str);
+  return String(decoded)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

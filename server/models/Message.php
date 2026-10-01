@@ -63,6 +63,19 @@ class Message {
                     (2, 'admin', 'Nely\'s Salon', 'Your appointment has been confirmed for tomorrow at 10:00 AM. See you at Nely\'s Salon!', 'sent', DATE_SUB(NOW(), INTERVAL 30 MINUTE))
                 ");
             }
+
+            // Clean up any double-escaped HTML entities in existing messages
+            try {
+                $pdo->exec("
+                    UPDATE `messages` 
+                    SET `text` = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(`text`, '&#039;', '\''), '&#39;', '\''), '&quot;', '\"'), '&apos;', '\''), '&amp;', '&')
+                    WHERE `text` LIKE '%&#039;%' 
+                       OR `text` LIKE '%&#39;%' 
+                       OR `text` LIKE '%&quot;%' 
+                       OR `text` LIKE '%&apos;%' 
+                       OR `text` LIKE '%&amp;%'
+                ");
+            } catch (Throwable $e) {}
         } catch (Throwable $e) {
             error_log('Message::ensureSchema Error: ' . $e->getMessage());
         }
@@ -178,6 +191,16 @@ class Message {
         // Return chronological order (oldest to newest)
         $rows = array_reverse($rows);
 
+        foreach ($rows as &$r) {
+            if (isset($r['text'])) {
+                $r['text'] = html_entity_decode($r['text'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
+            if (isset($r['sender_name'])) {
+                $r['sender_name'] = html_entity_decode($r['sender_name'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
+        }
+        unset($r);
+
         return [
             'messages'  => $rows,
             'has_more'  => $hasMore,
@@ -194,6 +217,14 @@ class Message {
         $stmt = $pdo->prepare("SELECT * FROM messages WHERE id = :id");
         $stmt->execute(['id' => $id]);
         $row = $stmt->fetch();
+        if ($row) {
+            if (isset($row['text'])) {
+                $row['text'] = html_entity_decode($row['text'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
+            if (isset($row['sender_name'])) {
+                $row['sender_name'] = html_entity_decode($row['sender_name'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+            }
+        }
         return $row ?: null;
     }
 
@@ -347,6 +378,15 @@ class Message {
         try {
             $stmt = $pdo->query("SELECT * FROM messages ORDER BY created_at ASC, id ASC");
             $allMessages = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+            foreach ($allMessages as &$msg) {
+                if (isset($msg['text'])) {
+                    $msg['text'] = html_entity_decode($msg['text'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                }
+                if (isset($msg['sender_name'])) {
+                    $msg['sender_name'] = html_entity_decode($msg['sender_name'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                }
+            }
+            unset($msg);
         } catch (Throwable $e) {
             error_log('Message::getAdminConversations query messages error: ' . $e->getMessage());
             $allMessages = [];

@@ -1067,13 +1067,13 @@ async function loadOlderAdminMessages(convId) {
           return {
             id: parseInt(m.id, 10),
             sender: (m.sender === 'admin' || m.sender === 'salon') ? 'admin' : 'customer',
-            senderName: (m.sender === 'admin' || m.sender === 'salon') ? "Nely's Salon" : (m.sender_name || conv.name || 'Customer'),
-            text: m.text || '',
+            senderName: (m.sender === 'admin' || m.sender === 'salon') ? "Nely's Salon" : decodeHtmlEntities(m.sender_name || conv.name || 'Customer'),
+            text: decodeHtmlEntities(m.text || ''),
             time: m.time || formatMessageTime(d),
             date: m.date || formatMessageDateHeader(d),
             created_at: m.created_at || d.toISOString(),
             status: m.status || 'sent',
-            attachment: m.attachment_name ? { name: m.attachment_name, url: m.attachment_url } : null
+            attachment: m.attachment_name ? { name: decodeHtmlEntities(m.attachment_name), url: m.attachment_url } : null
           };
         });
 
@@ -1748,10 +1748,24 @@ function showToast(message, type = 'info') {
   }, 3000);
 }
 
-// Security Helper: Escape HTML
+// Utility: Decode HTML entities for proper punctuation rendering
+function decodeHtmlEntities(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&#0*39;|&apos;/gi, "'")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&#0*38;/gi, '&')
+    .replace(/&nbsp;/gi, ' ');
+}
+
+// Security Helper: Escape HTML (decodes pre-encoded entities first to prevent code artifact display)
 function escapeHtml(string) {
   if (string === null || string === undefined) return '';
-  const str = String(string);
+  const decoded = decodeHtmlEntities(string);
+  const str = String(decoded);
   return str.replace(/[&<>"']/g, function (m) {
     return {
       '&': '&amp;',
