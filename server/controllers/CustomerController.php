@@ -11,6 +11,7 @@ require_once dirname(__DIR__) . '/models/CustomerProfile.php';
 require_once dirname(__DIR__) . '/models/User.php';
 require_once dirname(__DIR__) . '/models/Booking.php';
 require_once dirname(__DIR__) . '/models/Service.php';
+require_once dirname(__DIR__) . '/models/Notification.php';
 require_once dirname(__DIR__) . '/middleware/AuthMiddleware.php';
 require_once dirname(__DIR__) . '/middleware/RoleMiddleware.php';
 
@@ -175,41 +176,82 @@ class CustomerController {
         $input = Sanitizer::cleanArray($input);
 
         $validator = Validator::make($input, [
-            'name'  => 'required',
-            'email' => 'required|email',
+            'name'  => 'required|min:2',
+            'phone' => 'required',
         ]);
 
         if ($validator->fails()) {
-            Response::error('Validation failed', 422, $validator->errors());
+            Response::error('Validation failed: ' . implode(', ', array_map(fn($e) => implode(' ', $e), $validator->errors())), 422, $validator->errors());
         }
 
-        $cleanEmail = strtolower(trim($input['email']));
-        $existing = User::findByEmail($cleanEmail);
-        if ($existing) {
-            Response::error('A customer with this email address is already registered.', 422);
+        $cleanPhone = Sanitizer::cleanPhone($input['phone']);
+        $existingPhone = User::findByPhone($cleanPhone) ?? User::findByPhone($input['phone']);
+        if ($existingPhone) {
+            Response::error('A customer with this phone number is already registered.', 422);
         }
 
-        $cleanPhone = !empty($input['phone']) ? Sanitizer::cleanPhone($input['phone']) : null;
-        if ($cleanPhone) {
-            $existingPhone = User::findByPhone($cleanPhone);
-            if ($existingPhone) {
-                Response::error('A customer with this phone number is already registered.', 422);
+        // Email handling: use provided email if valid, or generate unique placeholder
+        $cleanEmail = !empty($input['email']) ? strtolower(trim($input['email'])) : null;
+        if ($cleanEmail) {
+            if (!filter_var($cleanEmail, FILTER_VALIDATE_EMAIL)) {
+                Response::error('Please provide a valid email address.', 422);
+            }
+            $existing = User::findByEmail($cleanEmail);
+            if ($existing) {
+                Response::error('A customer with this email address is already registered.', 422);
+            }
+        } else {
+            $digits = preg_replace('/\D/', '', $cleanPhone);
+            $cleanEmail = 'patron_' . ($digits ?: time()) . '@nelyssalon.com';
+            if (User::findByEmail($cleanEmail)) {
+                $cleanEmail = 'patron_' . time() . '_' . rand(100, 999) . '@nelyssalon.com';
             }
         }
 
         $tempPassword = password_hash(bin2hex(random_bytes(8)), PASSWORD_BCRYPT);
         $userId = User::create($cleanEmail, $cleanPhone, $tempPassword, 'customer');
 
+        // Format notes if provided
+        $notes = null;
+        if (!empty($input['notes'])) {
+            $rawNotes = trim($input['notes']);
+            $decoded = json_decode($rawNotes, true);
+            if (is_array($decoded)) {
+                $notes = $rawNotes;
+            } else {
+                $notes = json_encode([[
+                    'id'     => 'n_' . $userId . '_' . time(),
+                    'text'   => $rawNotes,
+                    'date'   => date('M d, Y'),
+                    'author' => 'Admin'
+                ]]);
+            }
+        }
+
         CustomerProfile::create(
             $userId,
             trim($input['name']),
-            $input['address'] ?? null,
-            $input['dob'] ?? null,
+            $input['home_address'] ?? $input['address'] ?? null,
+            !empty($input['dob']) ? $input['dob'] : null,
             $input['gender'] ?? 'Female',
-            $input['notes'] ?? null,
+            $notes,
             $input['status'] ?? 'Active',
             $input['city'] ?? 'Quezon City'
         );
+
+        // Notify admin panel
+        try {
+            Notification::create([
+                'user_id'        => $userId,
+                'recipient_role' => 'admin',
+                'category'       => 'customers',
+                'title'          => 'New Customer Added',
+                'message'        => "{$input['name']} ({$cleanPhone}) was added to the customer directory.",
+                'action_url'     => 'customers.html',
+                'type'           => 'info',
+                'status'         => 'sent'
+            ]);
+        } catch (Throwable $e) {}
 
         $customer = CustomerProfile::findByUserId($userId);
         Response::success($customer, 'Customer record created successfully.', 201);
@@ -226,34 +268,41 @@ class CustomerController {
             Response::notFound('Customer profile not found.');
         }
 
-        if (!empty($input['email']) || !empty($input['phone'])) {
-            $userUpdates = [];
-            if (!empty($input['email'])) {
-                $cleanEmail = strtolower(trim($input['email']));
-                $existing = User::findByEmail($cleanEmail);
-                if ($existing && (int)$existing['id'] !== $id) {
-                    Response::error('This email is already registered to another account.', 422);
-                }
-                $userUpdates['email'] = $cleanEmail;
+        $userUpdates = [];
+        if (!empty($input['email'])) {
+            $cleanEmail = strtolower(trim($input['email']));
+            if (!filter_var($cleanEmail, FILTER_VALIDATE_EMAIL)) {
+                Response::error('Please provide a valid email address.', 422);
             }
-            if (!empty($input['phone'])) {
-                $cleanPhone = Sanitizer::cleanPhone($input['phone']);
-                $existingPhone = User::findByPhone($cleanPhone);
-                if ($existingPhone && (int)$existingPhone['id'] !== $id) {
-                    Response::error('This phone number is already registered to another account.', 422);
-                }
-                $userUpdates['phone'] = $cleanPhone;
+            $existing = User::findByEmail($cleanEmail);
+            if ($existing && (int)$existing['id'] !== $id) {
+                Response::error('This email is already registered to another account.', 422);
             }
-            if (!empty($userUpdates)) {
-                User::update($id, $userUpdates);
+            $userUpdates['email'] = $cleanEmail;
+        }
+
+        if (!empty($input['phone'])) {
+            $cleanPhone = Sanitizer::cleanPhone($input['phone']);
+            $existingPhone = User::findByPhone($cleanPhone) ?? User::findByPhone($input['phone']);
+            if ($existingPhone && (int)$existingPhone['id'] !== $id) {
+                Response::error('This phone number is already registered to another account.', 422);
             }
+            $userUpdates['phone'] = $cleanPhone;
+        }
+
+        if (!empty($userUpdates)) {
+            User::update($id, $userUpdates);
         }
 
         $profileData = [];
-        if (isset($input['name'])) $profileData['full_name'] = trim($input['name']);
-        if (isset($input['address'])) $profileData['home_address'] = $input['address'];
-        if (isset($input['city'])) $profileData['city'] = $input['city'];
-        if (isset($input['dob'])) $profileData['dob'] = $input['dob'];
+        if (isset($input['name']) || isset($input['full_name'])) {
+            $profileData['full_name'] = trim($input['name'] ?? $input['full_name']);
+        }
+        if (isset($input['address']) || isset($input['home_address'])) {
+            $profileData['home_address'] = trim($input['address'] ?? $input['home_address']);
+        }
+        if (isset($input['city'])) $profileData['city'] = trim($input['city']);
+        if (isset($input['dob'])) $profileData['dob'] = !empty($input['dob']) ? $input['dob'] : null;
         if (isset($input['gender'])) $profileData['gender'] = $input['gender'];
         if (isset($input['status'])) $profileData['status'] = $input['status'];
         if (isset($input['notes'])) $profileData['notes'] = $input['notes'];

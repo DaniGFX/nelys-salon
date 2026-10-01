@@ -45,8 +45,19 @@ function initCustomers() {
   hydrateCustomersFromCache();
   checkAdminAuth();
   setupEventListeners();
-  setupClickOutside();
   setupModalDismissListeners();
+
+  // Read URL search params (e.g. from Dashboard click-through)
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const q = params.get('search');
+    if (q) {
+      filterState.search = q.trim();
+      const searchInputEl = document.getElementById('customerSearchInput');
+      if (searchInputEl) searchInputEl.value = q.trim();
+    }
+  } catch (e) {}
+
   fetchCustomersData();
 }
 
@@ -611,7 +622,7 @@ function toggleRowKebabMenu(userId, event) {
         <i class="fa-solid fa-pen-to-square text-[#810B38] w-4 text-center"></i>
         <span>Edit Customer</span>
       </button>
-      <button type="button" onclick="closeFloatingCustomerActionPortal(); openNewAppointmentModal(${cust.userId})" class="w-full px-3.5 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
+      <button type="button" onclick="closeFloatingCustomerActionPortal(); openBookForCustomerModal(${cust.userId})" class="w-full px-3.5 py-2 text-xs font-semibold text-[#541A1A] hover:bg-[#FAF6F0] flex items-center gap-2.5 transition-colors">
         <i class="fa-regular fa-calendar-plus text-[#810B38] w-4 text-center"></i>
         <span>Book Appointment</span>
       </button>
@@ -1315,16 +1326,6 @@ function escapeHtml(str) {
     .replace(/'/g, '&#039;');
 }
 
-window.openLogoutModal = openLogoutModal;
-window.closeLogoutModal = closeLogoutModal;
-window.handleConfirmLogout = typeof handleConfirmLogout === 'function' ? handleConfirmLogout : function() {
-  localStorage.removeItem('nelys_token');
-  localStorage.removeItem('nelys_user');
-  sessionStorage.clear();
-  window.location.href = '../login.html';
-};
-window.confirmLogout = window.handleConfirmLogout;
-
 // ================= STANDARDIZED ADMIN LOGOUT HANDLERS =================
 function openLogoutModal() {
   const modal = document.getElementById('logoutModal');
@@ -1348,18 +1349,37 @@ function handleConfirmLogout() {
   try {
     localStorage.removeItem('nelys_token');
     localStorage.removeItem('nelys_user');
+    localStorage.removeItem(CUSTOMERS_CACHE_KEY);
     sessionStorage.clear();
   } catch(e) {}
   window.location.href = '../login.html';
 }
 
-function confirmLogout() {
-  handleConfirmLogout();
-}
-
+// ================= GLOBAL EXPORTS FOR INLINE EVENT LISTENERS =================
+window.toggleMobileSidebar = toggleMobileSidebar;
+window.openAddCustomerModal = openAddCustomerModal;
+window.closeAddCustomerModal = closeAddCustomerModal;
+window.handleSaveCustomer = handleSaveCustomer;
+window.openCustomerProfileModal = openCustomerProfileModal;
+window.closeCustomerProfileModal = closeCustomerProfileModal;
+window.toggleAddNoteInput = toggleAddNoteInput;
+window.saveCustomerNote = saveCustomerNote;
+window.openEditCustomerModal = openEditCustomerModal;
+window.closeEditCustomerModal = closeEditCustomerModal;
+window.handleSaveEditCustomer = handleSaveEditCustomer;
+window.openBookForCustomerModal = openBookForCustomerModal;
+window.openNewAppointmentModal = openBookForCustomerModal;
+window.closeBookForCustomerModal = closeBookForCustomerModal;
+window.handleConfirmBookForCustomer = handleConfirmBookForCustomer;
+window.openDeleteCustomerModal = openDeleteCustomerModal;
+window.closeDeleteCustomerModal = closeDeleteCustomerModal;
+window.handleConfirmDeleteCustomer = handleConfirmDeleteCustomer;
+window.toggleRowKebabMenu = toggleRowKebabMenu;
+window.filterBySummaryCard = filterBySummaryCard;
+window.resetFilters = resetFilters;
+window.fetchCustomersData = fetchCustomersData;
 window.openLogoutModal = openLogoutModal;
 window.closeLogoutModal = closeLogoutModal;
 window.handleConfirmLogout = handleConfirmLogout;
-window.confirmLogout = confirmLogout;
-
+window.confirmLogout = handleConfirmLogout;
 window.closeFloatingCustomerActionPortal = closeFloatingCustomerActionPortal;

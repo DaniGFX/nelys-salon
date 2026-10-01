@@ -50,6 +50,35 @@ class User {
         return $stmt->execute(['hash' => $passwordHash, 'id' => $userId]);
     }
 
+    public static function update(int $userId, array $data): bool {
+        $pdo = Database::getConnection();
+        $fields = [];
+        $params = ['id' => $userId];
+
+        if (isset($data['email'])) {
+            $fields[] = "email = :email";
+            $params['email'] = strtolower(trim($data['email']));
+        }
+        if (isset($data['phone'])) {
+            $fields[] = "phone = :phone";
+            $params['phone'] = trim($data['phone']);
+        }
+        if (isset($data['role'])) {
+            $fields[] = "role = :role";
+            $params['role'] = trim($data['role']);
+        }
+        if (isset($data['password_hash'])) {
+            $fields[] = "password_hash = :password_hash";
+            $params['password_hash'] = $data['password_hash'];
+        }
+
+        if (empty($fields)) return false;
+
+        $sql = "UPDATE users SET " . implode(', ', $fields) . ", updated_at = NOW() WHERE id = :id";
+        $stmt = $pdo->prepare($sql);
+        return $stmt->execute($params);
+    }
+
     public static function all(): array {
         $pdo = Database::getConnection();
         $stmt = $pdo->query("SELECT id, email, phone, role, created_at, updated_at FROM users ORDER BY id ASC");
