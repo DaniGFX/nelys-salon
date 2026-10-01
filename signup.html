@@ -17,7 +17,7 @@
   <!-- Compiled Tailwind CSS -->
   <link rel="stylesheet" href="assets/css/output.css">
 
-  <!-- Preload Critical Above-the-Fold Images (Zero White Flicker on Reload) -->
+  <!-- Preload Critical Above-the-Fold Images -->
   <link rel="preload" as="image" href="assets/images/frontview1.jpg" fetchpriority="high">
   <link rel="preload" as="image" href="assets/images/logo.jfif">
 </head>
@@ -26,12 +26,12 @@
   <!-- Main Split Container -->
   <main class="flex-1 min-h-screen grid grid-cols-1 lg:grid-cols-12">
     
-    <!-- ================= LEFT SIDE — BRANDING (WEBSITE / DESKTOP VIEW ONLY) ================= -->
+    <!-- ================= LEFT SIDE — BRANDING (DESKTOP VIEW) ================= -->
     <div 
       class="hidden lg:flex lg:col-span-5 text-white lg:p-12 xl:p-14 flex-col justify-between relative overflow-hidden bg-[#241719]"
     >
       
-      <!-- Background Cover Image (HD Salon Front View with Backdrop Blur) -->
+      <!-- Background Cover Image -->
       <img 
         src="assets/images/frontview1.jpg" 
         alt="Nely's Salon Front View" 
@@ -42,7 +42,7 @@
         style="filter: blur(8px); -webkit-filter: blur(8px); transform: scale(1.08);"
       >
 
-      <!-- Brand Gradient & Tint Overlay — Balanced for Visibility & Legibility -->
+      <!-- Brand Gradient & Tint Overlay -->
       <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-black/65 pointer-events-none"></div>
       <div class="absolute inset-0 bg-[#1a0a0a]/30 mix-blend-multiply pointer-events-none"></div>
       
@@ -78,7 +78,7 @@
           </span>
         </div>
 
-        <!-- Dynamic Welcoming Message (Switches instantly with mode) -->
+        <!-- Dynamic Welcoming Message -->
         <div class="space-y-2.5">
           <h1 id="heroBrandTitle" class="font-serif text-3xl xl:text-4xl text-[#F1E2D1] font-normal leading-snug drop-shadow-md">
             Begin Your Beauty Journey With Us
@@ -89,25 +89,25 @@
         </div>
       </div>
 
-      <!-- Left Bottom Features (Desktop Only) -->
+      <!-- Left Bottom Features -->
       <div class="relative z-10 mt-6 pt-4 border-t border-[#DCC3AA]/30 text-xs text-[#F1E2D1] space-y-2.5 bg-black/40 p-4 rounded-2xl border border-[#DCC3AA]/30 backdrop-blur-md shadow-lg">
         <div class="flex items-center gap-3">
           <div class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0 border border-white/20">
             <i class="fa-solid fa-award text-xs text-[#DCC3AA]"></i>
           </div>
-          <span class="font-medium">15 Years of Beauty & Care in Lagro, Quezon City</span>
+          <span class="font-medium">15 Years of Beauty &amp; Care in Lagro, Quezon City</span>
         </div>
         <div class="flex items-center gap-3">
           <div class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0 border border-white/20">
             <i class="fa-solid fa-house-laptop text-xs text-[#DCC3AA]"></i>
           </div>
-          <span class="font-medium">Seamless In-Salon & Home Service Booking</span>
+          <span class="font-medium">Seamless In-Salon &amp; Home Service Booking</span>
         </div>
         <div class="flex items-center gap-3">
           <div class="w-7 h-7 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0 border border-white/20">
             <i class="fa-solid fa-bell text-xs text-[#DCC3AA]"></i>
           </div>
-          <span class="font-medium">Automated SMS & Email Appointment Reminders</span>
+          <span class="font-medium">Automated SMS &amp; Email Appointment Reminders</span>
         </div>
       </div>
 
@@ -116,7 +116,7 @@
     <!-- ================= RIGHT SIDE — FORM CONTAINER ================= -->
     <div class="col-span-12 lg:col-span-7 bg-[#FDFBF7] px-4 py-4 sm:px-8 sm:py-6 lg:px-10 lg:py-6 flex flex-col justify-between items-center relative min-h-screen">
       
-      <!-- Top Mobile Header (Adjusted to the Top) -->
+      <!-- Top Mobile Header -->
       <div class="w-full max-w-md flex justify-between items-center pb-3 mb-2 lg:hidden border-b border-[#E8D9CA]/60">
         <a href="index.html" class="inline-flex items-center gap-1.5 text-xs font-semibold text-[#810B38] hover:text-[#541A1A] transition-colors py-1">
           <i class="fa-solid fa-arrow-left text-[11px]"></i>
@@ -220,7 +220,7 @@
               <span>Continue as Guest to Book</span>
             </a>
 
-            <!-- Link to Sign Up (Instant in-place switch, zero flicker) -->
+            <!-- Link to Sign Up -->
             <p class="text-xs text-center text-[#735e5e] pt-1">
               Don't have an account yet?
               <a 
@@ -244,9 +244,8 @@
               </p>
             </div>
 
-            <!-- Row 1: Full Name & Mobile Number (2 columns on sm/lg) -->
+            <!-- Row 1: Full Name & Mobile Number -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <!-- Full Name -->
               <div class="text-left">
                 <label for="signupName" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1">
                   Full Name *
@@ -259,13 +258,12 @@
                     type="text" 
                     id="signupName" 
                     required 
-                    placeholder="Enter Your Full Name"
+                    placeholder="e.g. Maria Santos"
                     class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
                   >
                 </div>
               </div>
 
-              <!-- Mobile Number -->
               <div class="text-left">
                 <label for="signupPhone" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1">
                   Mobile Number *
@@ -278,14 +276,14 @@
                     type="tel" 
                     id="signupPhone" 
                     required 
-                    placeholder="Enter your mobile number"
+                    placeholder="0917 123 4567"
                     class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
                   >
                 </div>
               </div>
             </div>
 
-            <!-- Row 2: Email Address (Full Width) -->
+            <!-- Email Address -->
             <div class="text-left">
               <label for="signupEmail" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1">
                 Email Address *
@@ -298,18 +296,17 @@
                   type="email" 
                   id="signupEmail" 
                   required 
-                  placeholder="Enter your email address"
+                  placeholder="maria@example.com"
                   class="w-full pl-10 pr-4 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
                 >
               </div>
             </div>
 
-            <!-- Row 3: Password & Confirm Password (2 columns on sm/lg) -->
+            <!-- Row 2: Password & Confirm Password -->
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <!-- Create Password -->
               <div class="text-left">
                 <label for="signupPassword" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1">
-                  Create Password *
+                  Password *
                 </label>
                 <div class="relative">
                   <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
@@ -320,7 +317,7 @@
                     id="signupPassword" 
                     required 
                     minlength="6"
-                    placeholder="At least 6 characters"
+                    placeholder="Min. 6 characters"
                     class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-[#DCC3AA] bg-[#FAF6F0]/50 text-sm focus:outline-none focus:border-[#810B38] focus:bg-white transition-all text-[#2b1d1d]"
                   >
                   <button 
@@ -333,14 +330,13 @@
                 </div>
               </div>
 
-              <!-- Confirm Password -->
               <div class="text-left">
                 <label for="signupConfirmPassword" class="block text-xs font-bold uppercase tracking-wider text-[#541A1A] mb-1">
                   Confirm Password *
                 </label>
                 <div class="relative">
                   <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#735e5e]">
-                    <i class="fa-solid fa-shield-halved text-xs"></i>
+                    <i class="fa-solid fa-lock text-xs"></i>
                   </span>
                   <input 
                     type="password" 
@@ -392,7 +388,7 @@
               <span>Continue as Guest to Book</span>
             </a>
 
-            <!-- Toggle Link to Login (Instant in-place switch, zero flicker) -->
+            <!-- Toggle Link to Login -->
             <p class="text-xs text-center text-[#735e5e] pt-1">
               Already registered?
               <a 
@@ -402,6 +398,8 @@
                 Log in here
               </a>
             </p>
+          </form>
+
           <!-- ================= FORM 3: TWO-FACTOR OTP VERIFICATION ================= -->
           <div id="formOtp" class="space-y-4 hidden text-left">
             <div class="mb-5">
@@ -473,7 +471,7 @@
                   <input type="text" maxlength="1" inputmode="numeric" pattern="[0-9]*" class="otp-digit w-11 h-13 sm:w-13 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono rounded-xl border border-[#DCC3AA] bg-white focus:border-[#810B38] focus:ring-2 focus:ring-[#810B38]/20 focus:outline-none transition-all" data-index="5">
                 </div>
                 
-                <!-- Dev Mode Indicator / Hint if available in response -->
+                <!-- Dev Mode Indicator -->
                 <div id="otpDevHint" class="hidden mt-2.5 p-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs font-mono text-center"></div>
 
                 <!-- Error feedback message -->
@@ -514,7 +512,7 @@
         </div>
       </div>
 
-      <!-- Footer Info (Adjusted to the Bottom) -->
+      <!-- Footer Info -->
       <div class="w-full max-w-md sm:max-w-xl lg:max-w-2xl pt-4 mt-auto text-center text-[11px] text-[#735e5e] border-t border-[#E8D9CA]/40 lg:border-t-0">
         <span>Nely’s Salon · 15 Years of Beauty Heritage · Blk 42 Lot 59 Ascension Rd, Lagro, QC</span>
       </div>
@@ -528,7 +526,6 @@
 
   <!-- JavaScript for Password Toggling, Mode Switching, 2FA OTP and Form Submissions -->
   <script>
-    // 2FA State Holder
     const current2faState = {
       ticket: null,
       channel: 'email',
@@ -617,10 +614,7 @@
       }, 4500);
     }
 
-    // ==========================================
-    // 2FA OTP SCREEN LOGIC & HANDLERS
-    // ==========================================
-
+    // 2FA OTP Handlers
     function show2faScreen(data) {
       current2faState.ticket = data.ticket;
       current2faState.channel = data.default_channel || 'email';
@@ -643,7 +637,6 @@
       selectOtpChannel(current2faState.channel, false);
       clearOtpInputs();
 
-      // Show dev mode hint if available
       const devHint = document.getElementById('otpDevHint');
       if (devHint) {
         if (data.dev_code) {
@@ -812,7 +805,6 @@
       if (loginForm) loginForm.classList.remove('hidden');
     }
 
-    // Auto-advance & paste behavior for 6 digit PIN
     document.addEventListener('DOMContentLoaded', () => {
       const digitInputs = document.querySelectorAll('.otp-digit');
 
@@ -825,7 +817,6 @@
             digitInputs[index + 1].focus();
           }
 
-          // Auto-submit when all 6 digits filled
           const fullCode = Array.from(digitInputs).map(i => i.value).join('');
           if (fullCode.length === 6) {
             handleOtpSubmit(new Event('submit'));
@@ -913,7 +904,6 @@
           return;
         }
 
-        // OTP Verified successfully!
         clearAllCustomerCaches();
 
         const user = result.data.user;
@@ -984,7 +974,6 @@
           return;
         }
 
-        // Check if 2FA verification challenge is required
         if (result.data && result.data.requires_2fa) {
           if (submitBtn) {
             submitBtn.disabled = false;
@@ -994,7 +983,6 @@
           return;
         }
 
-        // Direct login success (if 2FA disabled)
         clearAllCustomerCaches();
         const user = result.data.user;
         const token = result.data.token;
@@ -1096,7 +1084,6 @@
           return;
         }
 
-        // Successfully registered! Clear previous caches and store new session/user
         clearAllCustomerCaches();
 
         if (result.data?.token) {
@@ -1121,7 +1108,6 @@
       }
     }
 
-    // Check URL query/hash on load
     document.addEventListener('DOMContentLoaded', () => {
       const path = window.location.pathname.toLowerCase();
       const hash = window.location.hash.toLowerCase();
