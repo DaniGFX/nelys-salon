@@ -138,7 +138,7 @@ const defaultServicesCatalog = [
     categoryLabel: 'Hair Services',
     price: 1499,
     priceFormatted: '₱1,499',
-    description: 'Pin-straight permanent thermal rebonding therapy with glossy silk finish.',
+    description: 'Pin-straight permanent thermal rebonding therapy with glossy silk finish. Price varies depending on hair length — please inquire for a personalized quote.',
     fullDescription: 'Permanent thermal smoothing system that relaxes curly or unruly hair bonds into pin-straight, ultra-glossy, fluid locks. Price may vary based on hair length upon consultation.',
     availableFor: 'Salon Visit',
     duration: '180 mins',

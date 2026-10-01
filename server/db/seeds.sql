@@ -33,7 +33,7 @@ ON DUPLICATE KEY UPDATE
 
 -- 4. 13 Salon Services
 INSERT INTO `services` (`id`, `code`, `name`, `category`, `price`, `duration_minutes`, `description`, `is_active`) VALUES
-(1, 'rebonding', 'Hair Rebonding', 'Hair Services', NULL, 180, 'Pin-straight permanent thermal rebonding therapy with glossy silk finish (Consultation-based).', 1),
+(1, 'rebonding', 'Hair Rebonding', 'Hair Services', NULL, 180, 'Pin-straight permanent thermal rebonding therapy with glossy silk finish. Price varies depending on hair length — please inquire for a personalized quote.', 1),
 (2, 'brazilian', 'Brazilian Treatment', 'Hair Services', 1999.00, 120, 'Transformative keratin smoothing treatment eliminating frizz with mirror-like shine.', 1),
 (3, 'hair-dye', 'Hair Dye', 'Hair Services', 699.00, 90, 'Full rich dimensional coloration or grey coverage customized to your skin tone.', 1),
 (4, 'power-dose', 'Power Dose', 'Hair Services', 499.00, 45, 'Instant high-potency restorative ampoule treatment reviving brittle, lifeless ends.', 1),

@@ -113,7 +113,7 @@ try {
     // Sync official 13 services and price list
     try {
         $officialServices = [
-            ['rebonding', 'Hair Rebonding', 'Hair Services', null, 180, 'Pin-straight permanent thermal rebonding therapy with glossy silk finish (Consultation-based).'],
+            ['rebonding', 'Hair Rebonding', 'Hair Services', null, 180, 'Pin-straight permanent thermal rebonding therapy with glossy silk finish. Price varies depending on hair length — please inquire for a personalized quote.'],
             ['brazilian', 'Brazilian Treatment', 'Hair Services', 1999.00, 120, 'Transformative keratin smoothing treatment eliminating frizz with mirror-like shine.'],
             ['hair-dye', 'Hair Dye', 'Hair Services', 699.00, 90, 'Full rich dimensional coloration or grey coverage customized to your skin tone.'],
             ['power-dose', 'Power Dose', 'Hair Services', 499.00, 45, 'Instant high-potency restorative ampoule treatment reviving brittle, lifeless ends.'],
