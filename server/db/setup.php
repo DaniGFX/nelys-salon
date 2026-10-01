@@ -21,7 +21,7 @@ try {
     $pdo = Database::getConnection();
     echo "[OK] Connected to database successfully.\n";
 
-    $adminEmail = 'admin@gmail.com';
+    $adminEmail = 'nelyssalon.website@gmail.com';
     $adminPass  = 'Admin123';
     // BCrypt hash for 'Admin123'
     $adminHash  = '$2y$10$08ATlRbtlfhqHL6HA4ywz.yLMFnKw7FQ2jZ6PyOQYdIIdH88USdNS';
@@ -187,8 +187,8 @@ try {
         ':hash_update'  => $adminHash,
     ]);
 
-    // If an old admin account existed with admin@nelyssalon.com, update it to admin@gmail.com
-    $updateOld = $pdo->prepare("UPDATE `users` SET `email` = :email, `password_hash` = :hash, `role` = 'admin' WHERE `email` = 'admin@nelyssalon.com'");
+    // If an old admin account existed with admin@gmail.com or admin@nelyssalon.com, update it to nelyssalon.website@gmail.com
+    $updateOld = $pdo->prepare("UPDATE `users` SET `email` = :email, `password_hash` = :hash, `role` = 'admin' WHERE `email` IN ('admin@nelyssalon.com', 'admin@gmail.com') OR `id` = 1");
     $updateOld->execute([':email' => $adminEmail, ':hash' => $adminHash]);
 
     echo "[OK] Account role identifier verified: role = 'admin'\n";

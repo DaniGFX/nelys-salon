@@ -138,7 +138,7 @@ class Setting {
 
         $account = [
             'name'  => self::get('admin_account_name', "Admin"),
-            'email' => $userRow['email'] ?? "admin@nelyssalon.com",
+            'email' => $userRow['email'] ?? "nelyssalon.website@gmail.com",
             'phone' => $userRow['phone'] ?? "0917 888 9999"
         ];
 

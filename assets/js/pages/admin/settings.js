@@ -60,7 +60,7 @@ let settings = {
   },
   account: {
     name: "Admin",
-    email: "admin@nelyssalon.com",
+    email: "nelyssalon.website@gmail.com",
     phone: ""
   },
   systemPreferences: {
@@ -621,7 +621,7 @@ function populateAccountSettings() {
   const emailEl = document.getElementById('settingAccountEmail');
 
   if (nameEl) nameEl.value = acc.name || 'Admin';
-  if (emailEl) emailEl.value = acc.email || 'admin@nelyssalon.com';
+  if (emailEl) emailEl.value = acc.email || 'nelyssalon.website@gmail.com';
 }
 
 async function handleSaveAccountSettings(event) {

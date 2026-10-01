@@ -558,3 +558,39 @@ tmp_*.js
 *.test.local.*
 *.debug.*
 *.sandbox.*
+
+# ==========================================
+# 17. Confidential API Keys, SMS/Mailer Secrets & Credentials
+# ==========================================
+*api_secret*
+*client_secret*
+*private_key*
+*app_password*
+*smtp_password*
+*auth_token*
+*jwt_secret*
+*encryption_key*
+*signing_key*
+*.keyfile
+*.passfile
+*.creds.json
+*.secret.json
+*.creds.yaml
+*.secret.yaml
+*.creds.yml
+*.secret.yml
+*.creds.php
+*.secret.php
+*.credentials.php
+
+# ==========================================
+# 18. Local Runtime & Server Sidecars
+# ==========================================
+.server/
+.runtime/
+.state/
+.pids/
+*.sublime-workspace
+*.sublime-project
+.antigravity/
+.system_generated/
