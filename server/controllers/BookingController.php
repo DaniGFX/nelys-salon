@@ -12,8 +12,10 @@ require_once dirname(__DIR__) . '/models/Booking.php';
 require_once dirname(__DIR__) . '/models/Service.php';
 require_once dirname(__DIR__) . '/models/Payment.php';
 require_once dirname(__DIR__) . '/models/Sale.php';
+require_once dirname(__DIR__) . '/models/Staff.php';
 require_once dirname(__DIR__) . '/services/BookingReferenceService.php';
 require_once dirname(__DIR__) . '/services/NotificationService.php';
+require_once dirname(__DIR__) . '/services/AvailabilityService.php';
 require_once dirname(__DIR__) . '/models/Notification.php';
 require_once dirname(__DIR__) . '/models/User.php';
 require_once dirname(__DIR__) . '/models/CustomerProfile.php';
@@ -146,8 +148,43 @@ class BookingController {
             Response::error("You already have an active appointment scheduled for {$bookingDate} at {$timeFormatted} (Ref: {$existingActive['reference_no']}). Please choose a different date or time slot.", 409);
         }
 
-        // 3. Staff Booking Conflict Prevention if a specific staff member is requested
+        // 3. Staff Availability & Double-Booking Prevention
+        $timeFormatted = date('g:i A', strtotime($bookingTime));
+        $normalizedTime = date('H:i:s', strtotime($bookingTime));
+
         if (!empty($input['staff_id'])) {
+            $staffId = (int)$input['staff_id'];
+            $staffRow = Staff::findById($staffId);
+            
+            if (!$staffRow || empty($staffRow['is_active']) || $staffRow['status'] === 'Inactive' || $staffRow['status'] === 'On Leave') {
+                $staffName = $staffRow ? $staffRow['name'] : 'The selected stylist';
+                Response::error("{$staffName} is currently unavailable or inactive. Please choose another stylist.", 422);
+            }
+
+            // Check staff weekly schedule for the day
+            $dayOfWeek = date('l', strtotime($bookingDate));
+            $defaultSchedule = [
+                'Monday'    => '9:00 AM – 6:00 PM',
+                'Tuesday'   => '9:00 AM – 6:00 PM',
+                'Wednesday' => '9:00 AM – 6:00 PM',
+                'Thursday'  => '9:00 AM – 6:00 PM',
+                'Friday'    => '9:00 AM – 6:00 PM',
+                'Saturday'  => '9:00 AM – 6:00 PM',
+                'Sunday'    => 'Day Off'
+            ];
+            $schedule = $defaultSchedule;
+            if (!empty($staffRow['schedule'])) {
+                $decoded = json_decode($staffRow['schedule'], true);
+                if (is_array($decoded)) {
+                    $schedule = array_merge($defaultSchedule, $decoded);
+                }
+            }
+            $daySched = $schedule[$dayOfWeek] ?? '9:00 AM – 6:00 PM';
+            if (strtolower(trim($daySched)) === 'day off' || strtolower(trim($staffRow['availability'] ?? '')) === 'off-duty') {
+                Response::error("{$staffRow['name']} is scheduled off on {$dayOfWeek}s. Please choose a different appointment date or select another stylist.", 422);
+            }
+
+            // Check if staff member already has an active booking at this date & time
             $stmtStaffConflict = $pdo->prepare("
                 SELECT id, reference_no 
                 FROM bookings 
@@ -158,12 +195,26 @@ class BookingController {
                 LIMIT 1
             ");
             $stmtStaffConflict->execute([
-                'sid'   => (int)$input['staff_id'],
+                'sid'   => $staffId,
                 'bdate' => $bookingDate,
                 'btime' => $bookingTime
             ]);
-            if ($stmtStaffConflict->fetch()) {
-                Response::error("The selected stylist is already booked for this time slot. Please choose another time slot or select 'Any Available Stylist'.", 409);
+            $conflictingAppt = $stmtStaffConflict->fetch();
+            if ($conflictingAppt) {
+                Response::error("{$staffRow['name']} is already booked on {$bookingDate} at {$timeFormatted} (Ref: {$conflictingAppt['reference_no']}). Please select another time slot or choose a different stylist.", 409);
+            }
+        } else {
+            // "Any Available Stylist" selected: verify that the salon slot has capacity (not fully booked)
+            $availData = AvailabilityService::getAvailabilityData($bookingDate);
+            $slotAvailable = false;
+            foreach ($availData['slots'] as $s) {
+                if ($s['time'] === $normalizedTime) {
+                    $slotAvailable = !empty($s['is_available']);
+                    break;
+                }
+            }
+            if (!$slotAvailable) {
+                Response::error("All stylists are fully booked on {$bookingDate} at {$timeFormatted}. Please select a different time slot or date.", 409);
             }
         }
 
@@ -226,7 +277,9 @@ class BookingController {
         // Also create notification entry for admin panel
         try {
             $isRebook = !empty($input['notes']) && str_contains(strtolower($input['notes']), 're-book');
-            $customerDisplayName = !empty($customer['full_name']) ? $customer['full_name'] : ($customer['email'] ?? 'A customer');
+            $custProfile = CustomerProfile::findByUserId($customerId);
+            $userRow = User::findById($customerId);
+            $customerDisplayName = !empty($custProfile['full_name']) ? $custProfile['full_name'] : (!empty($clientName) ? $clientName : ($userRow['email'] ?? 'A customer'));
             Notification::create([
                 'user_id'        => $customerId,
                 'recipient_role' => 'admin',
@@ -463,6 +516,36 @@ class BookingController {
         if (!empty($input['status'])) $updateData['status'] = $input['status'];
         if (isset($input['notes'])) $updateData['notes'] = $input['notes'];
         if (isset($input['total_price'])) $updateData['total_price'] = (float)$input['total_price'];
+
+        $targetDate = $updateData['booking_date'] ?? $booking['booking_date'];
+        $targetTime = $updateData['booking_time'] ?? $booking['booking_time'];
+        $targetStaffId = array_key_exists('staff_id', $updateData) ? $updateData['staff_id'] : $booking['staff_id'];
+        $targetStatus = $updateData['status'] ?? $booking['status'];
+
+        if ($targetStaffId && in_array($targetStatus, ['pending', 'confirmed'])) {
+            $pdo = Database::getConnection();
+            $stmtConf = $pdo->prepare("
+                SELECT id, reference_no 
+                FROM bookings 
+                WHERE staff_id = :sid 
+                  AND booking_date = :bdate 
+                  AND booking_time = :btime 
+                  AND id != :current_id 
+                  AND status IN ('pending', 'confirmed')
+                LIMIT 1
+            ");
+            $stmtConf->execute([
+                'sid'        => $targetStaffId,
+                'bdate'      => $targetDate,
+                'btime'      => $targetTime,
+                'current_id' => $id,
+            ]);
+            $conf = $stmtConf->fetch();
+            if ($conf) {
+                $timeFmt = date('g:i A', strtotime($targetTime));
+                Response::error("The selected stylist is already booked on {$targetDate} at {$timeFmt} (Ref: {$conf['reference_no']}). Please select another stylist or slot.", 409);
+            }
+        }
 
         Booking::update($id, $updateData);
 

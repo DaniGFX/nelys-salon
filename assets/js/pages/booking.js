@@ -57,6 +57,7 @@ const bookingState = {
 let activeServicesList = [];
 let activeStaffList = [];
 let availableTimeSlots = [];
+let currentDayAvailability = null;
 
 // Calendar State
 let currentCalYear = new Date().getFullYear();
@@ -535,20 +536,55 @@ function renderBookingStaff(staffList) {
 
   staffList.forEach(s => {
     const isSelected = bookingState.staff.id === s.id;
-    const cardBorder = isSelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md bg-[#FAF6F0]' : 'border-[#DCC3AA] bg-white';
-    const cardCheck = isSelected ? 'bg-[#810B38] text-white' : 'bg-gray-100 text-transparent';
+    
+    // Check real-time availability from currentDayAvailability
+    const staffAvail = currentDayAvailability?.staff?.find(x => x.id === s.id);
+    let isUnavailable = false;
+    let badgeHtml = '';
+    let reasonMessage = '';
+
+    if (staffAvail) {
+      if (!staffAvail.is_working_today) {
+        isUnavailable = true;
+        badgeHtml = `<span class="font-semibold text-amber-700 flex items-center gap-1"><i class="fa-solid fa-ban text-[10px] text-amber-600"></i> ${escapeHtml(staffAvail.schedule_today || 'Day Off')}</span>`;
+        reasonMessage = `${s.name} is off-duty / scheduled off on this date.`;
+      } else if (bookingState.time && (staffAvail.booked_display_times || []).includes(bookingState.time)) {
+        isUnavailable = true;
+        badgeHtml = `<span class="font-semibold text-rose-700 flex items-center gap-1"><i class="fa-solid fa-calendar-xmark text-[10px] text-rose-600"></i> Booked at ${escapeHtml(bookingState.time)}</span>`;
+        reasonMessage = `${s.name} is already booked for ${bookingState.time}. Please select another stylist or different time slot.`;
+      } else {
+        badgeHtml = `<span class="font-semibold text-emerald-700 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Available</span>`;
+      }
+    } else {
+      badgeHtml = `<span class="font-semibold text-emerald-700 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ${escapeHtml(s.availability || 'Available')}</span>`;
+    }
+
+    let cardClass = '';
+    let clickHandler = '';
+
+    if (isUnavailable) {
+      cardClass = 'staff-card p-4 rounded-2xl border-2 border-stone-200 bg-stone-50/80 opacity-60 shadow-xs cursor-not-allowed flex flex-col justify-between select-none';
+      clickHandler = `onclick="handleUnavailableStaffClick('${escapeHtml(reasonMessage || s.name + ' is unavailable for the chosen slot.')}')"`;
+    } else {
+      const cardBorder = isSelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md bg-[#FAF6F0]' : 'border-[#DCC3AA] bg-white';
+      cardClass = `staff-card p-4 rounded-2xl border-2 ${cardBorder} hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group`;
+      clickHandler = `onclick="selectStaff(${s.id}, '${escapeHtml(s.name)}', '${escapeHtml(s.role)}')"`;
+    }
+
+    const cardCheck = isSelected && !isUnavailable ? 'bg-[#810B38] text-white' : 'bg-gray-100 text-transparent';
 
     html += `
       <!-- Stylist Card: ${escapeHtml(s.name)} -->
-      <div onclick="selectStaff(${s.id}, '${escapeHtml(s.name)}', '${escapeHtml(s.role)}')"
+      <div ${clickHandler}
         id="staffCard-${s.id}"
-        class="staff-card p-4 rounded-2xl border-2 ${cardBorder} hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
+        class="${cardClass}"
+        title="${isUnavailable ? escapeHtml(reasonMessage) : ''}">
         <div>
           <div class="flex items-start justify-between mb-3">
             <div class="relative">
               <img src="${s.avatar}" alt="${escapeHtml(s.name)}"
                 onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
-                class="w-10 h-10 rounded-full border border-[#DCC3AA] object-cover shadow-sm">
+                class="w-10 h-10 rounded-full border border-[#DCC3AA] object-cover shadow-sm ${isUnavailable ? 'grayscale' : ''}">
               <div class="hidden w-10 h-10 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-xs border border-[#DCC3AA]">
                 ${escapeHtml(s.name.substring(0, 2).toUpperCase())}
               </div>
@@ -557,7 +593,7 @@ function renderBookingStaff(staffList) {
               <i class="fa-solid fa-check"></i>
             </span>
           </div>
-          <h4 class="font-serif text-lg font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors leading-tight">
+          <h4 class="font-serif text-lg font-bold text-[#541A1A] ${!isUnavailable ? 'group-hover:text-[#810B38]' : ''} transition-colors leading-tight">
             ${escapeHtml(s.name)}
           </h4>
           <p class="text-[11px] text-[#810B38] font-medium mt-0.5 truncate" title="${escapeHtml(s.role)}">
@@ -568,12 +604,11 @@ function renderBookingStaff(staffList) {
           </p>
         </div>
         <div class="mt-3 pt-2.5 border-t border-[#F1E2D1] flex items-center justify-between text-[11px]">
-          <span class="font-semibold text-emerald-700 flex items-center gap-1">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> ${escapeHtml(s.availability || 'Available')}
-          </span>
-          <span class="text-xs font-bold text-[#810B38] flex items-center gap-0.5">
-            Select <i class="fa-solid fa-arrow-right text-[9px]"></i>
-          </span>
+          ${badgeHtml}
+          ${isUnavailable 
+            ? '<span class="text-xs font-semibold text-stone-400 flex items-center gap-0.5"><i class="fa-solid fa-lock text-[9px]"></i> Busy</span>'
+            : '<span class="text-xs font-bold text-[#810B38] flex items-center gap-0.5">Select <i class="fa-solid fa-arrow-right text-[9px]"></i></span>'
+          }
         </div>
       </div>
     `;
@@ -582,10 +617,23 @@ function renderBookingStaff(staffList) {
   container.innerHTML = html;
 }
 
+function handleUnavailableStaffClick(message) {
+  showToast(message || 'This stylist is unavailable for the chosen time or date. Please select another stylist or different time slot.', 'warning');
+}
+
 function selectStaff(id, name, role) {
   const staffId = id ? parseInt(id) : null;
   const staffName = name || 'Any Available Stylist';
   const staffRole = role || 'Salon Team';
+
+  // If selecting a specific stylist, check if they are off-duty on this date
+  if (staffId && currentDayAvailability) {
+    const staffInfo = currentDayAvailability.staff?.find(x => x.id === staffId);
+    if (staffInfo && !staffInfo.is_working_today) {
+      showToast(`${staffName} is not scheduled to work on this day (${staffInfo.schedule_today || 'Day Off'}). Please choose another stylist or date.`, 'warning');
+      return;
+    }
+  }
 
   bookingState.staff = {
     id: staffId,
@@ -596,7 +644,9 @@ function selectStaff(id, name, role) {
   // Update card styling
   document.querySelectorAll('.staff-card').forEach(card => {
     card.classList.remove('border-[#810B38]', 'ring-2', 'ring-[#810B38]/30', 'shadow-md', 'bg-[#FAF6F0]');
-    card.classList.add('border-[#DCC3AA]', 'bg-white');
+    if (!card.classList.contains('cursor-not-allowed')) {
+      card.classList.add('border-[#DCC3AA]', 'bg-white');
+    }
   });
 
   document.querySelectorAll('[id^="staffCheck-"]').forEach(chk => {
@@ -607,7 +657,7 @@ function selectStaff(id, name, role) {
   const targetCheckId = staffId ? `staffCheck-${staffId}` : 'staffCheck-any';
 
   const activeCard = document.getElementById(targetCardId);
-  if (activeCard) {
+  if (activeCard && !activeCard.classList.contains('cursor-not-allowed')) {
     activeCard.classList.remove('border-[#DCC3AA]', 'bg-white');
     activeCard.classList.add('border-[#810B38]', 'ring-2', 'ring-[#810B38]/30', 'shadow-md', 'bg-[#FAF6F0]');
   }
@@ -623,6 +673,14 @@ function selectStaff(id, name, role) {
   }
 
   updateSummary();
+
+  // Re-render time slots to dynamically lock slots booked for this stylist
+  if (availableTimeSlots && availableTimeSlots.length > 0) {
+    renderTimeSlots(availableTimeSlots);
+  }
+
+  // Validate if the currently selected time slot is now invalid for this stylist
+  validateSelectedSlotAndStaff();
 }
 
 // 7. Category Filter Handler
@@ -775,8 +833,12 @@ async function fetchSlotAvailability(dateIso) {
     const res = await fetch(`../api/availability?date=${encodeURIComponent(dateIso)}`);
     if (res.ok) {
       const result = await res.json();
-      if (result.status === 'success' && Array.isArray(result.data?.slots)) {
-        renderTimeSlots(result.data.slots);
+      if (result.status === 'success' && result.data) {
+        currentDayAvailability = result.data;
+        availableTimeSlots = result.data.slots || [];
+        renderTimeSlots(availableTimeSlots);
+        renderBookingStaff(activeStaffList);
+        validateSelectedSlotAndStaff();
         return;
       }
     }
@@ -785,24 +847,51 @@ async function fetchSlotAvailability(dateIso) {
   }
 
   // Fallback slots
-  renderTimeSlots(defaultTimes.map(t => ({ display_time: t, is_available: true })));
+  availableTimeSlots = defaultTimes.map(t => ({ display_time: t, is_available: true }));
+  renderTimeSlots(availableTimeSlots);
+  renderBookingStaff(activeStaffList);
 }
 
 function renderTimeSlots(slots) {
   const container = document.getElementById('timeSlotsGrid');
   if (!container) return;
 
+  const selectedStaffId = bookingState.staff.id;
+  const staffInfo = selectedStaffId && currentDayAvailability?.staff ? currentDayAvailability.staff.find(x => x.id === selectedStaffId) : null;
+
   let html = '';
   slots.forEach(slot => {
     const timeDisplay = slot.display_time || slot.time || '';
-    const isAvail = slot.is_available !== false;
+    
+    let isSlotDisabled = false;
+    let lockReason = '';
+
+    if (selectedStaffId) {
+      if (staffInfo && !staffInfo.is_working_today) {
+        isSlotDisabled = true;
+        lockReason = `${bookingState.staff.name} is scheduled off on this day (${staffInfo.schedule_today || 'Day Off'})`;
+      } else if (slot.booked_staff_ids && slot.booked_staff_ids.includes(selectedStaffId)) {
+        isSlotDisabled = true;
+        lockReason = `${bookingState.staff.name} is already booked at ${timeDisplay}`;
+      } else if (slot.is_available === false && !slot.available_staff_ids?.includes(selectedStaffId)) {
+        isSlotDisabled = true;
+        lockReason = `${bookingState.staff.name} is unavailable at ${timeDisplay}`;
+      }
+    } else {
+      // Any Available Stylist
+      if (slot.is_available === false) {
+        isSlotDisabled = true;
+        lockReason = `All stylists are fully booked at ${timeDisplay}`;
+      }
+    }
+
     const isSelected = bookingState.time === timeDisplay;
 
-    if (!isAvail) {
+    if (isSlotDisabled) {
       html += `
         <button type="button" disabled 
-          class="time-btn py-3 px-3 rounded-xl bg-stone-100 text-stone-400 border border-stone-200 text-xs font-semibold cursor-not-allowed select-none flex items-center justify-center gap-1.5"
-          title="Slot Fully Booked">
+          class="time-btn py-3 px-3 rounded-xl bg-stone-100 text-stone-400 border border-stone-200 text-xs font-semibold cursor-not-allowed select-none flex items-center justify-center gap-1.5 line-through opacity-70"
+          title="${escapeHtml(lockReason || 'Slot unavailable')}">
           <span>${timeDisplay}</span>
           <i class="fa-solid fa-lock text-[10px]"></i>
         </button>
@@ -828,6 +917,8 @@ function renderTimeSlots(slots) {
 }
 
 function selectTime(timeStr, btn) {
+  if (btn && btn.disabled) return;
+
   bookingState.time = timeStr;
 
   document.querySelectorAll('.time-btn').forEach(b => {
@@ -844,6 +935,57 @@ function selectTime(timeStr, btn) {
   if (timeLabel) timeLabel.textContent = timeStr;
 
   updateSummary();
+
+  // Re-render staff cards so stylists booked at this new time slot are disabled
+  renderBookingStaff(activeStaffList);
+}
+
+function validateSelectedSlotAndStaff() {
+  if (!currentDayAvailability) return;
+
+  const selectedStaffId = bookingState.staff.id;
+  if (selectedStaffId) {
+    const staffInfo = currentDayAvailability.staff?.find(x => x.id === selectedStaffId);
+    if (staffInfo) {
+      if (!staffInfo.is_working_today) {
+        showToast(`${bookingState.staff.name} is scheduled off on ${bookingState.date}. Switched to Any Available Stylist.`, 'warning');
+        selectStaff(null, 'Any Available Stylist', 'Salon Team');
+        return;
+      }
+      if (bookingState.time && (staffInfo.booked_display_times || []).includes(bookingState.time)) {
+        // Find first available slot for this stylist
+        const freeSlot = availableTimeSlots.find(s => !s.booked_staff_ids || !s.booked_staff_ids.includes(selectedStaffId));
+        if (freeSlot) {
+          bookingState.time = freeSlot.display_time;
+          const timeLabel = document.getElementById('step2SelectedTimeLabel');
+          if (timeLabel) timeLabel.textContent = freeSlot.display_time;
+          updateSummary();
+          renderTimeSlots(availableTimeSlots);
+          renderBookingStaff(activeStaffList);
+          showToast(`${bookingState.staff.name} is booked at the previous time. Selected ${freeSlot.display_time} instead.`, 'info');
+        } else {
+          // No slots available for this stylist on this day
+          showToast(`No open slots for ${bookingState.staff.name} on this date. Switched to Any Available Stylist.`, 'warning');
+          selectStaff(null, 'Any Available Stylist', 'Salon Team');
+        }
+      }
+    }
+  } else {
+    // "Any Available": verify currently selected time slot is available
+    if (bookingState.time) {
+      const curSlot = availableTimeSlots.find(s => (s.display_time || s.time) === bookingState.time);
+      if (curSlot && curSlot.is_available === false) {
+        const freeSlot = availableTimeSlots.find(s => s.is_available !== false);
+        if (freeSlot) {
+          bookingState.time = freeSlot.display_time;
+          const timeLabel = document.getElementById('step2SelectedTimeLabel');
+          if (timeLabel) timeLabel.textContent = freeSlot.display_time;
+          updateSummary();
+          renderTimeSlots(availableTimeSlots);
+        }
+      }
+    }
+  }
 }
 
 // 10. Step 3: Visit Type Handler
@@ -983,9 +1125,22 @@ function goToStep(targetStep) {
       showToast('Please select a service before proceeding.', 'error');
       return;
     }
-    if (bookingState.step === 2 && (!bookingState.date || !bookingState.time)) {
-      showToast('Please select both a date and time slot.', 'error');
-      return;
+    if (bookingState.step === 2) {
+      if (!bookingState.date || !bookingState.time) {
+        showToast('Please select both a date and time slot.', 'error');
+        return;
+      }
+      if (bookingState.staff.id && currentDayAvailability) {
+        const staffInfo = currentDayAvailability.staff?.find(x => x.id === bookingState.staff.id);
+        if (staffInfo && !staffInfo.is_working_today) {
+          showToast(`${bookingState.staff.name} is scheduled off on ${bookingState.date}. Please select an available stylist or date.`, 'error');
+          return;
+        }
+        if (staffInfo && (staffInfo.booked_display_times || []).includes(bookingState.time)) {
+          showToast(`${bookingState.staff.name} is already booked at ${bookingState.time}. Please select a different time slot or stylist.`, 'error');
+          return;
+        }
+      }
     }
     if (bookingState.step === 3) {
       const name = document.getElementById('clientNameInput')?.value.trim();

@@ -612,7 +612,9 @@ function openQuickRebookModal(bookingId = null) {
   }
 }
 
-function updateRebookSlotAvailability() {
+let rebookAvailabilityCache = {};
+
+async function updateRebookSlotAvailability() {
   if (!currentRebookAppointment) return;
 
   const dateInput = document.getElementById('rebookDateInput');
@@ -631,14 +633,56 @@ function updateRebookSlotAvailability() {
     }
   }
 
+  let dayAvail = null;
+  if (selectedDate) {
+    if (rebookAvailabilityCache[selectedDate]) {
+      dayAvail = rebookAvailabilityCache[selectedDate];
+    } else {
+      try {
+        const res = await fetch(`../api/availability?date=${encodeURIComponent(selectedDate)}`);
+        if (res.ok) {
+          const json = await res.json();
+          if (json.status === 'success' && json.data) {
+            dayAvail = json.data;
+            rebookAvailabilityCache[selectedDate] = dayAvail;
+          }
+        }
+      } catch (err) {
+        console.warn('Rebook availability fetch notice:', err);
+      }
+    }
+  }
+
+  const staffId = currentRebookAppointment.staff_id ? parseInt(currentRebookAppointment.staff_id) : null;
+  const staffInfo = staffId && dayAvail?.staff ? dayAvail.staff.find(x => x.id === staffId) : null;
+
   document.querySelectorAll('.rebook-time-btn').forEach(b => {
     const slotTime = b.dataset.time || b.textContent.trim();
     const isExactSlot = isSameDate && isSameRebookSlot(selectedDate, slotTime, currentRebookAppointment.rawDate, currentRebookAppointment.rawTime || currentRebookAppointment.time);
+    
+    let isStaffBusy = false;
+    let busyReason = '';
 
-    if (isExactSlot) {
+    if (dayAvail) {
+      const slotInfo = (dayAvail.slots || []).find(s => (s.display_time || s.time) === slotTime);
+      if (staffId && staffInfo) {
+        if (!staffInfo.is_working_today) {
+          isStaffBusy = true;
+          busyReason = `${currentRebookAppointment.staff || 'Stylist'} is off-duty on this day`;
+        } else if (slotInfo && slotInfo.booked_staff_ids && slotInfo.booked_staff_ids.includes(staffId)) {
+          isStaffBusy = true;
+          busyReason = `${currentRebookAppointment.staff || 'Stylist'} is already booked at ${slotTime}`;
+        }
+      } else if (slotInfo && slotInfo.is_available === false) {
+        isStaffBusy = true;
+        busyReason = 'Slot fully booked';
+      }
+    }
+
+    if (isExactSlot || isStaffBusy) {
       b.disabled = true;
       b.className = 'rebook-time-btn py-2 px-3 rounded-xl border border-stone-200 bg-stone-100 text-stone-400 text-xs font-bold transition-all text-center cursor-not-allowed line-through opacity-60';
-      b.title = 'Original appointment slot (cannot rebook for the exact same slot)';
+      b.title = isExactSlot ? 'Original appointment slot (cannot rebook for the exact same slot)' : (busyReason || 'Slot unavailable');
       if (hiddenTime && hiddenTime.value === slotTime) {
         hiddenTime.value = '';
       }

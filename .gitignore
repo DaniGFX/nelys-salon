@@ -1,25 +1,10 @@
 # ==============================================================================
 # NELY'S SALON MANAGEMENT SYSTEM — .gitignore
-# Comprehensive Security, Privacy & Confidentiality Rules:
-# - Secrets, Environment Variables & API Keys
-# - Authentication Tokens, Certificates, Keystores & Private Keys
-# - Payment Gateway, SMS, Webhook & Mailer Secrets
-# - Database Dumps, Backups & Local Database Files
-# - Customer Data, Financial Reports, Receipts & Invoices
-# - User Uploads, Customer Attachments & Media Storage
-# - PHP Sessions, Cookies & Auth Caches
-# - Scratch, Audit, Simulation & Debugging Scripts
-# - Server Logs, Error Logs & Process IDs
-# - Local Server Configurations (XAMPP, Apache, PHP overrides)
-# - Dependencies & Package Manager Artifacts
-# - Build Caches, Temporary Files & Backups
-# - Cloud CLI State, Platform Metadata & Postman Environments
-# - IDEs, Code Editors, AI Assistant Metadata & OS Artifacts
-# - Archives, Compressed Backups & Database Client Caches
+# Comprehensive Security, Privacy & Confidentiality Rules
 # ==============================================================================
 
 # ==========================================
-# 1. Environment Variables & Secrets (CRITICAL)
+# 1. Environment Variables, Secrets & Configs
 # ==========================================
 .env
 .env.*
@@ -43,6 +28,10 @@ env.yaml
 env.yml
 .secrets
 .secrets.*
+secrets.*
+*.secrets
+
+# Whitelist safe environment example template only
 !/.env.example
 
 # Local server configurations & database overrides
@@ -55,7 +44,11 @@ server/config/env.local.php
 config.local.php
 database.local.php
 database.json
+database.ini
 db.json
+db.ini
+connections.json
+connection.json
 .htaccess.local
 .htaccess.bak
 web.config.local
@@ -76,7 +69,7 @@ docker-compose.*.local.yaml
 .docker/
 
 # ==========================================
-# 2. Authentication Tokens, Keys, Credentials & Certificates
+# 2. Authentication Tokens, Keys & Certificates
 # ==========================================
 *.token
 *.jwt
@@ -100,6 +93,7 @@ docker-compose.*.local.yaml
 *.pkcs8
 *.ppk
 *.ovpn
+*.rdp
 id_rsa*
 id_dsa*
 id_ecdsa*
@@ -155,22 +149,31 @@ certificates/
 .git-credentials
 
 # ==========================================
-# 3. Payment Gateway, SMS, Webhooks & Mailer Credentials
+# 3. Payment Gateways, SMS, Webhooks & APIs
 # ==========================================
 *paymongo*.json
 *gcash*.json
 *maya*.json
+*paymaya*.json
 *stripe*.json
 *paypal*.json
 *xendit*.json
 *dragonpay*.json
+*bdo*.json
+*bpi*.json
+*unionbank*.json
 *smtp*.json
 *mailer*.json
+*email*.json
+*mail*.json
 *twilio*.json
 *semaphore*.json
+*promotexter*.json
+*infobip*.json
 *sendgrid*.json
 *mailgun*.json
 *webhook_secret*
+*webhook*.json
 webhook-secrets.json
 *.postman_environment.json
 *thunder-client*.json
@@ -179,9 +182,8 @@ webhook-secrets.json
 *rest-client.env.json
 
 # ==========================================
-# 4. Database Dumps, Backups & Local DBs
+# 4. Database Dumps, Backups & Local DB Files
 # ==========================================
-# All database dump and data files across any directory
 *.sql
 *.dump
 *.sql.bak
@@ -215,14 +217,14 @@ webhook-secrets.json
 /dumps/
 /sql_backups/
 
-# Whitelist core database migrations and seed templates for deployment
+# Whitelist core database schema, seeds & migrations for deployment
 !server/db/schema.sql
 !server/db/seeds.sql
 !server/db/migrations/*.sql
 !server/db/migrations/**/*.sql
 
 # ==========================================
-# 5. Customer Data, Financial Exports, Receipts & Invoices
+# 5. Customer Data, Financial Reports & Exports
 # ==========================================
 /receipts/
 /invoices/
@@ -262,7 +264,7 @@ webhook-secrets.json
 *.doc
 *.rtf
 
-# Allow static assets and documentation
+# Allow legitimate static web assets & project documentation
 !assets/**
 !docs/**
 !public/**
@@ -280,7 +282,7 @@ session/
 tokens/
 
 # ==========================================
-# 7. User Uploads, Customer Attachments & Storage
+# 7. User Uploads, Customer Media & Storage
 # ==========================================
 /uploads/*
 !/uploads/.gitkeep
@@ -332,7 +334,7 @@ adminer-*.php
 *.diff
 
 # ==========================================
-# 9. Logs, PID, Core Dumps & Debugging Output
+# 9. Logs, PID, Profilers & Debug Output
 # ==========================================
 *.log
 error_log
@@ -341,6 +343,7 @@ php_error.log
 php-errors.log
 php_error_log
 xdebug.log
+cachegrind.out.*
 access_log
 access.log
 debug.log
@@ -359,7 +362,7 @@ pnpm-debug.log*
 core
 core.*
 
-# Test coverage & runner configs
+# Test coverage & runner artifacts
 coverage/
 .nyc_output/
 phpunit.xml
@@ -373,6 +376,7 @@ phpunit.xml
 *.history
 ConsoleHost_history.txt
 psreadline_history.txt
+.powershell_history
 
 # ==========================================
 # 10. Local Server (XAMPP / Apache / PHP) Overrides

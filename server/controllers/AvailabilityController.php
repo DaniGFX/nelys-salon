@@ -12,16 +12,14 @@ class AvailabilityController {
     public function slots(): void {
         $date = $_GET['date'] ?? date('Y-m-d');
         $serviceId = !empty($_GET['service_id']) ? (int)$_GET['service_id'] : null;
+        $staffId = !empty($_GET['staff_id']) ? (int)$_GET['staff_id'] : null;
 
         $validator = Validator::make(['date' => $date], ['date' => 'required|date']);
         if ($validator->fails()) {
             Response::error('Invalid date format.', 422, $validator->errors());
         }
 
-        $slots = AvailabilityService::getAvailableSlots($date, $serviceId);
-        Response::success([
-            'date'  => $date,
-            'slots' => $slots,
-        ]);
+        $data = AvailabilityService::getAvailabilityData($date, $serviceId, $staffId);
+        Response::success($data);
     }
 }
