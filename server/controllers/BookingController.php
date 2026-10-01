@@ -262,16 +262,19 @@ class BookingController {
 
         // Create alert notification for customer
         try {
-            NotificationService::create(
-                $customerId,
-                'Booking Received',
-                "Your appointment for {$service['name']} on {$bookingDate} at {$bookingTime} has been registered.",
-                $bookingId,
-                'email',
-                'customer'
-            );
+            Notification::create([
+                'user_id'        => $customerId,
+                'recipient_role' => 'customer',
+                'booking_id'     => $bookingId,
+                'category'       => 'appointments',
+                'title'          => 'Booking Received',
+                'message'        => "Your appointment for {$service['name']} on {$bookingDate} at {$bookingTime} has been registered (Ref: {$referenceNo}).",
+                'action_url'     => 'appointments.html',
+                'type'           => 'info',
+                'status'         => 'sent'
+            ]);
         } catch (Throwable $notifErr) {
-            error_log('[Nely\'s Salon] NotificationService error: ' . $notifErr->getMessage());
+            error_log('[Nely\'s Salon] Customer notification error on booking create: ' . $notifErr->getMessage());
         }
 
         // Also create notification entry for admin panel
@@ -406,14 +409,24 @@ class BookingController {
         Booking::updateStatus((int)$booking['id'], 'cancelled', $reason);
 
         // Notify customer
-        NotificationService::create(
-            (int)$booking['customer_id'],
-            'Appointment Cancelled',
-            "Your appointment Ref: {$booking['reference_no']} has been cancelled.",
-            (int)$booking['id'],
-            'email',
-            'customer'
-        );
+        if (!empty($booking['customer_id'])) {
+            try {
+                $reasonSuffix = ($reason && $reason !== 'Customer request') ? " Reason: {$reason}" : '';
+                Notification::create([
+                    'user_id'        => (int)$booking['customer_id'],
+                    'recipient_role' => 'customer',
+                    'booking_id'     => (int)$booking['id'],
+                    'category'       => 'appointments',
+                    'title'          => 'Appointment Cancelled',
+                    'message'        => "Your appointment for {$booking['service_name']} (Ref: {$booking['reference_no']}) has been cancelled.{$reasonSuffix}",
+                    'action_url'     => 'appointments.html',
+                    'type'           => 'warning',
+                    'status'         => 'sent'
+                ]);
+            } catch (Throwable $e) {
+                error_log('[Nely\'s Salon] Customer notification error on cancel: ' . $e->getMessage());
+            }
+        }
 
         // If cancelled by customer, notify the admin panel
         if ($auth['role'] !== 'admin') {
@@ -460,16 +473,50 @@ class BookingController {
         $status = $input['status'];
         Booking::updateStatus($id, $status, $input['reason'] ?? null);
 
-        // Notify customer when admin approves/confirms booking
-        if ($status === 'confirmed' && !empty($booking['customer_id'])) {
-            NotificationService::create(
-                (int)$booking['customer_id'],
-                'Appointment Confirmed',
-                "Your appointment for {$booking['service_name']} on {$booking['booking_date']} has been approved and confirmed by our salon team!",
-                (int)$booking['id'],
-                'email',
-                'customer'
-            );
+        // Notify customer on status update
+        if (!empty($booking['customer_id'])) {
+            try {
+                if ($status === 'confirmed') {
+                    Notification::create([
+                        'user_id'        => (int)$booking['customer_id'],
+                        'recipient_role' => 'customer',
+                        'booking_id'     => (int)$booking['id'],
+                        'category'       => 'appointments',
+                        'title'          => 'Appointment Confirmed',
+                        'message'        => "Your appointment for {$booking['service_name']} on {$booking['booking_date']} has been approved and confirmed by our salon team!",
+                        'action_url'     => 'appointments.html',
+                        'type'           => 'success',
+                        'status'         => 'sent'
+                    ]);
+                } elseif ($status === 'completed') {
+                    Notification::create([
+                        'user_id'        => (int)$booking['customer_id'],
+                        'recipient_role' => 'customer',
+                        'booking_id'     => (int)$booking['id'],
+                        'category'       => 'appointments',
+                        'title'          => 'Service Completed',
+                        'message'        => "Thank you for visiting Nely's Salon! Your session for {$booking['service_name']} on {$booking['booking_date']} has been completed.",
+                        'action_url'     => 'appointments.html',
+                        'type'           => 'success',
+                        'status'         => 'sent'
+                    ]);
+                } elseif ($status === 'cancelled') {
+                    $reasonTxt = !empty($input['reason']) ? " Reason: {$input['reason']}" : '';
+                    Notification::create([
+                        'user_id'        => (int)$booking['customer_id'],
+                        'recipient_role' => 'customer',
+                        'booking_id'     => (int)$booking['id'],
+                        'category'       => 'appointments',
+                        'title'          => 'Appointment Cancelled',
+                        'message'        => "Your appointment for {$booking['service_name']} on {$booking['booking_date']} (Ref: {$booking['reference_no']}) has been cancelled.{$reasonTxt}",
+                        'action_url'     => 'appointments.html',
+                        'type'           => 'warning',
+                        'status'         => 'sent'
+                    ]);
+                }
+            } catch (Throwable $e) {
+                error_log('[Nely\'s Salon] Notification error on updateStatus: ' . $e->getMessage());
+            }
         }
 
         // If completed, record to sales ledger if not already recorded
@@ -553,6 +600,30 @@ class BookingController {
         if (!empty($input['payment_status'])) {
             $pdo->prepare("UPDATE payments SET status = :pst WHERE booking_id = :bid")
                 ->execute(['pst' => strtolower($input['payment_status']), 'bid' => $id]);
+        }
+
+        // Customer notification if rescheduled
+        if (!empty($booking['customer_id'])) {
+            try {
+                $dateChanged = ($targetDate !== $booking['booking_date']);
+                $timeChanged = ($targetTime !== $booking['booking_time']);
+                if ($dateChanged || $timeChanged) {
+                    $timeFmt = date('g:i A', strtotime($targetTime));
+                    Notification::create([
+                        'user_id'        => (int)$booking['customer_id'],
+                        'recipient_role' => 'customer',
+                        'booking_id'     => (int)$booking['id'],
+                        'category'       => 'appointments',
+                        'title'          => 'Appointment Rescheduled',
+                        'message'        => "Your appointment for {$booking['service_name']} (Ref: {$booking['reference_no']}) has been rescheduled to {$targetDate} at {$timeFmt}.",
+                        'action_url'     => 'appointments.html',
+                        'type'           => 'info',
+                        'status'         => 'sent'
+                    ]);
+                }
+            } catch (Throwable $e) {
+                error_log('[Nely\'s Salon] Notification error on update: ' . $e->getMessage());
+            }
         }
 
         // If marked completed, record to sales ledger if not already recorded

@@ -161,6 +161,12 @@ class Notification {
         return (bool)$pdo->exec("UPDATE notifications SET is_read = 1 WHERE (is_read = 0 OR is_read IS NULL) AND (recipient_role = 'admin' OR recipient_role IS NULL)");
     }
 
+    public static function markAllReadForUser(int $userId): bool {
+        $pdo = Database::getConnection();
+        $stmt = $pdo->prepare("UPDATE notifications SET is_read = 1 WHERE user_id = :uid AND (recipient_role = 'customer' OR recipient_role IS NULL)");
+        return $stmt->execute(['uid' => $userId]);
+    }
+
     public static function delete(int $id): bool {
         $pdo = Database::getConnection();
         $stmt = $pdo->prepare("DELETE FROM notifications WHERE id = :id");

@@ -49,6 +49,11 @@ db.json
 db.ini
 connections.json
 connection.json
+*.local.json
+*.local.xml
+*.local.yaml
+*.local.yml
+*.local.env
 .htaccess.local
 .htaccess.bak
 web.config.local
@@ -58,6 +63,7 @@ vhosts.conf.local
 my.ini
 my.cnf
 *.cnf
+*.conf.local
 
 # Container & Docker overrides
 docker-compose.override.yml
@@ -87,13 +93,22 @@ docker-compose.*.local.yaml
 *.der
 *.csr
 *.kdbx
+*.kdb
 *.jks
 *.keystore
 *.keypair
 *.pkcs8
 *.ppk
 *.ovpn
+*.wireguard
 *.rdp
+*.pgp
+*.gpg
+*.asc
+*.sig
+*.age
+private_key*
+public_key*
 id_rsa*
 id_dsa*
 id_ecdsa*
@@ -187,8 +202,13 @@ webhook-secrets.json
 *rest-client.env.json
 *rest-client.private.env.json
 *gcash-receipt*
+*gcash_receipt*
 *proof_of_payment*
 *proof-of-payment*
+*proof*payment*
+*payment_proof*
+*proof_of_transfer*
+*bank_transfer_receipt*
 *receipt_upload*
 *.dmp
 *.stackdump
@@ -205,6 +225,7 @@ webhook-secrets.json
 *.sql.tar
 *.sql.zip
 *.sql.7z
+*.sql.enc
 *.sqlite
 *.sqlite3
 *.sqlite-journal
@@ -319,6 +340,10 @@ test_*.php
 test_*.js
 test-*.php
 test-*.js
+verify_*.php
+verify_*.js
+verify-*.php
+verify-*.js
 debug_*.php
 debug_*.js
 debug-*.php

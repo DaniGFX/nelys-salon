@@ -82,14 +82,17 @@ class PaymentController {
         $id = Payment::create($input);
         $created = Payment::findByIdWithDetails($id);
 
-        // Notify admin panel of payment entry
+        // Notify admin panel and customer of payment entry
         try {
             $amountFormatted = number_format((float)($created['amount'] ?? 0), 2);
             $payMethod = $created['payment_method'] ?? 'Cash';
             $custName = $created['customer_name'] ?? 'Walk-in Patron';
+            
+            // Admin notification
             Notification::create([
                 'user_id'        => !empty($created['customer_id']) ? (int)$created['customer_id'] : null,
                 'recipient_role' => 'admin',
+                'booking_id'     => !empty($created['booking_id']) ? (int)$created['booking_id'] : null,
                 'category'       => 'payments',
                 'title'          => 'Payment Recorded',
                 'message'        => "Payment of ₱{$amountFormatted} ({$payMethod}) recorded for {$custName}.",
@@ -97,8 +100,23 @@ class PaymentController {
                 'type'           => 'success',
                 'status'         => 'sent'
             ]);
+
+            // Customer notification
+            if (!empty($created['customer_id'])) {
+                Notification::create([
+                    'user_id'        => (int)$created['customer_id'],
+                    'recipient_role' => 'customer',
+                    'booking_id'     => !empty($created['booking_id']) ? (int)$created['booking_id'] : null,
+                    'category'       => 'payments',
+                    'title'          => 'Payment Received',
+                    'message'        => "We have received your payment of ₱{$amountFormatted} via {$payMethod} (Status: " . ucfirst($created['status'] ?? 'pending') . ").",
+                    'action_url'     => 'appointments.html',
+                    'type'           => 'success',
+                    'status'         => 'sent'
+                ]);
+            }
         } catch (Throwable $e) {
-            error_log('[Nely\'s Salon] Admin notification error on payment store: ' . $e->getMessage());
+            error_log('[Nely\'s Salon] Notification error on payment store: ' . $e->getMessage());
         }
 
         Response::success($created, 'Payment recorded successfully.', 201);
@@ -117,6 +135,26 @@ class PaymentController {
 
         Payment::update($id, $input);
         $updated = Payment::findByIdWithDetails($id);
+
+        if (!empty($updated['customer_id']) && ($input['status'] ?? '') === 'paid') {
+            try {
+                $amountFormatted = number_format((float)($updated['amount'] ?? 0), 2);
+                Notification::create([
+                    'user_id'        => (int)$updated['customer_id'],
+                    'recipient_role' => 'customer',
+                    'booking_id'     => !empty($updated['booking_id']) ? (int)$updated['booking_id'] : null,
+                    'category'       => 'payments',
+                    'title'          => 'Payment Verified',
+                    'message'        => "Your payment of ₱{$amountFormatted} has been verified and marked as Paid.",
+                    'action_url'     => 'appointments.html',
+                    'type'           => 'success',
+                    'status'         => 'sent'
+                ]);
+            } catch (Throwable $e) {
+                error_log('[Nely\'s Salon] Notification error on payment update: ' . $e->getMessage());
+            }
+        }
+
         Response::success($updated, 'Payment updated successfully.');
     }
 
@@ -130,6 +168,26 @@ class PaymentController {
 
         Payment::refund($id);
         $updated = Payment::findByIdWithDetails($id);
+
+        if (!empty($updated['customer_id'])) {
+            try {
+                $amountFormatted = number_format((float)($updated['amount'] ?? 0), 2);
+                Notification::create([
+                    'user_id'        => (int)$updated['customer_id'],
+                    'recipient_role' => 'customer',
+                    'booking_id'     => !empty($updated['booking_id']) ? (int)$updated['booking_id'] : null,
+                    'category'       => 'payments',
+                    'title'          => 'Payment Refunded',
+                    'message'        => "A refund of ₱{$amountFormatted} has been processed for your transaction.",
+                    'action_url'     => 'appointments.html',
+                    'type'           => 'warning',
+                    'status'         => 'sent'
+                ]);
+            } catch (Throwable $e) {
+                error_log('[Nely\'s Salon] Notification error on payment refund: ' . $e->getMessage());
+            }
+        }
+
         Response::success($updated, 'Payment marked as refunded.');
     }
 }

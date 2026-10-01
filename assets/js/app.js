@@ -328,6 +328,334 @@ function updateBookingPriceSummary() {
   }
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Landing Page Staff & Availability State
+let landingActiveStaffList = [];
+let landingSelectedStaff = {
+  id: null,
+  name: 'Any Available Stylist',
+  role: 'Salon Team'
+};
+let landingSelectedTime = '13:00';
+let landingAvailabilityData = null;
+
+const LANDING_TIME_SLOTS = [
+  { value: '09:00', timeDb: '09:00:00', label: '09:00 AM' },
+  { value: '10:00', timeDb: '10:00:00', label: '10:00 AM' },
+  { value: '11:00', timeDb: '11:00:00', label: '11:00 AM' },
+  { value: '13:00', timeDb: '13:00:00', label: '01:00 PM' },
+  { value: '14:00', timeDb: '14:00:00', label: '02:00 PM' },
+  { value: '15:00', timeDb: '15:00:00', label: '03:00 PM' },
+  { value: '16:00', timeDb: '16:00:00', label: '04:00 PM' },
+  { value: '17:00', timeDb: '17:00:00', label: '05:00 PM' },
+  { value: '18:00', timeDb: '18:00:00', label: '06:00 PM' }
+];
+
+async function loadLandingStaff() {
+  try {
+    const res = await fetch('api/staff');
+    if (res.ok) {
+      const json = await res.json();
+      let staffData = [];
+      if (json.data) {
+        if (Array.isArray(json.data.staff)) {
+          staffData = json.data.staff;
+        } else if (Array.isArray(json.data)) {
+          staffData = json.data;
+        }
+      }
+      if (staffData.length > 0) {
+        const active = staffData.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true || s.status === 'Active');
+        landingActiveStaffList = active.map(mapLandingStaffItem);
+      }
+    }
+  } catch (err) {
+    console.warn('Landing staff fetch notice:', err);
+  }
+  renderLandingStaffCards();
+}
+
+function mapLandingStaffItem(item) {
+  let avatarUrl = 'assets/images/logo.jfif';
+  if (item.avatar) {
+    if (item.avatar.includes('/') || item.avatar.startsWith('http') || item.avatar.startsWith('data:')) {
+      avatarUrl = item.avatar;
+    } else if (item.avatar === 'director.jpg' || item.avatar === 'sculptor.jpg' || item.avatar === 'spa-specialist.jpg') {
+      avatarUrl = `assets/images/team/${item.avatar}`;
+    } else {
+      avatarUrl = `assets/images/${item.avatar}`;
+    }
+  }
+
+  return {
+    id: parseInt(item.id),
+    name: item.name || 'Stylist',
+    role: item.role || item.position || 'Stylist & Specialist',
+    avatar: avatarUrl,
+    specialties: item.specialties || '',
+    availability: item.availability || 'Available',
+    status: item.status || 'Active'
+  };
+}
+
+function renderLandingStaffCards() {
+  const container = document.getElementById('modalStaffSelectionGrid');
+  if (!container) return;
+
+  const isAnySelected = !landingSelectedStaff.id;
+  const anyBorder = isAnySelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md bg-[#FAF6F0]' : 'border-[#DCC3AA] bg-white';
+  const anyCheck = isAnySelected ? 'bg-[#810B38] text-white' : 'bg-gray-100 text-transparent';
+
+  let html = `
+    <!-- Option 0: Any Available Stylist -->
+    <div onclick="selectLandingStaff(null, 'Any Available Stylist', 'Salon Team')"
+      id="modalStaffCard-any"
+      class="landing-staff-card p-3.5 rounded-2xl border-2 ${anyBorder} hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
+      <div>
+        <div class="flex items-start justify-between mb-2">
+          <div class="w-9 h-9 rounded-full bg-[#810B38] text-white flex items-center justify-center text-xs shadow-sm border border-[#DCC3AA]">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+          <span id="modalStaffCheck-any" class="w-5 h-5 rounded-full ${anyCheck} flex items-center justify-center text-[10px] transition-colors">
+            <i class="fa-solid fa-check"></i>
+          </span>
+        </div>
+        <h4 class="font-serif text-base font-bold text-[#541A1A] group-hover:text-[#810B38] transition-colors leading-tight">
+          Any Available
+        </h4>
+        <p class="text-[11px] text-[#810B38] font-bold mt-0.5">
+          Fastest Confirmation
+        </p>
+        <p class="text-[10px] text-[#735e5e] mt-1 line-clamp-2">
+          Match with the best available specialist for your chosen slot.
+        </p>
+      </div>
+      <div class="mt-2.5 pt-2 border-t border-[#F1E2D1] flex items-center justify-between text-[10px]">
+        <span class="font-semibold text-emerald-700 flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Recommended
+        </span>
+        <span class="font-bold text-[#810B38] flex items-center gap-0.5">
+          Select <i class="fa-solid fa-arrow-right text-[8px]"></i>
+        </span>
+      </div>
+    </div>
+  `;
+
+  landingActiveStaffList.forEach(s => {
+    const isSelected = landingSelectedStaff.id === s.id;
+    const staffAvail = landingAvailabilityData?.staff?.find(x => x.id === s.id);
+    let isUnavailable = false;
+    let badgeHtml = '';
+    let reasonMessage = '';
+
+    if (staffAvail) {
+      if (!staffAvail.is_working_today) {
+        isUnavailable = true;
+        badgeHtml = `<span class="font-semibold text-amber-700 flex items-center gap-1"><i class="fa-solid fa-ban text-[10px] text-amber-600"></i> ${escapeHtml(staffAvail.schedule_today || 'Day Off')}</span>`;
+        reasonMessage = `${s.name} is off-duty / scheduled off on this date.`;
+      } else {
+        const selectedSlotDb = LANDING_TIME_SLOTS.find(slot => slot.value === landingSelectedTime)?.timeDb || '13:00:00';
+        const isSlotBooked = (staffAvail.booked_times || []).includes(selectedSlotDb) || (staffAvail.booked_display_times || []).includes(landingSelectedTime);
+        if (isSlotBooked) {
+          isUnavailable = true;
+          badgeHtml = `<span class="font-semibold text-rose-700 flex items-center gap-1"><i class="fa-solid fa-calendar-xmark text-[10px] text-rose-600"></i> Booked</span>`;
+          reasonMessage = `${s.name} is already booked for this slot. Please select another stylist or slot.`;
+        } else {
+          badgeHtml = `<span class="font-semibold text-emerald-700 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Available</span>`;
+        }
+      }
+    } else {
+      badgeHtml = `<span class="font-semibold text-emerald-700 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Available</span>`;
+    }
+
+    let cardClass = '';
+    let clickHandler = '';
+
+    if (isUnavailable) {
+      cardClass = 'landing-staff-card p-3.5 rounded-2xl border-2 border-stone-200 bg-stone-50/80 opacity-60 shadow-xs cursor-not-allowed flex flex-col justify-between select-none';
+      clickHandler = `onclick="handleUnavailableStaffClick('${escapeHtml(reasonMessage)}')"` ;
+    } else {
+      const cardBorder = isSelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md bg-[#FAF6F0]' : 'border-[#DCC3AA] bg-white';
+      cardClass = `landing-staff-card p-3.5 rounded-2xl border-2 ${cardBorder} hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group`;
+      clickHandler = `onclick="selectLandingStaff(${s.id}, '${escapeHtml(s.name)}', '${escapeHtml(s.role)}')"` ;
+    }
+
+    const cardCheck = isSelected && !isUnavailable ? 'bg-[#810B38] text-white' : 'bg-gray-100 text-transparent';
+
+    html += `
+      <!-- Stylist Card: ${escapeHtml(s.name)} -->
+      <div ${clickHandler}
+        id="modalStaffCard-${s.id}"
+        class="${cardClass}"
+        title="${isUnavailable ? escapeHtml(reasonMessage) : ''}">
+        <div>
+          <div class="flex items-start justify-between mb-2">
+            <div class="relative">
+              <img src="${s.avatar}" alt="${escapeHtml(s.name)}"
+                onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');"
+                class="w-9 h-9 rounded-full border border-[#DCC3AA] object-cover shadow-sm ${isUnavailable ? 'grayscale' : ''}">
+              <div class="hidden w-9 h-9 rounded-full bg-[#810B38] text-white flex items-center justify-center font-bold text-xs border border-[#DCC3AA]">
+                ${escapeHtml(s.name.substring(0, 2).toUpperCase())}
+              </div>
+            </div>
+            <span id="modalStaffCheck-${s.id}" class="w-5 h-5 rounded-full ${cardCheck} flex items-center justify-center text-[10px] transition-colors">
+              <i class="fa-solid fa-check"></i>
+            </span>
+          </div>
+          <h4 class="font-serif text-base font-bold text-[#541A1A] ${!isUnavailable ? 'group-hover:text-[#810B38]' : ''} transition-colors leading-tight">
+            ${escapeHtml(s.name)}
+          </h4>
+          <p class="text-[11px] text-[#810B38] font-medium mt-0.5 truncate" title="${escapeHtml(s.role)}">
+            ${escapeHtml(s.role)}
+          </p>
+          <p class="text-[10px] text-[#735e5e] mt-1 line-clamp-2">
+            ${escapeHtml(s.specialties || 'Dedicated salon beauty & styling specialist.')}
+          </p>
+        </div>
+        <div class="mt-2.5 pt-2 border-t border-[#F1E2D1] flex items-center justify-between text-[10px]">
+          ${badgeHtml}
+          ${isUnavailable 
+            ? '<span class="font-semibold text-stone-400 flex items-center gap-0.5"><i class="fa-solid fa-lock text-[8px]"></i> Busy</span>'
+            : '<span class="font-bold text-[#810B38] flex items-center gap-0.5">Select <i class="fa-solid fa-arrow-right text-[8px]"></i></span>'
+          }
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+window.handleUnavailableStaffClick = function(message) {
+  showToast(message || 'This stylist is unavailable for the selected slot. Please select another stylist or slot.', 'warning');
+};
+
+window.selectLandingStaff = function(id, name, role) {
+  const staffId = id ? parseInt(id) : null;
+  const staffName = name || 'Any Available Stylist';
+  const staffRole = role || 'Salon Team';
+
+  if (staffId && landingAvailabilityData) {
+    const staffInfo = landingAvailabilityData.staff?.find(x => x.id === staffId);
+    if (staffInfo && !staffInfo.is_working_today) {
+      showToast(`${staffName} is off-duty on this date (${staffInfo.schedule_today || 'Day Off'}). Please choose another stylist or date.`, 'warning');
+      return;
+    }
+  }
+
+  landingSelectedStaff = {
+    id: staffId,
+    name: staffName,
+    role: staffRole
+  };
+
+  const hiddenInput = document.getElementById('bookingStaffId');
+  if (hiddenInput) hiddenInput.value = staffId || '';
+
+  renderLandingStaffCards();
+  renderLandingTimeSlots();
+};
+
+async function loadLandingAvailability(dateIso) {
+  if (!dateIso) return;
+  try {
+    const res = await fetch(`api/availability?date=${dateIso}`);
+    if (res.ok) {
+      const json = await res.json();
+      if ((json.status === 'success' || json.success) && json.data) {
+        landingAvailabilityData = json.data;
+      }
+    }
+  } catch (err) {
+    console.warn('Availability fetch notice:', err);
+  }
+  renderLandingStaffCards();
+  renderLandingTimeSlots();
+}
+
+function renderLandingTimeSlots() {
+  const container = document.getElementById('modalTimeSlotsGrid');
+  if (!container) return;
+
+  const staffId = landingSelectedStaff.id;
+  const staffAvail = staffId && landingAvailabilityData?.staff?.find(x => x.id === staffId);
+
+  let html = '';
+
+  LANDING_TIME_SLOTS.forEach(slot => {
+    let isBooked = false;
+    let disabledReason = '';
+
+    if (staffId && staffAvail) {
+      if (!staffAvail.is_working_today) {
+        isBooked = true;
+        disabledReason = 'Stylist off-duty';
+      } else if ((staffAvail.booked_times || []).includes(slot.timeDb) || (staffAvail.booked_display_times || []).includes(slot.value)) {
+        isBooked = true;
+        disabledReason = 'Stylist booked';
+      }
+    } else if (!staffId && landingAvailabilityData?.slots) {
+      const slotInfo = landingAvailabilityData.slots.find(s => s.time === slot.timeDb);
+      if (slotInfo && slotInfo.is_available === false) {
+        isBooked = true;
+        disabledReason = 'All stylists booked';
+      }
+    }
+
+    const isSelected = (landingSelectedTime === slot.value) && !isBooked;
+
+    if (isBooked) {
+      html += `
+        <button type="button" disabled
+          title="${escapeHtml(disabledReason)}"
+          class="py-2.5 px-2 rounded-xl bg-stone-100 border border-stone-200 text-stone-400 text-xs font-semibold cursor-not-allowed opacity-60 text-center select-none flex flex-col items-center justify-center">
+          <span class="line-through">${slot.label}</span>
+          <span class="text-[9px] text-stone-400 font-normal">Booked</span>
+        </button>
+      `;
+    } else if (isSelected) {
+      html += `
+        <button type="button" onclick="selectLandingTime('${slot.value}', '${slot.label}')"
+          class="py-2.5 px-2 rounded-xl bg-[#810B38] border-2 border-[#810B38] text-white text-xs font-bold shadow-md text-center transition-all flex flex-col items-center justify-center">
+          <span>${slot.label}</span>
+          <span class="text-[9px] text-[#F1E2D1] font-semibold">Selected</span>
+        </button>
+      `;
+    } else {
+      html += `
+        <button type="button" onclick="selectLandingTime('${slot.value}', '${slot.label}')"
+          class="py-2.5 px-2 rounded-xl bg-white border border-[#DCC3AA] hover:border-[#810B38] hover:bg-[#FAF6F0] text-[#2b1d1d] text-xs font-semibold text-center transition-all flex flex-col items-center justify-center">
+          <span>${slot.label}</span>
+          <span class="text-[9px] text-emerald-700 font-medium">Available</span>
+        </button>
+      `;
+    }
+  });
+
+  container.innerHTML = html;
+}
+
+window.selectLandingTime = function(timeVal, label) {
+  landingSelectedTime = timeVal;
+  const timeInput = document.getElementById('bookingTime');
+  if (timeInput) timeInput.value = timeVal;
+
+  const labelEl = document.getElementById('modalSelectedTimeLabel');
+  if (labelEl) labelEl.textContent = label || timeVal;
+
+  renderLandingTimeSlots();
+  renderLandingStaffCards();
+};
+
 // Open Booking Modal with optional preselected service
 window.openBookingModal = function(serviceId = '', preferredType = '') {
   const modal = document.getElementById('bookingModal');
@@ -346,12 +674,21 @@ window.openBookingModal = function(serviceId = '', preferredType = '') {
 
   // Set min date to today
   const dateInput = document.getElementById('bookingDate');
+  const today = new Date().toISOString().split('T')[0];
   if (dateInput) {
-    const today = new Date().toISOString().split('T')[0];
     dateInput.min = today;
     if (!dateInput.value) {
       dateInput.value = today;
     }
+  }
+
+  const activeDate = dateInput ? dateInput.value : today;
+  if (landingActiveStaffList.length === 0) {
+    loadLandingStaff().then(() => {
+      loadLandingAvailability(activeDate);
+    });
+  } else {
+    loadLandingAvailability(activeDate);
   }
 
   // Reset form views if confirmation was shown
@@ -606,6 +943,17 @@ function initBookingForm() {
   // Service select change
   document.getElementById('bookingServiceSelect')?.addEventListener('change', updateBookingPriceSummary);
 
+  // Date select change -> reload real-time availability
+  const dateInput = document.getElementById('bookingDate');
+  if (dateInput) {
+    dateInput.addEventListener('change', (e) => {
+      loadLandingAvailability(e.target.value);
+    });
+    dateInput.addEventListener('input', (e) => {
+      loadLandingAvailability(e.target.value);
+    });
+  }
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -623,7 +971,7 @@ function initBookingForm() {
     const phone = document.getElementById('bookingPhone')?.value.trim();
     const email = document.getElementById('bookingEmail')?.value.trim();
     const date = document.getElementById('bookingDate')?.value;
-    const time = document.getElementById('bookingTime')?.value;
+    const time = document.getElementById('bookingTime')?.value || landingSelectedTime || '13:00';
     const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'Cash';
     const address = serviceType === 'home-service' 
       ? document.getElementById('bookingAddress')?.value.trim() 
@@ -650,6 +998,7 @@ function initBookingForm() {
         headers,
         body: JSON.stringify({
           service_id: selectedService.id,
+          staff_id: landingSelectedStaff.id || null,
           booking_date: date,
           booking_time: time,
           visit_type: serviceType === 'home-service' ? 'home' : 'salon',
@@ -685,6 +1034,8 @@ function initBookingForm() {
         email,
         serviceId: selectedService.id,
         serviceName: selectedService.name,
+        staffId: landingSelectedStaff.id || null,
+        staffName: landingSelectedStaff.name || 'Any Available Stylist',
         price: totalPrice,
         serviceType,
         date,
@@ -707,6 +1058,8 @@ function initBookingForm() {
         successSection.classList.remove('hidden');
         document.getElementById('confirmRefCode').textContent = referenceCode;
         document.getElementById('confirmService').textContent = selectedService.name;
+        const confirmStaffEl = document.getElementById('confirmStaff');
+        if (confirmStaffEl) confirmStaffEl.textContent = landingSelectedStaff.name || 'Any Available Stylist';
         document.getElementById('confirmDateTime').textContent = `${date} at ${time}`;
         document.getElementById('confirmType').textContent = serviceType === 'home-service' ? 'Home Service' : 'Salon Visit (Lagro QC)';
         document.getElementById('confirmAmount').textContent = selectedService.id === 'rebonding' 
@@ -717,6 +1070,17 @@ function initBookingForm() {
 
       showToast(`Appointment confirmed! Reference ID: ${referenceCode}`, 'success');
       form.reset();
+
+      // Reset staff selection state
+      landingSelectedStaff = {
+        id: null,
+        name: 'Any Available Stylist',
+        role: 'Salon Team'
+      };
+      const hiddenStaff = document.getElementById('bookingStaffId');
+      if (hiddenStaff) hiddenStaff.value = '';
+      renderLandingStaffCards();
+      renderLandingTimeSlots();
 
     } catch (err) {
       console.error('Homepage booking error:', err);
@@ -780,6 +1144,7 @@ function initDialogBackdropDismiss() {
 document.addEventListener('DOMContentLoaded', () => {
   renderServices('all');
   initServiceFilters();
+  loadLandingStaff();
   initBookingForm();
   initMobileMenu();
   initDialogBackdropDismiss();

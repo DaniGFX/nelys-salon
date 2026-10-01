@@ -81,7 +81,15 @@ class NotificationController {
     }
 
     public function markRead(int $id): void {
-        RoleMiddleware::requireAdmin();
+        $auth = AuthMiddleware::check();
+        $notif = Notification::findById($id);
+        if (!$notif) {
+            Response::notFound('Notification not found.');
+        }
+
+        if ($auth['role'] !== 'admin' && (int)$notif['user_id'] !== (int)$auth['id']) {
+            Response::forbidden('Access denied.');
+        }
 
         $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
         $isRead = isset($input['is_read']) ? (bool)$input['is_read'] : true;
@@ -93,11 +101,14 @@ class NotificationController {
     }
 
     public function toggleRead(int $id): void {
-        RoleMiddleware::requireAdmin();
-
+        $auth = AuthMiddleware::check();
         $notif = Notification::findById($id);
         if (!$notif) {
             Response::notFound('Notification not found.');
+        }
+
+        if ($auth['role'] !== 'admin' && (int)$notif['user_id'] !== (int)$auth['id']) {
+            Response::forbidden('Access denied.');
         }
 
         $newRead = empty($notif['is_read']);
@@ -108,16 +119,28 @@ class NotificationController {
     }
 
     public function markAllRead(): void {
-        RoleMiddleware::requireAdmin();
-
-        Notification::markAllRead();
-        $metrics = Notification::getSummaryMetrics();
-
-        Response::success($metrics, 'All notifications marked as read.');
+        $auth = AuthMiddleware::check();
+        if ($auth['role'] === 'admin') {
+            Notification::markAllRead();
+            $metrics = Notification::getSummaryMetrics();
+            Response::success($metrics, 'All notifications marked as read.');
+        } else {
+            $userId = (int)$auth['id'];
+            Notification::markAllReadForUser($userId);
+            Response::success(null, 'All notifications marked as read.');
+        }
     }
 
     public function destroy(int $id): void {
-        RoleMiddleware::requireAdmin();
+        $auth = AuthMiddleware::check();
+        $notif = Notification::findById($id);
+        if (!$notif) {
+            Response::notFound('Notification not found.');
+        }
+
+        if ($auth['role'] !== 'admin' && (int)$notif['user_id'] !== (int)$auth['id']) {
+            Response::forbidden('Access denied.');
+        }
 
         Notification::delete($id);
         Response::success(null, 'Notification deleted successfully.');

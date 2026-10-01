@@ -598,7 +598,7 @@ function renderFeaturedServices(services) {
   container.innerHTML = html;
 }
 
-// 9. Load Notifications from Backend API & Bookings
+// 9. Load Notifications from Backend API
 async function loadDashboardNotifications() {
   const token = localStorage.getItem('nelys_token');
   const headers = {
@@ -618,36 +618,6 @@ async function loadDashboardNotifications() {
     }
   } catch (e) {
     console.warn('Notice loading notifications:', e);
-  }
-
-  // Complement with recent booking notifications if available
-  if (customerBookings && customerBookings.length > 0) {
-    customerBookings.slice(0, 3).forEach(b => {
-      const refNo = b.reference_no || `NS-${b.id}`;
-      const serviceName = b.service_name || 'Salon Visit';
-      let title = `Booking ${b.status ? b.status.toUpperCase() : 'UPDATE'}`;
-      let msg = `Your appointment for ${serviceName} on ${formatDisplayDate(b.booking_date)} is currently ${b.status || 'pending'}.`;
-      
-      if (b.status === 'confirmed') {
-        title = 'Appointment Confirmed';
-        msg = `Your ${serviceName} appointment on ${formatDisplayDate(b.booking_date)} at ${formatDisplayTime(b.booking_time)} is confirmed!`;
-      } else if (b.status === 'completed') {
-        title = 'Service Completed';
-        msg = `Thank you for visiting Nely's Salon! Your receipt for ${serviceName} is now ready.`;
-      } else if (b.status === 'cancelled') {
-        title = 'Appointment Cancelled';
-        msg = `Your appointment for ${serviceName} was cancelled.`;
-      }
-
-      notifs.push({
-        id: `BOOK-${b.id}`,
-        title: title,
-        message: msg,
-        created_at: b.created_at || b.booking_date,
-        relative_time: formatDisplayDate(b.booking_date),
-        is_read: false
-      });
-    });
   }
 
   currentNotifications = notifs;

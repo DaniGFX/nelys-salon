@@ -109,7 +109,7 @@ function initPatronProfile() {
   }
 }
 
-// 2. Fetch Notifications from Live Database & Bookings
+// 2. Fetch Notifications from Live Database
 async function loadNotifications() {
   const token = localStorage.getItem('nelys_token');
   const headers = {
@@ -117,44 +117,21 @@ async function loadNotifications() {
     ...(token ? { 'Authorization': `Bearer ${token}` } : {})
   };
 
-  const readSet = getReadSet();
   let fetchedNotifs = [];
 
   try {
-    // 1. Fetch DB notifications
     const res = await fetch('../api/notifications', { headers });
     if (res.ok) {
       const json = await res.json();
-      if (json.status === 'success' && Array.isArray(json.data) && json.data.length > 0) {
-        fetchedNotifs = json.data.map(item => mapDbNotification(item, readSet));
+      if ((json.status === 'success' || json.success) && Array.isArray(json.data)) {
+        fetchedNotifs = json.data.map(item => mapDbNotification(item));
       }
     }
   } catch (err) {
     console.warn('Notifications endpoint notice:', err);
   }
 
-  // 2. Fetch Bookings to provide rich live updates
-  try {
-    const bRes = await fetch('../api/bookings', { headers });
-    if (bRes.ok) {
-      const bJson = await bRes.json();
-      if (bJson.status === 'success' && Array.isArray(bJson.data)) {
-        const bookingNotifs = bJson.data.map(b => mapBookingToNotification(b, readSet));
-        // Merge without duplicates by ID
-        const existingIds = new Set(fetchedNotifs.map(n => n.id));
-        bookingNotifs.forEach(bn => {
-          if (!existingIds.has(bn.id)) {
-            fetchedNotifs.push(bn);
-            existingIds.add(bn.id);
-          }
-        });
-      }
-    }
-  } catch (err) {
-    console.warn('Bookings endpoint notice:', err);
-  }
-
-  // 3. Sort by date / recency
+  // Sort by created timestamp descending
   fetchedNotifs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
 
   const cacheKey = getCustNotifCacheKey();
@@ -170,154 +147,57 @@ async function loadNotifications() {
   }
 }
 
-function getReadSet() {
-  try {
-    const raw = localStorage.getItem(`nelys_read_notifications_${currentUserId}`);
-    return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch (e) {
-    return new Set();
-  }
-}
-
-function saveReadSet(set) {
-  try {
-    localStorage.setItem(`nelys_read_notifications_${currentUserId}`, JSON.stringify(Array.from(set)));
-  } catch (e) {
-    console.warn('Error saving read notifications:', e);
-  }
-}
-
 // Map from DB `notifications` table
-function mapDbNotification(dbNotif, readSet) {
-  const id = `NOTIF-DB-${dbNotif.id}`;
-  const isRead = readSet.has(id);
+function mapDbNotification(dbNotif) {
+  const numericId = dbNotif.id;
+  const isRead = Boolean(dbNotif.is_read) || (dbNotif.isUnread === false);
   const title = dbNotif.title || 'Salon Notification';
-  const category = title.toLowerCase().includes('payment') ? 'payments' : 'appointments';
+  const category = (dbNotif.category || (title.toLowerCase().includes('payment') ? 'payments' : 'appointments')).toLowerCase();
+  const titleLower = title.toLowerCase();
 
-  return {
-    id,
-    category,
-    title,
-    message: dbNotif.message || '',
-    time: formatDateLabel(dbNotif.created_at),
-    timestamp: new Date(dbNotif.created_at).getTime() || Date.now(),
-    isRead,
-    icon: category === 'payments' ? 'fa-solid fa-receipt' : 'fa-solid fa-bell',
-    iconBg: category === 'payments' ? 'bg-emerald-100 text-emerald-700' : 'bg-[#810B38] text-white',
-    dotColor: isRead ? null : 'bg-[#810B38]',
-    payload: {
-      type: category === 'payments' ? 'payment' : 'appointment',
-      bookingId: dbNotif.booking_id ? `NS-${dbNotif.booking_id}` : 'N/A',
-      service: title,
-      dateTime: dbNotif.created_at || 'Recently',
-      status: dbNotif.status === 'sent' ? 'Delivered' : 'Pending'
-    }
-  };
-}
-
-// Map customer bookings into rich contextual notifications
-function mapBookingToNotification(b, readSet) {
-  const id = `NOTIF-BOOK-${b.id}-${b.status}`;
-  const isRead = readSet.has(id);
-  const status = (b.status || 'pending').toLowerCase();
-  const serviceName = b.service_name || 'Beauty Treatment';
-  const refNo = b.reference_no || `NS-${b.id}`;
-  const dateFormatted = `${b.booking_date} at ${b.booking_time ? b.booking_time.substring(0, 5) : 'Scheduled Time'}`;
-  const priceFormatted = b.total_price ? `₱${parseFloat(b.total_price).toLocaleString('en-PH')}` : '₱0';
-
-  let title = 'Booking Update';
-  let message = `Your appointment for ${serviceName} is currently ${status}.`;
-  let category = 'appointments';
-  let icon = 'fa-solid fa-calendar-check';
+  let icon = 'fa-solid fa-bell';
   let iconBg = 'bg-[#810B38] text-white';
 
-  if (status === 'confirmed') {
-    title = 'Booking Confirmed';
-    message = `Your appointment for ${serviceName} on ${b.booking_date} has been confirmed.`;
-    icon = 'fa-solid fa-calendar-check';
-    iconBg = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-  } else if (status === 'completed') {
-    title = 'Service Completed';
-    message = `Thank you for visiting! Your ${serviceName} session is marked completed.`;
-    icon = 'fa-solid fa-circle-check';
-    iconBg = 'bg-emerald-100 text-emerald-700';
-  } else if (status === 'cancelled') {
-    title = 'Appointment Cancelled';
-    message = `Your appointment for ${serviceName} on ${b.booking_date} was cancelled.`;
-    icon = 'fa-solid fa-circle-xmark';
-    iconBg = 'bg-rose-50 text-rose-700 border border-rose-200';
-  }
-
-  // Payment verified notification
-  if (b.payment_status === 'paid') {
-    category = 'payments';
+  if (category === 'payments') {
     icon = 'fa-solid fa-receipt';
     iconBg = 'bg-emerald-100 text-emerald-700';
+  } else if (category === 'appointments') {
+    if (titleLower.includes('cancel')) {
+      icon = 'fa-solid fa-calendar-xmark';
+      iconBg = 'bg-rose-50 text-rose-700 border border-rose-200';
+    } else if (titleLower.includes('resched')) {
+      icon = 'fa-solid fa-clock-rotate-left';
+      iconBg = 'bg-amber-50 text-amber-700 border border-amber-200';
+    } else if (titleLower.includes('confirm') || titleLower.includes('completed')) {
+      icon = 'fa-solid fa-calendar-check';
+      iconBg = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+    } else {
+      icon = 'fa-solid fa-calendar-plus';
+      iconBg = 'bg-[#810B38] text-white';
+    }
   }
 
   return {
-    id,
+    id: numericId,
     category,
     title,
-    message,
-    time: formatDateLabel(b.updated_at || b.created_at || b.booking_date),
-    timestamp: new Date(b.updated_at || b.created_at || b.booking_date).getTime() || Date.now(),
+    message: dbNotif.message || dbNotif.details || '',
+    time: dbNotif.timestamp || formatDateLabel(dbNotif.created_at),
+    timestamp: new Date(dbNotif.created_at).getTime() || Date.now(),
     isRead,
     icon,
     iconBg,
     dotColor: isRead ? null : 'bg-[#810B38]',
     payload: {
       type: category === 'payments' ? 'payment' : 'appointment',
-      bookingId: refNo,
-      service: serviceName,
-      dateTime: dateFormatted,
-      status: status.toUpperCase(),
-      amount: priceFormatted,
-      method: b.payment_method || 'Cash / In-store',
-      reason: b.cancellation_reason || null
+      bookingId: dbNotif.booking_id ? `NS-${dbNotif.booking_id}` : `Ref #${numericId}`,
+      service: title,
+      dateTime: dbNotif.date ? `${dbNotif.date} ${dbNotif.time || ''}` : formatDateLabel(dbNotif.created_at),
+      status: title.toUpperCase(),
+      amount: '',
+      method: ''
     }
   };
-}
-
-// Clean fallback notifications
-function getDefaultFallbackNotifications(readSet) {
-  const items = [
-    {
-      id: 'NOTIF-FALLBACK-1',
-      category: 'updates',
-      title: 'Welcome to Nely’s Salon Online Portal',
-      message: 'Explore our beauty treatments, manage your upcoming visits, and message our official concierge seamlessly.',
-      time: 'Today',
-      timestamp: Date.now(),
-      isRead: readSet.has('NOTIF-FALLBACK-1'),
-      icon: 'fa-solid fa-sparkles',
-      iconBg: 'bg-[#810B38] text-white',
-      dotColor: readSet.has('NOTIF-FALLBACK-1') ? null : 'bg-[#810B38]',
-      payload: {
-        type: 'update',
-        title: 'Welcome to Nely’s Salon Online Portal',
-        promoCode: 'NELYS15'
-      }
-    },
-    {
-      id: 'NOTIF-FALLBACK-2',
-      category: 'updates',
-      title: 'Exclusive Client Privilege',
-      message: 'Get special hair treatment discounts when you book your sessions in advance online.',
-      time: 'Recently',
-      timestamp: Date.now() - 86400000,
-      isRead: readSet.has('NOTIF-FALLBACK-2'),
-      icon: 'fa-solid fa-gift',
-      iconBg: 'bg-[#FAF6F0] text-[#810B38] border border-[#DCC3AA]',
-      dotColor: readSet.has('NOTIF-FALLBACK-2') ? null : 'bg-[#810B38]',
-      payload: {
-        type: 'update',
-        title: 'Exclusive Client Privilege',
-        promoCode: 'BEAUTYCARE'
-      }
-    }
-  ];
-  return items;
 }
 
 // 3. Update Dynamic Category Counts and Header Badges
@@ -452,17 +332,26 @@ function switchCategory(cat) {
 
 // 6. Handle Notification Click
 function handleNotificationClick(id) {
-  const notif = notificationsData.find(n => n.id === id);
+  const notif = notificationsData.find(n => String(n.id) === String(id));
   if (!notif) return;
-
-  // Mark as read in local set
-  const readSet = getReadSet();
-  readSet.add(id);
-  saveReadSet(readSet);
 
   notif.isRead = true;
   updateCountsAndBadges();
   renderNotifications();
+
+  // Persist read status to database API
+  const token = localStorage.getItem('nelys_token');
+  const numericId = parseInt(String(id).replace(/\D/g, ''), 10);
+  if (numericId && token) {
+    fetch(`../api/notifications/${numericId}/read`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ is_read: true })
+    }).catch(e => console.warn('Could not sync read status:', e));
+  }
 
   // Route to contextual modal
   if (notif.category === 'payments') {
@@ -476,16 +365,24 @@ function handleNotificationClick(id) {
 
 // 7. Mark All Notifications as Read
 function markAllAsRead() {
-  const readSet = getReadSet();
   notificationsData.forEach(n => {
-    readSet.add(n.id);
     n.isRead = true;
   });
-  saveReadSet(readSet);
 
   updateCountsAndBadges();
   renderNotifications();
   showToast('All notifications marked as read.');
+
+  const token = localStorage.getItem('nelys_token');
+  if (token) {
+    fetch('../api/notifications/mark-all-read', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    }).catch(e => console.warn('Could not sync mark-all-read:', e));
+  }
 }
 
 // 8. Contextual Modal 1: Appointment Notification
