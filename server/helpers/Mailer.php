@@ -40,17 +40,7 @@ class Mailer {
         $fromName = env('GMAIL_FROM_NAME', "nelys salon website");
         $fromEmail = !empty($smtpUser) ? $smtpUser : 'no-reply@nelyssalon.com';
 
-        // 1. If Resend HTTPS API is provided (Port 443)
-        $resendKey = env('RESEND_API_KEY', '');
-        if (!empty($resendKey)) {
-            $resendResult = self::sendViaResend($toEmail, $toName, $fromEmail, $fromName, $subject, $htmlBody, $resendKey);
-            if ($resendResult['success']) {
-                return $resendResult;
-            }
-            error_log('[Mailer] Resend API failed: ' . $resendResult['message']);
-        }
-
-        // 2. If Brevo HTTPS API is provided (Port 443)
+        // 1. If Brevo HTTPS API is provided (Port 443 - Instant cloud delivery)
         $brevoKey = env('BREVO_API_KEY', '');
         if (!empty($brevoKey)) {
             $brevoResult = self::sendViaBrevo($toEmail, $toName, $fromEmail, $fromName, $subject, $htmlBody, $brevoKey);
@@ -58,6 +48,16 @@ class Mailer {
                 return $brevoResult;
             }
             error_log('[Mailer] Brevo API failed: ' . $brevoResult['message']);
+        }
+
+        // 2. If Resend HTTPS API is provided (Port 443)
+        $resendKey = env('RESEND_API_KEY', '');
+        if (!empty($resendKey)) {
+            $resendResult = self::sendViaResend($toEmail, $toName, $fromEmail, $fromName, $subject, $htmlBody, $resendKey);
+            if ($resendResult['success']) {
+                return $resendResult;
+            }
+            error_log('[Mailer] Resend API failed: ' . $resendResult['message']);
         }
 
         // 3. If Gmail SMTP credentials are provided, dispatch via cURL SMTPS
@@ -149,8 +149,8 @@ class Mailer {
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
             curl_setopt($ch, CURLOPT_UPLOAD, true);
             curl_setopt($ch, CURLOPT_INFILESIZE, strlen($rawMessage));
-            curl_setopt($ch, CURLOPT_TIMEOUT, 12);
-            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
             $offset = 0;

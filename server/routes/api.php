@@ -68,85 +68,27 @@ class Router {
                     $host = env('GMAIL_SMTP_HOST', 'smtp.gmail.com');
                     $port = (int)env('GMAIL_SMTP_PORT', 465);
 
-                    $trace = [];
-                    $portsToTest = [465, 587];
+                    $start = microtime(true);
+                    $result = Mailer::sendOtp($user, "Nely's Salon Admin", "123456");
+                    $duration = round(microtime(true) - $start, 3);
 
-                    foreach ($portsToTest as $p) {
-                        $pHost = ($p === 465) ? 'ssl://smtp.gmail.com' : 'smtp.gmail.com';
-                        $stepTrace = ["port" => $p, "host" => $pHost];
-                        
-                        $context = stream_context_create([
-                            'ssl' => [
-                                'verify_peer' => false,
-                                'verify_peer_name' => false,
-                                'allow_self_signed' => true
-                            ]
-                        ]);
-
-                        $start = microtime(true);
-                        $socket = @stream_socket_client("{$pHost}:{$p}", $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $context);
-                        $stepTrace['connect_time'] = round(microtime(true) - $start, 3);
-
-                        if (!$socket) {
-                            $stepTrace['connect_error'] = "{$errstr} ({$errno})";
-                            $trace[] = $stepTrace;
-                            continue;
-                        }
-
-                        $read = function() use ($socket) {
-                            $res = '';
-                            while ($line = fgets($socket, 515)) {
-                                $res .= $line;
-                                if (substr($line, 3, 1) === ' ') break;
-                            }
-                            return trim($res);
-                        };
-                        $write = function($cmd) use ($socket) {
-                            fputs($socket, $cmd . "\r\n");
-                        };
-
-                        $stepTrace['greeting'] = $read();
-                        $write("EHLO localhost");
-                        $stepTrace['ehlo1'] = $read();
-
-                        if ($p === 587) {
-                            $write("STARTTLS");
-                            $stepTrace['starttls'] = $read();
-                            stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
-                            $write("EHLO localhost");
-                            $stepTrace['ehlo2'] = $read();
-                        }
-
-                        $write("AUTH LOGIN");
-                        $stepTrace['auth_login_prompt'] = $read();
-                        $write(base64_encode($user));
-                        $stepTrace['user_prompt'] = $read();
-                        $write(base64_encode($passClean));
-                        $stepTrace['pass_response'] = $read();
-
-                        if (str_starts_with($stepTrace['pass_response'] ?? '', '235')) {
-                            $write("MAIL FROM: <{$user}>");
-                            $stepTrace['mail_from'] = $read();
-                            $write("RCPT TO: <{$user}>");
-                            $stepTrace['rcpt_to'] = $read();
-                            $write("DATA");
-                            $stepTrace['data_prompt'] = $read();
-
-                            $msg = "From: Nely's Salon <{$user}>\r\nTo: <{$user}>\r\nSubject: Railway Test OTP " . time() . "\r\n\r\nTest OTP: 556677\r\n.\r\n";
-                            $write($msg);
-                            $stepTrace['data_response'] = $read();
-                            $write("QUIT");
-                        }
-
-                        fclose($socket);
-                        $trace[] = $stepTrace;
+                    $activeProvider = 'None';
+                    if (!empty(env('BREVO_API_KEY'))) {
+                        $activeProvider = 'Brevo HTTPS API (Port 443)';
+                    } elseif (!empty(env('RESEND_API_KEY'))) {
+                        $activeProvider = 'Resend HTTPS API (Port 443)';
+                    } elseif (!empty(env('GMAIL_SMTP_USER'))) {
+                        $activeProvider = 'Gmail SMTP';
                     }
 
                     header('Content-Type: application/json');
                     echo json_encode([
-                        'user_configured' => $user,
-                        'pass_length'     => strlen($passClean),
-                        'smtp_trace'      => $trace
+                        'active_provider'  => $activeProvider,
+                        'recipient'        => $user,
+                        'duration_seconds' => $duration,
+                        'result'           => $result,
+                        'brevo_key_set'    => !empty(env('BREVO_API_KEY')),
+                        'smtp_user_set'    => !empty(env('GMAIL_SMTP_USER'))
                     ], JSON_PRETTY_PRINT);
                     exit;
 
