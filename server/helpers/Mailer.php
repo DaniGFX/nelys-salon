@@ -87,87 +87,110 @@ class Mailer {
         string $username,
         string $password
     ): array {
-        $host = env('GMAIL_SMTP_HOST', 'smtp.gmail.com');
-        $port = (int)env('GMAIL_SMTP_PORT', 587);
-        $timeout = 10;
         $password = str_replace(' ', '', $password);
+        $configuredPort = (int)env('GMAIL_SMTP_PORT', 465);
+        $portsToTry = ($configuredPort === 587) ? [587, 465] : [465, 587];
 
-        $socket = @fsockopen($host, $port, $errno, $errstr, $timeout);
-        if (!$socket) {
-            return ['success' => false, 'message' => "Could not connect to SMTP server: $errstr ($errno)"];
-        }
+        $lastError = 'Unknown SMTP error';
 
-        $read = function() use ($socket) {
-            $response = '';
-            while ($line = fgets($socket, 515)) {
-                $response .= $line;
-                if (substr($line, 3, 1) === ' ') break;
+        foreach ($portsToTry as $port) {
+            $host = ($port === 465) ? 'ssl://smtp.gmail.com' : 'smtp.gmail.com';
+            $timeout = 5;
+
+            $context = stream_context_create([
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true
+                ]
+            ]);
+
+            $socket = @stream_socket_client("{$host}:{$port}", $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT, $context);
+            if (!$socket) {
+                $lastError = "Could not connect to {$host}:{$port} - {$errstr} ({$errno})";
+                continue;
             }
-            return $response;
-        };
 
-        $write = function(string $cmd) use ($socket) {
-            fputs($socket, $cmd . "\r\n");
-        };
+            stream_set_timeout($socket, 5);
 
-        $read();
-        $write("EHLO " . gethostname());
-        $read();
+            $read = function() use ($socket) {
+                $response = '';
+                while ($line = fgets($socket, 515)) {
+                    $response .= $line;
+                    if (substr($line, 3, 1) === ' ') break;
+                }
+                return $response;
+            };
 
-        // STARTTLS for port 587
-        if ($port === 587) {
-            $write("STARTTLS");
-            $res = $read();
-            if (!str_starts_with($res, '220')) {
-                fclose($socket);
-                return ['success' => false, 'message' => "STARTTLS failed: $res"];
-            }
-            stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+            $write = function(string $cmd) use ($socket) {
+                fputs($socket, $cmd . "\r\n");
+            };
+
+            $read();
             $write("EHLO " . gethostname());
             $read();
-        }
 
-        $write("AUTH LOGIN");
-        $read();
-        $write(base64_encode($username));
-        $read();
-        $write(base64_encode($password));
-        $res = $read();
-        if (!str_starts_with($res, '235')) {
+            // STARTTLS for port 587
+            if ($port === 587) {
+                $write("STARTTLS");
+                $res = $read();
+                if (!str_starts_with($res, '220')) {
+                    fclose($socket);
+                    $lastError = "STARTTLS failed on port 587: {$res}";
+                    continue;
+                }
+                stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                $write("EHLO " . gethostname());
+                $read();
+            }
+
+            $write("AUTH LOGIN");
+            $read();
+            $write(base64_encode($username));
+            $read();
+            $write(base64_encode($password));
+            $res = $read();
+            if (!str_starts_with($res, '235')) {
+                fclose($socket);
+                $lastError = "SMTP Authentication failed on port {$port}. Please check Gmail App Password.";
+                continue;
+            }
+
+            $write("MAIL FROM: <$fromEmail>");
+            $read();
+            $write("RCPT TO: <$to>");
+            $read();
+            $write("DATA");
+            $read();
+
+            $msgId = '<' . bin2hex(random_bytes(12)) . '.' . time() . '@nelyssalon.website>';
+
+            $headers  = "MIME-Version: 1.0\r\n";
+            $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
+            $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
+            $headers .= "To: {$toName} <{$to}>\r\n";
+            $headers .= "Subject: {$subject}\r\n";
+            $headers .= "Date: " . date('r') . "\r\n";
+            $headers .= "Message-ID: {$msgId}\r\n";
+            $headers .= "X-Priority: 1 (Highest)\r\n";
+            $headers .= "X-MSMail-Priority: High\r\n";
+            $headers .= "Importance: High\r\n";
+            $headers .= "X-Mailer: NelysSalon/1.0\r\n";
+
+            $message = $headers . "\r\n" . $body . "\r\n.\r\n";
+            $write($message);
+            $res = $read();
+            $write("QUIT");
             fclose($socket);
-            return ['success' => false, 'message' => "SMTP Authentication failed. Please check Gmail App Password."];
+
+            if (str_starts_with($res, '250')) {
+                return ['success' => true, 'message' => 'Email sent successfully via Gmail SMTP.'];
+            } else {
+                $lastError = "Error completing SMTP delivery on port {$port}: {$res}";
+            }
         }
 
-        $write("MAIL FROM: <$fromEmail>");
-        $read();
-        $write("RCPT TO: <$to>");
-        $read();
-        $write("DATA");
-        $read();
-
-        $msgId = '<' . bin2hex(random_bytes(12)) . '.' . time() . '@' . parse_url(env('APP_URL', 'http://nelyssalon.website'), PHP_URL_HOST) . '>';
-        
-        $headers  = "MIME-Version: 1.0\r\n";
-        $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-        $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
-        $headers .= "To: {$toName} <{$to}>\r\n";
-        $headers .= "Subject: {$subject}\r\n";
-        $headers .= "Date: " . date('r') . "\r\n";
-        $headers .= "Message-ID: {$msgId}\r\n";
-        $headers .= "X-Priority: 1 (Highest)\r\n";
-        $headers .= "X-MSMail-Priority: High\r\n";
-        $headers .= "Importance: High\r\n";
-        $headers .= "X-Mailer: NelysSalon/1.0\r\n";
-
-        $message = $headers . "\r\n" . $body . "\r\n.\r\n";
-        $write($message);
-        $res = $read();
-        $write("QUIT");
-        fclose($socket);
-
-        return str_starts_with($res, '250') 
-            ? ['success' => true, 'message' => 'Email sent successfully via Gmail SMTP.']
-            : ['success' => false, 'message' => "Error completing SMTP delivery: $res"];
+        return ['success' => false, 'message' => $lastError];
     }
 
     /**
