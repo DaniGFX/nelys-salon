@@ -60,6 +60,30 @@ class Router {
                     require_once dirname(__DIR__) . '/db/setup.php';
                     exit;
 
+                // Mailer Diagnostic Endpoint
+                case 'test-mail':
+                    require_once dirname(__DIR__) . '/helpers/Mailer.php';
+                    $user = env('GMAIL_SMTP_USER', '');
+                    $pass = env('GMAIL_APP_PASSWORD', '');
+                    $passClean = str_replace(' ', '', (string)$pass);
+                    $host = env('GMAIL_SMTP_HOST', 'smtp.gmail.com');
+                    $port = env('GMAIL_SMTP_PORT', '465');
+                    
+                    $diag = [
+                        'env_smtp_user_found' => !empty($user),
+                        'smtp_user'           => $user,
+                        'smtp_pass_length'    => strlen($passClean),
+                        'smtp_host'           => $host,
+                        'smtp_port'           => $port,
+                    ];
+                    
+                    $res = Mailer::sendOtp('nelyssalon.website@gmail.com', 'Admin Diagnostic', '998877');
+                    $diag['send_result'] = $res;
+                    
+                    header('Content-Type: application/json');
+                    echo json_encode($diag, JSON_PRETTY_PRINT);
+                    exit;
+
                 // Auth Routes
                 case 'auth':
                     $authCtrl = new AuthController();
