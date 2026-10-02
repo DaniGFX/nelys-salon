@@ -13,7 +13,7 @@ class SmsService {
      * 
      * @param string $phone Mobile number (e.g. 09171234567 or +639171234567)
      * @param string $otpCode 6-digit PIN
-     * @return array ['success' => bool, 'message' => string, 'dev_code' => string|null]
+     * @return array ['success' => bool, 'message' => string]
      */
     public static function sendOtp(string $phone, string $otpCode): array {
         $cleanPhone = self::normalizePhone($phone);
@@ -41,12 +41,11 @@ class SmsService {
             error_log('[SmsService] Twilio failed, falling back: ' . $result['message']);
         }
 
-        // 3. Local Development Mode / Fallback Simulator
-        error_log("[SmsService Dev Mode] SMS OTP dispatched to [{$cleanPhone}]: Code = {$otpCode}");
+        // 3. Fallback / Dev Simulator (Logged to server log only)
+        error_log("[SmsService] SMS OTP dispatched to [{$cleanPhone}]: Code = {$otpCode}");
         return [
             'success'  => true,
-            'message'  => 'Verification code dispatched via SMS.',
-            'dev_code' => env('APP_ENV') === 'development' ? $otpCode : null
+            'message'  => 'Verification code dispatched via SMS.'
         ];
     }
 

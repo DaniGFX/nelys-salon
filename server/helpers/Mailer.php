@@ -14,7 +14,7 @@ class Mailer {
      * @param string $recipientEmail
      * @param string $recipientName
      * @param string $otpCode 6-digit PIN
-     * @return array ['success' => bool, 'message' => string, 'dev_code' => string|null]
+     * @return array ['success' => bool, 'message' => string]
      */
     public static function sendOtp(string $recipientEmail, string $recipientName, string $otpCode): array {
         $timeStr = date('h:i:s A');
@@ -22,7 +22,7 @@ class Mailer {
         $htmlBody = self::buildOtpHtml($recipientName, $otpCode);
         $plainText = "Hello {$recipientName},\n\nYour 6-digit verification code for Nely's Salon is: {$otpCode}\n\nThis code is valid for 10 minutes. If you did not request this code, please ignore this message.\n\nThank you,\nNely's Salon Team";
 
-        return self::send($recipientEmail, $recipientName, $subject, $htmlBody, $plainText, $otpCode);
+        return self::send($recipientEmail, $recipientName, $subject, $htmlBody, $plainText);
     }
 
     /**
@@ -33,15 +33,14 @@ class Mailer {
         string $toName,
         string $subject,
         string $htmlBody,
-        string $plainText = '',
-        ?string $devOtp = null
+        string $plainText = ''
     ): array {
         $smtpUser = env('GMAIL_SMTP_USER', '');
         $smtpPass = env('GMAIL_APP_PASSWORD', '');
-        $fromName = env('GMAIL_FROM_NAME', "Nely's Salon");
+        $fromName = env('GMAIL_FROM_NAME', "nelys salon website");
         $fromEmail = !empty($smtpUser) ? $smtpUser : 'no-reply@nelyssalon.com';
 
-        // 1. If Resend HTTPS API is provided (Port 443 - never blocked by cloud firewalls)
+        // 1. If Resend HTTPS API is provided (Port 443)
         $resendKey = env('RESEND_API_KEY', '');
         if (!empty($resendKey)) {
             $resendResult = self::sendViaResend($toEmail, $toName, $fromEmail, $fromName, $subject, $htmlBody, $resendKey);
@@ -51,7 +50,7 @@ class Mailer {
             error_log('[Mailer] Resend API failed: ' . $resendResult['message']);
         }
 
-        // 2. If Brevo HTTPS API is provided (Port 443 - never blocked by cloud firewalls)
+        // 2. If Brevo HTTPS API is provided (Port 443)
         $brevoKey = env('BREVO_API_KEY', '');
         if (!empty($brevoKey)) {
             $brevoResult = self::sendViaBrevo($toEmail, $toName, $fromEmail, $fromName, $subject, $htmlBody, $brevoKey);
@@ -61,16 +60,16 @@ class Mailer {
             error_log('[Mailer] Brevo API failed: ' . $brevoResult['message']);
         }
 
-        // 3. If Gmail SMTP credentials are provided, attempt direct SMTP socket
+        // 3. If Gmail SMTP credentials are provided, dispatch via cURL SMTPS
         if (!empty($smtpUser) && !empty($smtpPass)) {
-            $smtpResult = self::sendViaSmtp($toEmail, $toName, $fromEmail, $fromName, $subject, $htmlBody, $smtpUser, $smtpPass);
+            $smtpResult = self::sendViaCurlSmtp($toEmail, $toName, $fromEmail, $fromName, $subject, $htmlBody, $smtpUser, $smtpPass);
             if ($smtpResult['success']) {
                 return $smtpResult;
             }
-            error_log('[Mailer] Gmail SMTP failed, cloud port likely blocked: ' . $smtpResult['message']);
+            error_log('[Mailer] Gmail SMTPS failed: ' . $smtpResult['message']);
         }
 
-        // 4. Standard PHP mail() if local sendmail is present
+        // 4. Standard PHP mail() if available
         $headers  = "MIME-Version: 1.0\r\n";
         $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
         $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
@@ -79,25 +78,21 @@ class Mailer {
 
         if (@mail($toEmail, $subject, $htmlBody, $headers)) {
             return [
-                'success'  => true,
-                'message'  => 'Email sent successfully via mail().',
-                'dev_code' => null
+                'success' => true,
+                'message' => 'Email sent successfully via mail().'
             ];
         }
 
-        // 5. Cloud Firewall / Dev Fallback: Return code in payload so user is never locked out
-        error_log("[Mailer Cloud Fallback] OTP for [{$toEmail}]: Code = {$devOtp}");
         return [
-            'success'  => true,
-            'message'  => 'Verification code generated for your account.',
-            'dev_code' => $devOtp
+            'success' => false,
+            'message' => 'Unable to send email. Please verify SMTP credentials or network connectivity.'
         ];
     }
 
     /**
-     * Send email via direct SSL/TLS socket to smtp.gmail.com:587 / 465
+     * Send email via native cURL SMTPS (Port 465 SSL with Port 587 TLS fallback)
      */
-    private static function sendViaSmtp(
+    private static function sendViaCurlSmtp(
         string $to,
         string $toName,
         string $fromEmail,
@@ -107,106 +102,76 @@ class Mailer {
         string $username,
         string $password
     ): array {
-        $password = str_replace(' ', '', $password);
-        $portsToTry = [465, 587];
+        $cleanPass = str_replace(' ', '', $password);
+        $msgId = '<' . bin2hex(random_bytes(12)) . '.' . time() . '@nelyssalon.website>';
+        $date = date('r');
+
+        $encodedSubject = '=?UTF-8?B?' . base64_encode($subject) . '?=';
+        $encodedFromName = '=?UTF-8?B?' . base64_encode($fromName) . '?=';
+        $encodedToName = '=?UTF-8?B?' . base64_encode($toName) . '?=';
+
+        $rawMessage = "Date: {$date}\r\n" .
+                      "To: {$encodedToName} <{$to}>\r\n" .
+                      "From: {$encodedFromName} <{$fromEmail}>\r\n" .
+                      "Reply-To: <{$fromEmail}>\r\n" .
+                      "Subject: {$encodedSubject}\r\n" .
+                      "Message-ID: {$msgId}\r\n" .
+                      "X-Priority: 1 (Highest)\r\n" .
+                      "X-MSMail-Priority: High\r\n" .
+                      "Importance: High\r\n" .
+                      "MIME-Version: 1.0\r\n" .
+                      "Content-Type: text/html; charset=UTF-8\r\n" .
+                      "Content-Transfer-Encoding: 8bit\r\n\r\n" .
+                      $body . "\r\n";
+
+        $targets = [
+            [
+                'url' => 'smtps://smtp.gmail.com:465',
+                'ssl' => CURLUSESSL_ALL,
+            ],
+            [
+                'url' => 'smtp://smtp.gmail.com:587',
+                'ssl' => CURLUSESSL_TRY,
+            ],
+        ];
 
         $lastError = 'Unknown SMTP error';
 
-        foreach ($portsToTry as $port) {
-            $host = ($port === 465) ? 'ssl://smtp.gmail.com' : 'smtp.gmail.com';
-            $timeout = 3;
+        foreach ($targets as $target) {
+            $ch = curl_init();
+            curl_setopt($ch, CURLOPT_URL, $target['url']);
+            curl_setopt($ch, CURLOPT_USERNAME, $username);
+            curl_setopt($ch, CURLOPT_PASSWORD, $cleanPass);
+            curl_setopt($ch, CURLOPT_MAIL_FROM, "<{$fromEmail}>");
+            curl_setopt($ch, CURLOPT_MAIL_RCPT, ["<{$to}>"]);
+            curl_setopt($ch, CURLOPT_USE_SSL, $target['ssl']);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+            curl_setopt($ch, CURLOPT_UPLOAD, true);
+            curl_setopt($ch, CURLOPT_INFILESIZE, strlen($rawMessage));
+            curl_setopt($ch, CURLOPT_TIMEOUT, 12);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 
-            $context = stream_context_create([
-                'ssl' => [
-                    'verify_peer' => false,
-                    'verify_peer_name' => false,
-                    'allow_self_signed' => true
-                ]
-            ]);
+            $offset = 0;
+            curl_setopt($ch, CURLOPT_READFUNCTION, function($ch, $fd, $length) use ($rawMessage, &$offset) {
+                $chunk = substr($rawMessage, $offset, $length);
+                $offset += strlen($chunk);
+                return $chunk;
+            });
 
-            $socket = @stream_socket_client("{$host}:{$port}", $errno, $errstr, $timeout, STREAM_CLIENT_CONNECT, $context);
-            if (!$socket) {
-                $lastError = "Could not connect to {$host}:{$port} - {$errstr} ({$errno})";
-                continue;
+            $exec = curl_exec($ch);
+            $errno = curl_errno($ch);
+            $error = curl_error($ch);
+            $code = curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+            curl_close($ch);
+
+            if ($errno === 0) {
+                return ['success' => true, 'message' => 'Email sent successfully via Gmail SMTPS.'];
             }
 
-            stream_set_timeout($socket, 5);
-
-            $read = function() use ($socket) {
-                $response = '';
-                while ($line = fgets($socket, 515)) {
-                    $response .= $line;
-                    if (substr($line, 3, 1) === ' ') break;
-                }
-                return $response;
-            };
-
-            $write = function(string $cmd) use ($socket) {
-                fputs($socket, $cmd . "\r\n");
-            };
-
-            $read();
-            $write("EHLO " . gethostname());
-            $read();
-
-            // STARTTLS for port 587
-            if ($port === 587) {
-                $write("STARTTLS");
-                $res = $read();
-                if (!str_starts_with($res, '220')) {
-                    fclose($socket);
-                    $lastError = "STARTTLS failed on port 587: {$res}";
-                    continue;
-                }
-                stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
-                $write("EHLO " . gethostname());
-                $read();
-            }
-
-            $write("AUTH LOGIN");
-            $read();
-            $write(base64_encode($username));
-            $read();
-            $write(base64_encode($password));
-            $res = $read();
-            if (!str_starts_with($res, '235')) {
-                fclose($socket);
-                $lastError = "SMTP Authentication failed on port {$port}. Please check Gmail App Password.";
-                continue;
-            }
-
-            $write("MAIL FROM: <$fromEmail>");
-            $read();
-            $write("RCPT TO: <$to>");
-            $read();
-            $write("DATA");
-            $read();
-
-            $msgId = '<' . bin2hex(random_bytes(12)) . '.' . time() . '@nelyssalon.website>';
-
-            $headers  = "MIME-Version: 1.0\r\n";
-            $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
-            $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
-            $headers .= "To: {$toName} <{$to}>\r\n";
-            $headers .= "Subject: {$subject}\r\n";
-            $headers .= "Date: " . date('r') . "\r\n";
-            $headers .= "Message-ID: {$msgId}\r\n";
-            $headers .= "X-Priority: 1 (Highest)\r\n";
-            $headers .= "X-MSMail-Priority: High\r\n";
-            $headers .= "Importance: High\r\n";
-            $headers .= "X-Mailer: NelysSalon/1.0\r\n";
-
-            $message = $headers . "\r\n" . $body . "\r\n.\r\n";
-            $write($message);
-            $res = $read();
-            $write("QUIT");
-            fclose($socket);
-
-            if (str_starts_with($res, '250')) {
-                return ['success' => true, 'message' => 'Email sent successfully via Gmail SMTP.'];
-            } else {
-                $lastError = "Error completing SMTP delivery on port {$port}: {$res}";
-            }
+            $lastError = "cURL SMTP error ({$target['url']}): [{$errno}] {$error}";
+            error_log("[Mailer] " . $lastError);
         }
 
         return ['success' => false, 'message' => $lastError];

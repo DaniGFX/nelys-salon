@@ -83,7 +83,6 @@ class AuthController {
                 'masked_phone'    => $maskedPhone,
                 'default_channel' => 'email',
                 'channels'        => ['email', 'sms'],
-                'dev_code'        => $mailRes['dev_code'] ?? null,
                 'message'         => 'Verification code sent. Please enter the 6-digit code to complete login.'
             ], 'Two-factor authentication required');
             return;
@@ -133,7 +132,6 @@ class AuthController {
             Response::success([
                 'channel'      => 'sms',
                 'masked_phone' => self::maskPhone($phone),
-                'dev_code'     => $smsRes['dev_code'] ?? null,
             ], 'Verification code dispatched to your phone number.');
             return;
         }
@@ -146,7 +144,6 @@ class AuthController {
         Response::success([
             'channel'      => 'email',
             'masked_email' => self::maskEmail($email),
-            'dev_code'     => $mailRes['dev_code'] ?? null,
         ], 'Verification code dispatched to your Gmail address.');
     }
 
