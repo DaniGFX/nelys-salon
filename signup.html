@@ -656,6 +656,9 @@
     }
 
     function selectOtpChannel(channel, triggerDispatch = true) {
+      if (current2faState.channel === channel && triggerDispatch) {
+        return; // Already selected and active, prevent duplicate send
+      }
       current2faState.channel = channel;
       const cardEmail = document.getElementById('channelCardEmail');
       const cardSms = document.getElementById('channelCardSms');
