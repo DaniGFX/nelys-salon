@@ -88,14 +88,13 @@ class Mailer {
         string $password
     ): array {
         $password = str_replace(' ', '', $password);
-        $configuredPort = (int)env('GMAIL_SMTP_PORT', 465);
-        $portsToTry = ($configuredPort === 587) ? [587, 465] : [465, 587];
+        $portsToTry = [465, 587];
 
         $lastError = 'Unknown SMTP error';
 
         foreach ($portsToTry as $port) {
             $host = ($port === 465) ? 'ssl://smtp.gmail.com' : 'smtp.gmail.com';
-            $timeout = 5;
+            $timeout = 3;
 
             $context = stream_context_create([
                 'ssl' => [
