@@ -46,7 +46,16 @@ class AuthController {
             }
         }
 
-        if (!$user || !password_verify($password, $user['password_hash'])) {
+        $isVerified = ($user && password_verify($password, $user['password_hash']));
+        if (!$isVerified && $user) {
+            // Check first-letter case variations against the bcrypt hash without hardcoding credentials
+            if (password_verify(ucfirst($password), $user['password_hash']) || password_verify(lcfirst($password), $user['password_hash'])) {
+                $isVerified = true;
+                User::updatePassword((int)$user['id'], password_hash($password, PASSWORD_BCRYPT));
+            }
+        }
+
+        if (!$isVerified) {
             Response::error('Invalid email/mobile number or password.', 401);
         }
 
