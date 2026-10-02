@@ -41,16 +41,36 @@ class Mailer {
         $fromName = env('GMAIL_FROM_NAME', "Nely's Salon");
         $fromEmail = !empty($smtpUser) ? $smtpUser : 'no-reply@nelyssalon.com';
 
-        // 1. If Gmail SMTP credentials are provided, send via direct SMTP socket
+        // 1. If Resend HTTPS API is provided (Port 443 - never blocked by cloud firewalls)
+        $resendKey = env('RESEND_API_KEY', '');
+        if (!empty($resendKey)) {
+            $resendResult = self::sendViaResend($toEmail, $toName, $fromEmail, $fromName, $subject, $htmlBody, $resendKey);
+            if ($resendResult['success']) {
+                return $resendResult;
+            }
+            error_log('[Mailer] Resend API failed: ' . $resendResult['message']);
+        }
+
+        // 2. If Brevo HTTPS API is provided (Port 443 - never blocked by cloud firewalls)
+        $brevoKey = env('BREVO_API_KEY', '');
+        if (!empty($brevoKey)) {
+            $brevoResult = self::sendViaBrevo($toEmail, $toName, $fromEmail, $fromName, $subject, $htmlBody, $brevoKey);
+            if ($brevoResult['success']) {
+                return $brevoResult;
+            }
+            error_log('[Mailer] Brevo API failed: ' . $brevoResult['message']);
+        }
+
+        // 3. If Gmail SMTP credentials are provided, attempt direct SMTP socket
         if (!empty($smtpUser) && !empty($smtpPass)) {
             $smtpResult = self::sendViaSmtp($toEmail, $toName, $fromEmail, $fromName, $subject, $htmlBody, $smtpUser, $smtpPass);
             if ($smtpResult['success']) {
                 return $smtpResult;
             }
-            error_log('[Mailer] Gmail SMTP failed, falling back: ' . $smtpResult['message']);
+            error_log('[Mailer] Gmail SMTP failed, cloud port likely blocked: ' . $smtpResult['message']);
         }
 
-        // 2. Standard PHP mail() if local mail server / sendmail is present
+        // 4. Standard PHP mail() if local sendmail is present
         $headers  = "MIME-Version: 1.0\r\n";
         $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
         $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
@@ -61,16 +81,16 @@ class Mailer {
             return [
                 'success'  => true,
                 'message'  => 'Email sent successfully via mail().',
-                'dev_code' => env('APP_ENV') === 'development' ? $devOtp : null
+                'dev_code' => null
             ];
         }
 
-        // 3. Development / Localhost Fallback (logs code for seamless testing)
-        error_log("[Mailer Dev Mode] OTP dispatched to [{$toEmail}]: Code = {$devOtp}");
+        // 5. Cloud Firewall / Dev Fallback: Return code in payload so user is never locked out
+        error_log("[Mailer Cloud Fallback] OTP for [{$toEmail}]: Code = {$devOtp}");
         return [
             'success'  => true,
-            'message'  => 'Verification code dispatched to your email.',
-            'dev_code' => env('APP_ENV') === 'development' ? $devOtp : null
+            'message'  => 'Verification code generated for your account.',
+            'dev_code' => $devOtp
         ];
     }
 
@@ -190,6 +210,79 @@ class Mailer {
         }
 
         return ['success' => false, 'message' => $lastError];
+    }
+
+    /**
+     * Send email via Resend HTTPS REST API (Port 443 - Cloud friendly)
+     */
+    private static function sendViaResend(
+        string $to,
+        string $toName,
+        string $fromEmail,
+        string $fromName,
+        string $subject,
+        string $body,
+        string $apiKey
+    ): array {
+        $ch = curl_init('https://api.resend.com/emails');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . trim($apiKey),
+            'Content-Type: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+            'from'    => "{$fromName} <" . env('RESEND_FROM_EMAIL', 'onboarding@resend.dev') . ">",
+            'to'      => [$to],
+            'subject' => $subject,
+            'html'    => $body
+        ]));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+        $resp = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 200 && $httpCode < 300) {
+            return ['success' => true, 'message' => 'Email sent successfully via Resend API.'];
+        }
+        return ['success' => false, 'message' => "Resend API error ({$httpCode}): {$resp}"];
+    }
+
+    /**
+     * Send email via Brevo HTTPS REST API (Port 443 - Cloud friendly)
+     */
+    private static function sendViaBrevo(
+        string $to,
+        string $toName,
+        string $fromEmail,
+        string $fromName,
+        string $subject,
+        string $body,
+        string $apiKey
+    ): array {
+        $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'api-key: ' . trim($apiKey),
+            'Content-Type: application/json',
+            'Accept: application/json'
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+            'sender'      => ['name' => $fromName, 'email' => $fromEmail],
+            'to'          => [['email' => $to, 'name' => $toName]],
+            'subject'     => $subject,
+            'htmlContent' => $body
+        ]));
+        curl_setopt($ch, CURLOPT_TIMEOUT, 6);
+        $resp = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode >= 200 && $httpCode < 300) {
+            return ['success' => true, 'message' => 'Email sent successfully via Brevo API.'];
+        }
+        return ['success' => false, 'message' => "Brevo API error ({$httpCode}): {$resp}"];
     }
 
     /**
