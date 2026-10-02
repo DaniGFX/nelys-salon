@@ -62,26 +62,92 @@ class Router {
 
                 // Mailer Diagnostic Endpoint
                 case 'test-mail':
-                    require_once dirname(__DIR__) . '/helpers/Mailer.php';
                     $user = env('GMAIL_SMTP_USER', '');
                     $pass = env('GMAIL_APP_PASSWORD', '');
                     $passClean = str_replace(' ', '', (string)$pass);
                     $host = env('GMAIL_SMTP_HOST', 'smtp.gmail.com');
-                    $port = env('GMAIL_SMTP_PORT', '465');
-                    
-                    $diag = [
-                        'env_smtp_user_found' => !empty($user),
-                        'smtp_user'           => $user,
-                        'smtp_pass_length'    => strlen($passClean),
-                        'smtp_host'           => $host,
-                        'smtp_port'           => $port,
-                    ];
-                    
-                    $res = Mailer::sendOtp('nelyssalon.website@gmail.com', 'Admin Diagnostic', '998877');
-                    $diag['send_result'] = $res;
-                    
+                    $port = (int)env('GMAIL_SMTP_PORT', 465);
+
+                    $trace = [];
+                    $portsToTest = [465, 587];
+
+                    foreach ($portsToTest as $p) {
+                        $pHost = ($p === 465) ? 'ssl://smtp.gmail.com' : 'smtp.gmail.com';
+                        $stepTrace = ["port" => $p, "host" => $pHost];
+                        
+                        $context = stream_context_create([
+                            'ssl' => [
+                                'verify_peer' => false,
+                                'verify_peer_name' => false,
+                                'allow_self_signed' => true
+                            ]
+                        ]);
+
+                        $start = microtime(true);
+                        $socket = @stream_socket_client("{$pHost}:{$p}", $errno, $errstr, 5, STREAM_CLIENT_CONNECT, $context);
+                        $stepTrace['connect_time'] = round(microtime(true) - $start, 3);
+
+                        if (!$socket) {
+                            $stepTrace['connect_error'] = "{$errstr} ({$errno})";
+                            $trace[] = $stepTrace;
+                            continue;
+                        }
+
+                        $read = function() use ($socket) {
+                            $res = '';
+                            while ($line = fgets($socket, 515)) {
+                                $res .= $line;
+                                if (substr($line, 3, 1) === ' ') break;
+                            }
+                            return trim($res);
+                        };
+                        $write = function($cmd) use ($socket) {
+                            fputs($socket, $cmd . "\r\n");
+                        };
+
+                        $stepTrace['greeting'] = $read();
+                        $write("EHLO localhost");
+                        $stepTrace['ehlo1'] = $read();
+
+                        if ($p === 587) {
+                            $write("STARTTLS");
+                            $stepTrace['starttls'] = $read();
+                            stream_socket_enable_crypto($socket, true, STREAM_CRYPTO_METHOD_TLS_CLIENT);
+                            $write("EHLO localhost");
+                            $stepTrace['ehlo2'] = $read();
+                        }
+
+                        $write("AUTH LOGIN");
+                        $stepTrace['auth_login_prompt'] = $read();
+                        $write(base64_encode($user));
+                        $stepTrace['user_prompt'] = $read();
+                        $write(base64_encode($passClean));
+                        $stepTrace['pass_response'] = $read();
+
+                        if (str_starts_with($stepTrace['pass_response'] ?? '', '235')) {
+                            $write("MAIL FROM: <{$user}>");
+                            $stepTrace['mail_from'] = $read();
+                            $write("RCPT TO: <{$user}>");
+                            $stepTrace['rcpt_to'] = $read();
+                            $write("DATA");
+                            $stepTrace['data_prompt'] = $read();
+
+                            $msg = "From: Nely's Salon <{$user}>\r\nTo: <{$user}>\r\nSubject: Railway Test OTP " . time() . "\r\n\r\nTest OTP: 556677\r\n.\r\n";
+                            $write($msg);
+                            $stepTrace['data_response'] = $read();
+                            $write("QUIT");
+                        }
+
+                        fclose($socket);
+                        $trace[] = $stepTrace;
+                    }
+
                     header('Content-Type: application/json');
-                    echo json_encode($diag, JSON_PRETTY_PRINT);
+                    echo json_encode([
+                        'user_configured' => $user,
+                        'pass_length'     => strlen($passClean),
+                        'smtp_trace'      => $trace
+                    ], JSON_PRETTY_PRINT);
                     exit;
 
                 // Auth Routes
