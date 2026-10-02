@@ -48,8 +48,14 @@ loadEnv();
 
 function env($key, $default = null) {
     $val = getenv($key);
-    if ($val === false) {
-        return $_ENV[$key] ?? $default;
+    if ($val !== false && $val !== '') {
+        return $val;
     }
-    return $val;
+    if (isset($_ENV[$key]) && $_ENV[$key] !== '') {
+        return $_ENV[$key];
+    }
+    if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') {
+        return $_SERVER[$key];
+    }
+    return $default;
 }
