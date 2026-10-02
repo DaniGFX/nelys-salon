@@ -73,7 +73,7 @@ class AuthController {
             $maskedPhone = self::maskPhone($user['phone'] ?? '');
 
             // Dispatch OTP to default channel (email)
-            $code = Otp::generate($user['email'], 'email', (int)$user['id'], (int)env('OTP_EXPIRY_SECONDS', 300));
+            $code = Otp::generate($user['email'], 'email', (int)$user['id'], (int)env('OTP_EXPIRY_SECONDS', 600));
             $mailRes = Mailer::sendOtp($user['email'], $fullName, $code);
 
             Response::success([
@@ -120,7 +120,7 @@ class AuthController {
 
         $profile = CustomerProfile::findByUserId($user['id']);
         $fullName = $profile['full_name'] ?? ($user['role'] === 'admin' ? 'Admin' : 'Valued Patron');
-        $expirySeconds = (int)env('OTP_EXPIRY_SECONDS', 300);
+        $expirySeconds = (int)env('OTP_EXPIRY_SECONDS', 600);
 
         if ($channel === 'sms') {
             $phone = $user['phone'] ?? '';
@@ -236,7 +236,7 @@ class AuthController {
     private static function generate2faTicket(array $user): string {
         $payload = base64_encode(json_encode([
             'uid'  => (int)$user['id'],
-            'exp'  => time() + 600,
+            'exp'  => time() + 900,
             'type' => '2fa_challenge'
         ]));
         $secret = env('JWT_SECRET', 'nelys_salon_secret_key_2fa');

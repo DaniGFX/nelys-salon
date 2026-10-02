@@ -17,9 +17,10 @@ class Mailer {
      * @return array ['success' => bool, 'message' => string, 'dev_code' => string|null]
      */
     public static function sendOtp(string $recipientEmail, string $recipientName, string $otpCode): array {
-        $subject = "Your Nely's Salon Verification Code: {$otpCode}";
+        $timeStr = date('h:i:s A');
+        $subject = "Your Nely's Salon Verification Code: {$otpCode} [{$timeStr}]";
         $htmlBody = self::buildOtpHtml($recipientName, $otpCode);
-        $plainText = "Hello {$recipientName},\n\nYour 6-digit verification code for Nely's Salon is: {$otpCode}\n\nThis code will expire in 5 minutes. If you did not request this code, please ignore this message.\n\nThank you,\nNely's Salon Team";
+        $plainText = "Hello {$recipientName},\n\nYour 6-digit verification code for Nely's Salon is: {$otpCode}\n\nThis code is valid for 10 minutes. If you did not request this code, please ignore this message.\n\nThank you,\nNely's Salon Team";
 
         return self::send($recipientEmail, $recipientName, $subject, $htmlBody, $plainText, $otpCode);
     }
@@ -201,7 +202,7 @@ class Mailer {
   
   <div class="otp-box">
     <div class="otp-code">' . $otpCode . '</div>
-    <div class="otp-expiry">Valid for 5 minutes • Do not share this code with anyone</div>
+    <div class="otp-expiry">Valid for 10 minutes • Do not share this code with anyone</div>
   </div>
 
   <p style="font-size: 13px; color: #665a5a;">If you did not attempt this login, your account password may still be secure, but you should change your password immediately.</p>
