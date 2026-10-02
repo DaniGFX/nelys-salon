@@ -89,6 +89,7 @@ class Mailer {
         $host = env('GMAIL_SMTP_HOST', 'smtp.gmail.com');
         $port = (int)env('GMAIL_SMTP_PORT', 587);
         $timeout = 10;
+        $password = str_replace(' ', '', $password);
 
         $socket = @fsockopen($host, $port, $errno, $errstr, $timeout);
         if (!$socket) {
