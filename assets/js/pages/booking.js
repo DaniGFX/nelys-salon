@@ -1378,6 +1378,12 @@ async function finalizeBooking() {
       }
     }
 
+    // Invalidate admin cache so fresh bookings appear immediately
+    try {
+      localStorage.removeItem('nelys_admin_appointments_cache');
+      localStorage.removeItem('nelys_admin_dashboard_cache');
+    } catch (_) {}
+
     // Show Success Screen
     const successSection = document.getElementById('successScreen');
     if (successSection) {

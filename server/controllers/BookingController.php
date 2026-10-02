@@ -312,6 +312,8 @@ class BookingController {
     public function index(): void {
         try {
             $auth = AuthMiddleware::checkOptional();
+            $pdo = Database::getConnection();
+            $today = date('Y-m-d');
 
             if ($auth && ($auth['role'] ?? '') === 'admin') {
                 $filters = [
