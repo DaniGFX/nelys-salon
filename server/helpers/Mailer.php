@@ -144,12 +144,18 @@ class Mailer {
         $write("DATA");
         $read();
 
+        $msgId = '<' . bin2hex(random_bytes(12)) . '.' . time() . '@' . parse_url(env('APP_URL', 'http://nelyssalon.website'), PHP_URL_HOST) . '>';
+        
         $headers  = "MIME-Version: 1.0\r\n";
         $headers .= "Content-Type: text/html; charset=UTF-8\r\n";
         $headers .= "From: {$fromName} <{$fromEmail}>\r\n";
         $headers .= "To: {$toName} <{$to}>\r\n";
         $headers .= "Subject: {$subject}\r\n";
         $headers .= "Date: " . date('r') . "\r\n";
+        $headers .= "Message-ID: {$msgId}\r\n";
+        $headers .= "X-Priority: 1 (Highest)\r\n";
+        $headers .= "X-MSMail-Priority: High\r\n";
+        $headers .= "Importance: High\r\n";
         $headers .= "X-Mailer: NelysSalon/1.0\r\n";
 
         $message = $headers . "\r\n" . $body . "\r\n.\r\n";
