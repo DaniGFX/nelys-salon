@@ -47,12 +47,7 @@ class AuthController {
         }
 
         if (!$user || !password_verify($password, $user['password_hash'])) {
-            // Seamless support for Admin123 and admin123 with automatic hash upgrade
-            if ($user && $user['role'] === 'admin' && ($password === 'Admin123' || $password === 'admin123')) {
-                User::updatePassword((int)$user['id'], password_hash($password, PASSWORD_BCRYPT));
-            } else {
-                Response::error('Invalid email/mobile number or password.', 401);
-            }
+            Response::error('Invalid email/mobile number or password.', 401);
         }
 
         // Clear rate limiter upon successful password verification
@@ -236,7 +231,10 @@ class AuthController {
             'exp'  => time() + 900,
             'type' => '2fa_challenge'
         ]));
-        $secret = env('JWT_SECRET', 'nelys_salon_secret_key_2fa');
+        $secret = env('JWT_SECRET');
+        if (empty($secret)) {
+            throw new RuntimeException('JWT_SECRET is not configured');
+        }
         $signature = hash_hmac('sha256', $payload, $secret);
         return "{$payload}.{$signature}";
     }
@@ -249,7 +247,8 @@ class AuthController {
         if (count($parts) !== 2) return null;
 
         list($payload, $signature) = $parts;
-        $secret = env('JWT_SECRET', 'nelys_salon_secret_key_2fa');
+        $secret = env('JWT_SECRET');
+        if (empty($secret)) return null;
         $expected = hash_hmac('sha256', $payload, $secret);
 
         if (!hash_equals($expected, $signature)) return null;

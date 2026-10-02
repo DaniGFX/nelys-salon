@@ -55,19 +55,37 @@ class Router {
 
         try {
             switch ($resource) {
-                // Database Setup Endpoint
+                // Database Setup Endpoint (CLI or Authorized Admin Only)
                 case 'setup':
+                    $isCli = (php_sapi_name() === 'cli');
+                    $isDev = (env('APP_ENV', 'development') !== 'production');
+                    $providedKey = $_GET['key'] ?? '';
+                    $authKey = env('JWT_SECRET', '');
+                    $isKeyValid = (!empty($authKey) && hash_equals($authKey, $providedKey));
+
+                    if (!$isCli && !$isDev && !$isKeyValid) {
+                        http_response_code(403);
+                        echo json_encode(['status' => 'error', 'message' => 'Access denied. Database setup is disabled in production.']);
+                        exit;
+                    }
+
                     require_once dirname(__DIR__) . '/db/setup.php';
                     exit;
 
-                // Mailer Diagnostic Endpoint
+                // Mailer Diagnostic Endpoint (Protected)
                 case 'test-mail':
-                    $user = env('GMAIL_SMTP_USER', '');
-                    $pass = env('GMAIL_APP_PASSWORD', '');
-                    $passClean = str_replace(' ', '', (string)$pass);
-                    $host = env('GMAIL_SMTP_HOST', 'smtp.gmail.com');
-                    $port = (int)env('GMAIL_SMTP_PORT', 465);
+                    $isDev = (env('APP_ENV', 'development') !== 'production');
+                    $providedKey = $_GET['key'] ?? '';
+                    $authKey = env('JWT_SECRET', '');
+                    $isKeyValid = (!empty($authKey) && hash_equals($authKey, $providedKey));
 
+                    if (!$isDev && !$isKeyValid) {
+                        http_response_code(403);
+                        echo json_encode(['status' => 'error', 'message' => 'Access denied. Authentication key required.']);
+                        exit;
+                    }
+
+                    $user = env('GMAIL_SMTP_USER', '');
                     $start = microtime(true);
                     $result = Mailer::sendOtp($user, "Nely's Salon Admin", "123456");
                     $duration = round(microtime(true) - $start, 3);

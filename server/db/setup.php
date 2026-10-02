@@ -21,9 +21,8 @@ try {
     $pdo = Database::getConnection();
     echo "[OK] Connected to database successfully.\n";
 
-    $adminEmail = 'nelyssalon.website@gmail.com';
-    $adminPass  = 'Admin123';
-    // BCrypt hash for 'Admin123'
+    $adminEmail = env('ADMIN_EMAIL', 'nelyssalon.website@gmail.com');
+    // BCrypt hash for initial admin password
     $adminHash  = '$2y$10$08ATlRbtlfhqHL6HA4ywz.yLMFnKw7FQ2jZ6PyOQYdIIdH88USdNS';
 
     // Check if tables already exist
@@ -255,14 +254,7 @@ try {
 
     echo "\n========================================\n";
     echo " Database setup & admin sync complete!\n";
-    echo " Admin Account Credentials:\n";
-    echo "   Role:     admin (Administrator)\n";
-    echo "   Email:    {$adminEmail}\n";
-    echo "   Password: {$adminPass}\n";
-    echo "\n Customer Account Credentials:\n";
-    echo "   Role:     customer (Client Portal)\n";
-    echo "   Email:    maria@email.com\n";
-    echo "   Password: password123\n";
+    echo " Admin Account: {$adminEmail}\n";
     echo "========================================\n";
 
 } catch (PDOException $e) {
