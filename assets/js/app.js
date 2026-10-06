@@ -384,17 +384,33 @@ async function loadLandingStaff() {
   renderLandingStaffCards();
 }
 
-function mapLandingStaffItem(item) {
-  let avatarUrl = 'assets/images/logo.jfif';
-  if (item.avatar) {
-    if (item.avatar.includes('/') || item.avatar.startsWith('http') || item.avatar.startsWith('data:')) {
-      avatarUrl = item.avatar;
-    } else if (item.avatar === 'director.jpg' || item.avatar === 'sculptor.jpg' || item.avatar === 'spa-specialist.jpg') {
-      avatarUrl = `assets/images/team/${item.avatar}`;
-    } else {
-      avatarUrl = `assets/images/${item.avatar}`;
-    }
+function resolveLandingStaffAvatar(avatar, staffName = '') {
+  if (!avatar && !staffName) return 'assets/images/logo.jfif';
+  const av = String(avatar || staffName).trim();
+  if (av.startsWith('http://') || av.startsWith('https://') || av.startsWith('data:')) {
+    return av;
   }
+  if (av.startsWith('assets/')) {
+    return av;
+  }
+  const clean = av.toLowerCase().replace(/[\s_]+/g, '-');
+  if (clean.includes('staff-1') || clean.includes('director') || clean.includes('nely') || clean === '1') {
+    return 'assets/images/team/director.jpg';
+  }
+  if (clean.includes('staff-2') || clean.includes('sculptor') || clean.includes('ana') || clean === '2') {
+    return 'assets/images/team/sculptor.jpg';
+  }
+  if (clean.includes('staff-3') || clean.includes('spa-specialist') || clean.includes('elena') || clean === '3') {
+    return 'assets/images/team/spa-specialist.jpg';
+  }
+  if (av.includes('team/')) {
+    return `assets/images/${av}`;
+  }
+  return `assets/images/team/${av}`;
+}
+
+function mapLandingStaffItem(item) {
+  const avatarUrl = resolveLandingStaffAvatar(item.avatar, item.name);
 
   return {
     id: parseInt(item.id),

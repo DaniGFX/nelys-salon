@@ -467,17 +467,33 @@ async function loadLiveStaff() {
   }
 }
 
-function mapBackendStaffItem(item) {
-  let avatarUrl = '../assets/images/logo.jfif';
-  if (item.avatar) {
-    if (item.avatar.includes('/') || item.avatar.startsWith('http') || item.avatar.startsWith('data:')) {
-      avatarUrl = item.avatar;
-    } else if (item.avatar === 'director.jpg' || item.avatar === 'sculptor.jpg' || item.avatar === 'spa-specialist.jpg') {
-      avatarUrl = `../assets/images/team/${item.avatar}`;
-    } else {
-      avatarUrl = `../assets/images/${item.avatar}`;
-    }
+function resolveStaffAvatar(avatar, staffName = '') {
+  if (!avatar && !staffName) return '../assets/images/logo.jfif';
+  const av = String(avatar || staffName).trim();
+  if (av.startsWith('http://') || av.startsWith('https://') || av.startsWith('data:')) {
+    return av;
   }
+  if (av.startsWith('../') || av.startsWith('./')) {
+    return av;
+  }
+  const clean = av.toLowerCase().replace(/[\s_]+/g, '-');
+  if (clean.includes('staff-1') || clean.includes('director') || clean.includes('nely') || clean === '1') {
+    return '../assets/images/team/director.jpg';
+  }
+  if (clean.includes('staff-2') || clean.includes('sculptor') || clean.includes('ana') || clean === '2') {
+    return '../assets/images/team/sculptor.jpg';
+  }
+  if (clean.includes('staff-3') || clean.includes('spa-specialist') || clean.includes('elena') || clean === '3') {
+    return '../assets/images/team/spa-specialist.jpg';
+  }
+  if (av.includes('team/')) {
+    return `../assets/images/${av}`;
+  }
+  return `../assets/images/team/${av}`;
+}
+
+function mapBackendStaffItem(item) {
+  const avatarUrl = resolveStaffAvatar(item.avatar, item.name);
 
   return {
     id: parseInt(item.id),
@@ -1024,8 +1040,13 @@ function selectPaymentMethod(method) {
   const cardBank = document.getElementById('payCard-bank_transfer');
   const onlineBox = document.getElementById('onlinePaymentBox');
   const cashBox = document.getElementById('cashNoticeBox');
+  const gcashSec = document.getElementById('gcashPaymentSection');
+  const bankSec = document.getElementById('bankPaymentSection');
   const onlineTitle = document.getElementById('onlinePaymentTitle');
   const onlineNum = document.getElementById('onlinePaymentNumber');
+  const refLabel = document.getElementById('referenceNumberLabel');
+  const refInput = document.getElementById('referenceNumberInput');
+  const refHint = document.getElementById('referenceNumberHint');
 
   const selectedClass = 'p-5 rounded-2xl border-2 border-[#810B38] bg-[#FAF6F0] shadow-md transition-all cursor-pointer text-center space-y-2';
   const defaultClass = 'p-5 rounded-2xl border-2 border-[#DCC3AA] bg-white hover:border-[#810B38] shadow-sm transition-all cursor-pointer text-center space-y-2 group';
@@ -1040,13 +1061,23 @@ function selectPaymentMethod(method) {
   } else if (method === 'gcash') {
     if (onlineBox) onlineBox.classList.remove('hidden');
     if (cashBox) cashBox.classList.add('hidden');
-    if (onlineTitle) onlineTitle.textContent = "Nely’s Salon GCash";
+    if (gcashSec) gcashSec.classList.remove('hidden');
+    if (bankSec) bankSec.classList.add('hidden');
+    if (onlineTitle) onlineTitle.textContent = "Scan GCash QR Code";
     if (onlineNum) onlineNum.textContent = "0917 123 4567";
+    if (refLabel) refLabel.innerHTML = 'GCash Reference Number <span class="text-[#810B38]">*</span>';
+    if (refInput) refInput.placeholder = 'e.g. 1029 3847 5612';
+    if (refHint) refHint.textContent = 'Found in your GCash SMS / payment receipt';
   } else if (method === 'bank_transfer') {
     if (onlineBox) onlineBox.classList.remove('hidden');
     if (cashBox) cashBox.classList.add('hidden');
-    if (onlineTitle) onlineTitle.textContent = "BDO Unibank · Nely's Salon";
+    if (gcashSec) gcashSec.classList.add('hidden');
+    if (bankSec) bankSec.classList.remove('hidden');
+    if (onlineTitle) onlineTitle.textContent = "Bank Transfer / InstaPay";
     if (onlineNum) onlineNum.textContent = "0012 3456 7890";
+    if (refLabel) refLabel.innerHTML = 'Bank Transfer Reference Number <span class="text-[#810B38]">*</span>';
+    if (refInput) refInput.placeholder = 'e.g. BDO-1029384756';
+    if (refHint) refHint.textContent = 'Found on your banking confirmation slip';
   }
 
   updateSummary();
@@ -1073,6 +1104,18 @@ function handleReceiptUpload(e) {
   reader.readAsDataURL(file);
 
   showToast('Receipt attached successfully!', 'success');
+}
+
+function removeReceiptUpload(e) {
+  if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+  bookingState.payment.receiptFileName = '';
+  bookingState.payment.receiptDataUrl = '';
+  const fileInput = document.getElementById('receiptFileInput');
+  if (fileInput) fileInput.value = '';
+  const previewBox = document.getElementById('receiptPreviewBox');
+  const uploadLabel = document.getElementById('uploadLabel');
+  if (previewBox) previewBox.classList.add('hidden');
+  if (uploadLabel) uploadLabel.textContent = 'Upload GCash / Bank Receipt';
 }
 
 // 12. Summary Sidebar Update
@@ -1105,6 +1148,15 @@ function updateSummary() {
   };
   if (sumPay) sumPay.textContent = payMap[bookingState.payment.method] || 'GCash';
   if (sumTot) sumTot.textContent = bookingState.service.priceFormatted || '₱0';
+
+  // Sync amount due on online payment cards
+  const gcashAmountDue = document.getElementById('gcashAmountDue');
+  const gcashStepAmount = document.getElementById('gcashStepAmount');
+  const bankAmountDue = document.getElementById('bankAmountDue');
+  const priceDisplay = bookingState.service.priceFormatted || '₱0';
+  if (gcashAmountDue) gcashAmountDue.textContent = priceDisplay;
+  if (gcashStepAmount) gcashStepAmount.textContent = priceDisplay;
+  if (bankAmountDue) bankAmountDue.textContent = priceDisplay;
 }
 
 function handleSummaryClick() {
@@ -1602,6 +1654,41 @@ function handleLogout(e) {
   return false;
 }
 
+// QR Code Zoom Modal Functions
+function openQrZoomModal() {
+  const modal = document.getElementById('qrZoomModal');
+  if (modal && typeof modal.showModal === 'function') {
+    lockBodyScroll();
+    modal.showModal();
+  }
+}
+
+function closeQrZoomModal() {
+  const modal = document.getElementById('qrZoomModal');
+  if (modal && typeof modal.close === 'function') {
+    modal.close();
+    unlockBodyScroll();
+  }
+}
+
+function copyGcashNumber() {
+  const num = '0917 123 4567';
+  if (navigator && navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    navigator.clipboard.writeText(num).then(() => {
+      const btnText = document.getElementById('copyGcashBtnText');
+      if (btnText) {
+        btnText.textContent = 'Copied!';
+        setTimeout(() => { btnText.textContent = 'Copy'; }, 2000);
+      }
+      showToast('GCash number (0917 123 4567) copied to clipboard!', 'success');
+    }).catch(() => {
+      showToast('GCash Number: 0917 123 4567', 'info');
+    });
+  } else {
+    showToast('GCash Number: 0917 123 4567', 'info');
+  }
+}
+
 // Global window bindings for HTML event attributes
 window.selectService = selectService;
 window.selectStaff = selectStaff;
@@ -1610,6 +1697,10 @@ window.selectTime = selectTime;
 window.selectVisitType = selectVisitType;
 window.selectPaymentMethod = selectPaymentMethod;
 window.handleReceiptUpload = handleReceiptUpload;
+window.removeReceiptUpload = removeReceiptUpload;
+window.openQrZoomModal = openQrZoomModal;
+window.closeQrZoomModal = closeQrZoomModal;
+window.copyGcashNumber = copyGcashNumber;
 window.filterServiceCategory = filterServiceCategory;
 window.changeCalendarMonth = changeCalendarMonth;
 window.goToStep = goToStep;

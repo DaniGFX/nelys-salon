@@ -52,7 +52,7 @@ INSERT INTO `business_settings` (`setting_key`, `setting_value`) VALUES
 ('closing_hour', '20:00:00'),
 ('operating_days', 'Monday - Sunday'),
 ('cancellation_cutoff_hours', '24'),
-('gcash_account_name', 'Nely''s Salon Atelier'),
+('gcash_account_name', 'NE***Y J.'),
 ('gcash_number', '0917 123 4567'),
 ('bank_name', 'BDO Unibank'),
 ('bank_account_name', 'Nely''s Hair & Beauty Salon'),

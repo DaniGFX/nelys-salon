@@ -760,59 +760,216 @@
             </div>
 
             <!-- Online Payment Details Box (Shown for GCash & Bank Transfer) -->
-            <div id="onlinePaymentBox" class="p-5 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA] space-y-4">
+            <div id="onlinePaymentBox" class="p-5 sm:p-6 rounded-2xl bg-[#FAF6F0] border border-[#DCC3AA] space-y-5">
 
-              <div
-                class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#DCC3AA]/40 pb-3">
-                <div>
-                  <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38]">Payment Recipient</span>
-                  <h4 id="onlinePaymentTitle" class="font-serif text-xl font-bold text-[#541A1A]">Nely’s Salon GCash
-                  </h4>
+              <!-- ================= GCash Payment Section ================= -->
+              <div id="gcashPaymentSection" class="space-y-4">
+                
+                <!-- Section Header -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#DCC3AA]/50 pb-3.5">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-[#810B38] text-white flex items-center justify-center text-lg shadow-sm shrink-0">
+                      <i class="fa-solid fa-qrcode"></i>
+                    </div>
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <h4 id="onlinePaymentTitle" class="font-serif text-lg font-bold text-[#541A1A]">Scan GCash QR Code</h4>
+                        <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                          <i class="fa-solid fa-shield-halved text-[9px]"></i> QR Ph
+                        </span>
+                      </div>
+                      <p class="text-[11px] text-[#735e5e]">
+                        Scan via GCash app or any QR Ph-compliant bank & e-wallet
+                      </p>
+                    </div>
+                  </div>
+
+                  <div class="text-left sm:text-right bg-white sm:bg-transparent px-3 py-2 sm:p-0 rounded-xl border sm:border-0 border-[#DCC3AA]/60">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] block">Amount to Pay</span>
+                    <span id="gcashAmountDue" class="font-serif text-xl sm:text-2xl font-bold text-[#810B38]">₱1,999</span>
+                  </div>
                 </div>
-                <div class="text-left sm:text-right">
-                  <span class="text-xs text-[#735e5e] block">Account Number / Mobile:</span>
-                  <span id="onlinePaymentNumber" class="font-mono text-sm sm:text-base font-bold text-[#810B38]">0917
-                    123 4567</span>
+
+                <!-- Two-Column Layout for QR Code and Account Info -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-5 items-center">
+                  
+                  <!-- Left: QR Code Showcase (md:col-span-5) -->
+                  <div class="md:col-span-5 flex flex-col items-center justify-center">
+                    <div class="relative group cursor-pointer" onclick="openQrZoomModal()" title="Click to enlarge QR code">
+                      <div class="p-3 bg-white rounded-2xl border-2 border-[#DCC3AA] shadow-md group-hover:border-[#810B38] group-hover:shadow-lg transition-all text-center">
+                        <img id="gcashQrImage" src="../assets/images/qrcode.jpeg" alt="Nely's Salon GCash QR Code"
+                          class="w-48 h-48 sm:w-52 sm:h-52 object-contain rounded-xl mx-auto">
+                        <div class="mt-1.5 flex items-center justify-center gap-1.5 text-[11px] font-bold text-[#810B38]">
+                          <i class="fa-solid fa-expand text-[10px]"></i>
+                          <span>Tap to enlarge</span>
+                        </div>
+                      </div>
+                      
+                      <!-- Hover Overlay -->
+                      <div class="absolute inset-0 bg-black/40 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-2 backdrop-blur-[1px]">
+                        <i class="fa-solid fa-magnifying-glass-plus text-base"></i>
+                        <span>Enlarge QR</span>
+                      </div>
+                    </div>
+
+                    <!-- Quick Action Buttons -->
+                    <div class="flex items-center gap-2 mt-3 w-full max-w-[220px]">
+                      <button type="button" onclick="openQrZoomModal()"
+                        class="flex-1 py-1.5 px-2.5 rounded-lg bg-white border border-[#DCC3AA] hover:bg-[#FAF6F0] text-[11px] font-bold text-[#541A1A] hover:text-[#810B38] transition-colors flex items-center justify-center gap-1.5 shadow-2xs">
+                        <i class="fa-solid fa-expand text-[10px]"></i>
+                        <span>Enlarge</span>
+                      </button>
+                      <a href="../assets/images/qrcode.jpeg" download="Nelys-Salon-GCash-QR.jpeg"
+                        class="flex-1 py-1.5 px-2.5 rounded-lg bg-white border border-[#DCC3AA] hover:bg-[#FAF6F0] text-[11px] font-bold text-[#541A1A] hover:text-[#810B38] transition-colors flex items-center justify-center gap-1.5 shadow-2xs">
+                        <i class="fa-solid fa-download text-[10px]"></i>
+                        <span>Save QR</span>
+                      </a>
+                    </div>
+                  </div>
+
+                  <!-- Right: Merchant Details & Quick Steps (md:col-span-7) -->
+                  <div class="md:col-span-7 space-y-3">
+                    
+                    <!-- Account Name Badge -->
+                    <div class="p-3.5 rounded-xl bg-white border border-[#DCC3AA] shadow-2xs flex items-center justify-between">
+                      <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] block">GCash Account Name</span>
+                        <div class="flex items-center gap-2 mt-0.5">
+                          <span id="gcashAccountNameText" class="font-mono text-base sm:text-lg font-extrabold text-[#541A1A] tracking-wider">NE***Y J.</span>
+                          <span class="inline-flex items-center text-emerald-600 text-sm" title="Verified GCash Recipient">
+                            <i class="fa-solid fa-circle-check"></i>
+                          </span>
+                        </div>
+                      </div>
+                      <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        Verified
+                      </span>
+                    </div>
+
+                    <!-- Mobile Number / Hotline -->
+                    <div class="p-3.5 rounded-xl bg-white border border-[#DCC3AA] shadow-2xs flex items-center justify-between">
+                      <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] block">Account Mobile / Hotline</span>
+                        <span id="onlinePaymentNumber" class="font-mono text-sm sm:text-base font-bold text-[#810B38]">0917 123 4567</span>
+                      </div>
+                      <button type="button" onclick="copyGcashNumber()"
+                        class="px-3 py-1.5 text-xs font-semibold text-[#810B38] hover:text-[#541A1A] hover:bg-[#FAF6F0] rounded-lg border border-[#DCC3AA] transition-colors flex items-center gap-1.5">
+                        <i class="fa-regular fa-copy text-xs"></i>
+                        <span id="copyGcashBtnText">Copy</span>
+                      </button>
+                    </div>
+
+                    <!-- Payment Steps Box -->
+                    <div class="p-3.5 rounded-xl bg-[#FAF6F0] border border-[#DCC3AA]/70 text-xs text-[#541A1A] space-y-2">
+                      <span class="font-bold flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-[#810B38]">
+                        <i class="fa-solid fa-circle-info"></i>
+                        How to Pay via GCash:
+                      </span>
+                      <ol class="list-decimal list-inside space-y-1 text-[11px] text-[#735e5e] leading-relaxed">
+                        <li>Open <strong class="text-[#541A1A]">GCash</strong> app and tap <strong class="text-[#541A1A]">QR</strong> (or upload saved QR image).</li>
+                        <li>Scan the QR code and confirm the recipient is <strong class="text-[#541A1A] font-mono">NE***Y J.</strong></li>
+                        <li>Input the exact amount: <strong class="text-[#810B38] font-serif" id="gcashStepAmount">₱1,999</strong>.</li>
+                        <li>Take a screenshot of the completed payment receipt.</li>
+                        <li>Enter the 13-digit <strong class="text-[#541A1A]">Reference Number</strong> and attach receipt below.</li>
+                      </ol>
+                    </div>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+              <!-- ================= Bank Transfer Section (Hidden by Default) ================= -->
+              <div id="bankPaymentSection" class="hidden space-y-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#DCC3AA]/50 pb-3.5">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-[#FAF6F0] border border-[#DCC3AA] text-[#810B38] flex items-center justify-center text-lg shadow-sm shrink-0">
+                      <i class="fa-solid fa-building-columns"></i>
+                    </div>
+                    <div>
+                      <h4 class="font-serif text-lg font-bold text-[#541A1A]">Bank Transfer / InstaPay</h4>
+                      <p class="text-[11px] text-[#735e5e]">Direct online transfer or deposit to Nely's Salon bank account</p>
+                    </div>
+                  </div>
+                  <div class="text-left sm:text-right">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] block">Amount to Transfer</span>
+                    <span id="bankAmountDue" class="font-serif text-xl sm:text-2xl font-bold text-[#810B38]">₱1,999</span>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div class="p-3.5 rounded-xl bg-white border border-[#DCC3AA] space-y-1">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] block">Bank Institution</span>
+                    <strong class="font-serif text-sm font-bold text-[#541A1A] block">BDO Unibank</strong>
+                    <span class="text-[11px] text-[#735e5e]">Account Type: Savings Account</span>
+                  </div>
+                  <div class="p-3.5 rounded-xl bg-white border border-[#DCC3AA] space-y-1">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] block">Account Name</span>
+                    <strong class="font-mono text-sm font-bold text-[#541A1A] block">Nely's Salon</strong>
+                    <span class="text-[11px] text-[#735e5e]">Lagro Branch</span>
+                  </div>
+                  <div class="p-3.5 rounded-xl bg-white border border-[#DCC3AA] sm:col-span-2 flex items-center justify-between">
+                    <div>
+                      <span class="text-[10px] font-bold uppercase tracking-wider text-[#735e5e] block">Account Number</span>
+                      <strong class="font-mono text-base font-extrabold text-[#810B38] block tracking-wider">0012 3456 7890</strong>
+                    </div>
+                    <button type="button" onclick="navigator.clipboard.writeText('0012 3456 7890'); showToast('Bank account number copied!', 'success');"
+                      class="px-3 py-1.5 text-xs font-semibold text-[#810B38] hover:bg-[#FAF6F0] rounded-lg border border-[#DCC3AA] transition-colors flex items-center gap-1.5">
+                      <i class="fa-regular fa-copy text-xs"></i>
+                      <span>Copy</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <!-- Upload Payment Proof Box -->
-              <div class="space-y-2">
-                <label class="block text-xs font-bold text-[#541A1A]">
-                  Upload Payment Proof
-                </label>
-
-                <div id="dropzoneArea" onclick="document.getElementById('receiptFileInput').click()"
-                  class="p-6 rounded-2xl border-2 border-dashed border-[#DCC3AA] hover:border-[#810B38] bg-white text-center cursor-pointer transition-colors space-y-2">
-                  <input type="file" id="receiptFileInput" accept="image/*" class="hidden"
-                    onchange="handleReceiptUpload(event)">
-
-                  <div
-                    class="w-10 h-10 rounded-full bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-lg mx-auto">
-                    <i class="fa-solid fa-paperclip"></i>
+              <!-- ================= Shared Payment Proof Upload & Reference Section ================= -->
+              <div class="pt-2 border-t border-[#DCC3AA]/50 space-y-4">
+                
+                <!-- Reference Number Input -->
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <label for="referenceNumberInput" id="referenceNumberLabel" class="block text-xs font-bold text-[#541A1A]">
+                      GCash Reference Number <span class="text-[#810B38]">*</span>
+                    </label>
+                    <span class="text-[11px] text-[#735e5e]" id="referenceNumberHint">Found in your GCash SMS / payment receipt</span>
                   </div>
-                  <div>
-                    <span id="uploadLabel" class="text-xs font-bold text-[#541A1A] block">Upload Receipt</span>
-                    <span class="text-[11px] text-[#735e5e]">JPG, PNG up to 5MB</span>
-                  </div>
-                  <!-- Preview container if uploaded -->
-                  <div id="receiptPreviewBox" class="hidden pt-2">
-                    <span
-                      class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-xs font-bold">
-                      <i class="fa-solid fa-circle-check"></i>
-                      <span id="receiptFileName">receipt.jpg</span>
-                    </span>
+                  <input type="text" id="referenceNumberInput" placeholder="e.g. 1029 3847 5612"
+                    class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs font-mono tracking-wider text-[#2b1d1d] focus:outline-none focus:border-[#810B38] shadow-2xs">
+                </div>
+
+                <!-- Upload Payment Proof Box -->
+                <div class="space-y-1.5">
+                  <label class="block text-xs font-bold text-[#541A1A]">
+                    Upload Payment Proof / Screenshot Receipt
+                  </label>
+
+                  <div id="dropzoneArea" onclick="document.getElementById('receiptFileInput').click()"
+                    class="p-6 rounded-2xl border-2 border-dashed border-[#DCC3AA] hover:border-[#810B38] bg-white text-center cursor-pointer transition-colors space-y-2">
+                    <input type="file" id="receiptFileInput" accept="image/*" class="hidden"
+                      onchange="handleReceiptUpload(event)">
+
+                    <div
+                      class="w-10 h-10 rounded-full bg-[#FAF6F0] text-[#810B38] flex items-center justify-center text-lg mx-auto">
+                      <i class="fa-solid fa-paperclip"></i>
+                    </div>
+                    <div>
+                      <span id="uploadLabel" class="text-xs font-bold text-[#541A1A] block">Upload GCash / Bank Receipt</span>
+                      <span class="text-[11px] text-[#735e5e]">JPG, PNG, WEBP up to 5MB</span>
+                    </div>
+                    <!-- Preview container if uploaded -->
+                    <div id="receiptPreviewBox" class="hidden pt-2">
+                      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold">
+                        <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                        <span id="receiptFileName">receipt.jpg</span>
+                        <button type="button" onclick="removeReceiptUpload(event)" title="Remove receipt" class="ml-1 text-stone-400 hover:text-rose-600">
+                          <i class="fa-solid fa-xmark text-xs"></i>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <!-- Reference Number Input -->
-              <div class="space-y-1">
-                <label for="referenceNumberInput" class="block text-xs font-bold text-[#541A1A]">
-                  Reference Number
-                </label>
-                <input type="text" id="referenceNumberInput" placeholder="e.g. 1029 3847 5612"
-                  class="w-full px-4 py-2.5 rounded-xl border border-[#DCC3AA] bg-white text-xs font-mono tracking-wider text-[#2b1d1d] focus:outline-none focus:border-[#810B38]">
               </div>
 
             </div>
@@ -1155,11 +1312,75 @@
     </div>
   </dialog>
 
+  <!-- ================= MODAL: GCASH QR CODE ENLARGED VIEW ================= -->
+  <dialog id="qrZoomModal"
+    class="rounded-3xl p-0 shadow-2xl border border-[#DCC3AA] bg-white text-[#2b1d1d] max-w-sm sm:max-w-md w-full backdrop:bg-black/60 backdrop:backdrop-blur-sm overscroll-contain">
+    <div class="p-6 sm:p-7 space-y-4 text-center">
+      
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between border-b border-[#F1E2D1] pb-3">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-xl bg-[#810B38] text-white flex items-center justify-center text-sm shadow-xs">
+            <i class="fa-solid fa-qrcode"></i>
+          </div>
+          <div class="text-left">
+            <h4 class="font-serif text-lg font-bold text-[#541A1A]">Official GCash QR Code</h4>
+            <span class="text-[10px] text-[#735e5e] block">QR Ph InstaPay Compliant</span>
+          </div>
+        </div>
+
+        <button type="button" onclick="closeQrZoomModal()"
+          class="w-7 h-7 rounded-full bg-[#FAF6F0] text-[#735e5e] hover:text-[#541A1A] flex items-center justify-center transition-colors"
+          aria-label="Close QR Modal">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+
+      <!-- High-Res QR Code Preview -->
+      <div class="p-4 bg-[#FAF6F0] rounded-2xl border border-[#DCC3AA]/70 flex items-center justify-center">
+        <img src="../assets/images/qrcode.jpeg" alt="Nely's Salon GCash QR Code"
+          class="w-64 h-64 sm:w-72 sm:h-72 object-contain rounded-xl bg-white p-3 shadow-md border border-[#E8D9CA]">
+      </div>
+
+      <!-- Recipient Information Pill -->
+      <div class="p-3.5 rounded-xl bg-white border border-[#DCC3AA] text-left text-xs space-y-1">
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e] text-[11px]">GCash Account Name:</span>
+          <span class="font-mono font-extrabold text-[#541A1A] text-sm flex items-center gap-1">
+            NE***Y J. <i class="fa-solid fa-circle-check text-emerald-600 text-xs"></i>
+          </span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="text-[#735e5e] text-[11px]">GCash Number:</span>
+          <span class="font-mono font-bold text-[#810B38] text-xs">0917 123 4567</span>
+        </div>
+      </div>
+
+      <p class="text-[11px] text-[#735e5e]">
+        Scan using GCash app or save this image to upload inside GCash (Scan QR &gt; Upload QR).
+      </p>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2.5 pt-1">
+        <a href="../assets/images/qrcode.jpeg" download="Nelys-Salon-GCash-QR.jpeg"
+          class="flex-1 py-2.5 rounded-xl bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#541A1A] border border-[#DCC3AA] text-xs font-bold transition-colors flex items-center justify-center gap-1.5 shadow-xs">
+          <i class="fa-solid fa-download text-xs"></i>
+          <span>Save Image</span>
+        </a>
+        <button type="button" onclick="closeQrZoomModal()"
+          class="flex-1 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold transition-colors shadow-sm">
+          Done
+        </button>
+      </div>
+
+    </div>
+  </dialog>
+
   <!-- ================= TOAST CONTAINER ================= -->
   <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
   <!-- Page JavaScript -->
-  <script src="../assets/js/pages/booking.js?v=3.0"></script>
+  <script src="../assets/js/pages/booking.js?v=4.0"></script>
 </body>
 
 </html>

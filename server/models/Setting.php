@@ -109,7 +109,7 @@ class Setting {
             'bankTransfer' => self::get('pay_bank', "0") === "1" || self::get('pay_bank') === "true",
             'other'        => self::get('pay_other', "0") === "1" || self::get('pay_other') === "true",
             'gcashNumber'  => self::get('gcash_number', "0917 888 9999"),
-            'gcashName'    => self::get('gcash_account_name', "Nely D.")
+            'gcashName'    => self::get('gcash_account_name', "NE***Y J.")
         ];
 
         // 5. Notification Preferences

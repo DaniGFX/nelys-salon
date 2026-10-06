@@ -295,6 +295,31 @@ function mapStaffRecord(item) {
     }
   }
 
+function resolveAdminStaffAvatar(avatar, staffName = '') {
+  if (!avatar && !staffName) return '../assets/images/logo.jfif';
+  const av = String(avatar || staffName).trim();
+  if (av.startsWith('http://') || av.startsWith('https://') || av.startsWith('data:')) {
+    return av;
+  }
+  if (av.startsWith('../') || av.startsWith('./')) {
+    return av;
+  }
+  const clean = av.toLowerCase().replace(/[\s_]+/g, '-');
+  if (clean.includes('staff-1') || clean.includes('director') || clean.includes('nely') || clean === '1') {
+    return '../assets/images/team/director.jpg';
+  }
+  if (clean.includes('staff-2') || clean.includes('sculptor') || clean.includes('ana') || clean === '2') {
+    return '../assets/images/team/sculptor.jpg';
+  }
+  if (clean.includes('staff-3') || clean.includes('spa-specialist') || clean.includes('elena') || clean === '3') {
+    return '../assets/images/team/spa-specialist.jpg';
+  }
+  if (av.includes('team/')) {
+    return `../assets/images/${av}`;
+  }
+  return `../assets/images/team/${av}`;
+}
+
   return {
     id: parseInt(item.id, 10),
     name: item.name || 'Staff',
@@ -309,6 +334,7 @@ function mapStaffRecord(item) {
     specializations: specializations,
     schedule: schedule,
     avatar: item.avatar || 'director.jpg',
+    avatarUrl: resolveAdminStaffAvatar(item.avatar, item.name),
     total_appointments: parseInt(item.total_appointments || 0, 10),
     completed_appointments: parseInt(item.completed_appointments || 0, 10)
   };
@@ -415,8 +441,10 @@ function renderTodayAvailability() {
     return `
       <div class="flex items-center justify-between p-2.5 rounded-xl bg-white border border-[#DCC3AA]/50 hover:border-[#810B38] transition-colors group">
         <div class="flex items-center gap-2.5 min-w-0">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#810B38] to-[#541A1A] text-[#F1E2D1] flex items-center justify-center font-bold text-xs shrink-0">
-            ${escapeHtml(s.name[0] || 'S')}
+          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#810B38] to-[#541A1A] text-[#F1E2D1] flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden border border-[#DCC3AA]/60 shadow-xs">
+            ${s.avatarUrl 
+              ? `<img src="${s.avatarUrl}" alt="${escapeHtml(s.name)}" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.textContent='${escapeHtml(s.name[0] || 'S')}';">` 
+              : escapeHtml(s.name[0] || 'S')}
           </div>
           <div class="truncate">
             <span class="font-serif font-bold text-xs text-[#541A1A] block truncate">${escapeHtml(s.name)}</span>
@@ -617,8 +645,10 @@ function renderStaffCards(items) {
         <div>
           <!-- Card Header: Avatar & Info -->
           <div class="flex items-start gap-3.5 mb-4">
-            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#810B38] to-[#541A1A] text-[#F1E2D1] border border-[#DCC3AA] flex items-center justify-center font-serif text-xl font-bold shadow-md shrink-0">
-              ${escapeHtml(s.name[0] || 'S')}
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#810B38] to-[#541A1A] text-[#F1E2D1] border border-[#DCC3AA] flex items-center justify-center font-serif text-xl font-bold shadow-md shrink-0 overflow-hidden">
+              ${s.avatarUrl 
+                ? `<img src="${s.avatarUrl}" alt="${escapeHtml(s.name)}" class="w-full h-full object-cover" onerror="this.onerror=null; this.parentElement.textContent='${escapeHtml(s.name[0] || 'S')}';">` 
+                : escapeHtml(s.name[0] || 'S')}
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center justify-between gap-1">
@@ -714,7 +744,13 @@ async function openStaffProfileModal(staffId) {
     const availBadgeEl = document.getElementById('staffProfileAvailBadge');
 
     if (nameEl) nameEl.textContent = activeStaff.name;
-    if (avatarEl) avatarEl.textContent = activeStaff.name[0] || 'S';
+    if (avatarEl) {
+      if (activeStaff.avatarUrl) {
+        avatarEl.innerHTML = `<img src="${activeStaff.avatarUrl}" alt="${escapeHtml(activeStaff.name)}" class="w-full h-full object-cover rounded-2xl" onerror="this.onerror=null; this.parentElement.textContent='${escapeHtml(activeStaff.name[0] || 'S')}';">`;
+      } else {
+        avatarEl.textContent = activeStaff.name[0] || 'S';
+      }
+    }
     if (posEl) posEl.textContent = activeStaff.position;
 
     if (statusBadgeEl) {

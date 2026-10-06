@@ -535,7 +535,7 @@ async function handleSavePaymentSettings(event) {
       bankTransfer: !!document.getElementById('settingPayBank')?.checked,
       other: !!document.getElementById('settingPayOther')?.checked,
       gcashNumber: document.getElementById('settingGcashNumber')?.value.trim() || '0917 888 9999',
-      gcashName: document.getElementById('settingGcashName')?.value.trim() || "Nely's Salon Atelier"
+      gcashName: document.getElementById('settingGcashName')?.value.trim() || "NE***Y J."
     }
   };
 

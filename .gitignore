@@ -1,6 +1,6 @@
 # ==============================================================================
 # NELY'S SALON MANAGEMENT SYSTEM — .gitignore
-# Comprehensive Security, Privacy & Confidentiality Rules
+# Comprehensive Security, Privacy, Confidentiality & Compliance Rules
 # ==============================================================================
 
 # ==========================================
@@ -11,13 +11,19 @@
 .env*.local
 .env.local
 .env.development
+.env.development.local
+.env.test
+.env.test.local
 .env.staging
+.env.staging.local
 .env.production
+.env.production.local
 .env.backup
 .env.vault
 .env.keys
 .env.me
 .env.dist.local
+.env.sample.local
 *.env
 *.env.php
 *.env.json
@@ -30,6 +36,8 @@ env.yml
 .secrets.*
 secrets.*
 *.secrets
+secrets/
+.envrc
 
 # Whitelist safe environment example template only
 !/.env.example
@@ -79,6 +87,9 @@ docker-compose.*.local.yaml
 # ==========================================
 *.token
 *.jwt
+*.jwe
+*.jwk
+*.jwks
 *.secret
 *.key
 *.pem
@@ -122,6 +133,15 @@ authorized_keys
 *auth*.txt
 *api_key*
 *apikey*
+*api_secret*
+*client_secret*
+*app_password*
+*smtp_password*
+*jwt_secret*
+*encryption_key*
+*signing_key*
+*recovery_codes*
+*backup_codes*
 *.passwd
 *.pass
 *htpasswd
@@ -141,6 +161,10 @@ passwords.json
 *account*.json
 client_secret*.json
 service-account*.json
+*-service-account.json
+gcp-credentials*.json
+aws-credentials*
+sa-credentials.json
 google-services.json
 firebase-adminsdk*.json
 supabase*.json
@@ -164,46 +188,26 @@ certificates/
 .git-credentials
 
 # ==========================================
-# 3. Payment Gateways, SMS, Webhooks & APIs
+# 3. Payment Gateways, GCash, Banking & Webhooks
 # ==========================================
 *paymongo*.json
+*paymongo*.secret*
 *gcash*.json
 *maya*.json
 *paymaya*.json
+*paymaya*.secret*
 *stripe*.json
 *paypal*.json
 *xendit*.json
+*xendit*.secret*
 *dragonpay*.json
+*dragonpay*.secret*
 *bdo*.json
 *bpi*.json
 *unionbank*.json
-*smtp*.json
-*smtp*.log
-*mailer*.json
-*mailer*.log
-*gmail*.json
-*gmail*.secret*
-*email*.json
-*mail*.json
-*mail*.log
-*twilio*.json
-*twilio*.secret*
-*semaphore*.json
-*semaphore*.secret*
-*otp*.json
-*otp*.txt
-*otp*.log
-*sms*.log
-*promotexter*.json
-*philsms*.json
-*movider*.json
-*itexmo*.json
-*engagespark*.json
-*infobip*.json
-*sendgrid*.json
-*mailgun*.json
 *webhook_secret*
 *webhook*.json
+*webhook*.key
 webhook-secrets.json
 *.postman_environment.json
 *thunder-client*.json
@@ -212,6 +216,8 @@ webhook-secrets.json
 *http-client.private.env.json
 *rest-client.env.json
 *rest-client.private.env.json
+
+# Confidential customer payment receipts, slips & proof uploads
 *gcash-receipt*
 *gcash_receipt*
 *proof_of_payment*
@@ -221,8 +227,16 @@ webhook-secrets.json
 *proof_of_transfer*
 *bank_transfer_receipt*
 *receipt_upload*
-*.dmp
-*.stackdump
+*payment_screenshot*
+*payment_slip*
+*deposit_slip*
+*transaction_receipt*
+*reference_receipt*
+*gcash_slip*
+*gcash_ss*
+*payment_attachment*
+*bank_slip*
+*transfer_slip*
 
 # ==========================================
 # 4. Database Dumps, Backups & Local DB Files
@@ -254,6 +268,9 @@ webhook-secrets.json
 *dump*.sql
 *export*.sql
 *snapshot*.sql
+nelys_*.sql
+nelys_salon_db*.sql
+mysqldump*.sql
 /backups/
 /database_backups/
 /db_backups/
@@ -268,7 +285,7 @@ webhook-secrets.json
 !server/db/migrations/**/*.sql
 
 # ==========================================
-# 5. Customer Data, Financial Reports & Exports
+# 5. Customer PII, Financial Reports & Exports
 # ==========================================
 /receipts/
 /invoices/
@@ -279,6 +296,9 @@ webhook-secrets.json
 /financial/
 /financials/
 *customer_export*
+*customer_list*
+*patron_list*
+*client_database*
 *sales_export*
 *financial_report*
 *transactions*.csv
@@ -308,13 +328,95 @@ webhook-secrets.json
 *.doc
 *.rtf
 
+# Client health / patch test / allergy records
+*medical_record*
+*patch_test*
+*allergy_record*
+*skin_test*
+*client_history*
+
 # Allow legitimate static web assets & project documentation
 !assets/**
 !docs/**
 !public/**
 
 # ==========================================
-# 6. Session Files & Auth Cache
+# 6. Staff HR Data, Payroll & Government IDs
+# ==========================================
+*payroll*
+*salary*
+*salaries*
+*compensation*
+*staff_payout*
+*staff_contract*
+*employee_record*
+*hr_records*
+*sss*
+*philhealth*
+*pagibig*
+*tin_number*
+*tin_numbers*
+*valid_id*
+*government_id*
+*id_scan*
+*id_scans*
+*id_card*
+*id_cards*
+
+# ==========================================
+# 7. Communication Logs, OTPs & Mailer Secrets
+# ==========================================
+*smtp*.json
+*smtp*.log
+*mailer*.json
+*mailer*.log
+*gmail*.json
+*gmail*.secret*
+*email*.json
+*mail*.json
+*mail*.log
+*twilio*.json
+*twilio*.secret*
+*semaphore*.json
+*semaphore*.secret*
+*otp*.json
+*otp*.txt
+*otp*.log
+*2fa*.log
+*verification_code*
+*sms*.log
+*promotexter*.json
+*philsms*.json
+*movider*.json
+*itexmo*.json
+*engagespark*.json
+*infobip*.json
+*sendgrid*.json
+*mailgun*.json
+
+# ==========================================
+# 8. User Uploads, Customer Media & Storage
+# ==========================================
+# Ignore all customer and user uploaded files while preserving directory skeletons
+/uploads/**
+!/uploads/
+!/uploads/**/
+!/uploads/**/.gitkeep
+!/uploads/**/.htaccess
+/storage/
+/attachments/
+/public/uploads/
+/assets/uploads/
+/media/uploads/
+/artifacts/
+/user_uploads/
+/media_storage/
+/temp_uploads/
+!/assets/images/
+!/assets/icons/
+
+# ==========================================
+# 9. Session Files & Auth Cache
 # ==========================================
 sess_*
 *.session
@@ -324,31 +426,21 @@ cookies.txt
 /php_session/
 session/
 tokens/
+jwt_cache*
+jwt_tokens*
+bearer_token*
+auth_sessions/
+storage/framework/sessions/
 
 # ==========================================
-# 7. User Uploads, Customer Media & Storage
-# ==========================================
-/uploads/*
-!/uploads/.gitkeep
-!/uploads/**/.gitkeep
-!/uploads/.htaccess
-!/uploads/**/.htaccess
-/storage/
-/attachments/
-/public/uploads/
-/assets/uploads/
-/media/uploads/
-/artifacts/
-!/assets/images/
-!/assets/icons/
-
-# ==========================================
-# 8. Scratch, Test, Audit & Debugging Scripts
+# 10. Scratch, Test, Audit & Debugging Scripts
 # ==========================================
 /scratch/
+scratch/
 scratch_*
 scratch-*
 scratch.*
+*_scratch.*
 test_*.php
 test_*.js
 test-*.php
@@ -372,19 +464,30 @@ check-*.js
 build_*.js
 temp_*.js
 temp_*.php
+tmp_*.php
+tmp_*.js
 simulate_*.js
 simulate_*.php
 simulate-*.js
 simulate-*.php
+dump_*.php
+export_*.php
+seed_*.php
+run_*.php
+test_*.sql
+check_*.sql
 phpinfo.php
 info.php
 adminer.php
 adminer-*.php
 *.patch
 *.diff
+*.test.local.*
+*.debug.*
+*.sandbox.*
 
 # ==========================================
-# 9. Logs, PID, Profilers & Debug Output
+# 11. Logs, PID, Profilers & Debug Output
 # ==========================================
 *.log
 error_log
@@ -411,6 +514,10 @@ pnpm-debug.log*
 .phpunit.result.cache
 core
 core.*
+*.dmp
+*.stackdump
+*.crash
+crash_report*
 
 # Test coverage & runner artifacts
 coverage/
@@ -429,7 +536,7 @@ psreadline_history.txt
 .powershell_history
 
 # ==========================================
-# 10. Local Server (XAMPP / Apache / PHP) Overrides
+# 12. Local Server (XAMPP / Apache / PHP) Overrides
 # ==========================================
 httpd.conf.local
 php.ini.local
@@ -442,7 +549,7 @@ phpmyadmin/
 phpmyadmin.config.php
 
 # ==========================================
-# 11. Dependencies & Vendor Directories
+# 13. Dependencies & Vendor Directories
 # ==========================================
 /node_modules/
 /vendor/
@@ -452,7 +559,7 @@ composer.phar
 .yarn/
 
 # ==========================================
-# 12. Temporary Files, Caches & Archives
+# 14. Temporary Files, Caches & Archives
 # ==========================================
 tmp/
 temp/
@@ -478,19 +585,21 @@ temp/
 .sass-cache/
 
 # ==========================================
-# 13. Cloud Platforms & Dev Tool State
+# 15. Cloud Platforms & Dev Tool State
 # ==========================================
 .railway/
 .vercel/
 .netlify/
-.envrc
+.fly/
+.heroku/
+.render/
 .aws/
 .ssh/
 .gcloud/
 .azure/
 
 # ==========================================
-# 14. IDEs, Editors, Database Tools & AI Workspaces
+# 16. IDEs, Editors, Database Tools & AI Workspaces
 # ==========================================
 .vscode/
 .idea/
@@ -502,6 +611,8 @@ temp/
 *.ntvs*
 *.njsproj
 *.sln
+*.dbml
+*.sqldesigner*
 .gemini/
 .agents/
 .cursor/
@@ -519,9 +630,14 @@ scratchpad_*.md
 .tableplus/
 .heidi/
 *.sqlclient*
+.server/
+.runtime/
+.state/
+.pids/
+.system_generated/
 
 # ==========================================
-# 15. Operating System Files
+# 17. Operating System Files
 # ==========================================
 .DS_Store
 .DS_Store?
@@ -534,63 +650,3 @@ Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
 System Volume Information/
-
-# ==========================================
-# 16. Developer Scratch, Test Scripts & Sandbox Files
-# ==========================================
-/scratch/
-scratch/
-scratch_*
-scratch.*
-*_scratch.*
-test_*.php
-test_*.js
-test-*.php
-test-*.js
-*otp_*.php
-*2fa_*.php
-debug_*.php
-debug_*.js
-temp_*.php
-temp_*.js
-tmp_*.php
-tmp_*.js
-*.test.local.*
-*.debug.*
-*.sandbox.*
-
-# ==========================================
-# 17. Confidential API Keys, SMS/Mailer Secrets & Credentials
-# ==========================================
-*api_secret*
-*client_secret*
-*private_key*
-*app_password*
-*smtp_password*
-*auth_token*
-*jwt_secret*
-*encryption_key*
-*signing_key*
-*.keyfile
-*.passfile
-*.creds.json
-*.secret.json
-*.creds.yaml
-*.secret.yaml
-*.creds.yml
-*.secret.yml
-*.creds.php
-*.secret.php
-*.credentials.php
-
-# ==========================================
-# 18. Local Runtime & Server Sidecars
-# ==========================================
-.server/
-.runtime/
-.state/
-.pids/
-*.sublime-workspace
-*.sublime-project
-.antigravity/
-.system_generated/
