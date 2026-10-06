@@ -132,14 +132,18 @@ class StaffController {
         $input = json_decode(file_get_contents('php://input'), true) ?? $_POST;
         $availability = trim($input['availability'] ?? '');
 
-        $validStatuses = ['Available', 'On Break', 'In Service', 'Day Off'];
+        $validStatuses = ['Available', 'On Break', 'In Service', 'Day Off', 'On Leave', 'Off-Duty'];
         if (!in_array($availability, $validStatuses, true)) {
             Response::error('Invalid availability status provided.', 422);
         }
 
         Staff::updateAvailability($id, $availability);
         $updated = Staff::findWithDetails($id);
-        Response::success($updated, "Staff availability updated to {$availability}.");
+        $metrics = Staff::getSummaryMetrics();
+        Response::success([
+            'staff'   => $updated,
+            'metrics' => $metrics
+        ], "Staff availability updated to {$availability}.");
     }
 
     public function destroy(int $id): void {

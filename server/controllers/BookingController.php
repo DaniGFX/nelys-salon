@@ -183,8 +183,11 @@ class BookingController {
                     }
                 }
                 $daySched = $schedule[$dayOfWeek] ?? '9:00 AM – 6:00 PM';
-                if (strtolower(trim($daySched)) === 'day off' || strtolower(trim($staffRow['availability'] ?? '')) === 'off-duty') {
-                    Response::error("{$staffRow['name']} is scheduled off on {$dayOfWeek}s. Please choose a different appointment date or select another stylist.", 422);
+                $isStaffOff = (strtolower(trim($daySched)) === 'day off')
+                    || in_array(strtolower(trim($staffRow['availability'] ?? '')), ['off-duty', 'day off', 'on leave'], true)
+                    || (strtolower(trim($staffRow['status'] ?? '')) === 'on leave');
+                if ($isStaffOff) {
+                    Response::error("{$staffRow['name']} is currently off-duty or on leave on this date. Please choose a different appointment date or select another stylist.", 422);
                 }
 
                 // Check if staff member already has an active booking at this date & time

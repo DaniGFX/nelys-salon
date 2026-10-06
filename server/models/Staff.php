@@ -122,10 +122,50 @@ class Staff {
         self::ensureSchema();
         $pdo = Database::getConnection();
         try {
-            $total = (int)$pdo->query("SELECT COUNT(*) FROM staff")->fetchColumn();
-            $active = (int)$pdo->query("SELECT COUNT(*) FROM staff WHERE (status = 'Active' OR status IS NULL) AND (is_active = 1 OR is_active IS NULL)")->fetchColumn();
-            $onLeave = (int)$pdo->query("SELECT COUNT(*) FROM staff WHERE status = 'On Leave'")->fetchColumn();
-            $inactive = (int)$pdo->query("SELECT COUNT(*) FROM staff WHERE status = 'Inactive' OR is_active = 0")->fetchColumn();
+            $stmt = $pdo->query("SELECT id, status, is_active, availability, schedule FROM staff");
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $total = count($rows);
+            $active = 0;
+            $onLeave = 0;
+            $inactive = 0;
+
+            $dayOfWeek = date('l');
+
+            foreach ($rows as $s) {
+                $isArchived = ($s['status'] === 'Inactive') || (isset($s['is_active']) && (int)$s['is_active'] === 0);
+                if ($isArchived) {
+                    $inactive++;
+                    continue;
+                }
+
+                $avail = strtolower(trim($s['availability'] ?? ''));
+                $status = strtolower(trim($s['status'] ?? ''));
+
+                // Check schedule for today
+                $schedIsDayOff = false;
+                if (!empty($s['schedule'])) {
+                    $sched = json_decode($s['schedule'], true);
+                    if (is_array($sched) && isset($sched[$dayOfWeek])) {
+                        $shift = strtolower(trim($sched[$dayOfWeek]));
+                        if ($shift === 'day off' || str_contains($shift, 'off') || str_contains($shift, 'leave')) {
+                            $schedIsDayOff = true;
+                        }
+                    }
+                }
+
+                $isOnLeave = ($status === 'on leave')
+                    || ($avail === 'on leave')
+                    || ($avail === 'day off')
+                    || ($avail === 'off-duty')
+                    || $schedIsDayOff;
+
+                if ($isOnLeave) {
+                    $onLeave++;
+                } else {
+                    $active++;
+                }
+            }
 
             return [
                 'total'    => $total,

@@ -340,11 +340,57 @@ function resolveAdminStaffAvatar(avatar, staffName = '') {
   };
 }
 
+function isStaffOnLeaveOrDayOff(s) {
+  if (!s) return false;
+  const status = (s.status || '').toLowerCase().trim();
+  const avail = (s.availability || '').toLowerCase().trim();
+
+  if (status === 'on leave') return true;
+  if (avail === 'on leave' || avail === 'day off' || avail === 'off-duty') return true;
+
+  // Check today's schedule
+  const todayDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  if (s.schedule && s.schedule[todayDay]) {
+    const shift = String(s.schedule[todayDay]).toLowerCase().trim();
+    if (shift === 'day off' || shift.includes('off') || shift.includes('leave')) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function computeSummaryMetrics() {
-  summaryMetrics.total = staffList.length;
-  summaryMetrics.active = staffList.filter(s => s.status === 'Active').length;
-  summaryMetrics.on_leave = staffList.filter(s => s.status === 'On Leave').length;
-  summaryMetrics.inactive = staffList.filter(s => s.status === 'Inactive').length;
+  const total = staffList.length;
+  let active = 0;
+  let onLeave = 0;
+  let inactive = 0;
+
+  staffList.forEach(s => {
+    const isInactive = s.status === 'Inactive' || s.is_active === 0;
+    if (isInactive) {
+      inactive++;
+    } else if (isStaffOnLeaveOrDayOff(s)) {
+      onLeave++;
+    } else {
+      active++;
+    }
+  });
+
+  summaryMetrics.total = total;
+  summaryMetrics.active = active;
+  summaryMetrics.on_leave = onLeave;
+  summaryMetrics.inactive = inactive;
+}
+
+function updateStaffCache() {
+  try {
+    const cachedData = {
+      staff: staffList,
+      metrics: summaryMetrics,
+      services: servicesCatalog
+    };
+    localStorage.setItem(STAFF_CACHE_KEY, JSON.stringify(cachedData));
+  } catch (e) {}
 }
 
 // Populate service filter dropdown dynamically
@@ -434,6 +480,8 @@ function renderTodayAvailability() {
       textClass = 'text-amber-700 bg-amber-50 border-amber-200';
     } else if (s.availability === 'Day Off') {
       textClass = 'text-rose-700 bg-rose-50 border-rose-200';
+    } else if (s.availability === 'On Leave') {
+      textClass = 'text-amber-700 bg-amber-50 border-amber-200';
     } else if (s.availability === 'In Service') {
       textClass = 'text-blue-700 bg-blue-50 border-blue-200';
     }
@@ -461,6 +509,7 @@ function renderTodayAvailability() {
             <option value="On Break" ${s.availability === 'On Break' ? 'selected' : ''}>On Break</option>
             <option value="In Service" ${s.availability === 'In Service' ? 'selected' : ''}>In Service</option>
             <option value="Day Off" ${s.availability === 'Day Off' ? 'selected' : ''}>Day Off</option>
+            <option value="On Leave" ${s.availability === 'On Leave' ? 'selected' : ''}>On Leave</option>
           </select>
         </div>
       </div>
@@ -472,6 +521,16 @@ function renderTodayAvailability() {
 async function updateStaffAvailability(staffId, newAvail) {
   const staff = staffList.find(s => s.id === staffId);
   if (!staff) return;
+
+  const previousAvail = staff.availability;
+  staff.availability = newAvail;
+
+  // Immediately recompute metrics and re-render cards for instant 0ms UI reactivity
+  computeSummaryMetrics();
+  renderSummaryCards();
+  renderTodayAvailability();
+  applyFiltersAndRender();
+  updateStaffCache();
 
   try {
     const res = await fetch(`../api/staff/${staffId}/availability`, {
@@ -486,15 +545,24 @@ async function updateStaffAvailability(staffId, newAvail) {
       throw new Error(errJson.message || 'Failed to update availability status.');
     }
 
-    staff.availability = newAvail;
-    renderTodayAvailability();
-    applyFiltersAndRender();
+    const json = await res.json();
+    if (json.data && json.data.metrics) {
+      summaryMetrics = json.data.metrics;
+      renderSummaryCards();
+    }
+    updateStaffCache();
     showToast(`${staff.name}'s availability set to ${newAvail}`, 'info');
 
   } catch (err) {
     console.error('Error updating availability:', err);
-    showToast(err.message || 'Failed to update availability status.', 'error');
+    // Rollback on failure
+    staff.availability = previousAvail;
+    computeSummaryMetrics();
+    renderSummaryCards();
     renderTodayAvailability();
+    applyFiltersAndRender();
+    updateStaffCache();
+    showToast(err.message || 'Failed to update availability status.', 'error');
   }
 }
 
@@ -514,7 +582,16 @@ function applyFiltersAndRender() {
 
   // 2. Status
   if (currentStatusFilter !== 'all') {
-    filtered = filtered.filter(s => s.status.toLowerCase() === currentStatusFilter.toLowerCase());
+    const st = currentStatusFilter.toLowerCase();
+    if (st === 'active') {
+      filtered = filtered.filter(s => (s.status === 'Active' || !s.status) && !isStaffOnLeaveOrDayOff(s));
+    } else if (st === 'on leave') {
+      filtered = filtered.filter(s => s.status !== 'Inactive' && isStaffOnLeaveOrDayOff(s));
+    } else if (st === 'inactive') {
+      filtered = filtered.filter(s => s.status === 'Inactive' || s.is_active === 0);
+    } else {
+      filtered = filtered.filter(s => s.status.toLowerCase() === st);
+    }
   }
 
   // 3. Service
@@ -529,7 +606,14 @@ function applyFiltersAndRender() {
 
   // 4. Availability
   if (currentAvailabilityFilter !== 'all') {
-    filtered = filtered.filter(s => s.availability.toLowerCase() === currentAvailabilityFilter.toLowerCase());
+    const av = currentAvailabilityFilter.toLowerCase();
+    if (av === 'on leave') {
+      filtered = filtered.filter(s => s.availability === 'On Leave' || isStaffOnLeaveOrDayOff(s));
+    } else if (av === 'day off') {
+      filtered = filtered.filter(s => s.availability === 'Day Off' || isStaffOnLeaveOrDayOff(s));
+    } else {
+      filtered = filtered.filter(s => s.availability.toLowerCase() === av);
+    }
   }
 
   renderStaffCards(filtered);
@@ -560,18 +644,30 @@ function resetFilters() {
 
 // Summary card click shortcut
 function filterBySummaryCard(filterType) {
+  const stFilter = document.getElementById('statusFilter');
+  const avFilter = document.getElementById('availabilityFilter');
+
   if (filterType === 'all') {
     currentStatusFilter = 'all';
+    currentAvailabilityFilter = 'all';
+    if (stFilter) stFilter.value = 'all';
+    if (avFilter) avFilter.value = 'all';
   } else if (filterType === 'active') {
     currentStatusFilter = 'Active';
+    currentAvailabilityFilter = 'all';
+    if (stFilter) stFilter.value = 'Active';
+    if (avFilter) avFilter.value = 'all';
   } else if (filterType === 'on_leave') {
     currentStatusFilter = 'On Leave';
+    currentAvailabilityFilter = 'all';
+    if (stFilter) stFilter.value = 'On Leave';
+    if (avFilter) avFilter.value = 'all';
   } else if (filterType === 'inactive') {
     currentStatusFilter = 'Inactive';
+    currentAvailabilityFilter = 'all';
+    if (stFilter) stFilter.value = 'Inactive';
+    if (avFilter) avFilter.value = 'all';
   }
-
-  const stFilter = document.getElementById('statusFilter');
-  if (stFilter) stFilter.value = currentStatusFilter;
 
   applyFiltersAndRender();
 }
@@ -608,6 +704,9 @@ function renderStaffCards(items) {
     } else if (s.availability === 'Day Off') {
       availBadge = 'bg-rose-50 text-rose-800 border-rose-200';
       availDot = 'bg-rose-500';
+    } else if (s.availability === 'On Leave') {
+      availBadge = 'bg-amber-50 text-amber-800 border-amber-200';
+      availDot = 'bg-amber-500';
     } else if (s.availability === 'In Service') {
       availBadge = 'bg-blue-50 text-blue-800 border-blue-200';
       availDot = 'bg-blue-500 animate-pulse';
@@ -763,6 +862,17 @@ async function openStaffProfileModal(staffId) {
 
     if (availBadgeEl) {
       availBadgeEl.textContent = activeStaff.availability;
+      if (activeStaff.availability === 'Day Off') {
+        availBadgeEl.className = 'font-semibold text-rose-700';
+      } else if (activeStaff.availability === 'On Leave') {
+        availBadgeEl.className = 'font-semibold text-amber-700';
+      } else if (activeStaff.availability === 'On Break') {
+        availBadgeEl.className = 'font-semibold text-amber-700';
+      } else if (activeStaff.availability === 'In Service') {
+        availBadgeEl.className = 'font-semibold text-blue-700';
+      } else {
+        availBadgeEl.className = 'font-semibold text-emerald-700';
+      }
     }
 
     // Contact info

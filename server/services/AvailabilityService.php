@@ -70,7 +70,8 @@ class AvailabilityService {
             $isDayOff = (strtolower(trim($daySchedule)) === 'day off')
                 || (strtolower(trim($s['status'] ?? '')) === 'on leave')
                 || (strtolower(trim($s['availability'] ?? '')) === 'off-duty')
-                || (strtolower(trim($s['availability'] ?? '')) === 'day off');
+                || (strtolower(trim($s['availability'] ?? '')) === 'day off')
+                || (strtolower(trim($s['availability'] ?? '')) === 'on leave');
 
             $isWorkingToday = !$isDayOff;
             if ($isWorkingToday) {
