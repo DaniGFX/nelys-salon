@@ -516,6 +516,9 @@ class MessageController {
             set_time_limit(35);
             ignore_user_abort(false);
 
+            // Send 2KB padding preamble to immediately defeat reverse proxy / Nginx buffering
+            echo ":" . str_repeat(" ", 2048) . "\n\n";
+
             // Send initial connection event
             echo "event: connected\n";
             echo "data: " . json_encode(['status' => 'connected', 'role' => $role, 'user_id' => $userId]) . "\n\n";

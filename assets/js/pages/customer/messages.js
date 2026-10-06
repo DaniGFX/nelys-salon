@@ -214,8 +214,8 @@ function initCustomerMessagesPage() {
 
 function startCustomerRealtimePolling() {
   stopCustomerRealtimePolling();
-  // With SSE active, fallback polling runs gently every 15s (or 30s when hidden)
-  const interval = document.hidden ? 30000 : 15000;
+  // Near-instant real-time polling: 1000ms (1s) when active, 4s when tab is hidden
+  const interval = document.hidden ? 4000 : 1000;
   customerPollTimer = setInterval(() => {
     loadCustomerChatData();
   }, interval);
@@ -227,6 +227,20 @@ function stopCustomerRealtimePolling() {
     customerPollTimer = null;
   }
 }
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    stopTabTitleFlash();
+    loadCustomerChatData();
+  }
+  startCustomerRealtimePolling();
+});
+
+window.addEventListener('focus', () => {
+  stopTabTitleFlash();
+  loadCustomerChatData();
+  startCustomerRealtimePolling();
+});
 
 function initCustomerSSE() {
   const token = getCustomerAuthToken();
@@ -1043,6 +1057,10 @@ function scrollChatToBottom(smooth = false) {
     } else {
       container.scrollTop = container.scrollHeight;
     }
+    // Zero-delay guaranteed scroll
+    requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight;
+    });
   }
 }
 
@@ -1132,6 +1150,10 @@ async function handleSendMessage(e) {
         saveCustomerChatData();
         lastRendered_cust_messages_Hash = '';
         await loadCustomerChatData();
+        // 0.1s (100ms) ultra-fast follow-up sync to ensure real-time consistency
+        setTimeout(() => {
+          loadCustomerChatData();
+        }, 100);
       }
     } else if (res.status === 401) {
       showToast('Session expired. Please sign in again.', 'error');

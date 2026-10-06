@@ -155,8 +155,8 @@ function initMessages() {
 
 function startAdminRealtimePolling() {
   stopAdminRealtimePolling();
-  // With SSE active, fallback polling runs gently every 15s (or 30s when hidden)
-  const interval = document.hidden ? 30000 : 15000;
+  // Near-instant real-time polling: 1000ms (1s) when active, 4s when hidden
+  const interval = document.hidden ? 4000 : 1000;
   adminPollTimer = setInterval(() => {
     fetchConversationsData(true);
     fetchSidebarStats();
@@ -1466,6 +1466,11 @@ async function sendMessage() {
     lastRenderedAdminHash = '';
     fetchConversationsData(true);
     fetchSidebarStats();
+    // 0.1s (100ms) ultra-fast follow-up sync
+    setTimeout(() => {
+      fetchConversationsData(true);
+      fetchSidebarStats();
+    }, 100);
 
     showToast('Message sent to ' + conv.name, 'success');
   } catch (err) {
