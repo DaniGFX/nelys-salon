@@ -43,26 +43,7 @@ class Message {
             try { $pdo->exec("ALTER TABLE `messages` MODIFY COLUMN `sender` ENUM('customer', 'admin', 'salon') NOT NULL DEFAULT 'customer'"); } catch (Throwable $e) {}
             try { $pdo->exec("UPDATE `messages` SET `sender` = 'admin' WHERE `sender` = 'salon'"); } catch (Throwable $e) {}
 
-            // Seed initial conversation messages for demo customer (Maria Santos, user_id=2) if table is empty
-            $msgCount = (int)$pdo->query("SELECT COUNT(*) FROM `messages`")->fetchColumn();
-            if ($msgCount === 0) {
-                // Check if user 2 exists
-                $hasUser2 = (int)$pdo->query("SELECT COUNT(*) FROM `users` WHERE `id` = 2")->fetchColumn();
-                if (!$hasUser2) {
-                    $hash = '$2y$10$RsV0QKdMFYQmHQC8su9L..YYEC9Q3L2Y.3pdDymk28EfK4ZWPfSkK'; // password123
-                    try {
-                        $pdo->prepare("INSERT INTO `users` (`id`, `email`, `phone`, `password_hash`, `role`) VALUES (2, 'maria@email.com', '09178889999', :h, 'customer') ON DUPLICATE KEY UPDATE `role` = 'customer'")->execute([':h' => $hash]);
-                        $pdo->exec("INSERT INTO `customer_profiles` (`user_id`, `full_name`, `home_address`, `city`, `gender`, `status`, `notes`) VALUES (2, 'Maria Santos', 'Blk 12 Lot 4, Lagro Subd., Quezon City', 'Quezon City', 'Female', 'Active', 'Prefers organic shampoos and scalp massages.') ON DUPLICATE KEY UPDATE `full_name` = 'Maria Santos'");
-                    } catch (Throwable $e) {}
-                }
-                $pdo->exec("
-                    INSERT INTO `messages` (`user_id`, `sender`, `sender_name`, `text`, `status`, `created_at`) VALUES
-                    (2, 'customer', 'Maria Santos', 'Hello po! May available slot po ba tomorrow for Brazilian blowout?', 'read', DATE_SUB(NOW(), INTERVAL 2 HOUR)),
-                    (2, 'admin', 'Nely\'s Salon', 'Good day Maria! Yes, we have an open slot with Nely at 10:00 AM tomorrow. Would you like us to book it for you?', 'read', DATE_SUB(NOW(), INTERVAL 1 HOUR)),
-                    (2, 'customer', 'Maria Santos', 'Yes please! Thank you so much.', 'read', DATE_SUB(NOW(), INTERVAL 45 MINUTE)),
-                    (2, 'admin', 'Nely\'s Salon', 'Your appointment has been confirmed for tomorrow at 10:00 AM. See you at Nely\'s Salon!', 'sent', DATE_SUB(NOW(), INTERVAL 30 MINUTE))
-                ");
-            }
+            // (No demo message auto-seeding)
 
             // Clean up any double-escaped HTML entities in existing messages
             try {
@@ -474,7 +455,7 @@ class Message {
                 if (!empty($userData['email'])) {
                     $fullName = ucwords(str_replace(['.', '_', '-'], ' ', explode('@', $userData['email'])[0]));
                 } else {
-                    $fullName = 'Maria Santos'; // Salon verified client fallback
+                    $fullName = 'Client Patron'; // Generic client fallback
                 }
             }
 

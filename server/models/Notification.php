@@ -53,7 +53,7 @@ class Notification {
                 $seedStmt = $pdo->prepare("
                     INSERT INTO `notifications` (`id`, `user_id`, `recipient_role`, `category`, `title`, `message`, `type`, `action_link`, `is_read`, `created_at`)
                     VALUES 
-                    (1, 1, 'admin', 'appointments', 'New Appointment Booking', 'Maria Santos booked Brazilian Blowout for today at 2:00 PM.', 'success', 'appointments.html', 0, NOW()),
+                    (1, 1, 'admin', 'appointments', 'New Appointment Booking', 'Angela Cruz booked Brazilian Blowout for today at 2:00 PM.', 'success', 'appointments.html', 0, NOW()),
                     (2, 1, 'admin', 'payments', 'Payment Received', 'Received ₱1,999.00 payment via GCash (Ref: GCASH-982347102938).', 'success', 'payments.html', 0, NOW()),
                     (3, 1, 'admin', 'customers', 'New Customer Registration', 'Ana Reyes registered a new customer profile.', 'info', 'customers.html', 1, NOW()),
                     (4, 1, 'admin', 'system', 'Salon System Update', 'Database performance optimizations and automated backups completed.', 'info', 'settings.html', 1, NOW())

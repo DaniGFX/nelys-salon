@@ -271,7 +271,7 @@ class AuthController {
     }
 
     /**
-     * Mask email (e.g. maria.santos@email.com -> m***s@email.com)
+     * Mask email (e.g. customer@email.com -> c***r@email.com)
      */
     private static function maskEmail(string $email): string {
         if (!str_contains($email, '@')) return $email;

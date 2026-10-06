@@ -46,7 +46,7 @@ class Payment {
                     INSERT INTO `payments` (`id`, `booking_id`, `customer_id`, `customer_name`, `service_id`, `amount`, `payment_method`, `reference_number`, `notes`, `status`, `paid_at`, `created_at`)
                     VALUES 
                     (1, 1, 1, 'Sarah Johnson', 1, 1999.00, 'gcash', 'GCASH-982347102938', 'Full settlement for Brazilian Blowout appointment.', 'paid', NOW(), NOW()),
-                    (2, 2, 2, 'Maria Santos', 2, 699.00, 'cash', 'CASH-20260910', 'Direct salon counter payment for Hair Dye.', 'paid', NOW(), NOW()),
+                    (2, 2, 18, 'Carla Dela Cruz', 2, 699.00, 'cash', 'CASH-20260910', 'Direct salon counter payment for Hair Dye.', 'paid', NOW(), NOW()),
                     (3, 3, 2, 'Elena Reyes', 3, 499.00, 'gcash', 'GCASH-881290312389', 'Walk-in settlement for Gel Manicure session.', 'paid', NOW(), NOW())
                     ON DUPLICATE KEY UPDATE `amount` = VALUES(`amount`)
                 ");

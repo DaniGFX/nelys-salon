@@ -3,16 +3,10 @@
 
 USE `nelys_salon_db`;
 
--- 1. Default Users (Initial Administrator and Demo Customer)
+-- 1. Default Users (Initial Administrator)
 INSERT INTO `users` (`id`, `role`, `email`, `phone`, `password_hash`) VALUES
-(1, 'admin', 'nelyssalon.website@gmail.com', '09171234567', '$2y$10$08ATlRbtlfhqHL6HA4ywz.yLMFnKw7FQ2jZ6PyOQYdIIdH88USdNS'),
-(2, 'customer', 'maria@email.com', '09178889999', '$2y$10$RsV0QKdMFYQmHQC8su9L..YYEC9Q3L2Y.3pdDymk28EfK4ZWPfSkK')
+(1, 'admin', 'nelyssalon.website@gmail.com', '09171234567', '$2y$10$08ATlRbtlfhqHL6HA4ywz.yLMFnKw7FQ2jZ6PyOQYdIIdH88USdNS')
 ON DUPLICATE KEY UPDATE `role` = VALUES(`role`), `email` = VALUES(`email`), `password_hash` = VALUES(`password_hash`);
-
--- 2. Customer Profiles
-INSERT INTO `customer_profiles` (`user_id`, `full_name`, `home_address`, `notification_preference`) VALUES
-(2, 'Maria Santos', 'Blk 12 Lot 4, Lagro Subd., Quezon City', 'all')
-ON DUPLICATE KEY UPDATE `full_name` = VALUES(`full_name`);
 
 -- 3. Staff Members (3 Core Specialists)
 INSERT INTO `staff` (`id`, `name`, `full_name`, `role`, `phone`, `email`, `address`, `specialties`, `avatar`, `is_active`, `status`, `availability`, `schedule`) VALUES
@@ -89,6 +83,6 @@ ON DUPLICATE KEY UPDATE `booking_id` = VALUES(`booking_id`);
 
 -- 9. Sample Sales
 INSERT INTO `sales` (`id`, `booking_id`, `amount`, `service_name`, `customer_name`, `payment_method`, `transaction_date`) VALUES
-(1, 2, 699.00, 'Hair Dye', 'Maria Santos', 'Cash', '2026-09-10'),
-(2, 3, 499.00, 'Gel Manicure', 'Maria Santos', 'GCash', '2026-08-22')
+(1, 2, 699.00, 'Hair Dye', 'Angela Cruz', 'Cash', '2026-09-10'),
+(2, 3, 499.00, 'Gel Manicure', 'Carla Dela Cruz', 'GCash', '2026-08-22')
 ON DUPLICATE KEY UPDATE `booking_id` = VALUES(`booking_id`);

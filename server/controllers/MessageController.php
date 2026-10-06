@@ -153,15 +153,10 @@ class MessageController {
                     Response::error('Target customer user_id is required.', 422);
                 }
 
-                // Ensure target customer exists if it's default customer (user_id=2)
+                // Ensure target customer exists
                 $targetUser = User::findById($targetUserId);
-                if (!$targetUser && $targetUserId === 2) {
-                    $hash = '$2y$10$RsV0QKdMFYQmHQC8su9L..YYEC9Q3L2Y.3pdDymk28EfK4ZWPfSkK';
-                    try {
-                        $pdo = Database::getConnection();
-                        $pdo->prepare("INSERT INTO `users` (`id`, `email`, `phone`, `password_hash`, `role`) VALUES (2, 'maria@email.com', '09178889999', :h, 'customer') ON DUPLICATE KEY UPDATE `role` = 'customer'")->execute([':h' => $hash]);
-                        $pdo->exec("INSERT INTO `customer_profiles` (`user_id`, `full_name`, `home_address`, `city`, `gender`, `status`, `notes`) VALUES (2, 'Maria Santos', 'Blk 12 Lot 4, Lagro Subd., Quezon City', 'Quezon City', 'Female', 'Active', 'Prefers organic shampoos and scalp massages.') ON DUPLICATE KEY UPDATE `full_name` = 'Maria Santos'");
-                    } catch (Throwable $e) {}
+                if (!$targetUser) {
+                    Response::error('Target customer does not exist.', 404);
                 }
 
                 $adminName = !empty($rawInput['sender_name']) ? trim(html_entity_decode(strip_tags((string)$rawInput['sender_name']), ENT_QUOTES | ENT_HTML5, 'UTF-8')) : "Nely's Salon";

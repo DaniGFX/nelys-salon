@@ -158,9 +158,9 @@ const SALON_SERVICES = [
 const DEFAULT_BOOKINGS = [
   {
     id: 'NS-7821',
-    customerName: 'Maria Theresa Santos',
+    customerName: 'Angela Marie Cruz',
     phone: '09178821432',
-    email: 'm.santos@gmail.com',
+    email: 'angela.cruz@gmail.com',
     serviceId: 'brazilian',
     serviceName: 'Brazilian Blowout',
     price: 1999,
