@@ -415,8 +415,9 @@ class Message {
             } catch (Throwable $e2) {}
         }
 
-        // Collect all distinct user IDs: those who have messages + registered customer users
-        $allUserIds = array_unique(array_merge(array_keys($groupedMessages), array_keys($usersMap)));
+        // Collect conversation user IDs: only those who have generated messages,
+        // or the specific priority customer the admin intentionally opened to chat with
+        $allUserIds = array_keys($groupedMessages);
         if ($priorityUserId && $priorityUserId > 0 && !in_array($priorityUserId, $allUserIds)) {
             $allUserIds[] = $priorityUserId;
         }

@@ -90,10 +90,21 @@ function hydrateCustomerMessagesFromCache() {
         isEmptyState = false;
         lastRendered_cust_messages_Hash = JSON.stringify(preloaded);
         renderChatStream();
+      } else {
+        customerChatData.messages = [];
+        isEmptyState = true;
+        renderChatStream();
       }
     } catch (e) {
       console.warn('Messages cache hydration error:', e);
+      customerChatData.messages = [];
+      isEmptyState = true;
+      renderChatStream();
     }
+  } else {
+    customerChatData.messages = [];
+    isEmptyState = true;
+    renderChatStream();
   }
 }
 
@@ -731,8 +742,8 @@ async function loadAppointmentContext() {
       }
 
       // Check for nearest upcoming appointment
+      const banner = document.getElementById('chatAppointmentContext');
       if (activeBookings.length > 0) {
-        const banner = document.getElementById('chatAppointmentContext');
         const serviceEl = document.getElementById('chatContextService');
         const timeEl = document.getElementById('chatContextTime');
 
@@ -757,6 +768,10 @@ async function loadAppointmentContext() {
             timeEl.textContent = `· ${formattedDate}${timeFormatted ? ` at ${timeFormatted}` : ''}`;
           }
           banner.classList.remove('hidden');
+        }
+      } else {
+        if (banner) {
+          banner.classList.add('hidden');
         }
       }
     }
@@ -863,16 +878,49 @@ function renderChatStream() {
   const emptyContainer = (document.getElementById('emptyChatState') || document.getElementById('emptyStateView'));
   if (!container) return;
 
-  if (isEmptyState || customerChatData.messages.length === 0) {
-    container.innerHTML = '';
-    if (emptyContainer) {
-      emptyContainer.classList.remove('hidden');
-    }
-    return;
-  }
-
   if (emptyContainer) {
     emptyContainer.classList.add('hidden');
+  }
+
+  if (isEmptyState || customerChatData.messages.length === 0) {
+    container.innerHTML = `
+      <div class="h-full min-h-[340px] flex flex-col items-center justify-center p-6 text-center space-y-4 my-auto">
+        <div class="w-16 h-16 rounded-full bg-[#FAF6F0] border-2 border-[#DCC3AA] text-[#810B38] flex items-center justify-center text-2xl shadow-sm">
+          <i class="fa-solid fa-comments"></i>
+        </div>
+
+        <div class="max-w-sm space-y-1.5">
+          <h3 class="font-serif text-2xl font-bold text-[#541A1A]">No messages yet</h3>
+          <p class="text-xs sm:text-sm text-[#735e5e] leading-relaxed">
+            Have a question about an appointment, treatment prices, or salon availability? Start chatting with our team!
+          </p>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-center gap-2 max-w-md pt-1">
+          <button type="button" onclick="sendQuickPrompt('Hi! I would like to inquire about booking an appointment.')" 
+            class="px-3.5 py-1.5 rounded-full bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#810B38] border border-[#DCC3AA] text-xs font-semibold transition-colors shadow-2xs cursor-pointer">
+            <i class="fa-regular fa-calendar-check mr-1 text-[#810B38]"></i> Book appointment
+          </button>
+          <button type="button" onclick="sendQuickPrompt('Hello! How much is your hair treatment service?')" 
+            class="px-3.5 py-1.5 rounded-full bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#810B38] border border-[#DCC3AA] text-xs font-semibold transition-colors shadow-2xs cursor-pointer">
+            <i class="fa-solid fa-tag mr-1 text-[#810B38]"></i> Service prices
+          </button>
+          <button type="button" onclick="sendQuickPrompt('Hi Nely\'s Salon, what are your opening hours today?')" 
+            class="px-3.5 py-1.5 rounded-full bg-[#FAF6F0] hover:bg-[#F1E2D1] text-[#810B38] border border-[#DCC3AA] text-xs font-semibold transition-colors shadow-2xs cursor-pointer">
+            <i class="fa-regular fa-clock mr-1 text-[#810B38]"></i> Salon hours
+          </button>
+        </div>
+
+        <button 
+          type="button" 
+          onclick="startNewConversation()"
+          class="px-6 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md shadow-[#810B38]/20 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer">
+          <i class="fa-solid fa-comment-dots"></i>
+          <span>Start a Conversation</span>
+        </button>
+      </div>
+    `;
+    return;
   }
 
   let filtered = customerChatData.messages;
@@ -1420,9 +1468,16 @@ function setupDialogBackdropClicks() {
 
 // 15. Start New Conversation
 function startNewConversation() {
-  isEmptyState = false;
-  loadCustomerChatData();
-  renderChatStream();
+  const input = document.getElementById('customerMessageInput');
+  if (input) {
+    input.focus();
+    input.placeholder = "Type a message to Nely's Salon...";
+    input.classList.add('ring-2', 'ring-[#810B38]', 'border-[#810B38]');
+    input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => {
+      input.classList.remove('ring-2', 'ring-[#810B38]', 'border-[#810B38]');
+    }, 1500);
+  }
 }
 
 // 16. Mobile Sidebar Toggle

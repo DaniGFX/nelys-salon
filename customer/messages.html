@@ -405,28 +405,6 @@
 
         </div>
 
-        <!-- ================= EMPTY STATE VIEW (Hidden by default) ================= -->
-        <div id="emptyStateView" class="hidden flex-1 flex flex-col items-center justify-center p-8 text-center bg-white space-y-4">
-          <div class="w-16 h-16 rounded-full bg-[#FAF6F0] border-2 border-[#DCC3AA] text-[#810B38] flex items-center justify-center text-2xl shadow-sm">
-            <i class="fa-solid fa-comments"></i>
-          </div>
-
-          <div class="max-w-sm space-y-1.5">
-            <h3 class="font-serif text-2xl font-bold text-[#541A1A]">No messages yet</h3>
-            <p class="text-xs sm:text-sm text-[#735e5e] leading-relaxed">
-              Have a question about an appointment, treatment prices, or salon availability? Start chatting with our team!
-            </p>
-          </div>
-
-          <button 
-            type="button" 
-            onclick="startNewConversation()"
-            class="px-6 py-3 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs sm:text-sm font-bold uppercase tracking-wider transition-all shadow-md shadow-[#810B38]/20 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2">
-            <i class="fa-solid fa-comment-dots"></i>
-            <span>Start a Conversation</span>
-          </button>
-        </div>
-
       </div>
 
     </section>
@@ -597,7 +575,7 @@
   <div id="customerToastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm pointer-events-none"></div>
 
   <!-- Page Controller Script -->
-  <script defer src="../assets/js/pages/customer/messages.js?v=9.0"></script>
+  <script defer src="../assets/js/pages/customer/messages.js?v=9.1"></script>
 </body>
 
 </html>
