@@ -417,6 +417,45 @@ function renderCustomerStats() {
   `).join('');
 }
 
+function resolveAdminStaffAvatar(avatar, staffName = '', staffId = null) {
+  if (!avatar && !staffName && !staffId) return '../assets/images/logo.jfif';
+  const av = String(avatar || staffName || '').trim();
+  if (av.startsWith('http://') || av.startsWith('https://') || av.startsWith('data:')) {
+    return av;
+  }
+  if (av.startsWith('../') || av.startsWith('./')) {
+    return av;
+  }
+  const clean = (av + ' ' + (staffName || '')).toLowerCase().replace(/[\s_]+/g, '-');
+  const idStr = String(staffId || '');
+  if (clean.includes('staff-1') || clean.includes('director') || clean.includes('nely') || idStr === '1') {
+    return '../assets/images/team/director.jpg';
+  }
+  if (clean.includes('staff-2') || clean.includes('sculptor') || clean.includes('ana') || idStr === '2') {
+    return '../assets/images/team/sculptor.jpg';
+  }
+  if (clean.includes('staff-3') || clean.includes('spa-specialist') || clean.includes('elena') || idStr === '3') {
+    return '../assets/images/team/spa-specialist.jpg';
+  }
+  if (av.includes('team/')) {
+    return `../assets/images/${av}`;
+  }
+  if (av.endsWith('.jpg') || av.endsWith('.jpeg') || av.endsWith('.png') || av.endsWith('.jfif') || av.endsWith('.webp')) {
+    return `../assets/images/team/${av}`;
+  }
+  return '../assets/images/team/director.jpg';
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // ================= 6. STAFF PERFORMANCE TABLE =================
 function renderStaffPerformance() {
   const container = document.getElementById('staffPerformanceTableBody');
@@ -439,31 +478,40 @@ function renderStaffPerformance() {
     return;
   }
 
-  container.innerHTML = staff.map(st => `
-    <tr class="border-b border-stone-100 hover:bg-[#FAF6F0]/60 transition-colors text-xs">
-      <td class="px-5 py-3.5">
-        <div class="flex items-center gap-2.5">
-          <div class="w-8 h-8 rounded-full bg-gradient-to-br from-[#810B38] to-[#541A1A] text-[#F1E2D1] flex items-center justify-center font-bold text-xs shrink-0">
-            ${st.staff ? st.staff[0].toUpperCase() : 'S'}
+  container.innerHTML = staff.map(st => {
+    const avatarUrl = resolveAdminStaffAvatar(st.avatar, st.staff, st.id);
+    const initial = (st.staff ? st.staff[0] : 'S').toUpperCase();
+
+    return `
+      <tr class="border-b border-stone-100 hover:bg-[#FAF6F0]/60 transition-colors text-xs">
+        <td class="px-5 py-3.5">
+          <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-[#810B38] to-[#541A1A] text-[#F1E2D1] flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden border border-[#DCC3AA]/70 shadow-xs">
+              <img 
+                src="${avatarUrl}" 
+                alt="${escapeHtml(st.staff)}" 
+                class="w-full h-full object-cover" 
+                onerror="this.onerror=null; this.parentElement.innerHTML='${escapeHtml(initial)}';">
+            </div>
+            <div>
+              <span class="font-serif font-bold text-sm text-[#541A1A] block">${escapeHtml(st.staff)}</span>
+              <span class="text-[10px] text-stone-400 block">${escapeHtml(st.role)}</span>
+            </div>
           </div>
-          <div>
-            <span class="font-serif font-bold text-sm text-[#541A1A] block">${st.staff}</span>
-            <span class="text-[10px] text-stone-400 block">${st.role}</span>
-          </div>
-        </div>
-      </td>
-      <td class="px-5 py-3.5 text-stone-700 font-semibold">${st.appointments}</td>
-      <td class="px-5 py-3.5">
-        <span class="inline-flex items-center gap-1 text-emerald-700 font-bold">
-          <i class="fa-solid fa-check text-[10px]"></i>
-          ${st.completed}
-        </span>
-      </td>
-      <td class="px-5 py-3.5 font-mono font-bold text-stone-800 text-right">
-        ₱${st.revenue.toLocaleString()}
-      </td>
-    </tr>
-  `).join('');
+        </td>
+        <td class="px-5 py-3.5 text-stone-700 font-semibold">${st.appointments}</td>
+        <td class="px-5 py-3.5">
+          <span class="inline-flex items-center gap-1 text-emerald-700 font-bold">
+            <i class="fa-solid fa-check text-[10px]"></i>
+            ${st.completed}
+          </span>
+        </td>
+        <td class="px-5 py-3.5 font-mono font-bold text-stone-800 text-right">
+          ₱${st.revenue.toLocaleString()}
+        </td>
+      </tr>
+    `;
+  }).join('');
 }
 
 // ================= 7. COMPLETE SERVICE REVENUE REPORT =================

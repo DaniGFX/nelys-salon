@@ -207,14 +207,14 @@ class Report {
 
         // 7. Staff Performance
         $stmtStaff = $pdo->prepare("
-            SELECT st.id, st.name AS staff, st.role,
+            SELECT st.id, st.name AS staff, st.role, st.avatar,
                    COUNT(b.id) AS appointments,
                    SUM(CASE WHEN b.status = 'completed' THEN 1 ELSE 0 END) AS completed,
                    COALESCE(SUM(p.amount), 0) AS revenue
             FROM staff st
             LEFT JOIN bookings b ON b.staff_id = st.id AND b.booking_date >= DATE(:start) AND b.booking_date <= DATE(:end)
             LEFT JOIN payments p ON p.booking_id = b.id AND p.status IN ('paid', 'partial')
-            GROUP BY st.id, st.name, st.role
+            GROUP BY st.id, st.name, st.role, st.avatar
             ORDER BY revenue DESC, appointments DESC
         ");
         $stmtStaff->execute(['start' => $startDate, 'end' => $endDate]);
@@ -223,6 +223,7 @@ class Report {
                 'id'           => (int)$st['id'],
                 'staff'        => $st['staff'],
                 'role'         => $st['role'] ?: 'Stylist',
+                'avatar'       => $st['avatar'] ?: 'director.jpg',
                 'appointments' => (int)$st['appointments'],
                 'completed'    => (int)$st['completed'],
                 'revenue'      => (float)$st['revenue']
