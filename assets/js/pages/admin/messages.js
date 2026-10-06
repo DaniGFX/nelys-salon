@@ -814,19 +814,8 @@ function renderConversationsList() {
         </div>
         <p class="text-sm font-bold text-[#541A1A]">${isFiltered ? 'No messages found' : 'No messages yet'}</p>
         <p class="text-xs text-[#735e5e] max-w-xs mx-auto leading-relaxed">
-          ${isFiltered ? 'Try another search query or switch back to the All filter.' : 'Conversations appear here once a customer sends a message or you start a chat.'}
+          ${isFiltered ? 'Try another search query or switch back to the All filter.' : 'Conversations appear here once a customer sends a message or you start a chat from Customers.'}
         </p>
-        ${!isFiltered ? `
-          <div class="pt-2">
-            <button 
-              type="button" 
-              onclick="openStartChatModal()" 
-              class="px-3.5 py-1.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-semibold shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer">
-              <i class="fa-solid fa-plus text-[10px]"></i>
-              <span>Start a Chat</span>
-            </button>
-          </div>
-        ` : ''}
       </div>
     `;
     return;
@@ -961,23 +950,16 @@ function renderActiveConversation() {
     const stream = document.getElementById('messagesStream');
     if (stream) {
       stream.innerHTML = `
-        <div class="h-full min-h-[340px] flex flex-col items-center justify-center p-8 text-center text-[#735e5e] space-y-4 my-auto">
+        <div class="h-full min-h-[340px] flex flex-col items-center justify-center p-8 text-center text-[#735e5e] space-y-3 my-auto">
           <div class="w-16 h-16 rounded-full bg-[#FAF6F0] border-2 border-[#DCC3AA] text-[#810B38] flex items-center justify-center text-2xl shadow-sm">
             <i class="fa-solid fa-comments"></i>
           </div>
           <div class="max-w-sm space-y-1.5">
             <h3 class="font-serif text-xl font-bold text-[#541A1A]">No messages yet</h3>
             <p class="text-xs text-[#735e5e] leading-relaxed">
-              Select an existing conversation from the list or start a new chat with a client to begin messaging.
+              Select an existing conversation from the list to view chat history and reply to customer inquiries.
             </p>
           </div>
-          <button 
-            type="button" 
-            onclick="openStartChatModal()" 
-            class="px-5 py-2.5 rounded-xl bg-[#810B38] hover:bg-[#62082b] text-white text-xs font-bold transition-all shadow-md shadow-[#810B38]/20 hover:shadow-lg hover:-translate-y-0.5 flex items-center gap-2 cursor-pointer">
-            <i class="fa-solid fa-plus text-xs"></i>
-            <span>Start a Conversation</span>
-          </button>
         </div>
       `;
     }
@@ -1910,196 +1892,6 @@ function toggleMobileSidebar(show) {
   }
 }
 
-// ================= START NEW CONVERSATION WITH CUSTOMER MODAL =================
-let allCustomersForChat = [];
-
-async function openStartChatModal() {
-  const modal = document.getElementById('startChatModal');
-  const listContainer = document.getElementById('startChatCustomersList');
-  const searchInput = document.getElementById('searchNewChatCustomer');
-  if (!modal) return;
-
-  modal.classList.remove('hidden');
-  modal.classList.add('flex');
-  modal.style.display = 'flex';
-  if (searchInput) {
-    searchInput.value = '';
-    searchInput.focus();
-  }
-
-  if (listContainer) {
-    listContainer.innerHTML = `
-      <div class="py-8 text-center text-xs text-[#735e5e] flex flex-col items-center justify-center gap-2">
-        <i class="fa-solid fa-circle-notch fa-spin text-base text-[#810B38]"></i>
-        <span>Loading customers...</span>
-      </div>
-    `;
-  }
-
-  try {
-    const res = await fetch(`../api/customers?_t=${Date.now()}`, {
-      headers: getAuthHeaders(),
-      cache: 'no-store'
-    });
-    if (res.ok) {
-      const json = await res.json();
-      allCustomersForChat = Array.isArray(json.data) ? json.data : (Array.isArray(json) ? json : []);
-      renderStartChatCustomerList(allCustomersForChat);
-    } else {
-      if (listContainer) {
-        listContainer.innerHTML = `<div class="py-6 text-center text-xs text-rose-600">Failed to load customer list.</div>`;
-      }
-    }
-  } catch (err) {
-    console.error('Error fetching customers for new chat:', err);
-    if (listContainer) {
-      listContainer.innerHTML = `<div class="py-6 text-center text-xs text-rose-600">Network error loading customers.</div>`;
-    }
-  }
-}
-
-function closeStartChatModal() {
-  const modal = document.getElementById('startChatModal');
-  if (modal) {
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    modal.style.display = 'none';
-  }
-}
-
-function filterStartChatCustomers() {
-  const searchInput = document.getElementById('searchNewChatCustomer');
-  const query = (searchInput ? searchInput.value : '').toLowerCase().trim();
-  if (!query) {
-    renderStartChatCustomerList(allCustomersForChat);
-    return;
-  }
-  const filtered = allCustomersForChat.filter(c => 
-    (c.name || '').toLowerCase().includes(query) ||
-    (c.email || '').toLowerCase().includes(query) ||
-    (c.phone || '').toLowerCase().includes(query)
-  );
-  renderStartChatCustomerList(filtered);
-}
-
-function renderStartChatCustomerList(customers) {
-  const listContainer = document.getElementById('startChatCustomersList');
-  if (!listContainer) return;
-
-  if (!customers || customers.length === 0) {
-    listContainer.innerHTML = `
-      <div class="py-8 text-center text-stone-400 space-y-1">
-        <i class="fa-solid fa-user-xmark text-xl text-stone-300"></i>
-        <p class="text-xs font-semibold text-[#541A1A]">No customers found</p>
-        <p class="text-[11px] text-[#735e5e]">Try searching with another name or phone number.</p>
-      </div>
-    `;
-    return;
-  }
-
-  listContainer.innerHTML = customers.map(cust => {
-    const uid = cust.userId || cust.id;
-    const name = cust.name || cust.full_name || 'Customer';
-    const nameParts = name.trim().split(' ');
-    const avatar = nameParts.length > 1
-      ? (nameParts[0][0] + nameParts[1][0]).toUpperCase()
-      : name.substring(0, 2).toUpperCase();
-    const phone = cust.phone || 'No phone';
-    const email = cust.email || '';
-
-    // Check if there is an existing conversation already
-    const hasExisting = conversationsData.some(c => String(c.id) === String(uid) || String(c.userId) === String(uid));
-
-    return `
-      <div 
-        onclick="selectCustomerForNewChat(${uid})"
-        class="p-3 hover:bg-[#FAF6F0] cursor-pointer transition-colors flex items-center justify-between gap-3 group">
-        <div class="flex items-center gap-3 min-w-0">
-          <div class="w-9 h-9 rounded-full bg-gradient-to-br from-[#541A1A] to-[#810B38] text-[#F1E2D1] font-bold text-xs flex items-center justify-center shrink-0 border border-[#DCC3AA]">
-            ${escapeHtml(avatar)}
-          </div>
-          <div class="min-w-0">
-            <h5 class="text-xs font-bold text-[#541A1A] truncate group-hover:text-[#810B38] transition-colors">${escapeHtml(name)}</h5>
-            <p class="text-[11px] text-[#735e5e] truncate">${escapeHtml(phone)}${email ? ' · ' + escapeHtml(email) : ''}</p>
-          </div>
-        </div>
-        <button 
-          type="button" 
-          class="px-2.5 py-1 rounded-lg ${hasExisting ? 'bg-stone-100 text-stone-600' : 'bg-[#810B38] text-white'} text-[11px] font-bold uppercase tracking-wider shrink-0 transition-colors pointer-events-none">
-          ${hasExisting ? 'Open' : 'Chat'}
-        </button>
-      </div>
-    `;
-  }).join('');
-}
-
-function selectCustomerForNewChat(userId) {
-  closeStartChatModal();
-  const uidStr = String(userId);
-
-  // Check if conversation already exists in conversationsData
-  let existing = conversationsData.find(c => String(c.id) === uidStr || String(c.userId) === uidStr);
-  if (existing) {
-    currentConversationId = existing.id;
-    renderConversationsList();
-    renderActiveConversation();
-    focusAdminMessageInput();
-    return;
-  }
-
-  // Find customer metadata from loaded customer list
-  const cust = allCustomersForChat.find(c => String(c.userId || c.id) === uidStr);
-  const name = cust ? (cust.name || cust.full_name || `Customer #${userId}`) : `Customer #${userId}`;
-  const nameParts = name.trim().split(' ');
-  const avatar = nameParts.length > 1
-    ? (nameParts[0][0] + nameParts[1][0]).toUpperCase()
-    : name.substring(0, 2).toUpperCase();
-
-  const newConv = {
-    id: uidStr,
-    userId: parseInt(userId, 10),
-    name: name,
-    avatar: avatar,
-    phone: cust?.phone || '0917 123 4567',
-    email: cust?.email || '',
-    location: cust?.address || cust?.city || 'Lagro, Quezon City',
-    memberSince: cust?.joinedDate ? `Member since ${cust.joinedDate}` : 'Member',
-    status: 'online',
-    isUnread: false,
-    unreadCount: 0,
-    isMuted: false,
-    hasAppointment: false,
-    lastTime: 'No activity',
-    lastTimestamp: new Date().toISOString(),
-    upcomingAppointment: null,
-    history: {
-      totalVisits: cust?.completedAppointments || 0,
-      totalSpent: cust?.totalSpentFormatted || '₱0',
-      lastVisit: 'Member record verified',
-      notes: (Array.isArray(cust?.notes) && cust.notes.length > 0) ? (cust.notes[0].text || 'No notes available.') : 'No notes available.'
-    },
-    messages: []
-  };
-
-  conversationsData.unshift(newConv);
-  currentConversationId = uidStr;
-  lastRenderedAdminHash = '';
-  renderConversationsList();
-  renderActiveConversation();
-  focusAdminMessageInput();
-}
-
-function focusAdminMessageInput() {
-  setTimeout(() => {
-    const input = document.getElementById('messageInput');
-    if (input) {
-      input.focus();
-      input.placeholder = 'Type a message to start conversation...';
-      input.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, 100);
-}
-
 // ================= GLOBAL WINDOW EXPORTS =================
 window.toggleMobileSidebar = toggleMobileSidebar;
 window.selectConversation = selectConversation;
@@ -2118,10 +1910,6 @@ window.closeLogoutModal = closeLogoutModal;
 window.handleConfirmLogout = handleConfirmLogout;
 window.confirmLogout = confirmLogout;
 window.showToast = showToast;
-window.openStartChatModal = openStartChatModal;
-window.closeStartChatModal = closeStartChatModal;
-window.filterStartChatCustomers = filterStartChatCustomers;
-window.selectCustomerForNewChat = selectCustomerForNewChat;
 
 // ================= DOM INITIALIZATION & AUTH =================
 if (document.readyState === 'loading') {

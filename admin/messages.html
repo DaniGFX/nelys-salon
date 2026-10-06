@@ -73,7 +73,7 @@
       }
     })();
   </script>
-  <script defer src="../assets/js/pages/admin/messages.js?v=9.1"></script>
+  <script defer src="../assets/js/pages/admin/messages.js?v=9.2"></script>
 </head>
 
 <body
@@ -297,17 +297,7 @@
               <i class="fa-solid fa-comments text-[#810B38] text-sm"></i>
               <span>Conversations</span>
             </h3>
-            <div class="flex items-center gap-1.5">
-              <span id="totalUnreadBadge" class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#810B38]/10 text-[#810B38]"></span>
-              <button 
-                type="button" 
-                onclick="openStartChatModal()" 
-                title="Start conversation with a customer" 
-                class="px-2.5 py-1 rounded-lg bg-[#810B38] hover:bg-[#62082b] text-white text-[11px] font-bold flex items-center gap-1 shadow-xs transition-colors shrink-0 cursor-pointer">
-                <i class="fa-solid fa-plus text-[10px]"></i>
-                <span>New Chat</span>
-              </button>
-            </div>
+            <span id="totalUnreadBadge" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#810B38]/10 text-[#810B38]"></span>
           </div>
 
           <!-- Search Messages Input -->
@@ -714,66 +704,6 @@
           Logout
         </button>
       </div>
-    </div>
-  </div>
-
-  <!-- ================= START CONVERSATION MODAL ================= -->
-  <div 
-    id="startChatModal" 
-    style="z-index: 99999;"
-    onclick="if(event.target === this) closeStartChatModal();"
-    class="fixed inset-0 z-[99999] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-4"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="startChatModalTitle">
-    <div class="bg-white rounded-3xl border border-[#DCC3AA] max-w-md w-full shadow-2xl p-5 sm:p-6 space-y-4 relative flex flex-col max-h-[85vh]" onclick="event.stopPropagation();">
-      
-      <div class="flex items-center justify-between border-b border-[#DCC3AA]/40 pb-3 shrink-0">
-        <div class="flex items-center gap-2.5">
-          <div class="w-10 h-10 rounded-xl bg-[#FAF6F0] border border-[#DCC3AA]/60 text-[#810B38] flex items-center justify-center text-lg">
-            <i class="fa-solid fa-comment-dots"></i>
-          </div>
-          <div>
-            <h3 id="startChatModalTitle" class="font-serif text-lg font-bold text-[#541A1A]">Start a Conversation</h3>
-            <p class="text-xs text-[#735e5e]">Select a customer to begin chatting</p>
-          </div>
-        </div>
-        <button 
-          type="button" 
-          onclick="closeStartChatModal()" 
-          class="w-8 h-8 rounded-lg bg-stone-50 hover:bg-[#FAF6F0] border border-[#DCC3AA]/50 text-stone-500 hover:text-[#541A1A] flex items-center justify-center transition-colors cursor-pointer">
-          <i class="fa-solid fa-xmark text-sm"></i>
-        </button>
-      </div>
-
-      <!-- Customer Search Input in Modal -->
-      <div class="relative shrink-0">
-        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-[#735e5e]/60 text-xs"></i>
-        <input 
-          type="text" 
-          id="searchNewChatCustomer"
-          oninput="filterStartChatCustomers()"
-          placeholder="Search customer by name, email, or phone..."
-          class="w-full pl-8 pr-3 py-2 rounded-xl bg-[#FAF6F0]/60 border border-[#DCC3AA]/70 text-xs text-[#2b1d1d] placeholder-[#735e5e]/60 focus:outline-none focus:ring-2 focus:ring-[#810B38] focus:border-transparent transition-all">
-      </div>
-
-      <!-- Customer List Container -->
-      <div id="startChatCustomersList" class="flex-1 overflow-y-auto divide-y divide-[#DCC3AA]/20 min-h-[200px] max-h-[360px] pr-1">
-        <div class="py-8 text-center text-xs text-[#735e5e] flex flex-col items-center justify-center gap-2">
-          <i class="fa-solid fa-circle-notch fa-spin text-base text-[#810B38]"></i>
-          <span>Loading salon customers...</span>
-        </div>
-      </div>
-
-      <div class="pt-2 border-t border-[#DCC3AA]/40 flex justify-end shrink-0">
-        <button 
-          type="button" 
-          onclick="closeStartChatModal()" 
-          class="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-semibold transition-colors cursor-pointer">
-          Cancel
-        </button>
-      </div>
-
     </div>
   </div>
 
