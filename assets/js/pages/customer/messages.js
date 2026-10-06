@@ -10,6 +10,15 @@
 // Seamless 0ms Cache Preload & State
 let lastRendered_cust_messages_Hash = '';
 
+// Auth Helper: Retrieve session or persistent token & profile
+function getCustomerAuthToken() {
+  return localStorage.getItem('nelys_token') || sessionStorage.getItem('nelys_token') || '';
+}
+
+function getCustomerStoredUser() {
+  return localStorage.getItem('nelys_user') || sessionStorage.getItem('nelys_user') || null;
+}
+
 // Current Customer & Chat State
 let currentUser = null;
 let customerChatData = {
@@ -220,7 +229,7 @@ function stopCustomerRealtimePolling() {
 }
 
 function initCustomerSSE() {
-  const token = localStorage.getItem('nelys_token') || sessionStorage.getItem('nelys_token');
+  const token = getCustomerAuthToken();
   if (!token || !window.EventSource) return;
 
   if (customerEventSource) {
@@ -302,7 +311,7 @@ function purgeLegacyMockStorage() {
 
 // 1. Initialize Patron Profile in Sidebar and State
 function initPatronProfile() {
-  const savedUserJson = localStorage.getItem('nelys_user');
+  const savedUserJson = getCustomerStoredUser();
   if (!savedUserJson) {
     currentUser = { id: 'guest', full_name: 'Client Patron', email: '' };
     return;
@@ -342,7 +351,7 @@ function getStorageKey() {
 
 // 3. Load Chat Data from Backend API (with LocalStorage cache fallback)
 async function loadCustomerChatData() {
-  const token = localStorage.getItem('nelys_token');
+  const token = getCustomerAuthToken();
 
   // If user is logged in, fetch authoritative chat stream from backend with cache-busting
   if (token) {
@@ -452,7 +461,7 @@ async function loadOlderCustomerMessages() {
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-[11px]"></i><span>Loading...</span>';
   }
 
-  const token = localStorage.getItem('nelys_token') || sessionStorage.getItem('nelys_token');
+  const token = getCustomerAuthToken();
   if (!token) {
     isLoadingOlderMessages = false;
     return;
@@ -506,7 +515,7 @@ async function loadOlderCustomerMessages() {
 }
 
 async function markCustomerMessagesRead() {
-  const token = localStorage.getItem('nelys_token') || sessionStorage.getItem('nelys_token');
+  const token = getCustomerAuthToken();
   if (!token) return;
   try {
     await fetch('../api/messages/mark-read', {
@@ -530,7 +539,7 @@ function renderTickIcon(status) {
 }
 
 function emitCustomerTyping(isTyping) {
-  const token = localStorage.getItem('nelys_token') || sessionStorage.getItem('nelys_token');
+  const token = getCustomerAuthToken();
   if (!token) return;
   fetch('../api/messages/typing', {
     method: 'POST',
@@ -627,6 +636,8 @@ function formatMessageDateHeader(d) {
   } else {
     return formattedDate;
   }
+}
+
 // Utility: Decode HTML entities for proper punctuation rendering
 function decodeHtmlEntities(str) {
   if (!str) return '';
@@ -677,7 +688,7 @@ function saveCustomerChatData() {
 
 // 5. Fetch Live Bookings to display appointment context banner and update sidebar badges
 async function loadAppointmentContext() {
-  const token = localStorage.getItem('nelys_token');
+  const token = getCustomerAuthToken();
   const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
   try {
@@ -742,7 +753,7 @@ async function loadAppointmentContext() {
 
 // 6. Fetch Unread Notifications for Sidebar & Mobile Badges
 async function loadNotificationBadges() {
-  const token = localStorage.getItem('nelys_token');
+  const token = getCustomerAuthToken();
   const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
   try {
@@ -1054,7 +1065,15 @@ async function handleSendMessage(e) {
   }
   emitCustomerTyping(false);
 
-  const token = localStorage.getItem('nelys_token');
+  const token = getCustomerAuthToken();
+  if (!token) {
+    showToast('Please sign in to send messages.', 'error');
+    setTimeout(() => {
+      window.location.href = '../customer/login.html';
+    }, 1500);
+    return;
+  }
+
   const now = new Date();
   const timeStr = formatTime(now);
   const dateStr = formatMessageDateHeader(now);
@@ -1081,43 +1100,50 @@ async function handleSendMessage(e) {
 
   // Reset inputs
   input.value = '';
+  input.style.height = 'auto';
   clearAttachedFile();
   lastRendered_cust_messages_Hash = '';
   renderChatStream();
   scrollChatToBottom(false);
 
   // Post message to live Backend API
-  if (token) {
-    try {
-      const res = await fetch('../api/messages', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          text: text,
-          attachment_name: fileAttachment ? fileAttachment.name : null,
-          attachment_url: fileAttachment ? fileAttachment.dataUrl : null
-        })
-      });
+  try {
+    const res = await fetch('../api/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        text: text,
+        attachment_name: fileAttachment ? fileAttachment.name : null,
+        attachment_url: fileAttachment ? fileAttachment.dataUrl : null
+      })
+    });
 
-      if (res.ok) {
-        const result = await res.json();
-        if (result.success || result.status === 'success') {
-          if (result.data && result.data.id) {
-            localMsg.id = result.data.id;
-            localMsg.created_at = result.data.created_at || localMsg.created_at;
-            localMsg.time = result.data.time || localMsg.time;
-          }
-          saveCustomerChatData();
-          lastRendered_cust_messages_Hash = '';
-          await loadCustomerChatData();
+    if (res.ok) {
+      const result = await res.json();
+      if (result.success || result.status === 'success') {
+        if (result.data && result.data.id) {
+          localMsg.id = result.data.id;
+          localMsg.created_at = result.data.created_at || localMsg.created_at;
+          localMsg.time = result.data.time || localMsg.time;
         }
+        saveCustomerChatData();
+        lastRendered_cust_messages_Hash = '';
+        await loadCustomerChatData();
       }
-    } catch (err) {
-      console.warn('Backend message sync notice:', err);
+    } else if (res.status === 401) {
+      showToast('Session expired. Please sign in again.', 'error');
+      setTimeout(() => {
+        window.location.href = '../customer/login.html';
+      }, 1500);
+    } else {
+      const result = await res.json().catch(() => ({}));
+      showToast(result.message || 'Failed to send message. Please try again.', 'error');
     }
+  } catch (err) {
+    console.warn('Backend message sync notice:', err);
   }
 
   // (No bot replies for customer messages)
@@ -1275,7 +1301,7 @@ function closeDeleteMessageModal() {
 async function confirmDeleteMessage() {
   if (!messageToDeleteId) return;
 
-  const token = localStorage.getItem('nelys_token');
+  const token = getCustomerAuthToken();
   const idToDelete = messageToDeleteId;
 
   // Optimistically remove from state
@@ -1328,7 +1354,7 @@ function closeClearChatModal() {
 }
 
 async function confirmClearChat() {
-  const token = localStorage.getItem('nelys_token');
+  const token = getCustomerAuthToken();
 
   customerChatData.messages = [];
   isEmptyState = true;
