@@ -272,6 +272,7 @@ function initCustomerServices() {
   setupDialogBackdropDismissals();
   loadServicesFromBackend();
   loadLiveBadges();
+  initCustomerServicesLiveSync();
 }
 
 // 1. Initialize Patron Profile in Sidebar and Profile Modal
@@ -317,29 +318,86 @@ function initPatronProfile() {
   }
 }
 
-// 2. Fetch Live Services from Backend API
-async function loadServicesFromBackend() {
+let customerServicesLiveSyncTimer = null;
+
+// 2. Fetch Live Services from Backend API with zero-reload updates
+async function loadServicesFromBackend(isSilent = false) {
   try {
-    const res = await fetch('../api/services');
+    const res = await fetch('../api/services?active_only=true');
     if (res.ok) {
       const result = await res.json();
-      if ((result.success || result.status === 'success') && Array.isArray(result.data) && result.data.length > 0) {
-        const newHash = JSON.stringify(result.data);
-        if (newHash !== lastRendered_cust_services_Hash || servicesCatalog.length === 0) {
-          lastRendered_cust_services_Hash = newHash;
-          try {
-            localStorage.setItem(CUST_SERVICES_CACHE_KEY, newHash);
-          } catch (e) {}
-          const activeServices = result.data.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
-          servicesCatalog = activeServices.map(item => mapBackendService(item));
-          updateCategoryCounts();
-          renderServices();
+      const rawList = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+      const activeServices = rawList.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
+      const newHash = JSON.stringify(activeServices);
+
+      if (newHash !== lastRendered_cust_services_Hash || servicesCatalog.length === 0) {
+        lastRendered_cust_services_Hash = newHash;
+        try {
+          localStorage.setItem(CUST_SERVICES_CACHE_KEY, newHash);
+        } catch (e) {}
+
+        // Check if details modal is currently open for a deactivated service
+        const modal = document.getElementById('serviceDetailsModal');
+        if (modal && modal.open) {
+          const modalTitle = document.getElementById('modalServiceName')?.textContent || '';
+          const isStillActive = activeServices.some(s => s.name === modalTitle);
+          if (!isStillActive && modalTitle) {
+            closeServiceModal();
+            showToast(`"${modalTitle}" was marked unavailable by the salon.`, 'warning');
+          }
         }
+
+        servicesCatalog = activeServices.map(item => mapBackendService(item));
+        updateCategoryCounts();
+        renderServices();
       }
     }
   } catch (e) {
-    console.warn('Backend services API unreachable:', e);
+    if (!isSilent) {
+      console.warn('Backend services API unreachable:', e);
+    }
   }
+}
+
+// Real-Time Live Sync System across tabs and devices without page refresh
+function initCustomerServicesLiveSync() {
+  // 1. BroadcastChannel (0ms intra-browser response when admin toggles)
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel('nelys_services_sync_channel');
+      channel.onmessage = (event) => {
+        loadServicesFromBackend(true);
+      };
+    }
+  } catch (e) {
+    console.warn('BroadcastChannel notice in customer services:', e);
+  }
+
+  // 2. Storage event
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'nelys_services_sync_signal' && e.newValue) {
+      loadServicesFromBackend(true);
+    }
+  });
+
+  // 3. Tab visibility & focus
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      loadServicesFromBackend(true);
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    loadServicesFromBackend(true);
+  });
+
+  // 4. Background polling timer (every 3 seconds)
+  if (customerServicesLiveSyncTimer) clearInterval(customerServicesLiveSyncTimer);
+  customerServicesLiveSyncTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      loadServicesFromBackend(true);
+    }
+  }, 3000);
 }
 
 // 3. Map Backend Service to Display Object

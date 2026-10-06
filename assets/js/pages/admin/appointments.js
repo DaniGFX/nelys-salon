@@ -105,11 +105,35 @@ function hydrateAppointmentsFromCache() {
 }
 
 // ================= INITIALIZATION & AUTH =================
+function initAdminAppointmentsLiveSync() {
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel('nelys_services_sync_channel');
+      channel.onmessage = () => {
+        fetchAppointments();
+      };
+    }
+  } catch (_) {}
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'nelys_services_sync_signal') {
+      fetchAppointments();
+    }
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      fetchAppointments();
+    }
+  });
+}
+
 function initAppointments() {
   hydrateAppointmentsFromCache();
   checkAdminAuth();
   setupDialogSteadyListeners();
   fetchAppointments();
+  initAdminAppointmentsLiveSync();
 }
 
 if (document.readyState === 'loading') {

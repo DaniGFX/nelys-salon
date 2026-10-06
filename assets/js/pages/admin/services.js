@@ -603,6 +603,33 @@ function renderServiceCards(items) {
   }).join('');
 }
 
+// ================= REAL-TIME BROADCAST SYSTEM =================
+function broadcastServicesSyncEvent(serviceId, status, serviceName = '') {
+  const payload = {
+    action: 'SERVICE_STATUS_CHANGED',
+    serviceId: serviceId,
+    status: status,
+    serviceName: serviceName,
+    timestamp: Date.now()
+  };
+
+  // 1. Post to BroadcastChannel (instant 0ms cross-tab within same browser)
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel('nelys_services_sync_channel');
+      channel.postMessage(payload);
+      channel.close();
+    }
+  } catch (e) {
+    console.warn('BroadcastChannel notice:', e);
+  }
+
+  // 2. Storage event signal for cross-tab listeners
+  try {
+    localStorage.setItem('nelys_services_sync_signal', JSON.stringify(payload));
+  } catch (_) {}
+}
+
 // ================= TOGGLE STATUS VIA API =================
 async function toggleServiceStatus(serviceId) {
   const service = servicesData.find(s => s.id === serviceId);
@@ -637,6 +664,7 @@ async function toggleServiceStatus(serviceId) {
     } catch (_) {}
 
     applyFiltersAndRender();
+    broadcastServicesSyncEvent(service.id, updatedStatus, service.name);
     showToast(`${service.name} status updated to ${updatedStatus}`, 'info');
 
   } catch (err) {
@@ -888,6 +916,7 @@ async function handleSaveService(event) {
       localStorage.removeItem('nelys_landing_services_cache');
     } catch (_) {}
 
+    broadcastServicesSyncEvent(json.data?.id || (activeService ? activeService.id : null), activeService ? (activeService.status || 'Active') : 'Active', name);
     showToast(activeService ? `Service "${name}" updated successfully!` : `Service "${name}" registered successfully!`, 'success');
     closeServiceModal();
     await fetchServicesData();
@@ -956,6 +985,7 @@ async function handleConfirmDeleteService() {
       localStorage.removeItem('nelys_landing_services_cache');
     } catch (_) {}
 
+    broadcastServicesSyncEvent(serviceId, 'Deleted', serviceName);
     showToast(`Service "${serviceName}" removed successfully.`, 'info');
     closeDeleteServiceModal();
     await fetchServicesData();

@@ -305,8 +305,11 @@ function mapBackendToLandingService(item) {
   };
 }
 
-// Fetch live active services from MySQL database
-async function loadLandingServices() {
+let lastLandingActiveIds = '';
+let landingSyncTimer = null;
+
+// Fetch live active services from MySQL database with instant zero-reload DOM update
+async function loadLandingServices(isSilent = false) {
   try {
     const res = await fetch('api/services?active_only=true');
     if (res.ok) {
@@ -314,21 +317,87 @@ async function loadLandingServices() {
       const rawList = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
       // Filter strictly active services
       const active = rawList.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
-      
-      landingServicesList = active.map(mapBackendToLandingService);
-      try {
-        localStorage.setItem(LANDING_SERVICES_CACHE_KEY, JSON.stringify(landingServicesList));
-      } catch (_) {}
+      const newActiveIds = active.map(s => s.id).sort().join(',');
 
-      renderServices(currentLandingServiceFilter);
-      
-      const select = document.getElementById('bookingServiceSelect');
-      const curVal = select ? select.value : '';
-      populateBookingServicesDropdown(curVal);
+      // If active services changed or first load
+      if (newActiveIds !== lastLandingActiveIds || landingServicesList.length === 0) {
+        const prevList = [...landingServicesList];
+        lastLandingActiveIds = newActiveIds;
+        landingServicesList = active.map(mapBackendToLandingService);
+        
+        try {
+          localStorage.setItem(LANDING_SERVICES_CACHE_KEY, JSON.stringify(landingServicesList));
+        } catch (_) {}
+
+        // Re-render catalog grid seamlessly without page reload
+        renderServices(currentLandingServiceFilter);
+
+        // Update modal dropdown
+        const select = document.getElementById('bookingServiceSelect');
+        const curVal = select ? select.value : '';
+
+        // Check if currently selected service was deactivated
+        const deactivatedSvc = prevList.find(prev => 
+          (String(prev.id) === String(curVal) || prev.code === String(curVal).toLowerCase()) &&
+          !landingServicesList.some(curr => curr.id === prev.id)
+        );
+
+        if (deactivatedSvc) {
+          const modal = document.getElementById('bookingModal');
+          if (modal && modal.open) {
+            showToast(`"${deactivatedSvc.name}" was just marked unavailable by the salon. Your ritual selection has been updated.`, 'warning');
+          }
+        }
+
+        populateBookingServicesDropdown(curVal);
+      }
     }
   } catch (err) {
-    console.warn('Live landing services fetch notice:', err);
+    if (!isSilent) {
+      console.warn('Live landing services fetch notice:', err);
+    }
   }
+}
+
+// Zero-Reload Real-Time Sync System across tabs, windows, and background devices
+function initLandingServicesLiveSync() {
+  // 1. BroadcastChannel (0ms intra-browser response when admin toggles)
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel('nelys_services_sync_channel');
+      channel.onmessage = (event) => {
+        loadLandingServices(true);
+      };
+    }
+  } catch (e) {
+    console.warn('BroadcastChannel notice:', e);
+  }
+
+  // 2. Storage Event (cross-tab sync fallback)
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'nelys_services_sync_signal' && e.newValue) {
+      loadLandingServices(true);
+    }
+  });
+
+  // 3. Document Visibility & Focus (sync immediately when returning to tab)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      loadLandingServices(true);
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    loadLandingServices(true);
+  });
+
+  // 4. Lightweight Background Polling (every 3 seconds) for multi-device live sync
+  if (landingSyncTimer) clearInterval(landingSyncTimer);
+  landingSyncTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      loadLandingServices(true);
+    }
+  }, 3000);
 }
 
 // Render Services in Landing Page
@@ -1328,6 +1397,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initServiceFilters();
   loadLandingStaff();
   loadLandingServices();
+  initLandingServicesLiveSync();
   initBookingForm();
   initMobileMenu();
   initDialogBackdropDismiss();

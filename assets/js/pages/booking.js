@@ -89,6 +89,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   checkUrlPreselectedService();
   setupDialogSteadyListeners();
+  initBookingLiveSync();
 });
 
 // 1. Initialize Date Defaults
@@ -214,52 +215,119 @@ function hydrateCachedServices() {
   }
 }
 
-async function loadLiveServices() {
+let lastBookingActiveIds = '';
+let bookingLiveSyncTimer = null;
+
+async function loadLiveServices(isSilent = false) {
   try {
     const res = await fetch('../api/services?active_only=true');
     if (res.ok) {
       const result = await res.json();
       const rawList = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
       const active = rawList.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
-      
-      if (active.length > 0) {
-        activeServicesList = active.map(mapBackendServiceToBookingItem);
-        try {
-          localStorage.setItem(SERVICES_CACHE_KEY, JSON.stringify(activeServicesList));
-        } catch (_) {}
-        renderBookingServices(activeServicesList);
+      const newActiveIds = active.map(s => s.id).sort().join(',');
 
-        // Select first service if none selected or selected not in list
-        const currentSelected = activeServicesList.find(s => s.id === bookingState.service.id || s.code === bookingState.service.code);
-        if (currentSelected) {
-          selectService(currentSelected.id, currentSelected.name, currentSelected.price, currentSelected.categoryLabel, currentSelected.duration, currentSelected.code);
+      if (newActiveIds !== lastBookingActiveIds || activeServicesList.length === 0) {
+        const prevSelectedId = bookingState.service.id;
+        const prevSelectedName = bookingState.service.name;
+        lastBookingActiveIds = newActiveIds;
+
+        if (active.length > 0) {
+          activeServicesList = active.map(mapBackendServiceToBookingItem);
+          try {
+            localStorage.setItem(SERVICES_CACHE_KEY, JSON.stringify(activeServicesList));
+          } catch (_) {}
+
+          // Check if previously selected service was deactivated by admin
+          const stillActive = activeServicesList.find(s => s.id === prevSelectedId || s.code === bookingState.service.code);
+
+          renderBookingServices(activeServicesList);
+
+          if (stillActive) {
+            selectService(stillActive.id, stillActive.name, stillActive.price, stillActive.categoryLabel, stillActive.duration, stillActive.code);
+          } else {
+            // Selected service is no longer active!
+            const firstSvc = activeServicesList[0];
+            selectService(firstSvc.id, firstSvc.name, firstSvc.price, firstSvc.categoryLabel, firstSvc.duration, firstSvc.code);
+
+            if (prevSelectedId) {
+              showToast(`"${prevSelectedName}" was just marked unavailable by the salon. Switched to ${firstSvc.name}.`, 'warning');
+              // If patron already advanced to another step, return to Step 1
+              if (bookingState.step > 1) {
+                goToStep(1);
+              }
+            }
+          }
         } else {
-          const firstSvc = activeServicesList[0];
-          selectService(firstSvc.id, firstSvc.name, firstSvc.price, firstSvc.categoryLabel, firstSvc.duration, firstSvc.code);
+          // If no active services found in database
+          activeServicesList = [];
+          try {
+            localStorage.setItem(SERVICES_CACHE_KEY, JSON.stringify([]));
+          } catch (_) {}
+          renderBookingServices([]);
+          bookingState.service = {
+            id: null,
+            code: '',
+            name: 'No Service Available',
+            price: 0,
+            priceFormatted: '₱0',
+            category: 'Unavailable',
+            duration: ''
+          };
+          updateSummary();
+          if (prevSelectedId) {
+            showToast('All salon services are currently unavailable.', 'warning');
+            if (bookingState.step > 1) goToStep(1);
+          }
         }
-        return;
-      } else {
-        // If no active services found in database
-        activeServicesList = [];
-        try {
-          localStorage.setItem(SERVICES_CACHE_KEY, JSON.stringify([]));
-        } catch (_) {}
-        renderBookingServices([]);
-        bookingState.service = {
-          id: null,
-          code: '',
-          name: 'No Service Available',
-          price: 0,
-          priceFormatted: '₱0',
-          category: 'Unavailable',
-          duration: ''
-        };
-        updateSummary();
       }
     }
   } catch (err) {
-    console.warn('Live services fetch notice:', err);
+    if (!isSilent) {
+      console.warn('Live services fetch notice in booking:', err);
+    }
   }
+}
+
+// Real-Time Live Sync System across tabs and devices without page refresh
+function initBookingLiveSync() {
+  // 1. BroadcastChannel (0ms instant response within browser)
+  try {
+    if (typeof BroadcastChannel !== 'undefined') {
+      const channel = new BroadcastChannel('nelys_services_sync_channel');
+      channel.onmessage = (event) => {
+        loadLiveServices(true);
+      };
+    }
+  } catch (e) {
+    console.warn('BroadcastChannel notice in booking:', e);
+  }
+
+  // 2. Storage event fallback
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'nelys_services_sync_signal' && e.newValue) {
+      loadLiveServices(true);
+    }
+  });
+
+  // 3. Tab visibility & focus
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      loadLiveServices(true);
+    }
+  });
+
+  window.addEventListener('focus', () => {
+    loadLiveServices(true);
+  });
+
+  // 4. Background polling timer (every 3 seconds)
+  if (bookingLiveSyncTimer) clearInterval(bookingLiveSyncTimer);
+  bookingLiveSyncTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      loadLiveServices(true);
+    }
+  }, 3000);
 }
 
 function mapBackendServiceToBookingItem(item) {
