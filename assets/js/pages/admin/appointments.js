@@ -301,7 +301,12 @@ function populateDropdowns() {
     let opts = '<option value="" disabled selected>Select service...</option>';
     servicesList.forEach(svc => {
       const price = parseFloat(svc.price || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
-      opts += `<option value="${svc.id}">${escapeHtml(svc.name)} (₱${price})</option>`;
+      const isActive = svc.is_active === 1 || svc.is_active === '1' || svc.is_active === true || svc.is_active === undefined;
+      if (isActive) {
+        opts += `<option value="${svc.id}">${escapeHtml(svc.name)} (₱${price})</option>`;
+      } else {
+        opts += `<option value="${svc.id}" disabled class="text-stone-400 bg-stone-100">${escapeHtml(svc.name)} (Inactive — ₱${price})</option>`;
+      }
     });
     addServiceSelect.innerHTML = opts;
   }
@@ -334,7 +339,12 @@ function populateDropdowns() {
     let opts = '';
     servicesList.forEach(svc => {
       const price = parseFloat(svc.price || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 });
-      opts += `<option value="${svc.id}">${escapeHtml(svc.name)} (₱${price})</option>`;
+      const isActive = svc.is_active === 1 || svc.is_active === '1' || svc.is_active === true || svc.is_active === undefined;
+      if (isActive) {
+        opts += `<option value="${svc.id}">${escapeHtml(svc.name)} (₱${price})</option>`;
+      } else {
+        opts += `<option value="${svc.id}">${escapeHtml(svc.name)} (Inactive — ₱${price})</option>`;
+      }
     });
     editServiceSelect.innerHTML = opts;
   }

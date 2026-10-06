@@ -12,7 +12,7 @@ require_once dirname(__DIR__) . '/middleware/RoleMiddleware.php';
 
 class ServiceController {
     public function index(): void {
-        $activeOnly = isset($_GET['active_only']) && $_GET['active_only'] === 'true';
+        $activeOnly = isset($_GET['active_only']) && ($_GET['active_only'] === 'true' || $_GET['active_only'] === '1');
         $services = Service::all($activeOnly);
         $metrics = Service::getSummaryMetrics();
 

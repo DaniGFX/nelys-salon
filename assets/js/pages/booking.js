@@ -201,7 +201,7 @@ function hydrateCachedServices() {
     if (cachedRaw) {
       const parsed = JSON.parse(cachedRaw);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        activeServicesList = parsed;
+        activeServicesList = parsed.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true || s.is_active === undefined);
         renderBookingServices(activeServicesList);
         if (!bookingState.service.id && activeServicesList.length > 0) {
           const firstSvc = activeServicesList[0];
@@ -216,26 +216,45 @@ function hydrateCachedServices() {
 
 async function loadLiveServices() {
   try {
-    const res = await fetch('../api/services');
+    const res = await fetch('../api/services?active_only=true');
     if (res.ok) {
       const result = await res.json();
-      if ((result.success || result.status === 'success') && Array.isArray(result.data) && result.data.length > 0) {
-        const active = result.data.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
-        if (active.length > 0) {
-          activeServicesList = active.map(mapBackendServiceToBookingItem);
+      const rawList = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+      const active = rawList.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
+      
+      if (active.length > 0) {
+        activeServicesList = active.map(mapBackendServiceToBookingItem);
+        try {
           localStorage.setItem(SERVICES_CACHE_KEY, JSON.stringify(activeServicesList));
-          renderBookingServices(activeServicesList);
+        } catch (_) {}
+        renderBookingServices(activeServicesList);
 
-          // Select first service if none selected or selected not in list
-          const currentSelected = activeServicesList.find(s => s.id === bookingState.service.id || s.code === bookingState.service.code);
-          if (currentSelected) {
-            selectService(currentSelected.id, currentSelected.name, currentSelected.price, currentSelected.categoryLabel, currentSelected.duration, currentSelected.code);
-          } else {
-            const firstSvc = activeServicesList[0];
-            selectService(firstSvc.id, firstSvc.name, firstSvc.price, firstSvc.categoryLabel, firstSvc.duration, firstSvc.code);
-          }
-          return;
+        // Select first service if none selected or selected not in list
+        const currentSelected = activeServicesList.find(s => s.id === bookingState.service.id || s.code === bookingState.service.code);
+        if (currentSelected) {
+          selectService(currentSelected.id, currentSelected.name, currentSelected.price, currentSelected.categoryLabel, currentSelected.duration, currentSelected.code);
+        } else {
+          const firstSvc = activeServicesList[0];
+          selectService(firstSvc.id, firstSvc.name, firstSvc.price, firstSvc.categoryLabel, firstSvc.duration, firstSvc.code);
         }
+        return;
+      } else {
+        // If no active services found in database
+        activeServicesList = [];
+        try {
+          localStorage.setItem(SERVICES_CACHE_KEY, JSON.stringify([]));
+        } catch (_) {}
+        renderBookingServices([]);
+        bookingState.service = {
+          id: null,
+          code: '',
+          name: 'No Service Available',
+          price: 0,
+          priceFormatted: '₱0',
+          category: 'Unavailable',
+          duration: ''
+        };
+        updateSummary();
       }
     }
   } catch (err) {
@@ -280,8 +299,9 @@ function mapBackendServiceToBookingItem(item) {
     badge: badge,
     description: item.description || 'Professional salon care with personalized styling.',
     price: priceNum,
-    priceFormatted: `₱${priceNum.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`,
-    duration: item.duration_minutes ? `${item.duration_minutes} mins` : '60 mins'
+    priceFormatted: priceNum > 0 ? `₱${priceNum.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` : 'Price to be confirmed',
+    duration: item.duration_minutes ? `${item.duration_minutes} mins` : '60 mins',
+    is_active: item.is_active === 1 || item.is_active === '1' || item.is_active === true ? 1 : 0
   };
 }
 
@@ -291,83 +311,101 @@ function renderBookingServices(services) {
 
   if (!hairGrid && !nailGrid) return;
 
-  const hairServices = services.filter(s => s.categoryGroup === 'hair');
-  const nailServices = services.filter(s => s.categoryGroup === 'nail_foot');
+  const hairServices = (services || []).filter(s => s.categoryGroup === 'hair');
+  const nailServices = (services || []).filter(s => s.categoryGroup === 'nail_foot');
 
-  if (hairGrid && hairServices.length > 0) {
-    let hairHtml = '';
-    hairServices.forEach(s => {
-      const isSelected = bookingState.service.id === s.id || bookingState.service.code === s.code;
-      const borderClass = isSelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md bg-[#FAF6F0]' : 'border-[#DCC3AA] bg-white';
+  if (hairGrid) {
+    if (hairServices.length > 0) {
+      let hairHtml = '';
+      hairServices.forEach(s => {
+        const isSelected = bookingState.service.id === s.id || bookingState.service.code === s.code;
+        const borderClass = isSelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md bg-[#FAF6F0]' : 'border-[#DCC3AA] bg-white';
 
-      hairHtml += `
-        <div onclick="selectService(${s.id}, '${escapeHtml(s.name)}', ${s.price}, '${escapeHtml(s.categoryLabel)}', '${escapeHtml(s.duration)}', '${escapeHtml(s.code)}')"
-          id="svcCard-${s.code}"
-          class="service-card p-5 rounded-2xl border-2 ${borderClass} hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
-          <div>
-            <div class="flex items-start justify-between">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
-                ${escapeHtml(s.badge)}
-              </span>
-              <span class="text-xs text-[#735e5e] flex items-center gap-1">
-                <i class="fa-solid fa-clock text-[10px]"></i> ${escapeHtml(s.duration)}
+        hairHtml += `
+          <div onclick="selectService(${s.id}, '${escapeHtml(s.name)}', ${s.price}, '${escapeHtml(s.categoryLabel)}', '${escapeHtml(s.duration)}', '${escapeHtml(s.code)}')"
+            id="svcCard-${s.code}"
+            class="service-card p-5 rounded-2xl border-2 ${borderClass} hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
+            <div>
+              <div class="flex items-start justify-between">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                  ${escapeHtml(s.badge)}
+                </span>
+                <span class="text-xs text-[#735e5e] flex items-center gap-1">
+                  <i class="fa-solid fa-clock text-[10px]"></i> ${escapeHtml(s.duration)}
+                </span>
+              </div>
+              <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                ${escapeHtml(s.name)}
+              </h4>
+              <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
+                ${escapeHtml(s.description)}
+              </p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
+              <span class="font-serif text-xl font-bold text-[#810B38]">${s.priceFormatted}</span>
+              <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
               </span>
             </div>
-            <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
-              ${escapeHtml(s.name)}
-            </h4>
-            <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
-              ${escapeHtml(s.description)}
-            </p>
           </div>
-          <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
-            <span class="font-serif text-xl font-bold text-[#810B38]">${s.priceFormatted}</span>
-            <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
-              Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
-            </span>
-          </div>
+        `;
+      });
+      hairGrid.innerHTML = hairHtml;
+    } else {
+      hairGrid.innerHTML = `
+        <div class="col-span-full py-8 text-center text-sm text-[#735e5e] bg-stone-50 rounded-2xl border border-dashed border-[#DCC3AA]/60">
+          <p class="font-medium text-stone-700">No hair services currently available for booking.</p>
+          <p class="text-xs text-stone-500 mt-1">Please check back soon or consult our salon staff.</p>
         </div>
       `;
-    });
-    hairGrid.innerHTML = hairHtml;
+    }
   }
 
-  if (nailGrid && nailServices.length > 0) {
-    let nailHtml = '';
-    nailServices.forEach(s => {
-      const isSelected = bookingState.service.id === s.id || bookingState.service.code === s.code;
-      const borderClass = isSelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md bg-[#FAF6F0]' : 'border-[#DCC3AA] bg-white';
+  if (nailGrid) {
+    if (nailServices.length > 0) {
+      let nailHtml = '';
+      nailServices.forEach(s => {
+        const isSelected = bookingState.service.id === s.id || bookingState.service.code === s.code;
+        const borderClass = isSelected ? 'border-[#810B38] ring-2 ring-[#810B38]/30 shadow-md bg-[#FAF6F0]' : 'border-[#DCC3AA] bg-white';
 
-      nailHtml += `
-        <div onclick="selectService(${s.id}, '${escapeHtml(s.name)}', ${s.price}, '${escapeHtml(s.categoryLabel)}', '${escapeHtml(s.duration)}', '${escapeHtml(s.code)}')"
-          id="svcCard-${s.code}"
-          class="service-card p-5 rounded-2xl border-2 ${borderClass} hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
-          <div>
-            <div class="flex items-start justify-between">
-              <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
-                ${escapeHtml(s.badge)}
-              </span>
-              <span class="text-xs text-[#735e5e] flex items-center gap-1">
-                <i class="fa-solid fa-clock text-[10px]"></i> ${escapeHtml(s.duration)}
+        nailHtml += `
+          <div onclick="selectService(${s.id}, '${escapeHtml(s.name)}', ${s.price}, '${escapeHtml(s.categoryLabel)}', '${escapeHtml(s.duration)}', '${escapeHtml(s.code)}')"
+            id="svcCard-${s.code}"
+            class="service-card p-5 rounded-2xl border-2 ${borderClass} hover:border-[#810B38] shadow-sm hover:shadow-md transition-all cursor-pointer flex flex-col justify-between group">
+            <div>
+              <div class="flex items-start justify-between">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-[#810B38] bg-[#FAF6F0] px-2 py-0.5 rounded-full border border-[#DCC3AA]/50">
+                  ${escapeHtml(s.badge)}
+                </span>
+                <span class="text-xs text-[#735e5e] flex items-center gap-1">
+                  <i class="fa-solid fa-clock text-[10px]"></i> ${escapeHtml(s.duration)}
+                </span>
+              </div>
+              <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
+                ${escapeHtml(s.name)}
+              </h4>
+              <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
+                ${escapeHtml(s.description)}
+              </p>
+            </div>
+            <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
+              <span class="font-serif text-xl font-bold text-[#810B38]">${s.priceFormatted}</span>
+              <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
               </span>
             </div>
-            <h4 class="font-serif text-xl font-bold text-[#541A1A] mt-2 group-hover:text-[#810B38] transition-colors">
-              ${escapeHtml(s.name)}
-            </h4>
-            <p class="text-xs text-[#735e5e] mt-1 line-clamp-2">
-              ${escapeHtml(s.description)}
-            </p>
           </div>
-          <div class="mt-4 pt-3 border-t border-[#F1E2D1] flex items-center justify-between">
-            <span class="font-serif text-xl font-bold text-[#810B38]">${s.priceFormatted}</span>
-            <span class="text-xs font-bold text-[#810B38] group-hover:translate-x-1 transition-transform flex items-center gap-1">
-              Select <i class="fa-solid fa-arrow-right text-[10px]"></i>
-            </span>
-          </div>
+        `;
+      });
+      nailGrid.innerHTML = nailHtml;
+    } else {
+      nailGrid.innerHTML = `
+        <div class="col-span-full py-8 text-center text-sm text-[#735e5e] bg-stone-50 rounded-2xl border border-dashed border-[#DCC3AA]/60">
+          <p class="font-medium text-stone-700">No nail or foot care services currently available for booking.</p>
+          <p class="text-xs text-stone-500 mt-1">Please check back soon or consult our salon staff.</p>
         </div>
       `;
-    });
-    nailGrid.innerHTML = nailHtml;
+    }
   }
 }
 
@@ -375,6 +413,11 @@ function checkUrlPreselectedService() {
   const params = new URLSearchParams(window.location.search);
   const serviceParam = params.get('service');
   if (serviceParam) {
+    const isAvailable = activeServicesList.some(s => s.code === serviceParam.toLowerCase() || String(s.id) === serviceParam);
+    if (!isAvailable && activeServicesList.length > 0) {
+      showToast('The requested service is currently unavailable for booking. An available service has been selected.', 'warning');
+      return;
+    }
     const targetCard = document.getElementById(`svcCard-${serviceParam}`);
     if (targetCard) {
       targetCard.click();
@@ -1173,9 +1216,16 @@ function goToStep(targetStep) {
 
   // Step Validations
   if (targetStep > bookingState.step) {
-    if (bookingState.step === 1 && !bookingState.service.id) {
-      showToast('Please select a service before proceeding.', 'error');
-      return;
+    if (bookingState.step === 1) {
+      if (!bookingState.service.id) {
+        showToast('Please select a service before proceeding.', 'error');
+        return;
+      }
+      const isActive = activeServicesList.some(s => s.id === bookingState.service.id);
+      if (!isActive) {
+        showToast('The selected service is currently unavailable for booking. Please choose another service.', 'error');
+        return;
+      }
     }
     if (bookingState.step === 2) {
       if (!bookingState.date || !bookingState.time) {

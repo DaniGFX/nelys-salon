@@ -629,8 +629,14 @@ async function toggleServiceStatus(serviceId) {
     
     computeSummaryMetrics();
     renderSummaryCards();
-    applyFiltersAndRender();
+    // Invalidate client booking, customer services and landing caches so changes reflect immediately
+    try {
+      localStorage.removeItem('nelys_booking_services_cache');
+      localStorage.removeItem('nelys_customer_services_cache');
+      localStorage.removeItem('nelys_landing_services_cache');
+    } catch (_) {}
 
+    applyFiltersAndRender();
     showToast(`${service.name} status updated to ${updatedStatus}`, 'info');
 
   } catch (err) {
@@ -875,6 +881,13 @@ async function handleSaveService(event) {
       throw new Error(json.message || 'Failed to save service.');
     }
 
+    // Invalidate client caches
+    try {
+      localStorage.removeItem('nelys_booking_services_cache');
+      localStorage.removeItem('nelys_customer_services_cache');
+      localStorage.removeItem('nelys_landing_services_cache');
+    } catch (_) {}
+
     showToast(activeService ? `Service "${name}" updated successfully!` : `Service "${name}" registered successfully!`, 'success');
     closeServiceModal();
     await fetchServicesData();
@@ -935,6 +948,13 @@ async function handleConfirmDeleteService() {
     if (!res.ok) {
       throw new Error(json.message || 'Failed to delete service.');
     }
+
+    // Invalidate client caches
+    try {
+      localStorage.removeItem('nelys_booking_services_cache');
+      localStorage.removeItem('nelys_customer_services_cache');
+      localStorage.removeItem('nelys_landing_services_cache');
+    } catch (_) {}
 
     showToast(`Service "${serviceName}" removed successfully.`, 'info');
     closeDeleteServiceModal();

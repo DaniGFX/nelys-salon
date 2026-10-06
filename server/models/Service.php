@@ -33,27 +33,23 @@ class Service {
                 ['gel-pedicure', 'Gel Pedicure', 'Nail & Foot Care', 499.00, 60, 'Durable high-gloss gel lacquer application with cuticle renewal care.']
             ];
 
-            $svcStmt = $pdo->prepare("
-                INSERT INTO `services` (`code`, `name`, `category`, `price`, `duration_minutes`, `description`, `is_active`)
-                VALUES (:code, :name, :category, :price, :duration, :description, 1)
-                ON DUPLICATE KEY UPDATE
-                    `name` = VALUES(`name`),
-                    `category` = VALUES(`category`),
-                    `price` = VALUES(`price`),
-                    `duration_minutes` = VALUES(`duration_minutes`),
-                    `description` = VALUES(`description`),
-                    `is_active` = 1
-            ");
+            $count = (int)$pdo->query("SELECT COUNT(*) FROM `services`")->fetchColumn();
+            if ($count === 0) {
+                $svcStmt = $pdo->prepare("
+                    INSERT INTO `services` (`code`, `name`, `category`, `price`, `duration_minutes`, `description`, `is_active`)
+                    VALUES (:code, :name, :category, :price, :duration, :description, 1)
+                ");
 
-            foreach ($officialServices as $svc) {
-                $svcStmt->execute([
-                    ':code'        => $svc[0],
-                    ':name'        => $svc[1],
-                    ':category'    => $svc[2],
-                    ':price'       => $svc[3],
-                    ':duration'    => $svc[4],
-                    ':description' => $svc[5]
-                ]);
+                foreach ($officialServices as $svc) {
+                    $svcStmt->execute([
+                        ':code'        => $svc[0],
+                        ':name'        => $svc[1],
+                        ':category'    => $svc[2],
+                        ':price'       => $svc[3],
+                        ':duration'    => $svc[4],
+                        ':description' => $svc[5]
+                    ]);
+                }
             }
         } catch (Throwable $e) {}
     }

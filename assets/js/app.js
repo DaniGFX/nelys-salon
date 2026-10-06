@@ -4,66 +4,77 @@
  * and modal management. Clean icons with Font Awesome / SVG (no emojis).
  */
 
-// Official Services & Prices
+// Official Services & Prices Default Fallback (Synchronized with MySQL Services)
 const SALON_SERVICES = [
   // Hair Services
   {
-    id: 'brazilian',
-    name: 'Brazilian Blowout',
+    id: 1,
+    code: 'brazilian',
+    name: 'Brazilian Treatment',
     category: 'hair',
     price: 1999,
     priceDisplay: '₱1,999',
     duration: '120 mins',
     popular: true,
     tag: 'Signature Care',
-    description: 'Transformative keratin smoothing treatment that eliminates frizz, restores moisture balance, and locks in mirror-like shine for months.'
+    description: 'Transformative keratin smoothing treatment that eliminates frizz, restores moisture balance, and locks in mirror-like shine for months.',
+    is_active: 1
   },
   {
-    id: 'hair-dye',
-    name: 'Hair Dye & Color',
+    id: 2,
+    code: 'hair-dye',
+    name: 'Hair Dye',
     category: 'hair',
     price: 699,
     priceDisplay: '₱699',
     duration: '90 mins',
     popular: false,
     tag: 'Custom Blend',
-    description: 'Full rich dimensional coloration, grey coverage, or gloss customized to your skin tone using gentle, nourishing formulas.'
+    description: 'Full rich dimensional coloration, grey coverage, or gloss customized to your skin tone using gentle, nourishing formulas.',
+    is_active: 1
   },
   {
-    id: 'power-dose',
-    name: 'Power Dose Repair',
+    id: 3,
+    code: 'power-dose',
+    name: 'Power Dose',
     category: 'hair',
     price: 499,
     priceDisplay: '₱499',
     duration: '45 mins',
     popular: false,
     tag: 'Intensive Care',
-    description: 'Concentrated micro-molecular shot that deeply penetrates weakened cuticles to restore structural elasticity and softness.'
+    description: 'Instant high-potency restorative ampoule treatment reviving brittle, lifeless ends.',
+    is_active: 1
   },
   {
-    id: 'cold-wave',
+    id: 4,
+    code: 'cold-wave',
     name: 'Cold Wave Perm',
     category: 'hair',
     price: 699,
     priceDisplay: '₱699',
-    duration: '120 mins',
+    duration: '90 mins',
     popular: false,
     tag: 'Natural Bounce',
-    description: 'Bouncy, defined curls or textured waves crafted with precision rolling technique and protective perming lotion.'
+    description: 'Volumizing texture wave or defined bounce curls with lasting curl retention.',
+    is_active: 1
   },
   {
-    id: 'bonacure',
-    name: 'Bonacure Deep Conditioning',
+    id: 5,
+    code: 'bonacure',
+    name: 'Bonacure Repair',
     category: 'hair',
     price: 499,
     priceDisplay: '₱499',
-    duration: '50 mins',
+    duration: '60 mins',
     popular: false,
     tag: 'Cellular Care',
-    description: 'Cellular restorative treatment hydrating parched locks and sealing damaged split ends with peptide bond repair.'
+    description: 'Advanced cellular hair repair infusion rebuilding elasticity and keratin bonds.',
+    is_active: 1
   },
   {
-    id: 'keratine-treatment',
+    id: 6,
+    code: 'keratine-treatment',
     name: 'Keratine Treatment',
     category: 'hair',
     price: 499,
@@ -71,56 +82,66 @@ const SALON_SERVICES = [
     duration: '60 mins',
     popular: true,
     tag: 'Deep Restoration',
-    description: 'Infusion of pure botanical keratin that relaxes unruly strands, restores silkiness, and leaves lasting radiance.'
+    description: 'Intensive protein replacement therapy delivering silky softness and strength.',
+    is_active: 1
   },
   {
-    id: 'trim',
-    name: 'Precision Trim',
+    id: 7,
+    code: 'trim',
+    name: 'Haircut & Trim',
     category: 'hair',
     price: 149,
     priceDisplay: '₱149',
     duration: '30 mins',
     popular: false,
     tag: 'Shape & Clean',
-    description: 'Clean split-end elimination and contouring haircut customized to maintain your natural bounce and style.'
+    description: 'Precision aesthetic trim and styling tailored to your face silhouette.',
+    is_active: 1
   },
   {
-    id: 'rebonding',
+    id: 8,
+    code: 'rebonding',
     name: 'Hair Rebonding',
     category: 'hair',
-    price: 1499,
+    price: 0,
     priceDisplay: 'Price to be confirmed',
     duration: '180 mins',
     popular: true,
     tag: 'Silk Smooth',
-    description: 'Permanent smoothing ritual providing silky straight elegance with restorative moisture-lock barrier. Free consultation.'
+    description: 'Pin-straight permanent thermal rebonding therapy with glossy silk finish. Consultation included.',
+    is_active: 1
   },
 
   // Nail & Foot Care
   {
-    id: 'footspa',
-    name: 'Botanical Footspa',
+    id: 9,
+    code: 'footspa',
+    name: 'Footspa with Scrub',
     category: 'nails',
     price: 199,
     priceDisplay: '₱199',
     duration: '45 mins',
     popular: true,
     tag: 'Relaxation',
-    description: 'Detoxifying aromatic foot soak, dead skin exfoliation, softening mask, and soothing acupressure massage.'
+    description: 'Aromatic sea-salt soak, exfoliating callus buffing, and warm soothing massage.',
+    is_active: 1
   },
   {
-    id: 'manicure',
+    id: 10,
+    code: 'manicure',
     name: 'Classic Manicure',
     category: 'nails',
     price: 149,
     priceDisplay: '₱149',
-    duration: '35 mins',
+    duration: '30 mins',
     popular: false,
     tag: 'Essential Care',
-    description: 'Essential hand ritual: nail shaping, delicate cuticle refinement, buffing, and high-shine regular polish.'
+    description: 'Full cuticle grooming, nail shaping, and regular lacquer polish of your choice.',
+    is_active: 1
   },
   {
-    id: 'pedicure',
+    id: 11,
+    code: 'pedicure',
     name: 'Classic Pedicure',
     category: 'nails',
     price: 149,
@@ -128,21 +149,25 @@ const SALON_SERVICES = [
     duration: '40 mins',
     popular: false,
     tag: 'Essential Care',
-    description: 'Relaxing foot treatment with warm herbal soak, cuticle care, heel smoothing, and vibrant polish.'
+    description: 'Rejuvenating foot bath, cut and file grooming, and vibrant color coating.',
+    is_active: 1
   },
   {
-    id: 'gel-manicure',
+    id: 12,
+    code: 'gel-manicure',
     name: 'Gel Manicure',
     category: 'nails',
     price: 499,
     priceDisplay: '₱499',
-    duration: '50 mins',
+    duration: '60 mins',
     popular: true,
     tag: 'Long Lasting',
-    description: 'Chip-resistant UV gel polish with organic cuticle cleanup, precision nail shaping, and botanical massage.'
+    description: 'Long-lasting chip-free UV LED gel polish with meticulous nail bed preparation.',
+    is_active: 1
   },
   {
-    id: 'gel-pedicure',
+    id: 13,
+    code: 'gel-pedicure',
     name: 'Gel Pedicure',
     category: 'nails',
     price: 499,
@@ -150,9 +175,15 @@ const SALON_SERVICES = [
     duration: '60 mins',
     popular: false,
     tag: 'High Shine',
-    description: 'Ultra-durable gel pedicure including warm foot soak, heel buffing, nail shaping, and rich hydration balm.'
+    description: 'Durable high-gloss gel lacquer application with cuticle renewal care.',
+    is_active: 1
   }
 ];
+
+// Live Dynamic Services State linked to Admin Services & MySQL Database
+const LANDING_SERVICES_CACHE_KEY = 'nelys_landing_services_cache';
+let landingServicesList = [];
+let currentLandingServiceFilter = 'all';
 
 // Sample Initial Bookings for Demo / Tracking
 const DEFAULT_BOOKINGS = [
@@ -208,24 +239,128 @@ function saveBookings(bookings) {
   localStorage.setItem('nelys_salon_bookings', JSON.stringify(bookings));
 }
 
+// Instant SWR Cache Hydration for Landing Services
+function hydrateLandingServices() {
+  try {
+    const cachedRaw = localStorage.getItem(LANDING_SERVICES_CACHE_KEY);
+    if (cachedRaw) {
+      const parsed = JSON.parse(cachedRaw);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        landingServicesList = parsed.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
+        renderServices(currentLandingServiceFilter);
+        populateBookingServicesDropdown();
+        return;
+      }
+    }
+  } catch (err) {
+    console.warn('Landing cached services read notice:', err);
+  }
+
+  // Fallback to active defaults
+  landingServicesList = SALON_SERVICES.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
+  renderServices(currentLandingServiceFilter);
+  populateBookingServicesDropdown();
+}
+
+// Map backend service row to landing display item
+function mapBackendToLandingService(item) {
+  const id = parseInt(item.id);
+  const code = (item.code || `svc-${item.id}`).toLowerCase();
+  const name = item.name || 'Salon Ritual';
+  const cat = (item.category || 'hair').toLowerCase();
+  const isNails = cat.includes('nail') || cat.includes('foot') || 
+                  name.toLowerCase().includes('manicure') || 
+                  name.toLowerCase().includes('pedicure') || 
+                  name.toLowerCase().includes('footspa') || 
+                  name.toLowerCase().includes('scrub');
+  const priceNum = item.price !== null && item.price !== undefined && item.price !== '' ? parseFloat(item.price) : null;
+  const priceDisplay = priceNum !== null 
+    ? `₱${priceNum.toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}` 
+    : 'Price to be confirmed';
+
+  let tag = 'Signature Care';
+  if (name.toLowerCase().includes('dye') || name.toLowerCase().includes('color')) tag = 'Custom Blend';
+  else if (name.toLowerCase().includes('power') || name.toLowerCase().includes('dose')) tag = 'Intensive Care';
+  else if (name.toLowerCase().includes('perm') || name.toLowerCase().includes('wave')) tag = 'Natural Bounce';
+  else if (name.toLowerCase().includes('bonacure')) tag = 'Cellular Care';
+  else if (name.toLowerCase().includes('keratin') || name.toLowerCase().includes('repair')) tag = 'Deep Restoration';
+  else if (name.toLowerCase().includes('trim') || name.toLowerCase().includes('cut')) tag = 'Shape & Clean';
+  else if (name.toLowerCase().includes('rebond')) tag = 'Silk Smooth';
+  else if (name.toLowerCase().includes('footspa')) tag = 'Relaxation';
+  else if (name.toLowerCase().includes('gel')) tag = 'Long Lasting';
+  else if (isNails) tag = 'Essential Care';
+
+  return {
+    id: id,
+    code: code,
+    name: name,
+    category: isNails ? 'nails' : 'hair',
+    price: priceNum || 0,
+    priceDisplay: priceDisplay,
+    duration: item.duration_minutes ? `${item.duration_minutes} mins` : '60 mins',
+    popular: Boolean(item.popular || ['brazilian', 'rebonding', 'footspa', 'gel-manicure'].includes(code)),
+    tag: tag,
+    description: item.description || 'Professional salon care with personalized styling and premium beauty products.',
+    is_active: item.is_active === 1 || item.is_active === '1' || item.is_active === true ? 1 : 0
+  };
+}
+
+// Fetch live active services from MySQL database
+async function loadLandingServices() {
+  try {
+    const res = await fetch('api/services?active_only=true');
+    if (res.ok) {
+      const result = await res.json();
+      const rawList = Array.isArray(result.data) ? result.data : (Array.isArray(result) ? result : []);
+      // Filter strictly active services
+      const active = rawList.filter(s => s.is_active === 1 || s.is_active === '1' || s.is_active === true);
+      
+      landingServicesList = active.map(mapBackendToLandingService);
+      try {
+        localStorage.setItem(LANDING_SERVICES_CACHE_KEY, JSON.stringify(landingServicesList));
+      } catch (_) {}
+
+      renderServices(currentLandingServiceFilter);
+      
+      const select = document.getElementById('bookingServiceSelect');
+      const curVal = select ? select.value : '';
+      populateBookingServicesDropdown(curVal);
+    }
+  } catch (err) {
+    console.warn('Live landing services fetch notice:', err);
+  }
+}
+
 // Render Services in Landing Page
 function renderServices(filter = 'all') {
+  currentLandingServiceFilter = filter;
   const container = document.getElementById('servicesGrid');
   if (!container) return;
 
+  const services = landingServicesList.length > 0 ? landingServicesList : SALON_SERVICES;
   const filtered = filter === 'all' 
-    ? SALON_SERVICES 
-    : SALON_SERVICES.filter(s => s.category === filter);
+    ? services 
+    : services.filter(s => s.category === filter);
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full py-12 text-center text-[#735e5e] bg-[#FAF6F0] rounded-2xl border border-dashed border-[#DCC3AA]">
+        <p class="font-medium text-sm">No services are currently available in this category.</p>
+        <p class="text-xs text-[#735e5e]/80 mt-1">Please check back later or contact our salon concierge at 0917 123 4567.</p>
+      </div>
+    `;
+    return;
+  }
 
   container.innerHTML = filtered.map(service => `
     <div class="group relative flex flex-col justify-between p-6 sm:p-7 rounded-2xl bg-[#FAF6F0] border border-[#E8D9CA] hover:border-[#810B38] transition-all duration-300 hover:shadow-lg hover:-translate-y-1">
       <div>
         <div class="flex items-start justify-between gap-4 mb-2">
           <h3 class="font-serif text-xl sm:text-2xl text-[#541A1A] font-semibold leading-tight group-hover:text-[#810B38] transition-colors">
-            ${service.name}
+            ${escapeHtml(service.name)}
           </h3>
           <span class="shrink-0 font-serif text-lg sm:text-xl font-bold text-[#810B38] tracking-tight">
-            ${service.priceDisplay}
+            ${escapeHtml(service.priceDisplay)}
           </span>
         </div>
 
@@ -236,20 +371,20 @@ function renderServices(filter = 'all') {
         </div>
 
         <p class="text-xs sm:text-sm text-[#6c5858] leading-relaxed mb-6 font-normal">
-          ${service.description}
+          ${escapeHtml(service.description)}
         </p>
       </div>
 
       <div class="pt-4 border-t border-[#eedfc9] flex items-center justify-between text-xs text-[#735e5e]">
         <div class="flex items-center gap-1.5 font-medium">
           <i class="fa-regular fa-clock text-[#810B38]"></i>
-          <span>${service.duration}</span>
+          <span>${escapeHtml(service.duration)}</span>
         </div>
 
         <button 
           type="button" 
           onclick="openBookingModal('${service.id}')"
-          class="inline-flex items-center gap-1.5 font-semibold text-[#810B38] hover:text-[#541A1A] transition-colors group-hover:translate-x-0.5">
+          class="inline-flex items-center gap-1.5 font-semibold text-[#810B38] hover:text-[#541A1A] transition-colors group-hover:translate-x-0.5 cursor-pointer">
           <span>Book Ritual</span>
           <i class="fa-solid fa-arrow-right text-[10px]"></i>
         </button>
@@ -281,12 +416,27 @@ function populateBookingServicesDropdown(selectedId = '') {
   const select = document.getElementById('bookingServiceSelect');
   if (!select) return;
 
-  select.innerHTML = '<option value="" disabled selected>— Select your beauty service —</option>' + 
-    SALON_SERVICES.map(s => `
-      <option value="${s.id}" data-price="${s.price}" ${s.id === selectedId ? 'selected' : ''}>
-        ${s.name} — ${s.priceDisplay} (${s.duration})
-      </option>
-    `).join('');
+  const services = landingServicesList.length > 0 ? landingServicesList : SALON_SERVICES;
+  
+  if (services.length === 0) {
+    select.innerHTML = '<option value="" disabled selected>— No services currently available —</option>';
+    updateBookingPriceSummary();
+    return;
+  }
+
+  // Check if selectedId matches any active service (by id or code)
+  const isMatch = services.some(s => String(s.id) === String(selectedId) || s.code === String(selectedId).toLowerCase());
+  const effectiveSelectedId = isMatch ? selectedId : (services[0]?.id || '');
+
+  select.innerHTML = '<option value="" disabled' + (!effectiveSelectedId ? ' selected' : '') + '>— Select your beauty service —</option>' + 
+    services.map(s => {
+      const isSelected = String(s.id) === String(effectiveSelectedId) || s.code === String(effectiveSelectedId).toLowerCase();
+      return `
+        <option value="${s.id}" data-price="${s.price}" ${isSelected ? 'selected' : ''}>
+          ${escapeHtml(s.name)} — ${escapeHtml(s.priceDisplay)} (${escapeHtml(s.duration)})
+        </option>
+      `;
+    }).join('');
 
   updateBookingPriceSummary();
 }
@@ -306,14 +456,16 @@ function updateBookingPriceSummary() {
     return;
   }
 
-  const selectedService = SALON_SERVICES.find(s => s.id === selectedOption.value);
-  if (selectedService && selectedService.id === 'rebonding') {
+  const services = landingServicesList.length > 0 ? landingServicesList : SALON_SERVICES;
+  const selectedService = services.find(s => String(s.id) === String(selectedOption.value) || s.code === selectedOption.value);
+  
+  if (selectedService && (selectedService.code === 'rebonding' || selectedService.price === 0)) {
     if (priceDisplay) priceDisplay.textContent = 'Consultation';
     if (serviceTypeNote) serviceTypeNote.textContent = 'Final price evaluated based on hair length and density';
     return;
   }
 
-  const basePrice = parseInt(selectedOption.getAttribute('data-price') || '0', 10);
+  const basePrice = selectedService ? selectedService.price : parseInt(selectedOption.getAttribute('data-price') || '0', 10);
   const homeServiceFee = (serviceType === 'home-service') ? 150 : 0;
   const total = basePrice + homeServiceFee;
 
@@ -677,6 +829,19 @@ window.openBookingModal = function(serviceId = '', preferredType = '') {
   const modal = document.getElementById('bookingModal');
   if (!modal) return;
 
+  if (landingServicesList.length === 0) {
+    hydrateLandingServices();
+  }
+
+  // Validate that requested service is available and active
+  if (serviceId) {
+    const isAvail = landingServicesList.some(s => (String(s.id) === String(serviceId) || s.code === String(serviceId).toLowerCase()) && s.is_active !== 0);
+    if (!isAvail && landingServicesList.length > 0) {
+      showToast('The requested service is currently unavailable for booking. An available service has been selected.', 'warning');
+      serviceId = landingServicesList[0]?.id || '';
+    }
+  }
+
   populateBookingServicesDropdown(serviceId);
 
   // If preferred type is specified (e.g. 'home-service' or 'in-salon')
@@ -974,11 +1139,12 @@ function initBookingForm() {
     e.preventDefault();
 
     const serviceSelect = document.getElementById('bookingServiceSelect');
-    const selectedServiceId = serviceSelect.value;
-    const selectedService = SALON_SERVICES.find(s => s.id === selectedServiceId);
+    const selectedServiceId = serviceSelect ? serviceSelect.value : '';
+    const services = landingServicesList.length > 0 ? landingServicesList : SALON_SERVICES;
+    const selectedService = services.find(s => String(s.id) === String(selectedServiceId) || s.code === String(selectedServiceId).toLowerCase());
 
-    if (!selectedService) {
-      showToast('Please select a service', 'warning');
+    if (!selectedService || selectedService.is_active === 0) {
+      showToast('The selected service is currently inactive or unavailable. Please choose another service.', 'error');
       return;
     }
 
@@ -1158,9 +1324,10 @@ function initDialogBackdropDismiss() {
 
 // DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
-  renderServices('all');
+  hydrateLandingServices();
   initServiceFilters();
   loadLandingStaff();
+  loadLandingServices();
   initBookingForm();
   initMobileMenu();
   initDialogBackdropDismiss();
