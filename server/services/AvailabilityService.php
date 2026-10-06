@@ -161,12 +161,21 @@ class AvailabilityService {
                 $isAvailable = count($availableStaffIds) > $unassignedBookingsCount;
             }
 
+            // Check if slot has already passed for today or a past date
+            $today = date('Y-m-d');
+            $currentTime = date('H:i:s');
+            $isPast = ($date < $today) || ($date === $today && $timeStr <= $currentTime);
+            if ($isPast) {
+                $isAvailable = false;
+            }
+
             $slots[] = [
                 'time'                => $timeStr,
                 'display_time'        => $displayTime,
                 'booked_count'        => $bookedCount,
                 'max_capacity'        => $maxCapacity,
                 'is_available'        => $isAvailable,
+                'is_past'             => $isPast,
                 'booked_staff_ids'    => array_values(array_unique($bookedStaffIds)),
                 'available_staff_ids' => array_values($availableStaffIds),
                 'unassigned_count'    => $unassignedBookingsCount,

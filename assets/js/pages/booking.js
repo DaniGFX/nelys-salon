@@ -31,7 +31,7 @@ const bookingState = {
   },
   date: '',
   dateIso: '',
-  time: '10:00 AM',
+  time: '',
   visitType: 'salon', // 'salon' | 'home'
   homeAddress: {
     building: '',
@@ -92,6 +92,55 @@ document.addEventListener('DOMContentLoaded', async () => {
   initBookingLiveSync();
 });
 
+// Time Slot & Date Past Verification Helpers
+function parseTimeToMinutes(timeStr) {
+  if (!timeStr) return null;
+  const str = String(timeStr).trim();
+  // 12-hour format e.g. "9:00 AM", "10:00 AM", "1:00 PM", "01:00 PM"
+  const match12 = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+  if (match12) {
+    let hours = parseInt(match12[1], 10);
+    const minutes = parseInt(match12[2], 10);
+    const meridiem = match12[3].toUpperCase();
+    if (meridiem === 'PM' && hours < 12) hours += 12;
+    if (meridiem === 'AM' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  }
+  // 24-hour format e.g. "09:00", "09:00:00", "13:00", "13:00:00"
+  const match24 = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (match24) {
+    const hours = parseInt(match24[1], 10);
+    const minutes = parseInt(match24[2], 10);
+    return hours * 60 + minutes;
+  }
+  return null;
+}
+
+function isBookingTimePast(dateStr, timeStr) {
+  if (!dateStr || !timeStr) return false;
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const todayIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+  let targetIso = dateStr;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) {
+      targetIso = `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
+    }
+  }
+
+  if (targetIso < todayIso) return true;
+  if (targetIso > todayIso) return false;
+
+  // Same day: check if slot minutes have elapsed
+  const slotMinutes = parseTimeToMinutes(timeStr);
+  if (slotMinutes === null) return false;
+
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  return slotMinutes <= currentMinutes;
+}
+
 // 1. Initialize Date Defaults
 function initInitialDates() {
   const now = new Date();
@@ -101,6 +150,13 @@ function initInitialDates() {
   const pad = n => String(n).padStart(2, '0');
   bookingState.dateIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
   bookingState.date = `${calendarMonthNames[currentCalMonth]} ${now.getDate()}, ${currentCalYear}`;
+
+  const standardTimes = ['9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'];
+  const firstFutureSlot = standardTimes.find(t => !isBookingTimePast(bookingState.dateIso, t));
+  bookingState.time = firstFutureSlot || '';
+
+  const timeLabel = document.getElementById('step2SelectedTimeLabel');
+  if (timeLabel) timeLabel.textContent = bookingState.time || 'Select a time';
 }
 
 // 2. Initialize Patron Profile from Storage
@@ -974,9 +1030,14 @@ async function fetchSlotAvailability(dateIso) {
   }
 
   // Fallback slots
-  availableTimeSlots = defaultTimes.map(t => ({ display_time: t, is_available: true }));
+  availableTimeSlots = defaultTimes.map(t => ({ 
+    display_time: t, 
+    is_available: !isBookingTimePast(dateIso, t),
+    is_past: isBookingTimePast(dateIso, t)
+  }));
   renderTimeSlots(availableTimeSlots);
   renderBookingStaff(activeStaffList);
+  validateSelectedSlotAndStaff();
 }
 
 function renderTimeSlots(slots) {
@@ -989,11 +1050,15 @@ function renderTimeSlots(slots) {
   let html = '';
   slots.forEach(slot => {
     const timeDisplay = slot.display_time || slot.time || '';
-    
+    const isPast = slot.is_past === true || isBookingTimePast(bookingState.dateIso, timeDisplay);
+
     let isSlotDisabled = false;
     let lockReason = '';
 
-    if (selectedStaffId) {
+    if (isPast) {
+      isSlotDisabled = true;
+      lockReason = `This time slot has already passed for today (${timeDisplay})`;
+    } else if (selectedStaffId) {
       if (staffInfo && !staffInfo.is_working_today) {
         isSlotDisabled = true;
         lockReason = `${bookingState.staff.name} is scheduled off on this day (${staffInfo.schedule_today || 'Day Off'})`;
@@ -1012,17 +1077,28 @@ function renderTimeSlots(slots) {
       }
     }
 
-    const isSelected = bookingState.time === timeDisplay;
+    const isSelected = !isSlotDisabled && bookingState.time === timeDisplay;
 
     if (isSlotDisabled) {
-      html += `
-        <button type="button" disabled 
-          class="time-btn py-3 px-3 rounded-xl bg-stone-100 text-stone-400 border border-stone-200 text-xs font-semibold cursor-not-allowed select-none flex items-center justify-center gap-1.5 line-through opacity-70"
-          title="${escapeHtml(lockReason || 'Slot unavailable')}">
-          <span>${timeDisplay}</span>
-          <i class="fa-solid fa-lock text-[10px]"></i>
-        </button>
-      `;
+      if (isPast) {
+        html += `
+          <button type="button" disabled 
+            class="time-btn py-2.5 px-2 rounded-xl bg-stone-100 text-stone-400 border border-stone-200 text-xs font-semibold cursor-not-allowed select-none flex flex-col items-center justify-center gap-0.5 opacity-60"
+            title="${escapeHtml(lockReason)}">
+            <span class="line-through">${timeDisplay}</span>
+            <span class="text-[9px] uppercase tracking-wider text-stone-400 font-bold">Passed</span>
+          </button>
+        `;
+      } else {
+        html += `
+          <button type="button" disabled 
+            class="time-btn py-3 px-3 rounded-xl bg-stone-100 text-stone-400 border border-stone-200 text-xs font-semibold cursor-not-allowed select-none flex items-center justify-center gap-1.5 line-through opacity-70"
+            title="${escapeHtml(lockReason || 'Slot unavailable')}">
+            <span>${timeDisplay}</span>
+            <i class="fa-solid fa-lock text-[10px]"></i>
+          </button>
+        `;
+      }
     } else if (isSelected) {
       html += `
         <button type="button" onclick="selectTime('${timeDisplay}', this)"
@@ -1045,6 +1121,10 @@ function renderTimeSlots(slots) {
 
 function selectTime(timeStr, btn) {
   if (btn && btn.disabled) return;
+  if (isBookingTimePast(bookingState.dateIso, timeStr)) {
+    showToast('This time slot has already passed for today. Please select an upcoming slot.', 'warning');
+    return;
+  }
 
   bookingState.time = timeStr;
 
@@ -1079,9 +1159,17 @@ function validateSelectedSlotAndStaff() {
         selectStaff(null, 'Any Available Stylist', 'Salon Team');
         return;
       }
-      if (bookingState.time && (staffInfo.booked_display_times || []).includes(bookingState.time)) {
-        // Find first available slot for this stylist
-        const freeSlot = availableTimeSlots.find(s => !s.booked_staff_ids || !s.booked_staff_ids.includes(selectedStaffId));
+      
+      const isCurrentTimePast = bookingState.time && isBookingTimePast(bookingState.dateIso, bookingState.time);
+      const isCurrentTimeBooked = bookingState.time && (staffInfo.booked_display_times || []).includes(bookingState.time);
+
+      if (!bookingState.time || isCurrentTimePast || isCurrentTimeBooked) {
+        // Find first available slot for this stylist that is NOT in the past
+        const freeSlot = availableTimeSlots.find(s => 
+          !isBookingTimePast(bookingState.dateIso, s.display_time || s.time) && 
+          s.is_available !== false &&
+          (!s.booked_staff_ids || !s.booked_staff_ids.includes(selectedStaffId))
+        );
         if (freeSlot) {
           bookingState.time = freeSlot.display_time;
           const timeLabel = document.getElementById('step2SelectedTimeLabel');
@@ -1089,26 +1177,59 @@ function validateSelectedSlotAndStaff() {
           updateSummary();
           renderTimeSlots(availableTimeSlots);
           renderBookingStaff(activeStaffList);
-          showToast(`${bookingState.staff.name} is booked at the previous time. Selected ${freeSlot.display_time} instead.`, 'info');
+          if (isCurrentTimePast) {
+            showToast(`The previous slot has passed for today. Selected ${freeSlot.display_time} instead.`, 'info');
+          } else if (isCurrentTimeBooked) {
+            showToast(`${bookingState.staff.name} is booked at the previous time. Selected ${freeSlot.display_time} instead.`, 'info');
+          }
         } else {
           // No slots available for this stylist on this day
-          showToast(`No open slots for ${bookingState.staff.name} on this date. Switched to Any Available Stylist.`, 'warning');
-          selectStaff(null, 'Any Available Stylist', 'Salon Team');
+          bookingState.time = '';
+          const timeLabel = document.getElementById('step2SelectedTimeLabel');
+          if (timeLabel) timeLabel.textContent = 'Select a time';
+          updateSummary();
+          renderTimeSlots(availableTimeSlots);
+          if (isCurrentTimePast) {
+            showToast('All slots for today have already passed or are unavailable.', 'warning');
+          } else {
+            showToast(`No open slots for ${bookingState.staff.name} on this date. Switched to Any Available Stylist.`, 'warning');
+            selectStaff(null, 'Any Available Stylist', 'Salon Team');
+          }
         }
       }
     }
   } else {
-    // "Any Available": verify currently selected time slot is available
-    if (bookingState.time) {
-      const curSlot = availableTimeSlots.find(s => (s.display_time || s.time) === bookingState.time);
-      if (curSlot && curSlot.is_available === false) {
-        const freeSlot = availableTimeSlots.find(s => s.is_available !== false);
-        if (freeSlot) {
-          bookingState.time = freeSlot.display_time;
-          const timeLabel = document.getElementById('step2SelectedTimeLabel');
-          if (timeLabel) timeLabel.textContent = freeSlot.display_time;
-          updateSummary();
-          renderTimeSlots(availableTimeSlots);
+    // "Any Available": verify currently selected time slot is available and not past
+    const isCurrentTimePast = bookingState.time && isBookingTimePast(bookingState.dateIso, bookingState.time);
+    const curSlot = bookingState.time ? availableTimeSlots.find(s => (s.display_time || s.time) === bookingState.time) : null;
+    const isSlotInvalid = !bookingState.time || isCurrentTimePast || (curSlot && curSlot.is_available === false);
+
+    if (isSlotInvalid) {
+      const freeSlot = availableTimeSlots.find(s => 
+        !isBookingTimePast(bookingState.dateIso, s.display_time || s.time) && 
+        s.is_available !== false
+      );
+      if (freeSlot) {
+        bookingState.time = freeSlot.display_time;
+        const timeLabel = document.getElementById('step2SelectedTimeLabel');
+        if (timeLabel) timeLabel.textContent = freeSlot.display_time;
+        updateSummary();
+        renderTimeSlots(availableTimeSlots);
+        if (isCurrentTimePast) {
+          showToast(`The previous slot has passed for today. Selected ${freeSlot.display_time} instead.`, 'info');
+        }
+      } else {
+        // No future available slots left today
+        bookingState.time = '';
+        const timeLabel = document.getElementById('step2SelectedTimeLabel');
+        if (timeLabel) timeLabel.textContent = 'Select a time';
+        updateSummary();
+        renderTimeSlots(availableTimeSlots);
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const todayIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+        if (bookingState.dateIso === todayIso) {
+          showToast('All appointment slots for today have already passed. Please select a future date.', 'warning');
         }
       }
     }
@@ -1244,7 +1365,7 @@ function updateSummary() {
   if (sumStaff) sumStaff.textContent = bookingState.staff.name || 'Any Available Stylist';
   if (sumDur) sumDur.textContent = bookingState.service.duration || '60 mins';
   if (sumDate) sumDate.textContent = bookingState.date || 'Date TBD';
-  if (sumTime) sumTime.textContent = bookingState.time || '10:00 AM';
+  if (sumTime) sumTime.textContent = bookingState.time || 'Select a time';
 
   if (sumVisit) {
     sumVisit.innerHTML = bookingState.visitType === 'salon'
@@ -1298,6 +1419,10 @@ function goToStep(targetStep) {
     if (bookingState.step === 2) {
       if (!bookingState.date || !bookingState.time) {
         showToast('Please select both a date and time slot.', 'error');
+        return;
+      }
+      if (isBookingTimePast(bookingState.dateIso, bookingState.time)) {
+        showToast('The selected time slot has already passed for today. Please select an upcoming time slot.', 'error');
         return;
       }
       if (bookingState.staff.id && currentDayAvailability) {
@@ -1378,6 +1503,17 @@ function goToStep(targetStep) {
 
 // 14. Step 5 & Confirmation Modal
 function openConfirmModal() {
+  if (!bookingState.date || !bookingState.time) {
+    showToast('Please select both a date and time slot.', 'error');
+    goToStep(2);
+    return;
+  }
+  if (isBookingTimePast(bookingState.dateIso, bookingState.time)) {
+    showToast('The selected appointment time slot has already passed for today. Please select an upcoming slot.', 'error');
+    goToStep(2);
+    return;
+  }
+
   updateSummary();
 
   const modalSvc = document.getElementById('modalService');
@@ -1415,6 +1551,13 @@ function closeConfirmModal() {
 
 // 15. Authoritative Booking Creation (POST /api/bookings)
 async function finalizeBooking() {
+  if (isBookingTimePast(bookingState.dateIso, bookingState.time)) {
+    showToast('The selected appointment time slot has already passed for today. Please choose an upcoming time slot.', 'error');
+    closeConfirmModal();
+    goToStep(2);
+    return;
+  }
+
   const confirmBtn = document.querySelector('#confirmModal button[onclick="finalizeBooking()"]');
   const originalBtnContent = confirmBtn ? confirmBtn.innerHTML : '';
   if (confirmBtn) {

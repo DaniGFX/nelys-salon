@@ -108,8 +108,12 @@ class BookingController {
             $bookingTime = date('H:i:s', strtotime($input['booking_time']));
 
             $today = date('Y-m-d');
+            $currentTime = date('H:i:s');
             if ($bookingDate < $today) {
                 Response::error('Appointments cannot be scheduled for past dates. Please select an upcoming date.', 422);
+            }
+            if ($bookingDate === $today && $bookingTime <= $currentTime) {
+                Response::error('The selected appointment time slot has already passed for today. Please choose an upcoming time slot.', 422);
             }
 
             // 1. Rebooking Same-Slot Check: Prevent rebooking for the exact same slot
@@ -573,6 +577,17 @@ class BookingController {
         $targetTime = $updateData['booking_time'] ?? $booking['booking_time'];
         $targetStaffId = array_key_exists('staff_id', $updateData) ? $updateData['staff_id'] : $booking['staff_id'];
         $targetStatus = $updateData['status'] ?? $booking['status'];
+
+        $today = date('Y-m-d');
+        $currentTime = date('H:i:s');
+        if (!empty($updateData['booking_date']) || !empty($updateData['booking_time'])) {
+            if ($targetDate < $today) {
+                Response::error('Appointments cannot be rescheduled to past dates. Please select an upcoming date.', 422);
+            }
+            if ($targetDate === $today && $targetTime <= $currentTime) {
+                Response::error('The selected appointment time slot has already passed for today. Please choose an upcoming time slot.', 422);
+            }
+        }
 
         if ($targetStaffId && in_array($targetStatus, ['pending', 'confirmed'])) {
             $pdo = Database::getConnection();

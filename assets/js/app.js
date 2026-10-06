@@ -802,6 +802,47 @@ window.selectLandingStaff = function(id, name, role) {
   renderLandingTimeSlots();
 };
 
+function isLandingTimePast(dateStr, timeStr) {
+  if (!dateStr || !timeStr) return false;
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const todayIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+  let targetIso = dateStr;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) {
+      targetIso = `${parsed.getFullYear()}-${pad(parsed.getMonth() + 1)}-${pad(parsed.getDate())}`;
+    }
+  }
+
+  if (targetIso < todayIso) return true;
+  if (targetIso > todayIso) return false;
+
+  let hours = 0, minutes = 0;
+  const str = String(timeStr).trim();
+  const match12 = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/i);
+  if (match12) {
+    hours = parseInt(match12[1], 10);
+    minutes = parseInt(match12[2], 10);
+    const meridiem = match12[3].toUpperCase();
+    if (meridiem === 'PM' && hours < 12) hours += 12;
+    if (meridiem === 'AM' && hours === 12) hours = 0;
+  } else {
+    const match24 = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (match24) {
+      hours = parseInt(match24[1], 10);
+      minutes = parseInt(match24[2], 10);
+    } else {
+      return false;
+    }
+  }
+
+  const slotMinutes = hours * 60 + minutes;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  return slotMinutes <= currentMinutes;
+}
+
 async function loadLandingAvailability(dateIso) {
   if (!dateIso) return;
   try {
@@ -815,6 +856,17 @@ async function loadLandingAvailability(dateIso) {
   } catch (err) {
     console.warn('Availability fetch notice:', err);
   }
+
+  // If currently selected slot is in the past for this date, auto-switch to next valid slot
+  if (landingSelectedTime && isLandingTimePast(dateIso, landingSelectedTime)) {
+    const nextSlot = LANDING_TIME_SLOTS.find(s => !isLandingTimePast(dateIso, s.timeDb));
+    landingSelectedTime = nextSlot ? nextSlot.value : '';
+    const timeInput = document.getElementById('bookingTime');
+    if (timeInput) timeInput.value = landingSelectedTime;
+    const labelEl = document.getElementById('modalSelectedTimeLabel');
+    if (labelEl) labelEl.textContent = nextSlot ? nextSlot.label : 'Select a time';
+  }
+
   renderLandingStaffCards();
   renderLandingTimeSlots();
 }
@@ -825,14 +877,21 @@ function renderLandingTimeSlots() {
 
   const staffId = landingSelectedStaff.id;
   const staffAvail = staffId && landingAvailabilityData?.staff?.find(x => x.id === staffId);
+  const dateInput = document.getElementById('bookingDate');
+  const selectedDate = dateInput ? dateInput.value : '';
 
   let html = '';
 
   LANDING_TIME_SLOTS.forEach(slot => {
     let isBooked = false;
     let disabledReason = '';
+    const slotInfo = landingAvailabilityData?.slots?.find(s => s.time === slot.timeDb);
+    const isPast = (slotInfo && slotInfo.is_past === true) || isLandingTimePast(selectedDate, slot.timeDb);
 
-    if (staffId && staffAvail) {
+    if (isPast) {
+      isBooked = true;
+      disabledReason = 'Time slot passed';
+    } else if (staffId && staffAvail) {
       if (!staffAvail.is_working_today) {
         isBooked = true;
         disabledReason = 'Stylist off-duty';
@@ -841,7 +900,6 @@ function renderLandingTimeSlots() {
         disabledReason = 'Stylist booked';
       }
     } else if (!staffId && landingAvailabilityData?.slots) {
-      const slotInfo = landingAvailabilityData.slots.find(s => s.time === slot.timeDb);
       if (slotInfo && slotInfo.is_available === false) {
         isBooked = true;
         disabledReason = 'All stylists booked';
@@ -851,12 +909,13 @@ function renderLandingTimeSlots() {
     const isSelected = (landingSelectedTime === slot.value) && !isBooked;
 
     if (isBooked) {
+      const badgeText = isPast ? 'Passed' : 'Booked';
       html += `
         <button type="button" disabled
           title="${escapeHtml(disabledReason)}"
           class="py-2.5 px-2 rounded-xl bg-stone-100 border border-stone-200 text-stone-400 text-xs font-semibold cursor-not-allowed opacity-60 text-center select-none flex flex-col items-center justify-center">
           <span class="line-through">${slot.label}</span>
-          <span class="text-[9px] text-stone-400 font-normal">Booked</span>
+          <span class="text-[9px] text-stone-400 font-bold uppercase tracking-wider">${badgeText}</span>
         </button>
       `;
     } else if (isSelected) {
@@ -882,6 +941,14 @@ function renderLandingTimeSlots() {
 }
 
 window.selectLandingTime = function(timeVal, label) {
+  const dateInput = document.getElementById('bookingDate');
+  const selectedDate = dateInput ? dateInput.value : '';
+  const slotObj = LANDING_TIME_SLOTS.find(s => s.value === timeVal);
+  if (isLandingTimePast(selectedDate, slotObj?.timeDb || timeVal)) {
+    showToast('This time slot has already passed for today. Please select an upcoming slot.', 'warning');
+    return;
+  }
+
   landingSelectedTime = timeVal;
   const timeInput = document.getElementById('bookingTime');
   if (timeInput) timeInput.value = timeVal;
@@ -1222,7 +1289,18 @@ function initBookingForm() {
     const phone = document.getElementById('bookingPhone')?.value.trim();
     const email = document.getElementById('bookingEmail')?.value.trim();
     const date = document.getElementById('bookingDate')?.value;
-    const time = document.getElementById('bookingTime')?.value || landingSelectedTime || '13:00';
+    const time = document.getElementById('bookingTime')?.value || landingSelectedTime;
+
+    if (!time) {
+      showToast('Please select an available time slot.', 'error');
+      return;
+    }
+
+    if (isLandingTimePast(date, time)) {
+      showToast('The selected appointment time slot has already passed for today. Please choose an upcoming time slot.', 'error');
+      return;
+    }
+
     const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'Cash';
     const address = serviceType === 'home-service' 
       ? document.getElementById('bookingAddress')?.value.trim() 

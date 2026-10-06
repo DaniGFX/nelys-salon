@@ -1263,6 +1263,42 @@ async function confirmAppointment(id) {
 }
 
 // ================= MODAL 4: RESCHEDULE MODAL =================
+function updateRescheduleTimeOptions(selectedDate) {
+  const timeSelect = document.getElementById('rescheduleNewTime');
+  if (!timeSelect) return;
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const todayIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  const isToday = selectedDate === todayIso;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let firstValidValue = null;
+
+  Array.from(timeSelect.options).forEach(opt => {
+    const parts = opt.value.split(':');
+    const slotMinutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    const isPast = isToday && (slotMinutes <= currentMinutes);
+
+    if (!opt.dataset.baseLabel) {
+      opt.dataset.baseLabel = opt.textContent.replace(/\s*\(Passed\)$/i, '');
+    }
+
+    if (isPast) {
+      opt.disabled = true;
+      opt.textContent = `${opt.dataset.baseLabel} (Passed)`;
+    } else {
+      opt.disabled = false;
+      opt.textContent = opt.dataset.baseLabel;
+      if (!firstValidValue) firstValidValue = opt.value;
+    }
+  });
+
+  if (timeSelect.selectedOptions[0]?.disabled && firstValidValue) {
+    timeSelect.value = firstValidValue;
+  }
+}
+
 function openRescheduleModal(id) {
   const appt = appointmentsData.find(a => a.id === id);
   if (!appt) return;
@@ -1276,10 +1312,25 @@ function openRescheduleModal(id) {
   document.getElementById('rescheduleCurrentSlot').textContent = `${appt.dateFormatted} at ${appt.time}`;
 
   const dateInput = document.getElementById('rescheduleNewDate');
-  if (dateInput) dateInput.value = appt.date;
+  const today = new Date().toISOString().split('T')[0];
+  if (dateInput) {
+    dateInput.min = today;
+    dateInput.value = appt.date >= today ? appt.date : today;
+    if (!dateInput.dataset.listenerAttached) {
+      dateInput.addEventListener('change', () => updateRescheduleTimeOptions(dateInput.value));
+      dateInput.addEventListener('input', () => updateRescheduleTimeOptions(dateInput.value));
+      dateInput.dataset.listenerAttached = 'true';
+    }
+    updateRescheduleTimeOptions(dateInput.value);
+  }
 
   const timeSelect = document.getElementById('rescheduleNewTime');
-  if (timeSelect) timeSelect.value = appt.rawTime || "09:00:00";
+  if (timeSelect) {
+    if (appt.rawTime) timeSelect.value = appt.rawTime;
+    if (timeSelect.selectedOptions[0]?.disabled) {
+      updateRescheduleTimeOptions(dateInput ? dateInput.value : today);
+    }
+  }
 
   modal.showModal();
 }
@@ -1299,6 +1350,24 @@ async function handleConfirmReschedule(e) {
   if (!newDate || !newTime) {
     showToast('Please select a valid date and time.', 'error');
     return;
+  }
+
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const todayIso = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+  if (newDate < todayIso) {
+    showToast('Appointments cannot be rescheduled to past dates.', 'error');
+    return;
+  }
+  if (newDate === todayIso) {
+    const parts = newTime.split(':');
+    const slotMinutes = parseInt(parts[0], 10) * 60 + parseInt(parts[1], 10);
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+    if (slotMinutes <= currentMinutes) {
+      showToast('The selected appointment time slot has already passed for today. Please select an upcoming slot.', 'error');
+      return;
+    }
   }
 
   try {
